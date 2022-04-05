@@ -90,6 +90,7 @@ import { generateConfigCmdBuilder } from './handlers/generate-config/generate-co
 import { generateBashCmdBuilder } from './handlers/generate-bash/generate-bash.command-builder';
 import { defaultTargetGroupCmdBuilder } from './handlers/default-target-group/default-target-group.command-builder';
 import { listProxyPoliciesHandler } from './handlers/policy/list-proxy-policies.handler';
+import { UserHttpService } from './http-services/user/user.http-services';
 
 export type EnvMap = Readonly<{
     configName: string;
@@ -141,7 +142,8 @@ export class CliDriver
         'generate',
         'policy',
         'group',
-        'generate-bash'
+        'generate-bash',
+        'register'
     ]);
 
     private GACommands: Set<string> = new Set([
@@ -654,6 +656,16 @@ export class CliDriver
                 async () => {
                     const oauth = new OAuthService(this.configService, this.logger);
                     await oauth.getIdTokenAndExitOnError();
+                }
+            )
+            .command(
+                'register',
+                false,
+                () => {},
+                async () => {
+                    const userHttpService = new UserHttpService(this.configService, this.logger);
+                    const registerResponse = await userHttpService.Register();
+                    this.configService.setSessionId(registerResponse.userSessionId);
                 }
             )
             .option('configName', {type: 'string', choices: ['prod', 'stage', 'dev'], default: envMap.configName, hidden: true})
