@@ -38,7 +38,9 @@ export type VTTestTarget = BaseTarget & {
 // Hold our common TestRails caseIds
 interface BaseTarget {
     sshCaseId?: string // For our ssh test suite
+    badSshCaseId?: string // For our ssh test negation test 
     connectCaseId?: string; // For our connect test suite
+    badConnectCaseId?: string; // for our connect negation test
     dbCaseId?: string; // For our vt test suite
     webCaseId?: string; // For our vt test suite
 }

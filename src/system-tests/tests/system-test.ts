@@ -143,7 +143,7 @@ beforeAll(async () => {
     systemTestEnvId = createEnvResponse.id;
 
     await checkAllSettledPromise(Promise.allSettled([
-        createDOTestTargets(),
+        createDOTestTargets(),  
         createDOTestClusters(KUBE_ENABLED)
     ]));
 }, 20 * 60 * 1000);
@@ -151,7 +151,7 @@ beforeAll(async () => {
 // Cleanup droplets after running all tests
 afterAll(async () => {
     // Delete the API key created for system tests
-    await cleanupSystemTestApiKeys(systemTestRESTApiKey, systemTestRESTApiKey);
+    await cleanupSystemTestApiKeys(systemTestRESTApiKey, systemTestRegistrationApiKey);
 
     await checkAllSettledPromise(Promise.allSettled([
         cleanupDOTestTargets(),

@@ -1,4 +1,4 @@
-import { policyService, systemTestEnvId, systemTestEnvName, systemTestPolicyTemplate, systemTestUniqueId, testTargets, vtTestTargetsToRun } from '../system-test';
+import { policyService, systemTestEnvId, systemTestEnvName, systemTestPolicyTemplate, systemTestUniqueId, testTargets } from '../system-test';
 import { callZli } from '../utils/zli-utils';
 import { DbTargetService } from '..../../../http-services/db-target/db-target.http-service';
 import got from 'got/dist/source';
@@ -11,6 +11,8 @@ import { SubjectType } from '../../../../webshell-common-ts/http/v2/common.types
 import { Environment } from '../../../../webshell-common-ts/http/v2/policy/types/environment.types';
 import { Subject } from '../../../../src/services/v1/policy/policy.types';
 import { ConnectionEventType } from '../../../../webshell-common-ts/http/v2/event/types/connection-event.types';
+import { vtTestTargetsToRun } from '../targets-to-run';
+import { TestTarget } from '../system-test.types';
 
 const { Client } = require('pg');
 
@@ -68,7 +70,7 @@ export const vtSuite = () => {
             testPassed = false;
         });
 
-        vtTestTargetsToRun.forEach(async (testTarget) => {
+        vtTestTargetsToRun.forEach(async (testTarget: TestTarget) => {
             it(`${testTarget.dbCaseId}: db virtual target connect - ${testTarget.awsRegion} - ${getDOImageName(testTarget.dropletImage)}`, async () => {
                 const doTarget = testTargets.get(testTarget) as DigitalOceanBZeroTarget;
     

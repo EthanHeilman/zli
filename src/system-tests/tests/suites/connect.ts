@@ -2,7 +2,7 @@ import { MockSTDIN, stdin } from 'mock-stdin';
 import * as ShellUtils from '../../../utils/shell-utils';
 import * as CleanExitHandler from '../../../handlers/clean-exit.handler';
 import waitForExpect from 'wait-for-expect';
-import { configService, logger, loggerConfigService, policyService, ssmTestTargetsToRun, systemTestEnvId, systemTestPolicyTemplate, systemTestUniqueId, testTargets, cleanupTargetConnectPolicies } from '../system-test';
+import { configService, logger, loggerConfigService, policyService, systemTestEnvId, systemTestPolicyTemplate, systemTestUniqueId, testTargets } from '../system-test';
 import { getMockResultValue } from '../utils/jest-utils';
 import { callZli } from '../utils/zli-utils';
 import { ConnectionHttpService } from '../../../http-services/connection/connection.http-services';
@@ -13,6 +13,9 @@ import { SubjectType } from '../../../../webshell-common-ts/http/v2/common.types
 import { Subject } from '../../../../src/services/v1/policy/policy.types';
 import { Environment } from '../../../../webshell-common-ts/http/v2/policy/types/environment.types';
 import { ConnectionEventType } from '../../../../webshell-common-ts/http/v2/event/types/connection-event.types';
+import { TestTarget } from '../system-test.types';
+import { ssmTestTargetsToRun } from '../targets-to-run';
+import { cleanupTargetConnectPolicies } from '../system-test-cleanup';
 
 export const connectSuite = () => {
     describe('connect suite', () => {
@@ -68,9 +71,9 @@ export const connectSuite = () => {
             }
         });
 
-        ssmTestTargetsToRun.forEach(async (testTarget) => {
+        ssmTestTargetsToRun.forEach(async (testTarget: TestTarget) => {
             it(`${testTarget.connectCaseId}: zli connect - ${testTarget.awsRegion} - ${testTarget.installType} - ${getDOImageName(testTarget.dropletImage)}`, async () => {
-               const doTarget = testTargets.get(testTarget) as DigitalOceanSSMTarget;
+                const doTarget = testTargets.get(testTarget) as DigitalOceanSSMTarget;
 
                 // Spy on result Bastion gives for shell auth details. This spy is
                 // used at the end of the test to assert the correct regional
@@ -146,6 +149,32 @@ export const connectSuite = () => {
                 // Ensure that the client disconnect event is here
                 // Note, there is no close event since we do not close the connection, just disconnect from it
                 expect(await testUtils.EnsureConnectionEventCreated(doTarget.ssmTarget.id, doTarget.ssmTarget.name, targetUser, 'SSM', ConnectionEventType.ClientDisconnect));
+            }, 60 * 1000)
+        })
+
+        ssmTestTargetsToRun.forEach(async (testTarget: TestTarget) => {
+            it(`${testTarget.badConnectCaseId}: zli connect bad user - ${testTarget.awsRegion} - ${testTarget.installType} - ${getDOImageName(testTarget.dropletImage)}`, async () => {
+                const doTarget = testTargets.get(testTarget) as DigitalOceanSSMTarget;
+
+                // Spy on result Bastion gives for shell auth details. This spy is
+                // used at the end of the test to ensure it has not been called
+                const shellConnectionAuthDetailsSpy = jest.spyOn(ConnectionHttpService.prototype, 'GetShellConnectionAuthDetails');
+
+                // Call "zli connect"
+                const connectPromise = callZli(['connect', `baduser@${doTarget.ssmTarget.name}`], 1);
+
+                // TODO: This could be cleaned up in the future if we exit the zli
+                // with exit code = 0 in this case. Currently there is no way for us
+                // to distinguish between a normal closure (user types exit) and an
+                // abnormal websocket closure
+                jest.spyOn(CleanExitHandler, 'cleanExit').mockImplementationOnce(() => Promise.resolve());
+
+
+                // Wait for connect shell to cleanup
+                await connectPromise;
+
+                // Assert shell connection auth details has not been called
+                expect(shellConnectionAuthDetailsSpy).not.toHaveBeenCalled();
             }, 60 * 1000)
         })
     });

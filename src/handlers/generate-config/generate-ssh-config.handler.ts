@@ -21,7 +21,7 @@ export async function generateSshConfigHandler(argv: yargs.Arguments<generateCon
 
     // Build our ssh config file
     const { identityFile, proxyCommand, prefix } = await buildSshConfigStrings(configService, processName, logger);
-    const bzConfigContentsFormatted = formatBzConfigContents(tunnels, identityFile, proxyCommand);
+    const bzConfigContentsFormatted = formatBzConfigContents(tunnels, identityFile, proxyCommand, prefix);
 
     // Determine and write to the user's ssh and bzero-ssh config path
     const { userConfigPath, bzConfigPath } = getFilePaths(argv.mySshPath, argv.bzSshPath, prefix);
@@ -52,9 +52,10 @@ function getFilePaths(userSshPath: string, bzSshPath: string, configPrefix: stri
  * @param tunnels {TunnelsResponse[]} A list of targets the user can access over SSH tunnel
  * @param identityFile {string} A path to the user's key file
  * @param proxyCommand {string} A proxy command routing SSH requests to the ZLI
+ * @param configPrefix {string} assigns a prefix to the bz config filename based on runtime environment (e.g. dev, stage)
  * @returns {string} the bz config file contents
  */
-function formatBzConfigContents(tunnels: TunnelsResponse[], identityFile: string, proxyCommand: string): string {
+function formatBzConfigContents(tunnels: TunnelsResponse[], identityFile: string, proxyCommand: string, configPrefix: string): string {
     let contents = ``;
 
     // add per-target configs
@@ -68,6 +69,13 @@ Host ${tunnel.targetName}
     ${user}
 `;
     }
+
+    // Also add our proxy wildcard command
+    contents += `
+Host ${configPrefix}*
+  ${identityFile}
+  ${proxyCommand}
+`
 
     return contents;
 }

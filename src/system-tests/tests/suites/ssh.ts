@@ -3,7 +3,7 @@ import fs from 'fs';
 import { promisify } from 'util';
 import { exec } from 'child_process';
 import { PolicyQueryHttpService } from '../../../http-services/policy-query/policy-query.http-services';
-import { configService, policyService, ssmTestTargetsToRun, systemTestEnvId, systemTestPolicyTemplate, systemTestUniqueId, testTargets, cleanupTargetConnectPolicies } from '../system-test';
+import { configService, policyService, systemTestEnvId, systemTestPolicyTemplate, systemTestUniqueId, testTargets } from '../system-test';
 import { callZli } from '../utils/zli-utils';
 import { removeIfExists } from '../../../utils/utils';
 import { DigitalOceanSSMTarget } from '../../digital-ocean/digital-ocean-ssm-target.service.types';
@@ -11,10 +11,14 @@ import { VerbType } from '../../../../src/services/v1/policy-query/policy-query.
 import { SubjectType } from '../../../../webshell-common-ts/http/v2/common.types/subject.types';
 import { Subject } from '../../../../src/services/v1/policy/policy.types';
 import { Environment } from '../../../../webshell-common-ts/http/v2/policy/types/environment.types';
+import { TestTarget } from '../system-test.types';
+import { ssmTestTargetsToRun } from '../targets-to-run';
+import { cleanupTargetConnectPolicies } from '../system-test-cleanup';
 
 export const sshSuite = () => {
     describe('ssh suite', () => {
         const targetUser = 'ssm-user';
+        const badTargetUser = 'bad-user'
         const uniqueUser = `user-${systemTestUniqueId}`;
 
         const userConfigFile = path.join(
@@ -81,7 +85,7 @@ export const sshSuite = () => {
             // don't delete policies, because ssh tunnel tests need them
         }, 60 * 1000);
 
-        ssmTestTargetsToRun.forEach(async (testTarget) => {
+        ssmTestTargetsToRun.forEach(async (testTarget: TestTarget) => {
             it(`${testTarget.sshCaseId}: ssh tunnel - ${testTarget.awsRegion} - ${testTarget.installType} - ${testTarget.dropletImage}`, async () => {
                 // use the config file we just created to ssh without specifying a user or identity file
                 const doTarget = testTargets.get(testTarget) as DigitalOceanSSMTarget;
@@ -91,6 +95,30 @@ export const sshSuite = () => {
                 const { stdout } = await pexec(command);
                 expect(stdout.trim()).toEqual('success');
 
+            }, 60 * 1000);
+        });
+
+        ssmTestTargetsToRun.forEach(async (testTarget: TestTarget) => {
+            it(`${testTarget.badSshCaseId}: ssh tunnel bad user - ${testTarget.awsRegion} - ${testTarget.installType} - ${testTarget.dropletImage}`, async () => {
+                // Try to ssh connect with a bad user
+                const doTarget = testTargets.get(testTarget) as DigitalOceanSSMTarget;
+                const command = `ssh -F ${userConfigFile} -o CheckHostIP=no -o StrictHostKeyChecking=no ${badTargetUser}@${doTarget.ssmTarget.name} echo success`;
+                
+                const pexec = promisify(exec);
+                let error = undefined;
+                try {
+                    await pexec(command);
+                } catch (e) {
+                    // The command should fail and we should set error
+                    error = e;
+                }
+
+                // Ensure we see the expected error message
+                expect(error).not.toEqual(undefined);
+                console.log(error)
+                const stdError = error.stderr;
+                expect(stdError).toMatch(new RegExp(`(You do not have permission to tunnel as targetUser: ${badTargetUser}. Current allowed users for you: ssm-user)`))
+                
             }, 60 * 1000);
         });
 
