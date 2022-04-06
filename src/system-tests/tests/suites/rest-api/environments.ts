@@ -1,9 +1,13 @@
+import { EnvironmentSummary } from '../../../../../webshell-common-ts/http/v2/environment/types/environment-summary.responses';
 import { CreateEnvironmentResponse } from '../../../../../webshell-common-ts/http/v2/environment/responses/create-environment.responses';
-import { environmentService, systemTestUniqueId } from "../../system-test";
+import { configService, environmentService, systemTestUniqueId } from "../../system-test";
+import { HttpService } from '../../../../services/http/http.service';
+import { EnvironmentHttpService } from '../../../../http-services/environment/environment.http-services';
 
 export const environmentsSuite = () => {
     describe('Environments Suite', () => {
         let createEnvResponse: CreateEnvironmentResponse = undefined;
+        let envToExpect: EnvironmentSummary = undefined;
         const environmentName = `environment-test-suite-${systemTestUniqueId}`;
 
         afterAll(async () => {
@@ -14,22 +18,33 @@ export const environmentsSuite = () => {
         });
 
         test('2117: Create environment', async () => {
+            const envDescription = `System test environment suite for run: ${systemTestUniqueId}`;
             createEnvResponse = await environmentService.CreateEnvironment({
                 name: environmentName,
-                description: `System test environment suite for run: ${systemTestUniqueId}`,
+                description: envDescription,
                 offlineCleanupTimeoutHours: 1
             });
+            envToExpect = {
+                id : createEnvResponse.id,
+                organizationId : configService.me().organizationId,
+                isDefault : false,
+                name : environmentName,
+                description : envDescription,
+                timeCreated : expect.anything(),
+                offlineCleanupTimeoutHours : 1,
+                targets : [],
+            }
         }, 15 * 1000);
 
         test('2117: Get all environments', async () => {
             const getEnvsResponse = await environmentService.ListEnvironments();
             const foundEnv = getEnvsResponse.find(e => e.id === createEnvResponse.id);
-            expect(foundEnv).toMatchObject(createEnvResponse);
+            expect(foundEnv).toMatchObject(envToExpect);
         }, 15 * 1000);
 
         test('2117: Get single environment', async () => {
             const getEnvResponse = await environmentService.GetEnvironment(createEnvResponse.id);
-            expect(getEnvResponse).toMatchObject(createEnvResponse);
+            expect(getEnvResponse).toMatchObject(envToExpect);
         }, 15 * 1000);
 
         test('2117: Edit environment', async () => {
@@ -43,8 +58,9 @@ export const environmentsSuite = () => {
 
             // Now make sure that the environment has been updated
             const getEnvResponse = await environmentService.GetEnvironment(createEnvResponse.id);
-            expect(getEnvResponse.description).toEqual(updatedDescription);
-            expect(getEnvResponse.offlineCleanupTimeoutHours).toEqual(updatedOfflineCleanupTimeout);
+            envToExpect.description = updatedDescription;
+            envToExpect.offlineCleanupTimeoutHours = updatedOfflineCleanupTimeout;
+            expect(getEnvResponse).toMatchObject(envToExpect);
         }, 15 * 1000);
 
         test('2117: Delete environment', async () => {
