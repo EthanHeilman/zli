@@ -24,6 +24,7 @@ import { ssmTestTargetsToRun, vtTestTargetsToRun } from './targets-to-run';
 import { createDOTestClusters, createDOTestTargets, setupSystemTestApiKeys } from './system-test-setup';
 import { cleanupDOTestClusters, cleanupDOTestTargets, cleanupSystemTestApiKeys } from './system-test-cleanup';
 import { apiKeySuite } from './suites/rest-api/api-keys';
+import { environmentsSuite } from './suites/rest-api/environments';
 
 // Uses config name from ZLI_CONFIG_NAME environment variable (defaults to prod
 // if unset) This can be run against dev/stage/prod when running system tests
@@ -39,7 +40,7 @@ export const configService = new ConfigService(configName, logger, envMap.config
 export const policyService = new PolicyHttpService(configService, logger);
 
 const oauthService = new OAuthService(configService, logger);
-const environmentService = new EnvironmentHttpService(configService, logger);
+export const environmentService = new EnvironmentHttpService(configService, logger);
 const doApiKey = process.env.DO_API_KEY;
 if (!doApiKey) {
     throw new Error('Must set the DO_API_KEY environment variable');
@@ -167,10 +168,13 @@ afterAll(async () => {
     }
 }, 60 * 1000);
 
+// Call list target suite anytime a target test is called 
+if (SSM_ENABLED || KUBE_ENABLED || VT_ENABLED) {
+    listTargetsSuite();
+}
+
 // Call various test suites
 if(SSM_ENABLED) {
-    versionSuite();
-    listTargetsSuite();
     connectSuite();
     sshSuite();
 }
@@ -185,4 +189,8 @@ if(VT_ENABLED) {
 
 if (API_ENABLED) {
     apiKeySuite();
+    environmentsSuite()
 }
+
+// Always run the version suite
+versionSuite()

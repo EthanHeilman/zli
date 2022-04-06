@@ -147,9 +147,9 @@ async function getClusterInfoFromName(clusterTargets: KubeClusterSummary[], clus
 }
 
 function pollDaemonReady(daemonPort: number) : Promise<void> {
-    // 2 minutes
+    // 1 minutes
     const retrier = new Retrier({
-        limit: 120,
+        limit: 60,
         delay: 1000 * 1,
     });
 
