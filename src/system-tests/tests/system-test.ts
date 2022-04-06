@@ -23,6 +23,7 @@ import { PolicyHttpService } from '../../../src/http-services/policy/policy.http
 import { ssmTestTargetsToRun, vtTestTargetsToRun } from './targets-to-run';
 import { createDOTestClusters, createDOTestTargets, setupSystemTestApiKeys } from './system-test-setup';
 import { cleanupDOTestClusters, cleanupDOTestTargets, cleanupSystemTestApiKeys } from './system-test-cleanup';
+import { apiKeySuite } from './suites/rest-api/api-keys';
 
 // Uses config name from ZLI_CONFIG_NAME environment variable (defaults to prod
 // if unset) This can be run against dev/stage/prod when running system tests
@@ -59,6 +60,7 @@ if (! bctlQuickstartVersion) {
 const KUBE_ENABLED = process.env.KUBE_ENABLED ? (process.env.KUBE_ENABLED === 'true') : true;
 const VT_ENABLED = process.env.VT_ENABLED ? (process.env.VT_ENABLED === 'true') : true;
 const SSM_ENABLED =  process.env.SSM_ENABLED ? (process.env.SSM_ENABLED === 'true') : true;
+const API_ENABLED = process.env.API_ENABLED ? (process.env.API_ENABLED === 'true') : true;
 
 
 export const systemTestTags = process.env.SYSTEM_TEST_TAGS ? process.env.SYSTEM_TEST_TAGS.split(',').filter(t => t != '') : ['system-tests'];
@@ -179,4 +181,8 @@ if(KUBE_ENABLED) {
 
 if(VT_ENABLED) {
     vtSuite();
+}
+
+if (API_ENABLED) {
+    apiKeySuite();
 }
