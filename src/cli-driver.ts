@@ -665,7 +665,10 @@ export class CliDriver
                 async () => {
                     const userHttpService = new UserHttpService(this.configService, this.logger);
                     const registerResponse = await userHttpService.Register();
-                    this.configService.setSessionId(registerResponse.userSessionId);
+
+                    // Update me
+                    const me = await userHttpService.Me();
+                    this.configService.setMe(me);
                 }
             )
             .option('configName', {type: 'string', choices: ['prod', 'stage', 'dev'], default: envMap.configName, hidden: true})
