@@ -2,6 +2,7 @@ import { policyService, systemTestEnvId, systemTestEnvName, systemTestPolicyTemp
 import { callZli } from '../utils/zli-utils';
 import { DbTargetService } from '..../../../http-services/db-target/db-target.http-service';
 import got from 'got/dist/source';
+import * as CleanExitHandler from '../../../handlers/clean-exit.handler';
 
 import { configService, logger, loggerConfigService } from '../system-test';
 import { DigitalOceanBZeroTarget, getDOImageName } from '../../digital-ocean/digital-ocean-ssm-target.service.types';
@@ -23,6 +24,7 @@ export const vtSuite = () => {
 
         const localDbPort = 6100;
         const localWebPort = 6200;
+        const webserverRemotePort = 8000;
 
         // Set up the policy before all the tests
         beforeAll(async () => {
@@ -141,16 +143,48 @@ export const vtSuite = () => {
                 // Reset our testPassed flag
                 testPassed = true;
             }, 60 * 1000);
+
+            it(`${testTarget.badDbCaseId}: db virtual target bad connect - ${testTarget.awsRegion} - ${getDOImageName(testTarget.dropletImage)}`, async () => {
+                const doTarget = testTargets.get(testTarget) as DigitalOceanBZeroTarget;
+                
+                // Create a new db virtual target in the default env
+                const dbTargetService: DbTargetService = new DbTargetService(configService, logger);
+                const dbVtName = `${doTarget.bzeroTarget.name}-db-vt-no-policy`;
+    
+                await dbTargetService.CreateDbTarget({
+                    targetName: dbVtName,
+                    proxyTargetId: doTarget.bzeroTarget.id,
+                    remoteHost: 'localhost',
+                    remotePort: 5432,
+                    localHost: 'localhost',
+                    localPort: localDbPort,
+                    environmentName: 'Default'
+                });
+
+                logger.info('Creating db target connection with db target + no policy');
+    
+                // Start the connection to the db virtual target
+                const connectZli = callZli(['connect', dbVtName]);
+
+                const expectedErrorMessage = 'Expected error'
+                jest.spyOn(CleanExitHandler, 'cleanExit').mockImplementationOnce(() => {
+                    throw new Error(expectedErrorMessage)
+                });
+
+                await expect(connectZli).rejects.toThrow(expectedErrorMessage);
+    
+                // Reset our testPassed flag
+                testPassed = true;
+            }, 60 * 1000);
         });
 
         
 
         vtTestTargetsToRun.forEach(async (testTarget) => {
             it(`${testTarget.webCaseId}: web virtual target connect - ${testTarget.awsRegion} - ${getDOImageName(testTarget.dropletImage)}`, async () => {
-                const webserverRemotePort = 8000;
                 const doTarget = testTargets.get(testTarget) as DigitalOceanBZeroTarget;
     
-                // Create a new db virtual target
+                // Create a new web virtual target
                 const webTargetService: WebTargetService = new WebTargetService(configService, logger);
                 const webVtName = `${doTarget.bzeroTarget.name}-web-vt`;
     
@@ -185,6 +219,39 @@ export const vtSuite = () => {
                 expect(await testUtils.EnsureConnectionEventCreated(createWebTargetResponse.targetId, webVtName, 'n/a', 'WEB', ConnectionEventType.ClientDisconnect));
                 expect(await testUtils.EnsureConnectionEventCreated(createWebTargetResponse.targetId, webVtName, 'n/a', 'WEB', ConnectionEventType.Closed));
     
+                testPassed = true;
+            }, 60 * 1000);
+
+            it(`${testTarget.badDbCaseId}: web virtual target bad connect - ${testTarget.awsRegion} - ${getDOImageName(testTarget.dropletImage)}`, async () => {
+                const doTarget = testTargets.get(testTarget) as DigitalOceanBZeroTarget;
+
+                // Create a new web virtual target
+                const webTargetService: WebTargetService = new WebTargetService(configService, logger);
+                const webVtName = `${doTarget.bzeroTarget.name}-web-vt-no-policy`;
+                
+                await webTargetService.CreateWebTarget({
+                    targetName: webVtName,
+                    proxyTargetId: doTarget.bzeroTarget.id,
+                    remoteHost: 'http://localhost',
+                    remotePort: webserverRemotePort,
+                    localHost: 'localhost',
+                    localPort: localWebPort,
+                    environmentName: 'Default'
+                });
+    
+                logger.info('Creating web target connection with web target + no policy');
+    
+                // Start the connection to the web virtual target
+                const connectZli = callZli(['connect', webVtName, '--openBrowser=false']);
+
+                const expectedErrorMessage = 'Expected error'
+                jest.spyOn(CleanExitHandler, 'cleanExit').mockImplementationOnce(() => {
+                    throw new Error(expectedErrorMessage)
+                });
+
+                await expect(connectZli).rejects.toThrow(expectedErrorMessage);
+    
+                // Reset our testPassed flag
                 testPassed = true;
             }, 60 * 1000);
         });

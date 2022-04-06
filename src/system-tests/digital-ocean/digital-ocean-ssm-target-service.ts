@@ -191,9 +191,9 @@ export class DigitalOceanSSMTargetService {
      * @returns Droplet information after its status == "active"
      */
     private async pollDropletUntilActive(dropletId: number): Promise<IDroplet> {
-        // Try 60 times with a delay of 10 seconds between each attempt (10 min).
+        // Try 80 times with a delay of 10 seconds between each attempt (~13 min).
         const retrier = new Retrier({
-            limit: 60,
+            limit: 80,
             delay: 1000 * 10,
             stopRetryingIf: (reason: any) => axios.isAxiosError(reason)
         });

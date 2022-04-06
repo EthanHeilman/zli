@@ -41,8 +41,10 @@ interface BaseTarget {
     badSshCaseId?: string // For our ssh test negation test 
     connectCaseId?: string; // For our connect test suite
     badConnectCaseId?: string; // for our connect negation test
-    dbCaseId?: string; // For our vt test suite
-    webCaseId?: string; // For our vt test suite
+    dbCaseId?: string; // For our db test suite
+    badDbCaseId?: string // For out db negation negation test
+    webCaseId?: string; // For our web test suite
+    badWebCaseId?: string; // For out web negation tests
 }
 
 export type TestTarget = SSMTestTargetAutoDiscovery | SSMTestTargetSelfRegistrationAutoDiscovery | VTTestTarget

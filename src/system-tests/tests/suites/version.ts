@@ -4,7 +4,7 @@ import { callZli } from '../utils/zli-utils';
 export const versionSuite = () => {
     describe('version suite', () => {
         test('2125: version', async () => {
-            await callZli(['--version'], 0, async (_err, _argv, output) => {
+            await callZli(['--version'], async (_err, _argv, output) => {
                 expect(output).toBe(version);
             });
         });

@@ -157,9 +157,9 @@ export class DigitalOceanKubeService {
      * @returns Information about the cluster
      */
     public async pollClusterTargetOnline(clusterTargetName: string): Promise<KubeClusterSummary> {
-        // Try 30 times with a delay of 10 seconds between each attempt.
+        // Try 60 times with a delay of 10 seconds between each attempt.
         const retrier = new Retrier({
-            limit: 30,
+            limit: 60,
             delay: 1000 * 10,
             stopRetryingIf: (reason: any) => reason instanceof ClusterTargetStatusPollError && reason.clusterSummary.status === TargetStatus.Error
         });

@@ -115,7 +115,6 @@ export const sshSuite = () => {
 
                 // Ensure we see the expected error message
                 expect(error).not.toEqual(undefined);
-                console.log(error)
                 const stdError = error.stderr;
                 expect(stdError).toMatch(new RegExp(`(You do not have permission to tunnel as targetUser: ${badTargetUser}. Current allowed users for you: ssm-user)`))
                 

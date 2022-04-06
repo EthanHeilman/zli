@@ -161,17 +161,14 @@ export const connectSuite = () => {
                 const shellConnectionAuthDetailsSpy = jest.spyOn(ConnectionHttpService.prototype, 'GetShellConnectionAuthDetails');
 
                 // Call "zli connect"
-                const connectPromise = callZli(['connect', `baduser@${doTarget.ssmTarget.name}`], 1);
+                const connectPromise = callZli(['connect', `baduser@${doTarget.ssmTarget.name}`]);
 
-                // TODO: This could be cleaned up in the future if we exit the zli
-                // with exit code = 0 in this case. Currently there is no way for us
-                // to distinguish between a normal closure (user types exit) and an
-                // abnormal websocket closure
-                jest.spyOn(CleanExitHandler, 'cleanExit').mockImplementationOnce(() => Promise.resolve());
+                const expectedErrorMessage = 'Expected error'
+                jest.spyOn(CleanExitHandler, 'cleanExit').mockImplementationOnce(() => {
+                    throw new Error(expectedErrorMessage)
+                });
 
-
-                // Wait for connect shell to cleanup
-                await connectPromise;
+                await expect(connectPromise).rejects.toThrow(expectedErrorMessage);
 
                 // Assert shell connection auth details has not been called
                 expect(shellConnectionAuthDetailsSpy).not.toHaveBeenCalled();
