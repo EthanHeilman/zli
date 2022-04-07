@@ -24,6 +24,7 @@ import { ssmTestTargetsToRun, vtTestTargetsToRun } from './targets-to-run';
 import { createDOTestClusters, createDOTestTargets, setupSystemTestApiKeys } from './system-test-setup';
 import { cleanupDOTestClusters, cleanupDOTestTargets, cleanupSystemTestApiKeys } from './system-test-cleanup';
 import { apiKeySuite } from './suites/rest-api/api-keys';
+import { organizationSuite } from './suites/rest-api/organization';
 import { environmentsSuite } from './suites/rest-api/environments';
 
 // Uses config name from ZLI_CONFIG_NAME environment variable (defaults to prod
@@ -189,6 +190,7 @@ if(VT_ENABLED) {
 
 if (API_ENABLED) {
     apiKeySuite();
+    organizationSuite();
     environmentsSuite()
 }
 

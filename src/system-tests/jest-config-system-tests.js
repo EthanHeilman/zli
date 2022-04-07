@@ -11,7 +11,8 @@ toExport = {
     },
     reporters: [
         "default"
-    ]
+    ],
+    "setupFilesAfterEnv": ["jest-extended/all"]
 };
 
 if (process.env.BZERO_PROD == 'true') {

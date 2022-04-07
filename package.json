@@ -91,6 +91,7 @@
     "got": "^11.8.0",
     "is-running": "^2.1.0",
     "jest-2-testrail": "^1.0.9",
+    "jest-extended": "^1.2.0",
     "libp2p-spdy": "^0.13.3",
     "lodash": "^4.17.20",
     "mixpanel": "^0.13.0",
