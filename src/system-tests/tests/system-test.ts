@@ -1,6 +1,5 @@
 import { envMap } from '../../cli-driver';
-import { DigitalOceanBZeroTarget, DigitalOceanDistroImage, DigitalOceanSSMTarget } from '../digital-ocean/digital-ocean-ssm-target.service.types';
-import { DigitalOceanSSMTargetService } from '../digital-ocean/digital-ocean-ssm-target-service';
+import { DigitalOceanBZeroTarget, DigitalOceanSSMTarget } from '../digital-ocean/digital-ocean-ssm-target.service.types';
 import { LoggerConfigService } from '../../services/logger/logger-config.service';
 import { Logger } from '../../services/logger/logger.service';
 import { ConfigService } from '../../services/config/config.service';
@@ -11,15 +10,12 @@ import { sshSuite } from './suites/ssh';
 import { listTargetsSuite } from './suites/list-targets';
 import { versionSuite } from './suites/version';
 import { DigitalOceanKubernetesClusterVersion, RegisteredDigitalOceanKubernetesCluster } from '../digital-ocean/digital-ocean-kube.service.types';
-import { DigitalOceanKubeService } from '../digital-ocean/digital-ocean-kube-service';
 import { kubeSuite } from './suites/kube';
 import { checkAllSettledPromise, initRegionalSSMTargetsTestConfig } from './utils/utils';
-import { ApiKeyHttpService } from '../../http-services/api-key/api-key.http-services';
 import { NewApiKeyResponse } from '../../../webshell-common-ts/http/v2/api-key/responses/new-api-key.responses';
 import { TestTarget } from './system-test.types';
 import { EnvironmentHttpService } from '../../http-services/environment/environment.http-services';
 import { vtSuite } from './suites/vt';
-import { PolicyHttpService } from '../../../src/http-services/policy/policy.http-services';
 import { ssmTestTargetsToRun, vtTestTargetsToRun } from './targets-to-run';
 import { createDOTestClusters, createDOTestTargets, setupSystemTestApiKeys } from './system-test-setup';
 import { cleanupDOTestClusters, cleanupDOTestTargets, cleanupSystemTestApiKeys } from './system-test-cleanup';
@@ -38,16 +34,11 @@ const configName = envMap.configName;
 export const loggerConfigService = new LoggerConfigService(configName, envMap.configDir);
 export const logger = new Logger(loggerConfigService, false, false, true);
 export const configService = new ConfigService(configName, logger, envMap.configDir);
-export const policyService = new PolicyHttpService(configService, logger);
 
-const oauthService = new OAuthService(configService, logger);
-export const environmentService = new EnvironmentHttpService(configService, logger);
-const doApiKey = process.env.DO_API_KEY;
+export const doApiKey = process.env.DO_API_KEY;
 if (!doApiKey) {
     throw new Error('Must set the DO_API_KEY environment variable');
 }
-export const doService = new DigitalOceanSSMTargetService(doApiKey, configService, logger);
-export const doKubeService = new DigitalOceanKubeService(doApiKey, configService, logger);
 
 export const bzeroAgentVersion = process.env.BZERO_AGENT_VERSION;
 if(! bzeroAgentVersion) {
@@ -91,7 +82,6 @@ if (bzeroKubeAgentImageName) {
 }
 
 // Create a new API Key to be used for cluster registration
-export const apiKeyService = new ApiKeyHttpService(configService, logger);
 let systemTestRESTApiKey: NewApiKeyResponse;
 
 // Create a new API key to be used for self-registration SSM test targets
@@ -132,6 +122,8 @@ export const systemTestPolicyTemplate = `system-test-$POLICY_TYPE-policy-${syste
 
 // Setup all droplets before running tests
 beforeAll(async () => {
+    const oauthService = new OAuthService(configService, logger);
+
     // Refresh the ID token because it is likely expired
     await oauthService.getIdTokenAndExitOnError();
 
@@ -139,6 +131,7 @@ beforeAll(async () => {
     [systemTestRESTApiKey, systemTestRegistrationApiKey] = await setupSystemTestApiKeys();
 
     // Create a new environment for this system test
+    const environmentService = new EnvironmentHttpService(configService, logger);
     const createEnvResponse = await environmentService.CreateEnvironment({
         name: systemTestEnvName,
         description: `Autocreated environment for system test: ${systemTestUniqueId}`,
@@ -165,6 +158,7 @@ afterAll(async () => {
     // Delete the environment for this system test
     // Note this must be called after our cleanup, so we do not have any targets in the environment
     if (systemTestEnvId) {
+        const environmentService = new EnvironmentHttpService(configService, logger);
         await environmentService.DeleteEnvironment(systemTestEnvId);
     }
 }, 60 * 1000);

@@ -1,7 +1,6 @@
 import { EnvironmentSummary } from '../../../../../webshell-common-ts/http/v2/environment/types/environment-summary.responses';
 import { CreateEnvironmentResponse } from '../../../../../webshell-common-ts/http/v2/environment/responses/create-environment.responses';
-import { configService, environmentService, systemTestUniqueId } from "../../system-test";
-import { HttpService } from '../../../../services/http/http.service';
+import { configService, logger, systemTestUniqueId } from "../../system-test";
 import { EnvironmentHttpService } from '../../../../http-services/environment/environment.http-services';
 
 export const environmentsSuite = () => {
@@ -9,7 +8,8 @@ export const environmentsSuite = () => {
         let createEnvResponse: CreateEnvironmentResponse = undefined;
         let envToExpect: EnvironmentSummary = undefined;
         const environmentName = `environment-test-suite-${systemTestUniqueId}`;
-
+        const environmentService = new EnvironmentHttpService(configService, logger);
+        
         afterAll(async () => {
             // If we have gotten a env response, always attempt to delete it
             if (createEnvResponse !== undefined) {

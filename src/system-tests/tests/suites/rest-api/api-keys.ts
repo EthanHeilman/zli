@@ -1,11 +1,13 @@
+import { ApiKeyHttpService } from '../../../../http-services/api-key/api-key.http-services';
 import { NewApiKeyResponse } from '../../../../../webshell-common-ts/http/v2/api-key/responses/new-api-key.responses';
 import { ApiKeySummary } from '../../../../../webshell-common-ts/http/v2/api-key/types/api-key-summary.types';
-import { apiKeyService, systemTestUniqueId } from '../../system-test';
+import { configService, logger, systemTestUniqueId } from '../../system-test';
 
 export const apiKeySuite = () => {
     describe('API Keys Suite', () => {
         const apiOnlyKeyName = `${systemTestUniqueId}-APIOnlyKey`;
         const registrationKeyName = `${systemTestUniqueId}-RegistrationKey`;
+        const apiKeyService = new ApiKeyHttpService(configService, logger);
 
         let expectedApiOnlyKeySummary: ApiKeySummary;
         let expectedRegistrationKeySummary: ApiKeySummary;

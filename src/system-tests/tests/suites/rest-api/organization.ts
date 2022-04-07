@@ -1,12 +1,14 @@
 import { OrganizationSummary } from '../../../../../webshell-common-ts/http/v2/organization/types/organization-summary.types';
 import { OrganizationHttpService } from '../../../../http-services/organization/organization.http-services';
-import { apiKeyService, configService, logger } from '../../system-test';
+import { configService, logger } from '../../system-test';
+import { ApiKeyHttpService } from '../../../../http-services/api-key/api-key.http-services';
 import 'jest-extended';
 
 export const organizationSuite = () => {
     describe('Organization Suite', () => {
         const organizationService = new OrganizationHttpService(configService, logger);
         const defaultRegApiKeyName = 'Default Organization Registration Key';
+        const apiKeyService = new ApiKeyHttpService(configService, logger);
 
         test('2117: Get users organization', async () => {
             const userOrg = await organizationService.GetUserOrganization();

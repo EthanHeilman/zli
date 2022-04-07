@@ -1,5 +1,5 @@
 import { DigitalOceanDropletSize, DigitalOceanRegion } from "../digital-ocean/digital-ocean.types";
-import { allTargets, apiKeyService, bctlQuickstartVersion, bzeroAgentBranch, bzeroAgentVersion, bzeroKubeAgentImageName, clusterVersionsToRun, configService, digitalOceanRegistry, doKubeService, doService, goVersion, logger, systemTestEnvId, systemTestEnvName, systemTestRegistrationApiKey, systemTestTags, systemTestUniqueId, testClusters, testTargets } from "./system-test";
+import { allTargets,  bctlQuickstartVersion, bzeroAgentBranch, bzeroAgentVersion, bzeroKubeAgentImageName, clusterVersionsToRun, configService, digitalOceanRegistry, doApiKey, goVersion, logger, systemTestEnvId, systemTestEnvName, systemTestRegistrationApiKey, systemTestTags, systemTestUniqueId, testClusters, testTargets } from "./system-test";
 import { checkAllSettledPromise, stripTrailingSlash } from "./utils/utils";
 import * as k8s from '@kubernetes/client-node';
 import { ClusterTargetStatusPollError, DigitalOceanKubernetesClusterVersion, RegisteredDigitalOceanKubernetesCluster } from "../digital-ocean/digital-ocean-kube.service.types";
@@ -12,6 +12,9 @@ import { randomAlphaNumericString } from "../../utils/utils";
 import { getAnsibleAutodiscoveryScript, getAutodiscoveryScript } from "../../http-services/auto-discovery-script/auto-discovery-script.http-services";
 import { ScriptTargetNameOption } from "../../../webshell-common-ts/http/v2/autodiscovery-script/types/script-target-name-option.types";
 import { addRepo, install, MultiStringValue, SingleStringValue } from "./utils/helm/helm-utils";
+import { ApiKeyHttpService } from '../../http-services/api-key/api-key.http-services';
+import { DigitalOceanKubeService } from '../digital-ocean/digital-ocean-kube-service';
+import { DigitalOceanSSMTargetService } from "../digital-ocean/digital-ocean-ssm-target-service";
 
 // Droplet size to create
 const vtDropletSize = DigitalOceanDropletSize.CPU_1_MEM_1GB;
@@ -24,6 +27,7 @@ const ssmDropletSize =  DigitalOceanDropletSize.CPU_1_MEM_1GB;
  */
 export async function setupSystemTestApiKeys() {
     const restApiKeyName = `system-test-${systemTestUniqueId}-api-key`;
+    const apiKeyService = new ApiKeyHttpService(configService, logger);
     const systemTestRESTApiKey = await apiKeyService.CreateNewApiKey({ name: restApiKeyName, isRegistrationKey: false });
     logger.info('Created REST api key ' + systemTestRESTApiKey.apiKeyDetails.id);
 
@@ -49,6 +53,7 @@ export async function createDOTestClusters(KUBE_ENABLED: boolean) {
     // Create a cluster for various versions
     const createCluster = async (version: DigitalOceanKubernetesClusterVersion) => {
         const clusterName = `system-test-${systemTestUniqueId}`;
+        const doKubeService = new DigitalOceanKubeService(doApiKey, configService, logger);
         const cluster = await doKubeService.createDigitalOceanKubeCluster({
             clusterName: clusterName,
             clusterRegion: DigitalOceanRegion.NewYork1,
@@ -190,6 +195,8 @@ export async function createDOTestClusters(KUBE_ENABLED: boolean) {
  * Helper function to create our digital ocean test droplets
  */
 export async function createDOTestTargets() {
+    const doService = new DigitalOceanSSMTargetService(doApiKey, configService, logger);
+    
     // Create a droplet for various types of test targets
     const createDroplet = async (testTarget: TestTarget) => {
         const targetName = `st-${systemTestUniqueId}-${getDOImageName(testTarget.dropletImage)}-${testTarget.installType}-${randomAlphaNumericString(15)}`;
@@ -355,10 +362,10 @@ sudo ansible-playbook playbook.yml
 `
     
     return String.raw`#!/bin/bash
-    set -Ee
-    ${installBlock}
-    ${ansibleInstall}
-    `;
+set -Ee
+${installBlock}
+${ansibleInstall}
+`;
 }
 
 /**

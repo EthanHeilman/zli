@@ -1,4 +1,4 @@
-import { policyService, systemTestEnvId, systemTestEnvName, systemTestPolicyTemplate, systemTestUniqueId, testTargets } from '../system-test';
+import { systemTestEnvId, systemTestEnvName, systemTestPolicyTemplate, systemTestUniqueId, testTargets } from '../system-test';
 import { callZli } from '../utils/zli-utils';
 import { DbTargetService } from '..../../../http-services/db-target/db-target.http-service';
 import got from 'got/dist/source';
@@ -14,13 +14,16 @@ import { Subject } from '../../../../src/services/v1/policy/policy.types';
 import { ConnectionEventType } from '../../../../webshell-common-ts/http/v2/event/types/connection-event.types';
 import { vtTestTargetsToRun } from '../targets-to-run';
 import { TestTarget } from '../system-test.types';
+import { PolicyHttpService } from '../../../http-services/policy/policy.http-services';
 
 const { Client } = require('pg');
 
 export const vtSuite = () => {
     describe('vt suite', () => {
+        let policyService: PolicyHttpService;
+        let testUtils: TestUtils;
+
         let testPassed = false;
-        const testUtils = new TestUtils(configService, logger, loggerConfigService);
 
         const localDbPort = 6100;
         const localWebPort = 6200;
@@ -28,6 +31,10 @@ export const vtSuite = () => {
 
         // Set up the policy before all the tests
         beforeAll(async () => {
+            // Construct all http services needed to run tests
+            policyService = new PolicyHttpService(configService, logger);
+            testUtils = new TestUtils(configService, logger, loggerConfigService);
+
             const currentUser: Subject = {
                 id: configService.me().id,
                 type: SubjectType.User

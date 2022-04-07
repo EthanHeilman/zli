@@ -3,7 +3,7 @@ import fs from 'fs';
 import { promisify } from 'util';
 import { exec } from 'child_process';
 import { PolicyQueryHttpService } from '../../../http-services/policy-query/policy-query.http-services';
-import { configService, policyService, systemTestEnvId, systemTestPolicyTemplate, systemTestUniqueId, testTargets } from '../system-test';
+import { configService, logger, systemTestEnvId, systemTestPolicyTemplate, systemTestUniqueId, testTargets } from '../system-test';
 import { callZli } from '../utils/zli-utils';
 import { removeIfExists } from '../../../utils/utils';
 import { DigitalOceanSSMTarget } from '../../digital-ocean/digital-ocean-ssm-target.service.types';
@@ -14,9 +14,12 @@ import { Environment } from '../../../../webshell-common-ts/http/v2/policy/types
 import { TestTarget } from '../system-test.types';
 import { ssmTestTargetsToRun } from '../targets-to-run';
 import { cleanupTargetConnectPolicies } from '../system-test-cleanup';
+import { PolicyHttpService } from '../../../http-services/policy/policy.http-services';
 
 export const sshSuite = () => {
     describe('ssh suite', () => {
+        let policyService: PolicyHttpService;
+
         const targetUser = 'ssm-user';
         const badTargetUser = 'bad-user'
         const uniqueUser = `user-${systemTestUniqueId}`;
@@ -28,6 +31,11 @@ export const sshSuite = () => {
         const bzConfigFile = path.join(
             process.env.HOME, '.ssh', 'test-config-bz'
         );
+
+        beforeAll(() => {
+            // Construct all http services needed to run tests
+            policyService = new PolicyHttpService(configService, logger);
+        });
 
         // Cleanup all policy after the tests
         afterAll(async () => {
