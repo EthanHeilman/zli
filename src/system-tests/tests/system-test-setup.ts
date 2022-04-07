@@ -6,10 +6,10 @@ import { ClusterTargetStatusPollError, DigitalOceanKubernetesClusterVersion, Reg
 import { promisify } from "util";
 import fs from 'fs';
 import { KubeBctlNamespace, KubeTestTargetGroups, KubeTestUserName } from "./suites/kube";
-import { SSMTestTargetSelfRegistrationAutoDiscovery, TestTarget, VTTestTarget } from "./system-test.types";
+import { SSMTestTargetAnsibleAutoDiscovery, SSMTestTargetSelfRegistrationAutoDiscovery, TestTarget, VTTestTarget } from "./system-test.types";
 import { BzeroTargetStatusPollError, DigitalOceanBZeroTarget, DigitalOceanSSMTarget, getDOImageName, getPackageManagerType, SsmTargetStatusPollError } from "../digital-ocean/digital-ocean-ssm-target.service.types";
 import { randomAlphaNumericString } from "../../utils/utils";
-import { getAutodiscoveryScript } from "../../http-services/auto-discovery-script/auto-discovery-script.http-services";
+import { getAnsibleAutodiscoveryScript, getAutodiscoveryScript } from "../../http-services/auto-discovery-script/auto-discovery-script.http-services";
 import { ScriptTargetNameOption } from "../../../webshell-common-ts/http/v2/autodiscovery-script/types/script-target-name-option.types";
 import { addRepo, install, MultiStringValue, SingleStringValue } from "./utils/helm/helm-utils";
 
@@ -202,6 +202,11 @@ export async function createDOTestTargets() {
             userDataScript = await getAutodiscoveryScript(logger, configService, systemTestEnvId, ScriptTargetNameOption.DigitalOceanMetadata, 'staging');
             dropletSizeToCreate = ssmDropletSize;
             break;
+        case 'as': 
+            // Ansible script expects envId not env name
+            userDataScript = await getAnsibleUserDataScript(testTarget, systemTestEnvId, 'staging')
+            dropletSizeToCreate = ssmDropletSize;
+            break;
         case 'pm':
             userDataScript = getPackageManagerRegistrationScript('bzero-ssm-agent', testTarget, systemTestEnvName, systemTestRegistrationApiKey.secret);
             dropletSizeToCreate = ssmDropletSize;
@@ -216,7 +221,7 @@ export async function createDOTestTargets() {
             return _exhaustiveCheck;
         }
 
-        const droplet = await doService.createDigitalOceanSSMTarget({
+        const droplet = await doService.createDigitalOceanTarget({
             targetName: targetName,
             dropletParameters: {
                 dropletName: targetName,
@@ -228,7 +233,7 @@ export async function createDOTestTargets() {
         }, userDataScript);
 
         // Add the digital ocean droplet to test targets mapping so that we can clean it up in afterAll
-        if(testTarget.installType === 'pm' || testTarget.installType == 'ad') {
+        if(testTarget.installType === 'pm' || testTarget.installType == 'ad' || testTarget.installType == 'as' ) {
             const digitalOceanSsmTarget: DigitalOceanSSMTarget = { type: 'ssm', droplet: droplet, ssmTarget: undefined};
             testTargets.set(testTarget, digitalOceanSsmTarget);
 
@@ -306,12 +311,63 @@ export async function createDOTestTargets() {
 }
 
 /**
+ * Helper function to build a user data script to install via ansible
+ * @param environmentId EnvironmentId to use when registering target
+ * @param agentVersion Agent version to use
+ * @returns User data script to run on droplet
+ */
+async function getAnsibleUserDataScript(testTarget: SSMTestTargetAnsibleAutoDiscovery, environmentId: string, agentVersion: string): Promise<string> {
+    // First get our ansible user data script
+    const ansibleScript = await getAnsibleAutodiscoveryScript(logger, configService, environmentId, agentVersion);
+
+    const packageManager = getPackageManagerType(testTarget.dropletImage);
+
+    let installBlock: string;
+    switch (packageManager) {
+        case 'apt':
+            installBlock = String.raw`sudo apt update -y
+sudo apt install ansible -y
+sudo mkdir -p /etc/ansible/
+sudo touch /etc/ansible/hosts
+`
+            break;
+        case 'yum':
+            // Ref: https://www.ktexperts.com/how-to-install-ansible-in-amazon-linux-machine/
+            installBlock = String.raw`sudo yum update -y
+wget https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
+sudo yum install epel-release-latest-7.noarch.rpm -y
+sudo yum update -y
+sudo yum install ansible -y
+`
+            break;
+        default:
+            const _exhaustiveCheck: never = packageManager;
+            return _exhaustiveCheck;
+        }
+
+        // Add localhost ansible_connection=local to /etc/ansible/hosts to ensure we match the `hosts: all`  
+        // Then call ansible-playbook
+    const ansibleInstall = String.raw`cat >playbook.yml <<EOL
+${ansibleScript}
+EOL
+echo "localhost ansible_connection=local" | sudo tee /etc/ansible/hosts
+sudo ansible-playbook playbook.yml
+`
+    
+    return String.raw`#!/bin/bash
+    set -Ee
+    ${installBlock}
+    ${ansibleInstall}
+    `;
+}
+
+/**
  * Helper function to get a package manager (yum/apt) install script to pass to user data for a given test target
  * @param packageName Package name to use (bzero-beta vs bzero-ssm-agent)
  * @param testTarget Test target itself
  * @param envName Environment name used in bastion 
  * @param registrationApiKeySecret API key used to activate these agents
- * @returns 
+ * @returns User data script to run on droplet
  */
 function getPackageManagerRegistrationScript(packageName: string, testTarget: SSMTestTargetSelfRegistrationAutoDiscovery | VTTestTarget, envName: string, registrationApiKeySecret: string): string {
     let installBlock: string;

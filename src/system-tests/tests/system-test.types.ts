@@ -14,6 +14,17 @@ export type SSMTestTargetAutoDiscovery = BaseTarget & {
 }
 
 /**
+ * SSMTestTargetAutoDiscovery represents an SSM test target that should be
+ * registered using the ansible script retrieved from the backend.
+ */
+ export type SSMTestTargetAnsibleAutoDiscovery = BaseTarget & {
+    installType: 'as';
+    dropletImage: DigitalOceanDistroImage;
+    doRegion: DigitalOceanRegion;
+    awsRegion: string;
+}
+
+/**
  * SSMTestTargetSelfRegistrationAutoDiscovery represents an SSM test target that
  * should be registered using the new, self-registration flow built into the
  * agent itself.
@@ -47,4 +58,4 @@ interface BaseTarget {
     badWebCaseId?: string; // For out web negation tests
 }
 
-export type TestTarget = SSMTestTargetAutoDiscovery | SSMTestTargetSelfRegistrationAutoDiscovery | VTTestTarget
+export type TestTarget = SSMTestTargetAutoDiscovery | SSMTestTargetSelfRegistrationAutoDiscovery | SSMTestTargetAnsibleAutoDiscovery | VTTestTarget 

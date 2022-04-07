@@ -9,13 +9,16 @@ const defaultDigitalOceanRegion = convertAwsRegionToDigitalOceanRegion(defaultAw
 // new droplet.
 export const ssmTestTargetsToRun: TestTarget[] = [
     // old autodiscovery script (all-in-bash)
-    { installType: 'ad', dropletImage: DigitalOceanDistroImage.AmazonLinux2, doRegion: defaultDigitalOceanRegion, awsRegion: defaultAwsRegion, connectCaseId: '2120', badConnectCaseId: '1234', sshCaseId: '2147', badSshCaseId: '1234'},
+    // { installType: 'ad', dropletImage: DigitalOceanDistroImage.AmazonLinux2, doRegion: defaultDigitalOceanRegion, awsRegion: defaultAwsRegion, connectCaseId: '2120', badConnectCaseId: '1234', sshCaseId: '2147', badSshCaseId: '1234'},
     // { type: 'autodiscovery', dropletImage: DigitalOceanDistroImage.CentOS8 },
     // { installType: 'ad', dropletImage: DigitalOceanDistroImage.Debian11, doRegion: defaultDigitalOceanRegion, awsRegion: defaultAwsRegion, connectCaseId: '2121', sshCaseId: '2148' },
     // { installType: 'ad', dropletImage: DigitalOceanDistroImage.Ubuntu20, doRegion: defaultDigitalOceanRegion, awsRegion: defaultAwsRegion, connectCaseId: '2122', sshCaseId: '2149' },
     // // new autodiscovery script (self-registration)
     // { installType: 'pm', dropletImage: DigitalOceanDistroImage.Debian11, doRegion: defaultDigitalOceanRegion, awsRegion: defaultAwsRegion, connectCaseId: '2123', sshCaseId: '2150' },
     // { installType: 'pm', dropletImage: DigitalOceanDistroImage.AmazonLinux2, doRegion: defaultDigitalOceanRegion, awsRegion: defaultAwsRegion, connectCaseId: '2124', sshCaseId: '2151' },
+    // Ansible ssm target test
+    { installType: 'as', dropletImage: DigitalOceanDistroImage.Debian11, doRegion: defaultDigitalOceanRegion, awsRegion: defaultAwsRegion, connectCaseId: '2124', sshCaseId: '2151' },
+    { installType: 'as', dropletImage: DigitalOceanDistroImage.AmazonLinux2, doRegion: defaultDigitalOceanRegion, awsRegion: defaultAwsRegion, connectCaseId: '2124', sshCaseId: '2151' },
 ];
 
 // Different types of vt targets to create for each type of operating system
