@@ -1,10 +1,15 @@
 import { ApiKeyHttpService } from '../../../../http-services/api-key/api-key.http-services';
 import { NewApiKeyResponse } from '../../../../../webshell-common-ts/http/v2/api-key/responses/new-api-key.responses';
 import { ApiKeySummary } from '../../../../../webshell-common-ts/http/v2/api-key/types/api-key-summary.types';
-import { configService, logger, systemTestUniqueId } from '../../system-test';
+import { API_ENABLED, configService, logger, systemTestRegistrationApiKey, systemTestUniqueId } from '../../system-test';
 
 export const apiKeySuite = () => {
+    if (!API_ENABLED) {
+        logger.info('Skipping api key suite since API_ENABLED is not enabled');
+        return;
+    }
     describe('API Keys Suite', () => {
+        console.log(`HERE API ${systemTestRegistrationApiKey}`)
         const apiOnlyKeyName = `${systemTestUniqueId}-APIOnlyKey`;
         const registrationKeyName = `${systemTestUniqueId}-RegistrationKey`;
         const apiKeyService = new ApiKeyHttpService(configService, logger);

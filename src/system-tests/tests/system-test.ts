@@ -5,17 +5,12 @@ import { Logger } from '../../services/logger/logger.service';
 import { ConfigService } from '../../services/config/config.service';
 import { OAuthService } from '../../services/oauth/oauth.service';
 import { randomAlphaNumericString } from '../../utils/utils';
-import { connectSuite } from './suites/connect';
-import { sshSuite } from './suites/ssh';
-import { listTargetsSuite } from './suites/list-targets';
 import { versionSuite } from './suites/version';
 import { DigitalOceanKubernetesClusterVersion, RegisteredDigitalOceanKubernetesCluster } from '../digital-ocean/digital-ocean-kube.service.types';
-import { kubeSuite } from './suites/kube';
 import { checkAllSettledPromise, initRegionalSSMTargetsTestConfig } from './utils/utils';
 import { NewApiKeyResponse } from '../../../webshell-common-ts/http/v2/api-key/responses/new-api-key.responses';
 import { TestTarget } from './system-test.types';
 import { EnvironmentHttpService } from '../../http-services/environment/environment.http-services';
-import { vtSuite } from './suites/vt';
 import { ssmTestTargetsToRun, vtTestTargetsToRun } from './targets-to-run';
 import { createDOTestClusters, createDOTestTargets, setupSystemTestApiKeys } from './system-test-setup';
 import { cleanupDOTestClusters, cleanupDOTestTargets, cleanupSystemTestApiKeys } from './system-test-cleanup';
@@ -53,7 +48,7 @@ if (! bctlQuickstartVersion) {
 const KUBE_ENABLED = process.env.KUBE_ENABLED ? (process.env.KUBE_ENABLED === 'true') : true;
 const VT_ENABLED = process.env.VT_ENABLED ? (process.env.VT_ENABLED === 'true') : true;
 const SSM_ENABLED =  process.env.SSM_ENABLED ? (process.env.SSM_ENABLED === 'true') : true;
-const API_ENABLED = process.env.API_ENABLED ? (process.env.API_ENABLED === 'true') : true;
+export const API_ENABLED = process.env.API_ENABLED ? (process.env.API_ENABLED === 'true') : true;
 
 
 export const systemTestTags = process.env.SYSTEM_TEST_TAGS ? process.env.SYSTEM_TEST_TAGS.split(',').filter(t => t != '') : ['system-tests'];
@@ -120,73 +115,100 @@ export const systemTestEnvName = `system-test-${systemTestUniqueId}-custom-env`;
 export let systemTestEnvId: string = undefined;
 export const systemTestPolicyTemplate = `system-test-$POLICY_TYPE-policy-${systemTestUniqueId}`;
 
-// Setup all droplets before running tests
-beforeAll(async () => {
-    const oauthService = new OAuthService(configService, logger);
 
-    // Refresh the ID token because it is likely expired
-    await oauthService.getIdTokenAndExitOnError();
+// Create our main describe suite
+describe('API Keys Suite', () => {
 
-    // Create a new api key that can be used for system tests
-    [systemTestRESTApiKey, systemTestRegistrationApiKey] = await setupSystemTestApiKeys();
+    /** <----------------Pre test work------------------> */
+    beforeAll(async () => {
+        const oauthService = new OAuthService(configService, logger);
 
-    // Create a new environment for this system test
-    const environmentService = new EnvironmentHttpService(configService, logger);
-    const createEnvResponse = await environmentService.CreateEnvironment({
-        name: systemTestEnvName,
-        description: `Autocreated environment for system test: ${systemTestUniqueId}`,
-        offlineCleanupTimeoutHours: 1
-    });
-    systemTestEnvId = createEnvResponse.id;
+        // Refresh the ID token because it is likely expired
+        await oauthService.getIdTokenAndExitOnError();
 
-    await checkAllSettledPromise(Promise.allSettled([
-        createDOTestTargets(),  
-        createDOTestClusters(KUBE_ENABLED)
-    ]));
-}, 20 * 60 * 1000);
+        // Create a new api key that can be used for system tests
+        [systemTestRESTApiKey, systemTestRegistrationApiKey] = await setupSystemTestApiKeys();
 
-// Cleanup droplets after running all tests
-afterAll(async () => {
-    // Delete the API key created for system tests
-    await cleanupSystemTestApiKeys(systemTestRESTApiKey, systemTestRegistrationApiKey);
-
-    await checkAllSettledPromise(Promise.allSettled([
-        cleanupDOTestTargets(),
-        cleanupDOTestClusters()
-    ]));
-
-    // Delete the environment for this system test
-    // Note this must be called after our cleanup, so we do not have any targets in the environment
-    if (systemTestEnvId) {
+        // Create a new environment for this system test
         const environmentService = new EnvironmentHttpService(configService, logger);
-        await environmentService.DeleteEnvironment(systemTestEnvId);
-    }
-}, 60 * 1000);
+        const createEnvResponse = await environmentService.CreateEnvironment({
+            name: systemTestEnvName,
+            description: `Autocreated environment for system test: ${systemTestUniqueId}`,
+            offlineCleanupTimeoutHours: 1
+        });
+        systemTestEnvId = createEnvResponse.id;
+
+        await checkAllSettledPromise(Promise.allSettled([
+            createDOTestTargets(),  
+            createDOTestClusters(KUBE_ENABLED)
+        ]));
+    }, 20 * 60 * 1000);
+
+    /** <----------------API_ENABLED------------------> */
+
+    test.concurrent('apiKeySuite', () => {
+        apiKeySuite();
+    })
+
+    test.concurrent('organizationSuite', () => {
+        organizationSuite();
+    })
+
+    test.concurrent('environmentsSuite', () => {
+        environmentsSuite();
+    })
+
+    /** <----------------------------------> */
+
+    // Always run the version suite
+    test.concurrent('versionSuite', () => {
+        versionSuite();
+    })
+
+
+    /** <----------------Post test work------------------> */
+    afterAll(async () => {
+        // Delete the API key created for system tests
+        await cleanupSystemTestApiKeys(systemTestRESTApiKey, systemTestRegistrationApiKey);
+
+        await checkAllSettledPromise(Promise.allSettled([
+            cleanupDOTestTargets(),
+            cleanupDOTestClusters()
+        ]));
+
+        // Delete the environment for this system test
+        // Note this must be called after our cleanup, so we do not have any targets in the environment
+        if (systemTestEnvId) {
+            const environmentService = new EnvironmentHttpService(configService, logger);
+            await environmentService.DeleteEnvironment(systemTestEnvId);
+        }
+    }, 60 * 1000);
+});
 
 // Call list target suite anytime a target test is called 
-if (SSM_ENABLED || KUBE_ENABLED || VT_ENABLED) {
-    listTargetsSuite();
-}
+// if (SSM_ENABLED || KUBE_ENABLED || VT_ENABLED) {
+//     listTargetsSuite();
+// }
 
-// Call various test suites
-if(SSM_ENABLED) {
-    connectSuite();
-    sshSuite();
-}
+// // Call various test suites
+// if(SSM_ENABLED) {
+//     connectSuite();
+//     sshSuite();
+// }
 
-if(KUBE_ENABLED) {
-    kubeSuite();
-}
+// if(KUBE_ENABLED) {
+//     kubeSuite();
+// }
 
-if(VT_ENABLED) {
-    vtSuite();
-}
+// if(VT_ENABLED) {
+//     vtSuite();
+// }
 
-if (API_ENABLED) {
-    apiKeySuite();
-    organizationSuite();
-    environmentsSuite()
-}
+// if (API_ENABLED) {
+//     apiKeySuite();
+//     organizationSuite();
+//     environmentsSuite()
+// }
 
-// Always run the version suite
-versionSuite()
+// // Always run the version suite
+// versionSuite()

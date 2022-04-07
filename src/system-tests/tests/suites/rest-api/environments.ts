@@ -1,10 +1,16 @@
 import { EnvironmentSummary } from '../../../../../webshell-common-ts/http/v2/environment/types/environment-summary.responses';
 import { CreateEnvironmentResponse } from '../../../../../webshell-common-ts/http/v2/environment/responses/create-environment.responses';
-import { configService, logger, systemTestUniqueId } from "../../system-test";
+import { API_ENABLED, configService, logger, systemTestUniqueId } from "../../system-test";
 import { EnvironmentHttpService } from '../../../../http-services/environment/environment.http-services';
 
 export const environmentsSuite = () => {
+    if (!API_ENABLED) {
+        logger.info('Skipping api key suite since API_ENABLED is not enabled');
+        return;
+    }
+    
     describe('Environments Suite', () => {
+        console.log("HERE ENV ")
         let createEnvResponse: CreateEnvironmentResponse = undefined;
         let envToExpect: EnvironmentSummary = undefined;
         const environmentName = `environment-test-suite-${systemTestUniqueId}`;

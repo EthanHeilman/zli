@@ -1,11 +1,17 @@
 import { OrganizationSummary } from '../../../../../webshell-common-ts/http/v2/organization/types/organization-summary.types';
 import { OrganizationHttpService } from '../../../../http-services/organization/organization.http-services';
-import { configService, logger } from '../../system-test';
+import { API_ENABLED, configService, logger } from '../../system-test';
 import { ApiKeyHttpService } from '../../../../http-services/api-key/api-key.http-services';
 import 'jest-extended';
 
 export const organizationSuite = () => {
+    if (!API_ENABLED) {
+        logger.info('Skipping api key suite since API_ENABLED is not enabled');
+        return;
+    }
+    
     describe('Organization Suite', () => {
+        console.log("HERE ORG ")
         const organizationService = new OrganizationHttpService(configService, logger);
         const defaultRegApiKeyName = 'Default Organization Registration Key';
         const apiKeyService = new ApiKeyHttpService(configService, logger);
