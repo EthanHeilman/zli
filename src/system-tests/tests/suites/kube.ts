@@ -112,7 +112,7 @@ export const kubeSuite = () => {
             await delay(1000 * 3 * 60)
 
             testPassed = true;
-        }, 30 * 1000 + 1000 * 3 * 60);
+        }, (180 * 1000) + (1000 * 3 * 60)); // 180s max for all the kube events + connection, and 3m for the test to remain online
 
 
         test.each(clusterVersionsToRun)('2160: zli connect - Kube REST API plugin - get namespaces - %p', async (clusterVersion) => {
