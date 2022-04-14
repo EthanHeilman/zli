@@ -33,7 +33,7 @@ export async function buildSshConfigStrings(configService: ConfigService, proces
     }
 
     const hostnameToken = await getHostnameToken(logger);
-    const proxyCommand = `ProxyCommand ${processName} ssh-proxy ${configNameArg} -s ${prefix}${hostnameToken} %r %p ${keyPath}`;
+    const proxyCommand = `ProxyCommand ${processName} ssh-proxy ${configNameArg} -s ${hostnameToken} %r %p ${keyPath}`;
 
     return { identityFile, proxyCommand, prefix };
 }
