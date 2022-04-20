@@ -1,7 +1,7 @@
 import { exec } from 'child_process';
 import { promisify } from 'util';
-import { ConfigService } from '../services/config/config.service';
-import { Logger } from '../services/logger/logger.service';
+import { ConfigService } from '../../services/config/config.service';
+import { Logger } from '../../services/logger/logger.service';
 
 export async function sshProxyConfigHandler(configService: ConfigService, processName: string, logger: Logger) {
 
