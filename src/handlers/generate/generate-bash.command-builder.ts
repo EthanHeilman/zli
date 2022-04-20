@@ -8,7 +8,7 @@ export type generateBashArgs = { environment: string } &
 { agentVersion: string } &
 { outputFile: string }
 
-export function generateBashCmdBuilder(processArgs : string[], yargs: yargs.Argv<{}>): yargs.Argv<generateBashArgs> {
+export function generateBashCmdBuilder(yargs: yargs.Argv<{}>): yargs.Argv<generateBashArgs> {
     return yargs
         .option(
             'environment',
@@ -48,6 +48,6 @@ export function generateBashCmdBuilder(processArgs : string[], yargs: yargs.Argv
                 describe: 'Write the script to a file'
             }
         )
-        .example('generate-bash --targetNameScheme time', '')
-        .example('generate-bash -o script.sh', 'Writes the script to a file "script.sh" in the current directory');
+        .example('generate bash --targetNameScheme time', '')
+        .example('generate bash -o script.sh', 'Writes the script to a file "script.sh" in the current directory');
 }
