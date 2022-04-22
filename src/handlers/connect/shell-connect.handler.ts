@@ -105,7 +105,7 @@ export async function shellConnectHandler(
 
         // agentVersion will be null if this isn't a valid version (i.e if its "$AGENT_VERSION" string during development)
         const agentVersion = parse(bzeroTarget.agentVersion);
-        if(agentVersion && lt(agentVersion, new SemVer('5.0.0'))) {
+        if(configService.getConfigName() == 'prod' && agentVersion && lt(agentVersion, new SemVer('5.0.0'))) {
             logger.error(`Connecting to Bzero Target is only supported on agent versions >= 5.0.0. Agent version is ${agentVersion}`);
             return 1;
         }
