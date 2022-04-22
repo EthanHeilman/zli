@@ -33,6 +33,7 @@ import { ProxyPolicySummary } from '../../webshell-common-ts/http/v2/policy/prox
 import { Group } from '../../webshell-common-ts/http/v2/policy/types/group.types';
 import { ConfigService } from '../services/config/config.service';
 import { listDbTargets, listWebTargets } from './list-utils';
+import { BzeroAgentSummary } from '../../webshell-common-ts/http/v2/target/bzero/types/bzero-agent-summary.types';
 
 
 // case insensitive substring search, 'find targetString in searchString'
@@ -783,6 +784,7 @@ export async function disambiguateTarget(
     dynamicConfigs: Promise<TargetSummary[]>,
     ssmTargets: Promise<TargetSummary[]>,
     clusterTargets: Promise<KubeClusterSummary[]>,
+    bzeroTargets: Promise<BzeroAgentSummary[]>,
     envs: Promise<EnvironmentSummary[]>,
     configService: ConfigService): Promise<ParsedTargetString> {
 
@@ -802,7 +804,7 @@ export async function disambiguateTarget(
     zippedShellTargetsUnformatted = filter(zippedShellTargetsUnformatted, t => t.type !== TargetType.SsmTarget || (t.status !== TargetStatus.Error && t.status !== TargetStatus.Terminated));
 
     // Now cast everything to a common target info object
-    const zippedTargetsShell: CommonTargetInfo[] = [];
+    const zippedTargetsSsmShell: CommonTargetInfo[] = [];
     zippedShellTargetsUnformatted.forEach((targetSummary: TargetSummary) => {
         const newVal: CommonTargetInfo = {
             name: targetSummary.name,
@@ -814,7 +816,7 @@ export async function disambiguateTarget(
             region: targetSummary.region,
             agentVersion: targetSummary.agentVersion
         };
-        zippedTargetsShell.push(newVal);
+        zippedTargetsSsmShell.push(newVal);
     });
 
     // Now create similar lists for the other types of targets, db, web
@@ -866,8 +868,26 @@ export async function disambiguateTarget(
         zippedTargetsKube.push(newVal);
     });
 
+    // Now cast everything to a common target info object
+
+    const zippedTargetsBzero: CommonTargetInfo[] = [];
+    const awaitedBzeroTargets = await bzeroTargets;
+    awaitedBzeroTargets.forEach((targetSummary: BzeroAgentSummary) => {
+        const newVal: CommonTargetInfo = {
+            name: targetSummary.name,
+            agentPublicKey: targetSummary.agentPublicKey,
+            id: targetSummary.id,
+            type: TargetType.Bzero,
+            status: targetSummary.status,
+            environmentId: targetSummary.environmentId,
+            region: targetSummary.region,
+            agentVersion: targetSummary.agentVersion
+        };
+        zippedTargetsBzero.push(newVal);
+    });
+
     // Now concat all the types of targets
-    let zippedTargets = concat (zippedTargetsShell, zippedTargetsDb, zippedTargetsWeb, zippedTargetsKube);
+    let zippedTargets = concat (zippedTargetsSsmShell, zippedTargetsDb, zippedTargetsWeb, zippedTargetsKube, zippedTargetsBzero);
 
     if(!! targetTypeString) {
         const targetType = parseTargetType(targetTypeString);
@@ -957,6 +977,9 @@ export function randomAlphaNumericString(length: number) : string {
 }
 
 
+/**
+ * Converts a SsmTargetSummary to the common TargetSummary interface so it can be used with other targets
+ */
 export function ssmTargetToTargetSummary(ssm: SsmTargetSummary): TargetSummary {
     return {
         type: TargetType.SsmTarget,
@@ -971,6 +994,9 @@ export function ssmTargetToTargetSummary(ssm: SsmTargetSummary): TargetSummary {
     };
 }
 
+/**
+ * Converts a DynamicAccessConfigSummary to the common TargetSummary interface so it can be used with other targets
+ */
 export function dynamicConfigToTargetSummary(config: DynamicAccessConfigSummary): TargetSummary {
     return {
         type: TargetType.DynamicAccessConfig,
@@ -984,6 +1010,24 @@ export function dynamicConfigToTargetSummary(config: DynamicAccessConfigSummary)
         agentPublicKey: 'N/A'
     };
 }
+
+/**
+ * Converts a BzeroAgentSummary to the common TargetSummary interface so it can be used with other targets
+ */
+export function bzeroTargetToTargetSummary(bzeroTarget: BzeroAgentSummary): TargetSummary {
+    return {
+        type: TargetType.Bzero,
+        agentPublicKey: bzeroTarget.agentPublicKey,
+        id: bzeroTarget.id,
+        name: bzeroTarget.name,
+        status: parseTargetStatus(bzeroTarget.status.toString()),
+        environmentId: bzeroTarget.environmentId,
+        targetUsers: bzeroTarget.allowedTargetUsers.map(u => u.userName),
+        agentVersion: bzeroTarget.agentVersion,
+        region: bzeroTarget.region
+    };
+}
+
 /**
  * handle npm install edge case
  * note: node will also show up when running 'npm run start -- ssh-proxy-config'

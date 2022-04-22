@@ -7,7 +7,7 @@ import { SsmTargetHttpService } from '../../http-services/targets/ssm/ssm-target
 import { SsmTargetSummary } from '../../../webshell-common-ts/http/v2/target/ssm/types/ssm-target-summary.types';
 import { TargetStatus } from '../../../webshell-common-ts/http/v2/target/types/targetStatus.types';
 import { BzeroAgentSummary } from '../../../webshell-common-ts/http/v2/target/bzero/types/bzero-agent-summary.types';
-import { BzeroAgentService } from '../../http-services/bzero-agent/bzero-agent.http-service';
+import { BzeroTargetHttpService } from '../../http-services/targets/bzero/bzero.http-services';
 import { createApiClient } from 'dots-wrapper';
 import { IDroplet } from 'dots-wrapper/dist/droplet/types/droplet';
 import axios from 'axios';
@@ -16,7 +16,7 @@ import axios from 'axios';
 export class DigitalOceanSSMTargetService {
     private doClient;
     private ssmTargetHttpService: SsmTargetHttpService;
-    private bzeroTargetHttpService: BzeroAgentService;
+    private bzeroTargetHttpService: BzeroTargetHttpService;
 
     constructor(
         apiToken: string,
@@ -25,7 +25,7 @@ export class DigitalOceanSSMTargetService {
     ) {
         this.doClient = createApiClient({ token: apiToken });
         this.ssmTargetHttpService = new SsmTargetHttpService(this.configService, this.logger);
-        this.bzeroTargetHttpService = new BzeroAgentService(this.configService, this.logger);
+        this.bzeroTargetHttpService = new BzeroTargetHttpService(this.configService, this.logger);
     }
 
     /**
@@ -83,7 +83,7 @@ export class DigitalOceanSSMTargetService {
         } else if(doTarget.type === 'bzero') {
             // Only delete bzero target if it is set
             if (doTarget.bzeroTarget) {
-                cleanupPromises.push(this.bzeroTargetHttpService.DeleteBzeroAgent(doTarget.bzeroTarget.id));
+                cleanupPromises.push(this.bzeroTargetHttpService.DeleteBzeroTarget(doTarget.bzeroTarget.id));
             }
         }
 
@@ -165,7 +165,7 @@ export class DigitalOceanSSMTargetService {
                 if (bzeroTargetId === '') {
                     // We don't know the SSM target ID yet, so we have to use
                     // the less efficient list API to learn about the ID
-                    const bzeroTargets = await this.bzeroTargetHttpService.ListBzeroAgents();
+                    const bzeroTargets = await this.bzeroTargetHttpService.ListBzeroTargets();
                     const foundTarget = bzeroTargets.find(target => target.name === bzeroTargetName);
                     if (foundTarget) {
                         bzeroTargetId = foundTarget.id;
@@ -175,7 +175,7 @@ export class DigitalOceanSSMTargetService {
                     }
                 } else {
                     // SSM target ID is known
-                    const target = await this.bzeroTargetHttpService.GetBzeroAgent(bzeroTargetId);
+                    const target = await this.bzeroTargetHttpService.GetBzeroTarget(bzeroTargetId);
                     checkIsTargetOnline(target);
                 }
             } catch (error) {

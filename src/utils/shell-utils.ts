@@ -2,11 +2,18 @@ import termsize from 'term-size';
 import readline from 'readline';
 import { ConfigService } from '../services/config/config.service';
 import { Logger } from '../services/logger/logger.service';
-import { ShellTerminal } from '../terminal/terminal';
+import { SsmShellTerminal } from '../terminal/terminal';
 import { ConnectionSummary } from '../../webshell-common-ts/http/v2/connection/types/connection-summary.types';
 import { SpaceHttpService } from '../http-services/space/space.http-services';
 import { SpaceState } from '../../webshell-common-ts/http/v2/space/types/space-state.types';
 import { SpaceSummary } from '../../webshell-common-ts/http/v2/space/types/space-summary.types';
+import { TargetType } from '../../webshell-common-ts/http/v2/target/types/target.types';
+
+import { copyExecutableToLocalDir, getBaseDaemonArgs } from '../utils/daemon-utils';
+import { spawn, SpawnOptions } from 'child_process';
+import { LoggerConfigService } from '../services/logger/logger-config.service';
+import { BzeroAgentSummary } from '../../webshell-common-ts/http/v2/target/bzero/types/bzero-agent-summary.types';
+import { ShellConnectionAttachDetails } from '../../webshell-common-ts/http/v2/connection/types/shell-connection-attach-details.types';
 
 export async function createAndRunShell(
     configService: ConfigService,
@@ -15,7 +22,10 @@ export async function createAndRunShell(
     onOutput: (output: Uint8Array) => any
 ) {
     return new Promise<number>(async (resolve, _) => {
-        const terminal = new ShellTerminal(logger, configService, connectionSummary);
+        if (connectionSummary.targetType === TargetType.Bzero)
+            throw new Error('createAndRunShell not supported for bzero agent targets. Should be using the startShellDaemon instead.');
+
+        const terminal = new SsmShellTerminal(logger, configService, connectionSummary);
 
         // Subscribe first so we don't miss events
         terminal.terminalRunning.subscribe(
@@ -154,4 +164,67 @@ export async function getCliSpace(
         logger.warn(`Found ${cliSpace.length} cli spaces while expecting 1, using latest one`);
         return cliSpace.pop();
     }
+}
+
+export async function startShellDaemon(
+    configService: ConfigService,
+    logger: Logger,
+    loggerConfigService: LoggerConfigService,
+    connectionSummary: ConnectionSummary,
+    bzeroTarget: BzeroAgentSummary,
+    attachDetails: ShellConnectionAttachDetails
+) {
+    return new Promise<number>(async (resolve, reject) => {
+
+        // Build our args and cwd
+        const baseArgs = getBaseDaemonArgs(configService, loggerConfigService, bzeroTarget.agentPublicKey);
+        let pluginArgs = [
+            `-targetUser=${connectionSummary.targetUser}`,
+            `-connectionId=${connectionSummary.id}`,
+            `-plugin="shell"`
+        ];
+
+        // If we are attaching then add attach plugin args
+        if(attachDetails) {
+            pluginArgs = pluginArgs.concat([
+                `-dataChannelId=${attachDetails.dataChannelId}`
+            ]);
+        }
+
+        let args = baseArgs.concat(pluginArgs);
+
+        let cwd = process.cwd();
+
+        // Copy over our executable to a temp file
+        let finalDaemonPath = '';
+        if (process.env.ZLI_CUSTOM_DAEMON_PATH) {
+            // If we set a custom path, we will try to start the daemon from the source code
+            cwd = process.env.ZLI_CUSTOM_DAEMON_PATH;
+            finalDaemonPath = 'go';
+            args = ['run', 'daemon.go'].concat(args);
+        } else {
+            finalDaemonPath = await copyExecutableToLocalDir(logger, configService.configPath());
+        }
+
+        try {
+            // If we are not debugging, start the go subprocess in the background
+            const options: SpawnOptions = {
+                cwd: cwd,
+                detached: false,
+                shell: true,
+                stdio: 'inherit'
+            };
+
+            const daemonProcess = await spawn(finalDaemonPath, args, options);
+
+            daemonProcess.on('close', (exitCode) => {
+                logger.debug(`Shell Daemon close event with exit code ${exitCode}`);
+                resolve(exitCode);
+            });
+
+        } catch(err) {
+            logger.error(`Error starting shell daemon: ${err}`);
+            reject(1);
+        }
+    });
 }

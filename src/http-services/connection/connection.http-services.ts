@@ -1,7 +1,8 @@
-import { CreateConnectionRequest } from '../../../webshell-common-ts/http/v2/connection/requests/create-connection.request';
+import { CreateShellConnectionRequest} from '../../../webshell-common-ts/http/v2/connection/requests/create-connection.request';
 import { CreateConnectionResponse } from '../../../webshell-common-ts/http/v2/connection/responses/create-connection.responses';
 import { ConnectionSummary } from '../../../webshell-common-ts/http/v2/connection/types/connection-summary.types';
 import { ShellConnectionAuthDetails } from '../../../webshell-common-ts/http/v2/connection/types/shell-connection-auth-details.types';
+import { ShellConnectionAttachDetails } from '../../../webshell-common-ts/http/v2/connection/types/shell-connection-attach-details.types';
 import { TargetType } from '../../../webshell-common-ts/http/v2/target/types/target.types';
 import { ConfigService } from '../../services/config/config.service';
 import { HttpService } from '../../services/http/http.service';
@@ -21,14 +22,14 @@ export class ConnectionHttpService extends HttpService
 
     public async CreateConnection(targetType: TargetType, targetId: string, sessionId: string, targetUser: string) : Promise<string>
     {
-        const req : CreateConnectionRequest = {
+        const req : CreateShellConnectionRequest = {
             spaceId: sessionId,
             targetId: targetId,
             targetType: targetType,
             targetUser: targetUser
         };
 
-        const resp = await this.Post<CreateConnectionRequest, CreateConnectionResponse>('', req);
+        const resp = await this.Post<CreateShellConnectionRequest, CreateConnectionResponse>('shell', req);
 
         return resp.connectionId;
     }
@@ -40,6 +41,11 @@ export class ConnectionHttpService extends HttpService
 
     public async GetShellConnectionAuthDetails(connectionId: string) : Promise<ShellConnectionAuthDetails>
     {
-        return this.Get(`${connectionId}/auth-details`);
+        return this.Get(`${connectionId}/shell/auth-details`);
+    }
+
+    public async GetShellConnectionAttachDetails(connectionId: string) : Promise<ShellConnectionAttachDetails>
+    {
+        return this.Get(`${connectionId}/shell/attach-details`);
     }
 }

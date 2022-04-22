@@ -1,23 +1,28 @@
 import { ConfigService } from '../../services/config/config.service';
 import { Logger } from '../../services/logger/logger.service';
 import { cleanExit } from '../clean-exit.handler';
+import { SemVer, lt, parse } from 'semver';
 
 import { connectCheckAllowedTargetUsers, targetStringExample } from '../../utils/utils';
-import { createAndRunShell, getCliSpace, pushToStdOut } from '../../utils/shell-utils';
+import { createAndRunShell, getCliSpace, pushToStdOut, startShellDaemon } from '../../utils/shell-utils';
 import { ParsedTargetString } from '../../services/common.types';
 import { MixpanelService } from '../../services/Tracking/mixpanel.service';
 import { ConnectionHttpService } from '../../http-services/connection/connection.http-services';
 import { SpaceHttpService } from '../../http-services/space/space.http-services';
-import { PolicyQueryHttpService } from '../../../src/http-services/policy-query/policy-query.http-services';
-import { SsmTargetHttpService } from '../../http-services/targets/ssm/ssm-target.http-services';
+import { PolicyQueryHttpService } from '../../http-services/policy-query/policy-query.http-services';
 import { TargetType } from '../../../webshell-common-ts/http/v2/target/types/target.types';
-import { DynamicAccessConfigHttpService } from '../../http-services/targets/dynamic-access/dynamic-access-config.http-services';
 import { VerbType } from '../../../webshell-common-ts/http/v2/policy/types/verb-type.types';
+import { SsmTargetHttpService } from '../../http-services/targets/ssm/ssm-target.http-services';
+import { DynamicAccessConfigHttpService } from '../../http-services/targets/dynamic-access/dynamic-access-config.http-services';
+import { BzeroTargetHttpService } from '../../http-services/targets/bzero/bzero.http-services';
+import { BzeroAgentSummary } from '../../../webshell-common-ts/http/v2/target/bzero/types/bzero-agent-summary.types';
+import { LoggerConfigService } from '../../services/logger/logger-config.service';
 
 
-export async function connectHandler(
+export async function shellConnectHandler(
     configService: ConfigService,
     logger: Logger,
+    loggerConfigService: LoggerConfigService,
     mixpanelService: MixpanelService,
     parsedTarget: ParsedTargetString
 ) {
@@ -40,6 +45,8 @@ export async function connectHandler(
         }
     }
 
+    let bzeroTarget: BzeroAgentSummary;
+
     // Check targetUser/Verb
     let allowedTargetUsers: string[] = [];
     let allowedVerbs: string[] = [];
@@ -53,6 +60,11 @@ export async function connectHandler(
         const dynamicAccessTarget = await dynamicConfigHttpService.GetDynamicAccessConfig(parsedTarget.id);
         allowedTargetUsers = dynamicAccessTarget.allowedTargetUsers.map(u => u.userName);
         allowedVerbs = dynamicAccessTarget.allowedVerbs.map(v => v.type);
+    } else if (parsedTarget.type == TargetType.Bzero) {
+        const bzeroTargetService = new BzeroTargetHttpService(configService, logger);
+        bzeroTarget = await bzeroTargetService.GetBzeroTarget(parsedTarget.id);
+        allowedTargetUsers = bzeroTarget.allowedTargetUsers.map(u => u.userName);
+        allowedVerbs = bzeroTarget.allowedVerbs.map(v => v.type);
     }
 
     if(! allowedVerbs.includes(VerbType.Shell)) {
@@ -75,20 +87,7 @@ export async function connectHandler(
 
     // make a new connection
     const connectionHttpService = new ConnectionHttpService(configService, logger);
-    // if SSM user does not exist then resp.connectionId will throw a
-    // 'TypeError: Cannot read property 'connectionId' of undefined'
-    // so we need to catch and return undefined
-    const connectionId = await connectionHttpService.CreateConnection(parsedTarget.type, parsedTarget.id, cliSpaceId, targetUser).catch(() => undefined);
-
-    if(! connectionId)
-    {
-        logger.error('Connection creation failed');
-
-        logger.error(`You may not have a policy for targetUser ${parsedTarget.user} in environment ${parsedTarget.envName}`);
-        logger.info('You can find SSM user policies in the web app');
-
-        await cleanExit(1, logger);
-    }
+    const connectionId = await connectionHttpService.CreateConnection(parsedTarget.type, parsedTarget.id, cliSpaceId, targetUser);
 
     // Note: For DATs the actual target to connect to will be a dynamically
     // created ssm target that is provisioned by the DynamicAccessTarget and not
@@ -98,8 +97,21 @@ export async function connectHandler(
 
     const connectionSummary = await connectionHttpService.GetConnection(connectionId);
 
-    const runShellPromise = createAndRunShell(configService, logger, connectionSummary, pushToStdOut);
     mixpanelService.TrackNewConnection(parsedTarget.type);
 
-    return await runShellPromise;
+    if(parsedTarget.type == TargetType.SsmTarget || parsedTarget.type == TargetType.DynamicAccessConfig) {
+        return createAndRunShell(configService, logger, connectionSummary, pushToStdOut);
+    } else if(parsedTarget.type == TargetType.Bzero) {
+
+        // agentVersion will be null if this isn't a valid version (i.e if its "$AGENT_VERSION" string during development)
+        const agentVersion = parse(bzeroTarget.agentVersion);
+        if(agentVersion && lt(agentVersion, new SemVer('5.0.0'))) {
+            logger.error(`Connecting to Bzero Target is only supported on agent versions >= 5.0.0. Agent version is ${agentVersion}`);
+            return 1;
+        }
+
+        return startShellDaemon(configService, logger, loggerConfigService, connectionSummary, bzeroTarget, undefined);
+    } else {
+        throw new Error(`Unhandled target type ${parsedTarget.type}`);
+    }
 }
