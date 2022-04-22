@@ -53,7 +53,7 @@ export async function attachHandler(
         // TODO: Adjust this version check once pipelining changes are in and we support attaching
         // agentVersion will be null if this isn't a valid version (i.e if its "$AGENT_VERSION" string during development)
         const agentVersion = parse(bzeroTarget.agentVersion);
-        if(agentVersion) {
+        if(configService.getConfigName() == 'prod' && agentVersion) {
             logger.error(`Attaching to a Bzero Target is not yet supported.`);
             return 1;
         }
