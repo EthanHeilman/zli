@@ -1,8 +1,8 @@
-import { dynamicConfigToTargetSummary, parseTargetStatus, ssmTargetToTargetSummary } from '../../utils/utils';
+import { dynamicConfigToTargetSummary, parseTargetStatus, ssmTargetToTargetSummary, bzeroTargetToTargetSummary } from '../../utils/utils';
 import { TargetSummary } from '../../../webshell-common-ts/http/v2/target/targetSummary.types';
 import { ConfigService } from '../config/config.service';
 import { Logger } from '../logger/logger.service';
-import { BzeroAgentService } from '../../http-services/bzero-agent/bzero-agent.http-service';
+import { BzeroTargetHttpService } from '../../http-services/targets/bzero/bzero.http-services';
 import { WebTargetService } from '../../http-services/web-target/web-target.http-service';
 import { DynamicAccessConfigHttpService } from '../../http-services/targets/dynamic-access/dynamic-access-config.http-services';
 import { TargetType } from '../../../webshell-common-ts/http/v2/target/types/target.types';
@@ -67,9 +67,9 @@ export async function listTargets(
     }
 
     if (targetTypes.includes(TargetType.Bzero)) {
-        const bzeroAgentService = new BzeroAgentService(configService, logger);
+        const bzeroTargetService = new BzeroTargetHttpService(configService, logger);
         const getBzeroAgentTargetSummaries = async () => {
-            let bzeroAgents = await bzeroAgentService.ListBzeroAgents();
+            let bzeroAgents = await bzeroTargetService.ListBzeroTargets();
             if (userEmail) {
                 // Filter bzero targets based on assumed user policy
                 const policyQueryResponse = await policyQueryHttpService.TargetConnectPolicyQuery(bzeroAgents.map(t => t.id), TargetType.Bzero, userEmail);
@@ -82,19 +82,7 @@ export async function listTargets(
                 });
             }
 
-            return bzeroAgents.map<TargetSummary>((bzeroAgent) => {
-                return {
-                    type: TargetType.Bzero,
-                    agentPublicKey: bzeroAgent.agentPublicKey,
-                    id: bzeroAgent.id,
-                    name: bzeroAgent.name,
-                    status: parseTargetStatus(bzeroAgent.status.toString()),
-                    environmentId: bzeroAgent.environmentId,
-                    targetUsers: bzeroAgent.allowedTargetUsers.map(u => u.userName),
-                    agentVersion: bzeroAgent.agentVersion,
-                    region: bzeroAgent.region
-                };
-            });
+            return bzeroAgents.map<TargetSummary>(bzeroTargetToTargetSummary);
         };
 
         targetSummaryWork = targetSummaryWork.concat(getBzeroAgentTargetSummaries());

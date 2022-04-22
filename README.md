@@ -32,7 +32,7 @@ zli --configName <prod | stage | dev>
 
 ## Release Process
 
-We use [pkg](https://github.com/vercel/pkg) to package the node.js application into a single executable that can be run even without node or any npm dependencies are installed. The target executables can be configured in the `package.json` file for different OSs as documented [here](https://github.com/vercel/pkg#targets) but the default is to build windows, mac, and linux executable for the current node.js version and arch. Use `npm run release` to package the app and output executables to a `bin` directory.
+We use [pkg](https://github.com/vercel/pkg) to package the node.js application into a single executable that can be run even without node or any npm dependencies are installed. The target executables can be configured in the `package.json` file for different OSs as documented [here](https://github.com/vercel/pkg#targets) but the default is to build mac, and linux executable for the current node.js version and arch. Use `npm run release` to package the app and output executables to a `bin` directory.
 
 ### Release Versioning
 
@@ -51,7 +51,6 @@ The latest releases can be found here:
 ```
 Mac:        download-zli.bastionzero.com/release/latest/bin/zli-macos
 Linux:      download-zli.bastionzero.com/release/latest/bin/zli-linux
-Windows:    download-zli.bastionzero.com/release/latest/bin/zli-win.exe
 ```
 
 ### Mac users:
@@ -69,10 +68,6 @@ will cause all lower major versions to error.
 
 - download the executable
 - `chmod +x` the executable
-
-### Windows users:
-
-- Run the executable from the command line, even though you can technically click it
 
 ## Running zli
 

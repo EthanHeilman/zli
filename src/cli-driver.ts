@@ -22,12 +22,13 @@ import { TargetSummary } from '../webshell-common-ts/http/v2/target/targetSummar
 import { KubeClusterSummary } from '../webshell-common-ts/http/v2/target/kube/types/kube-cluster-summary.types';
 import { EnvironmentSummary } from '../webshell-common-ts/http/v2/environment/types/environment-summary.responses';
 import { version } from '../package.json';
+import { BzeroAgentSummary } from '../webshell-common-ts/http/v2/target/bzero/types/bzero-agent-summary.types';
 
 // Handlers
 import { initMiddleware, oAuthMiddleware, fetchDataMiddleware, GATrackingMiddleware, initLoggerMiddleware, mixpanelTrackingMiddleware } from './handlers/middleware.handler';
 import { sshProxyHandler, SshTunnelParameters } from './handlers/ssh-proxy/ssh-proxy.handler';
 import { loginHandler } from './handlers/login/login.handler';
-import { connectHandler } from './handlers/connect/connect.handler';
+import { shellConnectHandler } from './handlers/connect/shell-connect.handler';
 import { listTargetsHandler } from './handlers/list-targets/list-targets.handler';
 import { configHandler } from './handlers/config.handler';
 import { logoutHandler } from './handlers/logout.handler';
@@ -118,6 +119,7 @@ export class CliDriver
     private ssmTargets: Promise<TargetSummary[]>;
     private dynamicConfigs: Promise<TargetSummary[]>;
     private clusterTargets: Promise<KubeClusterSummary[]>;
+    private bzeroTargets: Promise<BzeroAgentSummary[]>;
     private envs: Promise<EnvironmentSummary[]>;
 
     // use the following to shortcut middleware according to command
@@ -181,8 +183,6 @@ export class CliDriver
         'disconnect',
         'attach',
         'close',
-        'list-connections',
-        'lc',
         'copy',
         'ssh-proxy',
         'generate',
@@ -281,6 +281,7 @@ export class CliDriver
                 this.dynamicConfigs = fetchDataResponse.dynamicConfigs;
                 this.clusterTargets = fetchDataResponse.clusterTargets;
                 this.ssmTargets = fetchDataResponse.ssmTargets;
+                this.bzeroTargets = fetchDataResponse.bzeroTargets;
                 this.envs = fetchDataResponse.envs;
             })
             .command(
@@ -308,15 +309,15 @@ export class CliDriver
                     return connectCmdBuilder(yargs, this.targetTypeChoices);
                 },
                 async (argv) => {
-                    const parsedTarget = await disambiguateTarget(argv.targetType, argv.targetString, this.logger, this.dynamicConfigs, this.ssmTargets, this.clusterTargets, this.envs, this.configService);
+                    const parsedTarget = await disambiguateTarget(argv.targetType, argv.targetString, this.logger, this.dynamicConfigs, this.ssmTargets, this.clusterTargets, this.bzeroTargets, this.envs, this.configService);
 
                     if (parsedTarget == undefined) {
                         this.logger.error(`No target was able to be parsed from the name ${argv.targetString}`);
                         await cleanExit(1, this.logger);
                     }
                     let exitCode = 1;
-                    if (parsedTarget.type == TargetType.SsmTarget || parsedTarget.type == TargetType.DynamicAccessConfig) {
-                        exitCode = await connectHandler(this.configService, this.logger, this.mixpanelService, parsedTarget);
+                    if (parsedTarget.type == TargetType.SsmTarget || parsedTarget.type == TargetType.DynamicAccessConfig || parsedTarget.type == TargetType.Bzero) {
+                        exitCode = await shellConnectHandler(this.configService, this.logger, this.loggerConfigService, this.mixpanelService, parsedTarget);
                     } else if (parsedTarget.type == TargetType.Cluster) {
                         exitCode = await startKubeDaemonHandler(argv, parsedTarget.user, argv.targetGroup, parsedTarget.name, this.clusterTargets, this.configService, this.logger, this.loggerConfigService);
                     } else if (parsedTarget.type == TargetType.Db) {
@@ -463,7 +464,7 @@ export class CliDriver
                         await cleanExit(1, this.logger);
                     }
 
-                    const exitCode = await attachHandler(this.configService, this.logger, argv.connectionId);
+                    const exitCode = await attachHandler(this.configService, this.logger, this.loggerConfigService, argv.connectionId);
                     await cleanExit(exitCode, this.logger);
                 }
             )
@@ -498,7 +499,7 @@ export class CliDriver
                     return listConnectionsCmdBuilder(yargs);
                 },
                 async (argv) => {
-                    await listConnectionsHandler(argv, this.configService, this.logger, this.ssmTargets);
+                    await listConnectionsHandler(argv, this.configService, this.logger);
                 }
             )
             .command(
@@ -609,7 +610,7 @@ export class CliDriver
 
                     // modify argv to have the targetString and targetType params
                     const targetString = argv.user + '@' + argv.host.substr(prefix.length);
-                    const parsedTarget = await disambiguateTarget(TargetType.SsmTarget.toString(), targetString, this.logger, this.dynamicConfigs, this.ssmTargets, this.clusterTargets, this.envs, this.configService);
+                    const parsedTarget = await disambiguateTarget(TargetType.SsmTarget.toString(), targetString, this.logger, this.dynamicConfigs, this.ssmTargets, this.clusterTargets, this.bzeroTargets, this.envs, this.configService);
 
                     if (parsedTarget == undefined) {
                         this.logger.error(`Unable to find target with given user/host values: ${argv.user}/${argv.host}`);
