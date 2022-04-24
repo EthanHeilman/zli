@@ -14,6 +14,7 @@ env:
     BCTL_QUICKSTART_VERSION: /staging/infra/bctl-quickstart-version
   secrets-manager:
     DO_API_KEY: production/infra/system-test-secret:DO_API_KEY
+    # TODO: Add shared secret here
   git-credential-helper: yes
 phases:
   install:

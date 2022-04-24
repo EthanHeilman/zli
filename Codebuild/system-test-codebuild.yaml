@@ -15,6 +15,8 @@ env:
   secrets-manager:
     DO_API_KEY: development/infra/system-test-secret:DO_API_KEY
     GITHUB_API_KEY: arn:aws:secretsmanager:us-east-1:238681891460:secret:development/infra/roleandfrank-github-api-key-1Cok4j:Token
+    DAT_SERVER_ENDPOINT: arn:aws:secretsmanager:us-east-1:238681891460:secret:development/infra/dynamic-access-params-secret-0cQG2J:Endpoint
+    DAT_SERVER_SHARED_SECRET: arn:aws:secretsmanager:us-east-1:238681891460:secret:development/infra/dynamic-access-params-secret-0cQG2J:SharedSecret
   git-credential-helper: yes
 phases:
   install:

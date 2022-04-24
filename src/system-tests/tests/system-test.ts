@@ -31,6 +31,7 @@ import { organizationSuite } from './suites/rest-api/organization';
 import { environmentsSuite } from './suites/rest-api/environments';
 import { policySuite } from './suites/rest-api/policies/policies';
 import { callZli } from './utils/zli-utils';
+import { dynamicAccessSuite } from './suites/dynamic-access';
 
 // Uses config name from ZLI_CONFIG_NAME environment variable (defaults to prod
 // if unset) This can be run against dev/stage/prod when running system tests
@@ -47,6 +48,16 @@ export const configService = new ConfigService(configName, logger, envMap.config
 export const doApiKey = process.env.DO_API_KEY;
 if (!doApiKey) {
     throw new Error('Must set the DO_API_KEY environment variable');
+}
+
+export const datEndpoint = process.env.DAT_ENDPOINT;
+if (!datEndpoint) {
+    throw new Error('Must set the DAT_ENDPOINT environment variable');
+}
+
+export const datSecret = process.env.DAT_SECRET;
+if (!datSecret) {
+    throw new Error('Must set the DAT_SECRET environment variable');
 }
 
 export const bzeroAgentVersion = process.env.BZERO_AGENT_VERSION;
@@ -148,17 +159,17 @@ beforeAll(async () => {
     });
     systemTestEnvId = createEnvResponse.id;
 
-    await checkAllSettledPromise(Promise.allSettled([
-        createDOTestTargets(),
-        async function() {
-            // Skip kube cluster setup
-            if (!KUBE_ENABLED) {
-                logger.info(`Skipping setup of cluster because KUBE_ENABLED is false`);
-                return;
-            }
-            testCluster = await setupDOTestCluster();
-        }()
-    ]));
+    // await checkAllSettledPromise(Promise.allSettled([
+    //     createDOTestTargets(),
+    //     async function() {
+    //         // Skip kube cluster setup
+    //         if (!KUBE_ENABLED) {
+    //             logger.info(`Skipping setup of cluster because KUBE_ENABLED is false`);
+    //             return;
+    //         }
+    //         testCluster = await setupDOTestCluster();
+    //     }()
+    // ]));
 }, 20 * 60 * 1000);
 
 // Cleanup droplets after running all tests
@@ -166,15 +177,15 @@ afterAll(async () => {
     // Delete the API key created for system tests
     await cleanupSystemTestApiKeys(systemTestRESTApiKey, systemTestRegistrationApiKey);
 
-    await checkAllSettledPromise(Promise.allSettled([
-        cleanupDOTestTargets(),
-        async function() {
-            if (testCluster === undefined) {
-                return;
-            }
-            cleanupDOTestCluster(testCluster);
-        }()
-    ]));
+    // await checkAllSettledPromise(Promise.allSettled([
+    //     cleanupDOTestTargets(),
+    //     async function() {
+    //         if (testCluster === undefined) {
+    //             return;
+    //         }
+    //         cleanupDOTestCluster(testCluster);
+    //     }()
+    // ]));
 
     // Delete the environment for this system test
     // Note this must be called after our cleanup, so we do not have any targets in the environment
@@ -195,8 +206,9 @@ if (SSM_ENABLED || KUBE_ENABLED || VT_ENABLED) {
 
 // Call various test suites
 if(SSM_ENABLED) {
-    connectSuite();
-    sshSuite();
+    // connectSuite();
+    // sshSuite();
+    dynamicAccessSuite();
 }
 
 if(KUBE_ENABLED) {
