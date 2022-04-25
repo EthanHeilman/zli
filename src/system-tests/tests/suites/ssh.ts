@@ -200,13 +200,13 @@ export const sshSuite = () => {
 
             // create our policy
             await policyService.AddTargetConnectPolicy({
-                name: systemTestPolicyTemplate.replace('$POLICY_TYPE', 'proxy-tunnel-connect'),
+                name: systemTestPolicyTemplate.replace('$POLICY_TYPE', 'target-connect'),
                 subjects: [currentUser],
                 groups: [],
                 description: `Target ssh policy created for system test: ${systemTestUniqueId}`,
                 environments: [environment],
                 targets: [],
-                targetUsers: [{ userName: uniqueUser }],
+                targetUsers: [{ userName: targetUser }],
                 verbs: [{ type: VerbType.Shell }]
             });
 
