@@ -12,6 +12,7 @@ import { SubjectType } from '../../../../webshell-common-ts/http/v2/common.types
 import { Subject } from '../../../../src/services/v1/policy/policy.types';
 import { Environment } from '../../../../webshell-common-ts/http/v2/policy/types/environment.types';
 import { PolicyHttpService } from '../../../http-services/policy/policy.http-services';
+import { Logger } from '../../../services/logger/logger.service'
 
 export const sshSuite = () => {
     describe('ssh suite', () => {
@@ -28,6 +29,10 @@ export const sshSuite = () => {
             process.env.HOME, '.ssh', 'test-config-bz'
         );
 
+        const staticConfigFile = path.join(
+            process.env.HOME, '.ssh', 'test-config-static'
+        );
+
         beforeAll(() => {
             // Construct all http services needed to run tests
             policyService = new PolicyHttpService(configService, logger);
@@ -38,6 +43,7 @@ export const sshSuite = () => {
             // delete outstanding configuration files
             removeIfExists(userConfigFile);
             removeIfExists(bzConfigFile);
+            removeIfExists(staticConfigFile);
         });
 
         // Called before each case
@@ -180,6 +186,51 @@ export const sshSuite = () => {
             expect(bzConfigContents.includes(uniqueUser)).toBe(false);
 
             await cleanupTargetConnectPolicies(systemTestPolicyTemplate.replace('$POLICY_TYPE', 'target-connect'));
+
+        }, 60 * 1000);
+
+        test('generate ssh-proxy', async () => {
+            const currentUser: Subject = {
+                id: configService.me().id,
+                type: SubjectType.User
+            };
+            const environment: Environment = {
+                id: systemTestEnvId
+            };
+
+            // create our policy
+            await policyService.AddTargetConnectPolicy({
+                name: systemTestPolicyTemplate.replace('$POLICY_TYPE', 'proxy-tunnel-connect'),
+                subjects: [currentUser],
+                groups: [],
+                description: `Target ssh policy created for system test: ${systemTestUniqueId}`,
+                environments: [environment],
+                targets: [],
+                targetUsers: [{ userName: uniqueUser }],
+                verbs: [{ type: VerbType.Shell }]
+            });
+
+            // TODO: comments...
+            const loggerSpy = jest.spyOn(Logger.prototype, 'info');
+            await callZli(['generate', 'ssh-proxy'])
+
+            const sshProxyCode: string = loggerSpy.mock.calls[2][0];
+            fs.writeFileSync(staticConfigFile, sshProxyCode);
+
+            console.error(loggerSpy.mock.results);
+            console.error(sshProxyCode);
+
+            const pexec = promisify(exec);
+            // use the config file we just created to ssh
+            ssmTestTargetsToRun.forEach(async (testTarget) => {
+                const doTarget = testTargets.get(testTarget) as DigitalOceanSSMTarget;
+                const command = `ssh -F ${staticConfigFile} -o CheckHostIP=no -o StrictHostKeyChecking=no ssm-user@bzero-dev${doTarget.ssmTarget.name} echo success`;
+
+                const { stdout } = await pexec(command);
+                expect(stdout.trim()).toEqual('success');
+            });
+
+            await cleanupTargetConnectPolicies(systemTestPolicyTemplate.replace('$POLICY_TYPE', 'proxy-tunnel-connect'));
 
         }, 60 * 1000);
     });

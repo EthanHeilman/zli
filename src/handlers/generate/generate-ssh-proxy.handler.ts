@@ -9,11 +9,14 @@ export async function sshProxyConfigHandler(configService: ConfigService, proces
 
     logger.info(`
 Add the following lines to your ssh config (~/.ssh/config) file:
+`)
 
-Host ${prefix}*
+    logger.info(`Host ${prefix}*
   ${identityFile}
   ${proxyCommand}
+`)
 
+    logger.info(`
 Then you can use native ssh to connect to any of your ssm targets using the following syntax:
 
 ssh <user>@${prefix}<ssm-target-id-or-name>
