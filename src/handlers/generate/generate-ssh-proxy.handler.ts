@@ -7,8 +7,7 @@ export async function sshProxyConfigHandler(configService: ConfigService, proces
 
     const { identityFile, proxyCommand, prefix } = await buildSshConfigStrings(configService, processName, logger);
 
-    logger.info(`
-Add the following lines to your ssh config (~/.ssh/config) file:
+    logger.info(`Add the following lines to your ssh config (~/.ssh/config) file:
 `);
 
     logger.info(`Host ${prefix}*
@@ -16,8 +15,7 @@ Add the following lines to your ssh config (~/.ssh/config) file:
   ${proxyCommand}
 `);
 
-    logger.info(`
-Then you can use native ssh to connect to any of your ssm targets using the following syntax:
+    logger.info(`Then you can use native ssh to connect to any of your ssm targets using the following syntax:
 
 ssh <user>@${prefix}<ssm-target-id-or-name>
 `);
