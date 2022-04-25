@@ -2,7 +2,7 @@ import { ConfigService } from '../../services/config/config.service';
 import { Logger } from '../../services/logger/logger.service';
 import { cleanExit } from '../clean-exit.handler';
 import { LoggerConfigService } from '../../services/logger/logger-config.service';
-import {  handleServerStart, startDaemonInDebugMode, copyExecutableToLocalDir, getBaseDaemonArgs, getOrDefaultLocalhost, getOrDefaultLocalport, killLocalPortAndPid } from '../../utils/daemon-utils';
+import { handleServerStart, startDaemonInDebugMode, copyExecutableToLocalDir, getBaseDaemonArgs, getOrDefaultLocalhost, getOrDefaultLocalport, killLocalPortAndPid } from '../../utils/daemon-utils';
 import { DbTargetSummary } from '../../../webshell-common-ts/http/v2/target/db/types/db-target-summary.types';
 import { connectArgs } from './connect.command-builder';
 import yargs from 'yargs';
@@ -14,7 +14,7 @@ import { listDbTargets } from '../../utils/list-utils';
 const { spawn } = require('child_process');
 
 
-export async function dbConnectHandler(argv: yargs.Arguments<connectArgs>, targetName: string,  configService: ConfigService, logger: Logger, loggerConfigService: LoggerConfigService): Promise<number> {
+export async function dbConnectHandler(argv: yargs.Arguments<connectArgs>, targetName: string, configService: ConfigService, logger: Logger, loggerConfigService: LoggerConfigService): Promise<number> {
     // First ensure the target is online
     const dbTargets = await listDbTargets(logger, configService);
     const dbTarget = await getDbTargetInfoFromName(dbTargets, targetName, logger);
@@ -30,7 +30,7 @@ export async function dbConnectHandler(argv: yargs.Arguments<connectArgs>, targe
     // to the target. If they are a non-admin then they must have a policy that
     // allows access to even be able to list and parse the target
     const me = configService.me();
-    if(me.isAdmin) {
+    if (me.isAdmin) {
         const response = await policyService.ProxyPolicyQuery([dbTarget.id], TargetType.Db, me.email);
         if (response[dbTarget.id].allowed != true) {
             logger.error(`You do not have a Proxy policy setup to access ${dbTarget.name}!`);

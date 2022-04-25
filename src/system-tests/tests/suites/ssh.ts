@@ -224,7 +224,7 @@ export const sshSuite = () => {
             // use the config file we just created to ssh
             ssmTestTargetsToRun.forEach(async (testTarget) => {
                 const doTarget = testTargets.get(testTarget) as DigitalOceanSSMTarget;
-                const command = `ssh -F ${staticConfigFile} -o CheckHostIP=no -o StrictHostKeyChecking=no ssm-user@bzero-dev${doTarget.ssmTarget.name} echo success`;
+                const command = `ssh -F ${staticConfigFile} -o CheckHostIP=no -o StrictHostKeyChecking=no ssm-user@bzero-dev-${doTarget.ssmTarget.name} echo success`;
 
                 const { stdout } = await pexec(command);
                 expect(stdout.trim()).toEqual('success');
