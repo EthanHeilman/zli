@@ -12,7 +12,7 @@ import { SubjectType } from '../../../../webshell-common-ts/http/v2/common.types
 import { Subject } from '../../../../src/services/v1/policy/policy.types';
 import { Environment } from '../../../../webshell-common-ts/http/v2/policy/types/environment.types';
 import { PolicyHttpService } from '../../../http-services/policy/policy.http-services';
-import { Logger } from '../../../services/logger/logger.service'
+import { Logger } from '../../../services/logger/logger.service';
 
 export const sshSuite = () => {
     describe('ssh suite', () => {
@@ -212,7 +212,7 @@ export const sshSuite = () => {
 
             // TODO: comments...
             const loggerSpy = jest.spyOn(Logger.prototype, 'info');
-            await callZli(['generate', 'ssh-proxy'])
+            await callZli(['generate', 'ssh-proxy']);
 
             const sshProxyCode: string = loggerSpy.mock.calls[2][0];
             fs.writeFileSync(staticConfigFile, sshProxyCode);
