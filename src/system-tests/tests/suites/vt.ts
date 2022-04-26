@@ -64,6 +64,7 @@ export const vtSuite = () => {
                 policy.name == systemTestPolicyTemplate.replace('$POLICY_TYPE', 'proxy')
             );
             policyService.DeleteProxyPolicy(proxyPolicy.id);
+
         }, 15 * 1000);
 
 
@@ -72,8 +73,16 @@ export const vtSuite = () => {
             await testUtils.CheckDaemonLogs(testPassed, expect.getState().currentTestName);
 
             // Always make sure our ports are free, else throw an error
-            await testUtils.CheckPort(localDbPort);
-            await testUtils.CheckPort(localWebPort);
+            try {
+                await testUtils.CheckPort(localDbPort);
+                await testUtils.CheckPort(localWebPort);
+            } catch (e: any) {
+                // Always ensure we clean up any dangling connections if there are any errors
+                await callZli(['disconnect', 'web']);
+                await callZli(['disconnect', 'db']);
+
+                throw e;
+            }
 
             // Reset test passed
             testPassed = false;

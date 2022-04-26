@@ -234,7 +234,9 @@ export class TestUtils {
     public async CheckDaemonLogs(testPassed: boolean, testName: string) {
         const daemonLogPath = this.loggerConfigService.daemonLogPath();
         if (!fs.existsSync(daemonLogPath)) {
-            this.logger.warn(`No daemon logs found under ${daemonLogPath}`);
+            if (!testPassed) {
+                this.logger.warn(`No daemon logs found under ${daemonLogPath}`);
+            }
             return;
         };
 
@@ -266,8 +268,9 @@ export class TestUtils {
                 resolve(pids.tcp);
             });
         });
-        if ((await ports).length != 0) {
-            throw new Error(`There are currently processes using port ${port}: ${ports}`);
+        const awaitedPorts = await ports;
+        if (awaitedPorts.length != 0) {
+            throw new Error(`There are currently processes using port ${port}: ${awaitedPorts}`);
         }
     }
 

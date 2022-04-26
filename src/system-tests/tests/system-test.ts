@@ -23,6 +23,7 @@ import { NewApiKeyResponse } from '../../../webshell-common-ts/http/v2/api-key/r
 import { TestTarget } from './system-test.types';
 import { EnvironmentHttpService } from '../../http-services/environment/environment.http-services';
 import { vtSuite } from './suites/vt';
+import { iperfSuite } from './suites/iperf';
 import { ssmTestTargetsToRun, vtTestTargetsToRun } from './targets-to-run';
 import { setupDOTestCluster, createDOTestTargets, setupSystemTestApiKeys } from './system-test-setup';
 import { cleanupDOTestCluster, cleanupDOTestTargets, cleanupSystemTestApiKeys } from './system-test-cleanup';
@@ -60,7 +61,7 @@ if (! bctlQuickstartVersion) {
     throw new Error('Must set the BCTL_QUICKSTART_VERSION environment variable');
 }
 
-const KUBE_ENABLED = process.env.KUBE_ENABLED ? (process.env.KUBE_ENABLED === 'true') : true;
+export const KUBE_ENABLED = process.env.KUBE_ENABLED ? (process.env.KUBE_ENABLED === 'true') : true;
 const VT_ENABLED = process.env.VT_ENABLED ? (process.env.VT_ENABLED === 'true') : true;
 const SSM_ENABLED =  process.env.SSM_ENABLED ? (process.env.SSM_ENABLED === 'true') : true;
 const API_ENABLED = process.env.API_ENABLED ? (process.env.API_ENABLED === 'true') : true;
@@ -229,6 +230,7 @@ if(KUBE_ENABLED) {
 
 if(VT_ENABLED) {
     vtSuite();
+    iperfSuite();
 }
 
 if (API_ENABLED) {

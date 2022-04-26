@@ -380,10 +380,10 @@ function getPackageManagerRegistrationScript(packageName: string, testTarget: SS
         let installBlockGit: string;
         switch (packageManager) {
         case 'apt':
-            installBlockGit = 'sudo apt update -y && sudo apt install -y git';
+            installBlockGit = 'sudo apt update -y && sudo apt install -y git iperf3';
             break;
         case 'yum':
-            installBlockGit = 'sudo yum update -y && sudo yum install git -y';
+            installBlockGit = 'sudo yum update -y && sudo yum install git iperf3 -y';
             break;
         default:
             const _exhaustiveCheck: never = packageManager;
@@ -411,7 +411,7 @@ cd /
         case 'apt':
             installBlock = String.raw`sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys E5C358E613982017
 sudo apt update -y
-sudo apt install -y software-properties-common
+sudo apt install -y software-properties-common iperf3
 sudo add-apt-repository 'deb https://download-apt.bastionzero.com/beta/apt-repo stable main'
 sudo apt update -y
 sudo apt install ${packageName} -y
@@ -420,7 +420,7 @@ sudo apt install ${packageName} -y
         case 'yum':
             installBlock = String.raw`sudo yum-config-manager --add-repo https://download-yum.bastionzero.com/bastionzero-beta.repo
 sudo yum update -y
-sudo yum install ${packageName} -y
+sudo yum install ${packageName} iperf3 -y
 `;
             break;
         default:
@@ -443,6 +443,7 @@ sudo yum install ${packageName} -y
         // Initialization for virtual targets
         // Common code start python server
         initBlock = String.raw`nohup python3 -m http.server > python-server.out 2> python-server.err < /dev/null &
+iperf3 -s </dev/null &>/dev/null &
 `;
 
         switch (packageManager) {

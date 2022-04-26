@@ -214,7 +214,12 @@ async function deleteIfExists(pathToFile: string) {
     }
 }
 
-
+/**
+ * Helper function to kill a daemon process
+ * @param {number} localPid Local pid we are trying to kill
+ * @param {number} localPort Local port we are trying to clear
+ * @param {Logger} logger Logger
+ */
 export async function killDaemon(localPid: number, localPort: number, logger: Logger) {
     // then kill the daemon
     if ( localPid != null) {
@@ -267,14 +272,19 @@ export async function killPortProcess(port: number, logger: Logger) {
     }
 }
 
+/**
+ * Helper function to get a pids from a port number
+ * @param port Port number we are looking for
+ * @returns The process Ids using that port
+ */
 async function getPidForPort(port: number): Promise<number[]> {
-    // Helper function to get a pids from a port number
-    const getPidPromise = new Promise<number[]>(async (resolve, _) => {
+    const ports = new Promise<number[]>(async (resolve, _) => {
         pids(port).then((pids: any) => {
             resolve(pids.tcp);
         });
     });
-    return await getPidPromise;
+    const awaitedPorts = await ports;
+    return awaitedPorts;
 }
 
 function killPid(pid: string) {
