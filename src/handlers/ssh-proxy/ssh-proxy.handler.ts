@@ -9,27 +9,35 @@ import { ParsedTargetString } from '../../services/common.types';
 import { EnvMap } from '../../cli-driver';
 import { VerbType } from '../../../webshell-common-ts/http/v2/policy/types/verb-type.types';
 import { SsmTargetHttpService } from '../../http-services/targets/ssm/ssm-target.http-services';
-
+import { BzeroTargetHttpService } from '../../http-services/targets/bzero/bzero.http-services';
+import { TargetType } from 'webshell-common-ts/http/v2/target/types/target.types';
 
 export async function sshProxyHandler(configService: ConfigService, logger: Logger, sshTunnelParameters: SshTunnelParameters, keySplittingService: KeySplittingService, envMap: EnvMap) {
 
-    if(! sshTunnelParameters.parsedTarget) {
+    if (!sshTunnelParameters.parsedTarget) {
         logger.error('No targets matched your targetName/targetId or invalid target string, must follow syntax:');
         logger.error(targetStringExample);
         await cleanExit(1, logger);
     }
 
-    const ssmTargetHttpService = new SsmTargetHttpService(configService, logger);
-    const ssmTarget = await ssmTargetHttpService.GetSsmTarget(sshTunnelParameters.parsedTarget.id);
+    let allowedTargetUsers: string[] = [];
+    let allowedVerbs: string[] = [];
 
-    if(! ssmTarget.allowedVerbs.map(v => v.type).includes(VerbType.Tunnel))
-    {
+    if (sshTunnelParameters.parsedTarget.type === TargetType.ssmTarget) {
+        const ssmTargetHttpService = new SsmTargetHttpService(configService, logger);
+        const ssmTarget = await ssmTargetHttpService.GetSsmTarget(sshTunnelParameters.parsedTarget.id);
+        allowedTargetUsers = ssmTarget.allowedTargetUsers.map(u => u.userName);
+    }
+
+
+
+    if (!ssmTarget.allowedVerbs.map(v => v.type).includes(VerbType.Tunnel)) {
         logger.error('You do not have sufficient permission to open a ssh tunnel to the target');
         await cleanExit(1, logger);
     }
 
-    const allowedTargetUsers = ssmTarget.allowedTargetUsers.map(u => u.userName);
-    if(! includes(allowedTargetUsers, sshTunnelParameters.parsedTarget.user)) {
+
+    if (!includes(allowedTargetUsers, sshTunnelParameters.parsedTarget.user)) {
         logger.error(`You do not have permission to tunnel as targetUser: ${sshTunnelParameters.parsedTarget.user}. Current allowed users for you: ${allowedTargetUsers}`);
         await cleanExit(1, logger);
     }
@@ -40,7 +48,7 @@ export async function sshProxyHandler(configService: ConfigService, logger: Logg
         await cleanExit(1, logger);
     });
 
-    if( await ssmTunnelService.setupWebsocketTunnel(sshTunnelParameters.parsedTarget, sshTunnelParameters.port, sshTunnelParameters.identityFile)) {
+    if (await ssmTunnelService.setupWebsocketTunnel(sshTunnelParameters.parsedTarget, sshTunnelParameters.port, sshTunnelParameters.identityFile)) {
         process.stdin.on('data', async (data) => {
             ssmTunnelService.sendData(data);
         });
