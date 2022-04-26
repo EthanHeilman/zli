@@ -25,11 +25,8 @@ export async function attachHandler(
     const spaceHttpService = new SpaceHttpService(configService, logger);
     const cliSpaceRequest = getCliSpace(spaceHttpService, logger);
 
-    // Get Attach Info
-    const attachInfoRequest = connectionHttpService.GetShellConnectionAttachDetails(connectionId);
-
     // Make requests in parallel
-    const [connectionSummary, cliSpace, attachInfo] = await Promise.all([connectionSummaryRequest, cliSpaceRequest, attachInfoRequest]);
+    const [connectionSummary, cliSpace] = await Promise.all([connectionSummaryRequest, cliSpaceRequest]);
 
     if ( ! cliSpace){
         logger.error(`There is no cli session. Try creating a new connection to a target using the zli`);
@@ -47,8 +44,14 @@ export async function attachHandler(
     if(connectionSummary.targetType == TargetType.SsmTarget || connectionSummary.targetType == TargetType.DynamicAccessConfig) {
         return createAndRunShell(configService, logger, connectionSummary, pushToStdOut);
     } else if(connectionSummary.targetType == TargetType.Bzero) {
+        // Get Attach Info for Bzero target. This currently just includes the datachannel id of the connection
+        const attachInfoRequest = await connectionHttpService.GetShellConnectionAttachDetails(connectionId);
+
         const bzeroTargetService = new BzeroTargetHttpService(configService, logger);
-        const bzeroTarget = await bzeroTargetService.GetBzeroTarget(connectionSummary.targetId);
+        const bzeroTargetRequest = bzeroTargetService.GetBzeroTarget(connectionSummary.targetId);
+
+        // Make requests in parallel
+        const [bzeroTarget, attachInfo] = await Promise.all([bzeroTargetRequest, attachInfoRequest]);
 
         // TODO: Adjust this version check once pipelining changes are in and we support attaching
         // agentVersion will be null if this isn't a valid version (i.e if its "$AGENT_VERSION" string during development)
