@@ -15,11 +15,36 @@ brew install bastionzero/tap/zli
 
 ## Developer processes
 
-### Build and test
+### Build
 
 ```
 npm run start -- <cmd> [args] --flag flagArg
 ```
+
+### Testing
+
+To run unit tests you can use the following command
+```
+npm run test
+```
+
+System tests can also be run using the following command: 
+```
+npm run system-test
+```
+
+Note the following environment variables will need to be set: 
+* `DO_API_KEY`: This is the digital ocean API key that is used to spin up droplets (i.e. targets) that is needed in order to run our tests
+* The following vars can be used to run different suites. Setting them to "true" will run the suites: 
+    * `API_ENABLED`: Run the API test suite
+    * `KUBE_ENABLED`: Run the Kubernetes test suite
+    * `SSM_ENABLED`: Run the bzero-ssm-agent test suite
+    * `VT_ENABLED`: Runs our virtual target test suite (i.e. bzero agent)
+
+There are also some optional parameters that can be used: 
+* `SYSTEM_TEST_TAGS`: Comma separated list of optional tags to tag the digital ocean droplet
+* `BZERO_AGENT_BRANCH`: In order to build and bzero agent (VT targets, kube, etc) from source, you will need to specify the bzero agent branch. The bzero repo can be found [here](https://github.com/bastionzero/bzero)
+* `BCTL_QUICKSTART_VERSION`: This variable can be used to specify which version of the bctl quickstart helm chart to use
 
 ### Run against stage or dev
 

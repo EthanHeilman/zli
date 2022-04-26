@@ -6,8 +6,19 @@ import { DigitalOceanRegion } from '../digital-ocean/digital-ocean.types';
  * registered using the traditional, all-in-bash autodiscovery script that is
  * retrieved from the backend.
  */
-export type SSMTestTargetAutoDiscovery = {
+export type SSMTestTargetAutoDiscovery = BaseTarget & {
     installType: 'ad';
+    dropletImage: DigitalOceanDistroImage;
+    doRegion: DigitalOceanRegion;
+    awsRegion: string;
+}
+
+/**
+ * SSMTestTargetAutoDiscovery represents an SSM test target that should be
+ * registered using the ansible script retrieved from the backend.
+ */
+export type SSMTestTargetAnsibleAutoDiscovery = BaseTarget & {
+    installType: 'as';
     dropletImage: DigitalOceanDistroImage;
     doRegion: DigitalOceanRegion;
     awsRegion: string;
@@ -18,7 +29,7 @@ export type SSMTestTargetAutoDiscovery = {
  * should be registered using the new, self-registration flow built into the
  * agent itself.
  */
-export type SSMTestTargetSelfRegistrationAutoDiscovery = {
+export type SSMTestTargetSelfRegistrationAutoDiscovery = BaseTarget &{
     installType: 'pm';
     dropletImage: DigitalOceanDistroImage;
     doRegion: DigitalOceanRegion;
@@ -28,11 +39,23 @@ export type SSMTestTargetSelfRegistrationAutoDiscovery = {
 /**
  * VTTestTarget represents an virtual target test that uses our new agent
  */
-export type VTTestTarget = {
+export type VTTestTarget = BaseTarget & {
     installType: 'pm-vt';
     dropletImage: DigitalOceanDistroImage;
     doRegion: DigitalOceanRegion;
     awsRegion: string;
 }
 
-export type TestTarget = SSMTestTargetAutoDiscovery | SSMTestTargetSelfRegistrationAutoDiscovery | VTTestTarget
+// Hold our common TestRails caseIds
+interface BaseTarget {
+    sshCaseId?: string // For our ssh test suite
+    badSshCaseId?: string // For our ssh test negation test
+    connectCaseId?: string; // For our connect test suite
+    badConnectCaseId?: string; // for our connect negation test
+    dbCaseId?: string; // For our db test suite
+    badDbCaseId?: string // For out db negation negation test
+    webCaseId?: string; // For our web test suite
+    badWebCaseId?: string; // For out web negation tests
+}
+
+export type TestTarget = SSMTestTargetAutoDiscovery | SSMTestTargetSelfRegistrationAutoDiscovery | SSMTestTargetAnsibleAutoDiscovery | VTTestTarget

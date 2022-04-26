@@ -18,6 +18,18 @@ export async function getAutodiscoveryScript(
     return scriptResponse.autodiscoveryScript;
 }
 
+export async function getAnsibleAutodiscoveryScript(
+    logger: Logger,
+    configService: ConfigService,
+    environmentId: string,
+    agentVersion: string
+) {
+    const autodiscoveryScriptHttpService = new AutoDiscoveryScriptHttpService(configService, logger);
+    const scriptResponse = await autodiscoveryScriptHttpService.GetAnsibleAutodiscoveryScript(environmentId, agentVersion);
+
+    return scriptResponse.autodiscoveryScript;
+}
+
 export class AutoDiscoveryScriptHttpService extends HttpService {
     constructor(configService: ConfigService, logger: Logger) {
         super(configService, 'api/v2/autodiscovery-scripts', logger);
@@ -32,6 +44,18 @@ export class AutoDiscoveryScriptHttpService extends HttpService {
             'universal',
             {
                 targetNameOption: targetNameOption,
+                environmentId: environmentId,
+                agentVersion: agentVersion
+            });
+    }
+
+    public GetAnsibleAutodiscoveryScript(
+        environmentId: string,
+        agentVersion?: string
+    ): Promise<ScriptResponse> {
+        return this.Get(
+            'ansible',
+            {
                 environmentId: environmentId,
                 agentVersion: agentVersion
             });

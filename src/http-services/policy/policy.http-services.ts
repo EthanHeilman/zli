@@ -6,6 +6,7 @@ import { OrganizationControlsPolicyUpdateRequest } from '../../../webshell-commo
 import { OrganizationControlsPolicySummary } from '../../../webshell-common-ts/http/v2/policy/organization-controls/types/organization-controls-policy-summary.types';
 import { ProxyPolicySummary } from '../../../webshell-common-ts/http/v2/policy/proxy/types/proxy-policy-summary.types';
 import { ProxyPolicyCreateRequest } from '../../../webshell-common-ts/http/v2/policy/proxy/requests/proxy-policy-create.requests';
+import { ProxyPolicyUpdateRequest } from '../../../webshell-common-ts/http/v2/policy/proxy/requests/proxy-policy-update.requests';
 import { SessionRecordingPolicyCreateRequest } from '../../../webshell-common-ts/http/v2/policy/session-recording/requests/session-recording-create.requests';
 import { SessionRecordingPolicyUpdateRequest } from '../../../webshell-common-ts/http/v2/policy/session-recording/requests/session-recording-policy-update.requests';
 import { SessionRecordingPolicySummary } from '../../../webshell-common-ts/http/v2/policy/session-recording/types/session-recording-policy-summary.types';
@@ -72,6 +73,11 @@ export class PolicyHttpService extends HttpService
         return this.Patch(`${KUBE}/${policy.id}` , request);
     }
 
+    public UpdateKubernetesPolicy(policyId: string, request: KubernetesPolicyUpdateRequest):
+            Promise<KubernetesPolicySummary> {
+        return this.Patch(`${KUBE}/${policyId}`, request);
+    }
+
     public EditOrganizationControlPolicy(
         policy: OrganizationControlsPolicySummary
     ): Promise<OrganizationControlsPolicySummary> {
@@ -85,6 +91,11 @@ export class PolicyHttpService extends HttpService
         return this.Patch(`${ORG}/${policy.id}`, request);
     }
 
+    public UpdateOrganizationControlsPolicy(policyId: string, request: OrganizationControlsPolicyUpdateRequest):
+            Promise<OrganizationControlsPolicySummary> {
+        return this.Patch(`${ORG}/${policyId}`, request);
+    }
+
     public EditSessionRecordingPolicy(
         policy: SessionRecordingPolicySummary
     ): Promise<SessionRecordingPolicySummary> {
@@ -96,6 +107,11 @@ export class PolicyHttpService extends HttpService
             recordInput: policy.recordInput
         };
         return this.Patch(`${SESSION}/${policy.id}`, request);
+    }
+
+    public UpdateSessionRecordingPolicy(policyId: string, request: SessionRecordingPolicyUpdateRequest):
+            Promise<SessionRecordingPolicySummary> {
+        return this.Patch(`${SESSION}/${policyId}`, request);
     }
 
     public EditTargetConnectPolicy(
@@ -114,6 +130,15 @@ export class PolicyHttpService extends HttpService
         return this.Patch(`${TARGET}/${policy.id}`, request);
     }
 
+    public UpdateTargetConnectPolicy(policyId: string, request: TargetConnectPolicyUpdateRequest):
+            Promise<TargetConnectPolicySummary> {
+        return this.Patch(`${TARGET}/${policyId}`, request);
+    }
+
+    public UpdateProxyPolicy(policyId: string, request: ProxyPolicyUpdateRequest):
+            Promise<ProxyPolicySummary> {
+        return this.Patch(`${PROXY}/${policyId}`, request);
+    }
 
     public AddKubernetesPolicy(request: KubernetesPolicyCreateRequest): Promise<KubernetesPolicySummary> {
         return this.Post(KUBE, request);
@@ -153,5 +178,25 @@ export class PolicyHttpService extends HttpService
 
     public DeleteProxyPolicy(policyId: string): Promise<void> {
         return this.Delete(`${PROXY}/${policyId}`);
+    }
+
+    public GetKubernetesPolicy(policyId: string): Promise<KubernetesPolicySummary> {
+        return this.Get(`${KUBE}/${policyId}`);
+    }
+
+    public GetOrganizationControlsPolicy(policyId: string): Promise<OrganizationControlsPolicySummary> {
+        return this.Get(`${ORG}/${policyId}`);
+    }
+
+    public GetSessionRecordingPolicy(policyId: string): Promise<SessionRecordingPolicySummary> {
+        return this.Get(`${SESSION}/${policyId}`);
+    }
+
+    public GetTargetConnectPolicy(policyId: string): Promise<TargetConnectPolicySummary> {
+        return this.Get(`${TARGET}/${policyId}`);
+    }
+
+    public GetProxyPolicy(policyId: string): Promise<ProxyPolicySummary> {
+        return this.Get(`${PROXY}/${policyId}`);
     }
 }

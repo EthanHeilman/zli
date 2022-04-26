@@ -21,7 +21,7 @@ export async function callZli(zliArgs: string[], callback?: (err: Error, argv: a
                         await callback(err, argv, output);
 
                     // Always throw an error to fail the test if yargs returned
-                    // an error
+                    // an error if the expected exit code is 0
                     if (err) {
                         throw new Error(`zli ${zliArgs.join(' ')} returned error: ${err}`);
                     }

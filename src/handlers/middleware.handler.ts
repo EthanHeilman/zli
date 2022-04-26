@@ -149,9 +149,9 @@ export function initLoggerMiddleware(argv: any) {
     };
 }
 
-export async function initMiddleware(argv: any, logger : Logger) {
+export async function initMiddleware(argv: any, logger : Logger, isSystemTest : boolean) {
     // Config init
-    const configService = new ConfigService(<string>argv.configName, logger, argv.configDir);
+    const configService = new ConfigService(<string>argv.configName, logger, argv.configDir, isSystemTest);
 
     // KeySplittingService init
     const keySplittingService = new KeySplittingService(configService, logger);

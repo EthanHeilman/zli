@@ -28,9 +28,27 @@ export interface MultiStringValue {
   type: 'multi'
 }
 
-export interface HelmNamespaceOptions {
+export interface HelmInstallNamespaceOptions {
     namespace: string
     shouldCreateNamespace: boolean
+}
+
+export async function uninstall(
+    name: string,
+    kubeConfigFile: string,
+    namespace?: string,
+    timeout: string = '10m0s',
+    shouldWait: boolean = true
+) {
+    let uninstallCommand = `helm uninstall ${name} --timeout ${timeout} --kubeconfig=${kubeConfigFile}`;
+    if (namespace) {
+        uninstallCommand += ` --namespace=${namespace}`;
+    }
+    if (shouldWait) {
+        uninstallCommand += ' --wait';
+    }
+
+    await runCommand(uninstallCommand);
 }
 
 /**
@@ -50,7 +68,7 @@ export async function install(
     chart: string,
     kubeConfigFile: string,
     variables: { [key: string]: SingleStringValue | MultiStringValue },
-    namespaceOptions?: HelmNamespaceOptions,
+    namespaceOptions?: HelmInstallNamespaceOptions,
     timeout: string = '10m0s'): Promise<Release> {
     let helmVariableString = '';
     for (const [key, values] of Object.entries(variables)) {

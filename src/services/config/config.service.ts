@@ -41,7 +41,7 @@ export class ConfigService implements ConfigInterface {
 
     public logoutDetected : Observable<boolean> = this.logoutDetectedSubject.asObservable();
 
-    constructor(configName: string, private logger: Logger, configDir?: string) {
+    constructor(configName: string, private logger: Logger, configDir?: string, isSystemTest? : boolean) {
         const projectName = 'bastionzero-zli';
 
         // If a custom configDir append the projectName to the path to keep
@@ -49,6 +49,11 @@ export class ConfigService implements ConfigInterface {
         // overlap and use the same configuration file.
         if(configDir) {
             configDir = path.join(configDir, projectName);
+        }
+
+        let watch = true;
+        if (isSystemTest != undefined && isSystemTest == true) {
+            watch = false;
         }
 
         const appName = this.getAppName(configName);
@@ -88,7 +93,7 @@ export class ConfigService implements ConfigInterface {
                         config.set('serviceUrl', this.getServiceUrl(appName));
                 }
             },
-            watch: true
+            watch: watch
         });
 
         if(configName == 'dev' && ! this.config.get('serviceUrl')) {

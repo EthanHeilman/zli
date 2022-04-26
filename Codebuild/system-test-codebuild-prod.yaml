@@ -5,14 +5,15 @@ env:
   variables:
     TZ: "America/New_York date"
     ReleaseDir: "release"
-    AWS_ENV: "dev"
+    AWS_ENV: prod
+    BZERO_IN_CI: 1
   parameter-store:
     # The SSH RSA Key used by our machine user
     build_ssh_key: "/cwc/ssh/rolandfrank"
-    BZERO_AGENT_VERSION: /webshell/development/bzero-agent-version
-    BCTL_QUICKSTART_VERSION: /development/infra/bctl-quickstart-version
+    BZERO_AGENT_VERSION: /webshell/staging/bzero-agent-version
+    BCTL_QUICKSTART_VERSION: /staging/infra/bctl-quickstart-version
   secrets-manager:
-    DO_API_KEY: development/infra/system-test-secret:DO_API_KEY
+    DO_API_KEY: production/infra/system-test-secret:DO_API_KEY
   git-credential-helper: yes
 phases:
   install:
@@ -41,30 +42,25 @@ phases:
       - git submodule init
       - git submodule update --recursive
       # Install Bzero-QA
-      - git clone git@github.com:bastionzero/cwc-infra.git /cwc-infra/
+      - git clone git@github.com:bastionzero/cwc-infra.git  --branch develop /cwc-infra/
       - pip3 install -e /cwc-infra/Bzero-Common/. && pip3 install -e /cwc-infra/Bzero-QA/.
       # Install npm dependencies
       - apt-get update -y && apt-get install build-essential cmake -y
       # We need to 1.16 and this isnt in yum
-      - wget https://dl.google.com/go/go1.16.4.linux-amd64.tar.gz
+      - wget https://dl.google.com/go/go1.16.4.linux-amd64.tar.gz -q
       - tar -C /usr/local -xzf go1.16.4.linux-amd64.tar.gz
       - echo 'export PATH=/usr/local/go/bin:$PATH' >>~/.bash_profile
       - export PATH=/usr/local/go/bin:$PATH
-      - npm ci
-      # Build golang daemon, only run the linux release as we dont want to build all binaries
-      - npm run update-daemon-version
-      - npm run release-linux
       - # Install system-test dependencies
       - # Install helm (ref: https://helm.sh/docs/intro/install/#from-apt-debianubuntu)
       - curl https://baltocdn.com/helm/signing.asc | apt-key add -
       - apt-get install apt-transport-https -y
       - echo "deb https://baltocdn.com/helm/stable/debian/ all main" | tee /etc/apt/sources.list.d/helm-stable-debian.list
       - apt-get update -y && apt-get install helm
+      # Install npm@7
+      - npm install -g npm@7
   build:
     commands:
       - echo Build started `date`
       - echo Running system tests
-      - src/system-tests/run-system-tests.sh
-  post_build:
-    commands:
-      - echo Post build started `date`
+      - bzero-qa test -sys-tests --allSuites

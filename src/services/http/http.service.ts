@@ -49,7 +49,8 @@ export class HttpService {
                         return response;
                     }
                 ]
-            }
+            },
+            timeout: 30000 // Timeout after 30 seconds
             // throwHttpErrors: false // potentially do this if we want to check http without exceptions
         });
     }

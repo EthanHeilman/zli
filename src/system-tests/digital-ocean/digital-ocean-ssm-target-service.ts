@@ -29,28 +29,14 @@ export class DigitalOceanSSMTargetService {
     }
 
     /**
-     * Create a DigitalOcean droplet to host a new SSM target
+     * Create a DigitalOcean droplet to host a new target
      * @param autoDiscoveryScript The autodiscovery script which is passed in as
      * a User-Data script during droplet creation
      * @returns Information about the created droplet
      */
-    public async createDigitalOceanSSMTarget(parameters: DigitalOceanSsmTargetParameters, autoDiscoveryScript: string): Promise<IDroplet> {
+    public async createDigitalOceanTarget(parameters: DigitalOceanSsmTargetParameters, autoDiscoveryScript: string): Promise<IDroplet> {
         // Create the droplet
         let droplet = await this.createNewDroplet({ ...parameters.dropletParameters, userDataScript: autoDiscoveryScript });
-
-        // Poll until DigitalOcean says the droplet is online / active
-        droplet = await this.pollDropletUntilActive(droplet.id);
-
-        return droplet;
-    }
-
-    /**
-     * Create a DigitalOcean droplet to host a new bzero target
-     * @returns Information about the created droplet
-     */
-    public async createDigitalOceanBzeroTarget(parameters: DigitalOceanSsmTargetParameters): Promise<IDroplet> {
-        // Create the droplet
-        let droplet = await this.createNewDroplet({ ...parameters.dropletParameters });
 
         // Poll until DigitalOcean says the droplet is online / active
         droplet = await this.pollDropletUntilActive(droplet.id);
@@ -191,9 +177,9 @@ export class DigitalOceanSSMTargetService {
      * @returns Droplet information after its status == "active"
      */
     private async pollDropletUntilActive(dropletId: number): Promise<IDroplet> {
-        // Try 60 times with a delay of 10 seconds between each attempt (10 min).
+        // Try 80 times with a delay of 10 seconds between each attempt (~13 min).
         const retrier = new Retrier({
-            limit: 60,
+            limit: 80,
             delay: 1000 * 10,
             stopRetryingIf: (reason: any) => axios.isAxiosError(reason)
         });
