@@ -47,6 +47,8 @@ export function initRegionalSSMTargetsTestConfig(logger: Logger): TestTarget[] {
         let adBadSshCaseId = null;
         let pmSshCaseId = null;
         let pmBadSshCaseId = null;
+        let pmGroupConnectCaseId = null;
+        let adGroupConnectCaseId = null;
 
         switch (awsRegion) {
         case 'ap-northeast-1':
@@ -54,6 +56,8 @@ export function initRegionalSSMTargetsTestConfig(logger: Logger): TestTarget[] {
             adBadConnectCaseId = '2367';
             pmConnectCaseId = '2177';
             pmBadConnectBaseId = '2368';
+            pmGroupConnectCaseId = '3097';
+            adGroupConnectCaseId = '3096';
 
             adSshCaseId = '2178';
             adBadSshCaseId = '2363';
@@ -73,7 +77,8 @@ export function initRegionalSSMTargetsTestConfig(logger: Logger): TestTarget[] {
                 connectCaseId: adConnectCaseId,
                 badConnectCaseId: adBadConnectCaseId,
                 sshCaseId: adSshCaseId,
-                badSshCaseId: adBadSshCaseId
+                badSshCaseId: adBadSshCaseId,
+                groupConnectCaseId: adGroupConnectCaseId
             },
             {
                 installType: 'pm',
@@ -83,7 +88,8 @@ export function initRegionalSSMTargetsTestConfig(logger: Logger): TestTarget[] {
                 connectCaseId: pmConnectCaseId,
                 badConnectCaseId: pmBadConnectBaseId,
                 sshCaseId: pmSshCaseId,
-                badSshCaseId: pmBadSshCaseId
+                badSshCaseId: pmBadSshCaseId,
+                groupConnectCaseId: pmGroupConnectCaseId
             }
         );
     });
