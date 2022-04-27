@@ -83,7 +83,6 @@ export const organizationSuite = () => {
             // Only run this test if we are in CI and talking to staging or dev
             if (IN_CI && (SERVICE_URL.includes('cloud-dev') || SERVICE_URL.includes('cloud-staging'))) {
                 const groups = await organizationService.FetchGroups();
-                console.log(groups);
                 const expectedGroup = groups.find(group => group.idPGroupId == GROUP_ID && group.name == GROUP_NAME);
                 expect(expectedGroup).toBeDefined();
             } else {
@@ -96,7 +95,6 @@ export const organizationSuite = () => {
             // Only run this test if we are in CI and talking to staging or dev
             if (IN_CI && (SERVICE_URL.includes('cloud-dev') || SERVICE_URL.includes('cloud-staging'))) {
                 const groups = await organizationService.ListGroups();
-                console.log(groups);
                 const expectedGroup = groups.find(group => group.idPGroupId == GROUP_ID && group.name == GROUP_NAME);
                 expect(expectedGroup).toBeDefined();
             } else {

@@ -1,12 +1,10 @@
-import { IN_PROD } from './system-test';
+import { IN_CI, IN_PIPELINE } from './system-test';
 import { DigitalOceanDistroImage } from '../digital-ocean/digital-ocean-ssm-target.service.types';
 import { convertAwsRegionToDigitalOceanRegion } from '../digital-ocean/digital-ocean.types';
 import { TestTarget } from './system-test.types';
 
 const defaultAwsRegion = 'us-east-1';
 const defaultDigitalOceanRegion = convertAwsRegionToDigitalOceanRegion(defaultAwsRegion);
-
-const BZERO_IN_CI = process.env.BZERO_IN_CI ? (process.env.BZERO_IN_CI === '1') : false;
 
 // Different types of SSM test targets to create. Each object corresponds to a
 // new droplet.
@@ -15,7 +13,7 @@ export const ssmTestTargetsToRun: TestTarget[] = [{ installType: 'pm', dropletIm
 // Different types of vt targets to create for each type of operating system
 export const vtTestTargetsToRun: TestTarget[] = [{ installType: 'pm-vt', dropletImage: DigitalOceanDistroImage.BzeroVTUbuntuTestImage, doRegion: defaultDigitalOceanRegion, awsRegion: defaultAwsRegion, webCaseId: '2155', dbCaseId: '2153', badDbCaseId: '2372', badWebCaseId: '2374' }];
 
-if (IN_PROD && BZERO_IN_CI) {
+if (IN_PIPELINE && IN_CI) {
     ssmTestTargetsToRun.concat([
         // old autodiscovery script (all-in-bash)
         { installType: 'ad', dropletImage: DigitalOceanDistroImage.AmazonLinux2, doRegion: defaultDigitalOceanRegion, awsRegion: defaultAwsRegion, connectCaseId: '2120', closeCaseId: '3652', badConnectCaseId: '2347', sshCaseId: '2147', badSshCaseId: '2358', groupConnectCaseId: '3091'  },
