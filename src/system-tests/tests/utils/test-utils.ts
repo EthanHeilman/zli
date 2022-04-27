@@ -8,7 +8,7 @@ import { LoggerConfigService } from '../../../../src/services/logger/logger-conf
 import { SubjectType } from '../../../../webshell-common-ts/http/v2/common.types/subject.types';
 import { CommandEventResponse } from '../../../../webshell-common-ts/http/v2/event/response/command-event-data-message';
 
-import *  as fs from 'fs'
+import *  as fs from 'fs';
 const pids = require('port-pid');
 
 const EVENT_QUERY_TIME = 2;

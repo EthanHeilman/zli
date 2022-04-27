@@ -1,24 +1,24 @@
-import * as pty from "node-pty";
-import { MockSTDIN } from "mock-stdin";
+import * as pty from 'node-pty';
+import { MockSTDIN } from 'mock-stdin';
 
 import * as CleanExitHandler from '../../../handlers/clean-exit.handler';
 import * as ShellUtilWrappers from '../../../utils/shell-util-wrappers';
 
-import { sleepTimeout, TestUtils } from "./test-utils";
-import { bzeroTargetCustomUser } from "../system-test-setup";
-import { DigitalOceanSSMTarget, DigitalOceanBZeroTarget} from "../../digital-ocean/digital-ocean-ssm-target.service.types";
-import { callZli } from "./zli-utils";
-import { ConnectionHttpService } from "../../../http-services/connection/connection.http-services";
-import { ConnectionEventType } from "../../../../webshell-common-ts/http/v2/event/types/connection-event.types";
-import waitForExpect from "wait-for-expect";
-import { getMockResultValue } from "./jest-utils";
-import { testTargets } from "../system-test";
-import { TestTarget } from "../system-test.types";
+import { sleepTimeout, TestUtils } from './test-utils';
+import { bzeroTargetCustomUser } from '../system-test-setup';
+import { DigitalOceanSSMTarget, DigitalOceanBZeroTarget} from '../../digital-ocean/digital-ocean-ssm-target.service.types';
+import { callZli } from './zli-utils';
+import { ConnectionHttpService } from '../../../http-services/connection/connection.http-services';
+import { ConnectionEventType } from '../../../../webshell-common-ts/http/v2/event/types/connection-event.types';
+import waitForExpect from 'wait-for-expect';
+import { getMockResultValue } from './jest-utils';
+import { testTargets } from '../system-test';
+import { TestTarget } from '../system-test.types';
 
 
 /**
  * Interface that can be used to abstract any differences between ssm/bzero
- * targets in system-tests so that they can share the same common test code 
+ * targets in system-tests so that they can share the same common test code
  */
 interface ConnectTarget {
     // Connect tests only rely on fields that are common between both ssm/bzero targets (id/name)
@@ -50,7 +50,7 @@ export class ConnectTestUtils {
     public async runConnectTest(testTarget: TestTarget): Promise<CapturedConnectTest> {
         const doTarget = testTargets.get(testTarget);
         const connectTarget = this.getConnectTarget(doTarget);
-                
+
         // Spy on result of the ConnectionHttpService.GetConnection
         // call. This spy is used to assert the correct regional
         // connection node was used to establish the websocket.
@@ -156,13 +156,17 @@ export class ConnectTestUtils {
         if(doTarget.type === 'bzero') {
 
             let daemonPty: pty.IPty;
-            let capturedOutput: string[] = [];
+            const capturedOutput: string[] = [];
 
             jest.spyOn(ShellUtilWrappers, 'spawnDaemon').mockImplementation((finalDaemonPath, args, cwd) => {
                 return new Promise((resolve, reject) => {
-                    daemonPty = this.spawnDaemonPty(finalDaemonPath, args, cwd);
-                    daemonPty.onData((data) => capturedOutput.push(data));
-                    daemonPty.onExit((e) => resolve(e.exitCode));
+                    try {
+                        daemonPty = this.spawnDaemonPty(finalDaemonPath, args, cwd);
+                        daemonPty.onData((data) => capturedOutput.push(data));
+                        daemonPty.onExit((e) => resolve(e.exitCode));
+                    } catch(err) {
+                        reject(err);
+                    }
                 });
             });
 
@@ -174,7 +178,7 @@ export class ConnectTestUtils {
                 type: 'bzero',
                 writeToStdIn: async (data) => {
                     if(! daemonPty) {
-                        throw new Error("daemonPty is undefined");
+                        throw new Error('daemonPty is undefined');
                     }
 
                     await this.sendMockInput(data, (data) => daemonPty.write(data));
@@ -184,7 +188,7 @@ export class ConnectTestUtils {
                 }
             };
         } else if(doTarget.type === 'ssm') {
-            let capturedOutput: string[] = [];
+            const capturedOutput: string[] = [];
             jest.spyOn(ShellUtilWrappers, 'pushToStdOut').mockImplementation((output) => {
                 capturedOutput.push(Buffer.from(output).toString('utf-8'));
             });
@@ -197,7 +201,7 @@ export class ConnectTestUtils {
                 type: 'ssm',
                 writeToStdIn: async (data) => {
                     if(! this.mockStdin) {
-                        throw new Error("mockStdin is undefined");
+                        throw new Error('mockStdin is undefined');
                     }
                     await this.sendMockInput(data, (data) => this.mockStdin.send(data));
                 },
@@ -216,7 +220,7 @@ export class ConnectTestUtils {
      * @param {string} commandToSend Command we want to send
      * @param {writeFunc} writeFunc Function used to write the input data
      */
-     private async sendMockInput(commandToSend: string, writeFunc: (data: string) => void) {
+    private async sendMockInput(commandToSend: string, writeFunc: (data: string) => void) {
         const commandSplit = commandToSend.split('');
         for (let i : number = 0; i < commandSplit.length; i++ ){
             const char = commandSplit[i];

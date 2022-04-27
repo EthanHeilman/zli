@@ -1,4 +1,4 @@
-import * as cp from "child_process";
+import * as cp from 'child_process';
 
 // These are wrapper functions we use in shell-utils that we can spy on or mock
 // the implementation of during system-tests. If they are defined in the same
@@ -30,7 +30,7 @@ export function spawnDaemon(path: string, args: string[], cwd: string): Promise<
                 shell: true,
                 stdio: ['inherit', 'inherit', 'inherit'],
             };
-        
+
             const daemonProcess = cp.spawn(path, args, options);
 
             daemonProcess.on('close', (exitCode) => {

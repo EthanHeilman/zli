@@ -203,7 +203,7 @@ export async function startShellDaemon(
             finalDaemonPath = await copyExecutableToLocalDir(logger, configService.configPath());
         }
 
-        try { 
+        try {
             const daemonProcessExitCode = await spawnDaemon(finalDaemonPath, args, cwd);
             logger.debug(`Shell Daemon closed with exit code ${daemonProcessExitCode}`);
             resolve(daemonProcessExitCode);

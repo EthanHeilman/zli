@@ -452,7 +452,7 @@ sudo yum install ${packageName} iperf3 -y
         // Add a bzero custom user for connect/ssh tests
         // --shell options sets default shell as bash
         // -m option will create a home directory with proper permissions
-        const createBzeroCustomerUserCmd = `useradd ${bzeroTargetCustomUser} --shell /bin/bash -m`
+        const createBzeroCustomerUserCmd = `useradd ${bzeroTargetCustomUser} --shell /bin/bash -m`;
 
         initBlock = String.raw`${pythonWebServerCmd}
 ${iperfCmd}

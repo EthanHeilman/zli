@@ -47,8 +47,8 @@ export const connectSuite = () => {
                 description: `Target connect policy created for system test: ${systemTestUniqueId}`,
                 environments: [environment],
                 targets: [],
-                targetUsers: [{ userName: 'ssm-user' }, {userName: bzeroTargetCustomUser }],
-                verbs: [{type: VerbType.Shell},]
+                targetUsers: [{ userName: 'ssm-user' }, { userName: bzeroTargetCustomUser }],
+                verbs: [{ type: VerbType.Shell },]
             });
         }, 15 * 1000);
 
@@ -82,8 +82,8 @@ export const connectSuite = () => {
             // Keep track of our connection id so we can call the close endpoint
             let connectionId = '';
             it(`${testTarget.connectCaseId}: zli connect - ${testTarget.awsRegion} - ${testTarget.installType} - ${getDOImageName(testTarget.dropletImage)}`, async () => {
-              const capturedResults = await connectTestUtils.runConnectTest(testTarget);
-              connectionId = capturedResults.connectionId;
+                const capturedResults = await connectTestUtils.runConnectTest(testTarget);
+                connectionId = capturedResults.connectionId;
             }, 60 * 1000);
 
             it(`${testTarget.closeCaseId}: zli close - ${testTarget.awsRegion} - ${testTarget.installType} - ${getDOImageName(testTarget.dropletImage)}`, async () => {
@@ -96,6 +96,7 @@ export const connectSuite = () => {
                 // Expect our close event now
                 expect(await testUtils.EnsureConnectionEventCreated(connectTarget.id, connectTarget.name, connectTarget.targetUser, connectTarget.eventTargetType, ConnectionEventType.Closed));
 
+                await connectTestUtils.runConnectTest(testTarget);
             }, 60 * 1000);
         });
 
