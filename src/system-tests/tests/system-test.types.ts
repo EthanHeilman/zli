@@ -51,6 +51,7 @@ interface BaseTarget {
     sshCaseId?: string // For our ssh test suite
     badSshCaseId?: string // For our ssh test negation test
     connectCaseId?: string; // For our connect test suite
+    closeCaseId?: string; // For our close test suite
     groupConnectCaseId?: string; // For our group based connect
     badConnectCaseId?: string; // for our connect negation test
     dbCaseId?: string; // For our db test suite

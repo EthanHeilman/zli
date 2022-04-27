@@ -210,7 +210,7 @@ export const kubeSuite = () => {
             // Ensure that we see a log of this under the kube logs
             expect(await testUtils.EnsureKubeEvent(doCluster.bzeroClusterTargetSummary.name, KubeTestUserName, ['system:masters'], 'N/A', ['/api/v1/namespaces'], []));
             testPassed = true;
-        }, 30 * 1000);
+        }, 60 * 1000);
 
         test('2370: zli connect bad user - Kube REST API plugin - get namespaces', async () => {
             const doCluster = testCluster;

@@ -78,6 +78,9 @@ export const connectSuite = () => {
         });
 
         ssmTestTargetsToRun.forEach(async (testTarget: TestTarget) => {
+            // Keep track of our connection id so we can call the close endpoint
+            let connectionId = '';
+
             it(`${testTarget.connectCaseId}: zli connect - ${testTarget.awsRegion} - ${testTarget.installType} - ${getDOImageName(testTarget.dropletImage)}`, async () => {
                 const doTarget = testTargets.get(testTarget) as DigitalOceanSSMTarget;
 
@@ -85,6 +88,8 @@ export const connectSuite = () => {
                 // used at the end of the test to assert the correct regional
                 // connection node was used to establish the websocket.
                 const shellConnectionAuthDetailsSpy = jest.spyOn(ConnectionHttpService.prototype, 'GetShellConnectionAuthDetails');
+                // Also spy to get the connection Id
+                const createConnectionSpy = jest.spyOn(ConnectionHttpService.prototype, 'CreateConnection');
 
                 // Spy on output pushed to stdout
                 const capturedOutput: string[] = [];
@@ -150,11 +155,28 @@ export const connectSuite = () => {
                 const gotShellConnectionAuthDetails = await getMockResultValue(shellConnectionAuthDetailsSpy.mock.results[0]);
                 expect(gotShellConnectionAuthDetails.region).toBe<string>(testTarget.awsRegion);
 
+                // Set our connectionId
+                expect(createConnectionSpy).toHaveBeenCalled();
+                connectionId = await getMockResultValue(createConnectionSpy.mock.results[0]);
+
                 // Ensure that the client disconnect event is here
                 // Note, there is no close event since we do not close the connection, just disconnect from it
                 expect(await testUtils.EnsureConnectionEventCreated(doTarget.ssmTarget.id, doTarget.ssmTarget.name, targetUser, 'SSM', ConnectionEventType.ClientDisconnect));
             }, 60 * 1000);
+
+            it(`${testTarget.closeCaseId}: zli close - ${testTarget.awsRegion} - ${testTarget.installType} - ${getDOImageName(testTarget.dropletImage)}`, async () => {
+                const doTarget = testTargets.get(testTarget) as DigitalOceanSSMTarget;
+
+                // Call zli close
+                await callZli(['close', connectionId]);
+
+                // Expect our close event now
+                expect(await testUtils.EnsureConnectionEventCreated(doTarget.ssmTarget.id, doTarget.ssmTarget.name, targetUser, 'SSM', ConnectionEventType.Closed));
+
+            }, 60 * 1000);
         });
+
+
 
         ssmTestTargetsToRun.forEach(async (testTarget: TestTarget) => {
             it(`${testTarget.badConnectCaseId}: zli connect bad user - ${testTarget.awsRegion} - ${testTarget.installType} - ${getDOImageName(testTarget.dropletImage)}`, async () => {

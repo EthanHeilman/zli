@@ -47,6 +47,8 @@ export function initRegionalSSMTargetsTestConfig(logger: Logger): TestTarget[] {
         let adBadSshCaseId = null;
         let pmSshCaseId = null;
         let pmBadSshCaseId = null;
+        let adCloseCasedId = null;
+        let pmCloseCasedId = null;
         let pmGroupConnectCaseId = null;
         let adGroupConnectCaseId = null;
 
@@ -56,6 +58,10 @@ export function initRegionalSSMTargetsTestConfig(logger: Logger): TestTarget[] {
             adBadConnectCaseId = '2367';
             pmConnectCaseId = '2177';
             pmBadConnectBaseId = '2368';
+
+            pmCloseCasedId = '3658';
+            adCloseCasedId = '3657';
+
             pmGroupConnectCaseId = '3097';
             adGroupConnectCaseId = '3096';
 
@@ -78,7 +84,8 @@ export function initRegionalSSMTargetsTestConfig(logger: Logger): TestTarget[] {
                 badConnectCaseId: adBadConnectCaseId,
                 sshCaseId: adSshCaseId,
                 badSshCaseId: adBadSshCaseId,
-                groupConnectCaseId: adGroupConnectCaseId
+                groupConnectCaseId: adGroupConnectCaseId,
+                closeCaseId: adCloseCasedId
             },
             {
                 installType: 'pm',
@@ -89,7 +96,8 @@ export function initRegionalSSMTargetsTestConfig(logger: Logger): TestTarget[] {
                 badConnectCaseId: pmBadConnectBaseId,
                 sshCaseId: pmSshCaseId,
                 badSshCaseId: pmBadSshCaseId,
-                groupConnectCaseId: pmGroupConnectCaseId
+                groupConnectCaseId: pmGroupConnectCaseId,
+                closeCaseId: pmCloseCasedId
             }
         );
     });
