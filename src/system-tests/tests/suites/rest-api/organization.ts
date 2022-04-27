@@ -1,6 +1,6 @@
 import { OrganizationSummary } from '../../../../../webshell-common-ts/http/v2/organization/types/organization-summary.types';
 import { OrganizationHttpService } from '../../../../http-services/organization/organization.http-services';
-import { configService, logger, systemTestRegistrationApiKey } from '../../system-test';
+import { configService, GROUP_ID, GROUP_NAME, IN_CI, logger, SERVICE_URL, systemTestRegistrationApiKey } from '../../system-test';
 import { ApiKeyHttpService } from '../../../../http-services/api-key/api-key.http-services';
 import 'jest-extended';
 
@@ -8,11 +8,30 @@ export const organizationSuite = () => {
     describe('Organization Suite', () => {
         let organizationService : OrganizationHttpService;
         let apiKeyService : ApiKeyHttpService;
+        let getGroupsCaseId: string;
+        let fetchGroupsCaseId: string;
+
+        // Set our test caseIds based on the IDP we are configured against
+        switch (configService.idp()) {
+        case 'google':
+            getGroupsCaseId = '3103';
+            fetchGroupsCaseId = '3100';
+            break;
+        case 'okta':
+            getGroupsCaseId = '3105';
+            fetchGroupsCaseId = '3102';
+            break;
+        case 'microsoft':
+            getGroupsCaseId = '3104';
+            fetchGroupsCaseId = '3101';
+            break;
+        default:
+            throw new Error(`Unhandled IDP passed: ${configService.idp()}`);
+        }
 
         beforeAll(() => {
             apiKeyService = new ApiKeyHttpService(configService, logger);
             organizationService = new OrganizationHttpService(configService, logger);
-
         });
 
         test('2263: Get users organization', async () => {
@@ -59,5 +78,31 @@ export const organizationSuite = () => {
             };
             expect(disableGlobalRegKeyResponse).toMatchObject(toExpect);
         }, 15 * 1000);
+
+        test(`${fetchGroupsCaseId}: Fetch groups from the identity provider`, async () => {
+            // Only run this test if we are in CI and talking to staging or dev
+            if (IN_CI && (SERVICE_URL.includes('cloud-dev') || SERVICE_URL.includes('cloud-staging'))) {
+                const groups = await organizationService.FetchGroups();
+                console.log(groups);
+                const expectedGroup = groups.find(group => group.idPGroupId == GROUP_ID && group.name == GROUP_NAME);
+                expect(expectedGroup).toBeDefined();
+            } else {
+                logger.info(`Skipping groups based endpoint as IN_CI is set to false`);
+            }
+        });
+
+        // Test our group based endpoints
+        test(`${getGroupsCaseId}: Get Groups configured for this org`, async () => {
+            // Only run this test if we are in CI and talking to staging or dev
+            if (IN_CI && (SERVICE_URL.includes('cloud-dev') || SERVICE_URL.includes('cloud-staging'))) {
+                const groups = await organizationService.ListGroups();
+                console.log(groups);
+                const expectedGroup = groups.find(group => group.idPGroupId == GROUP_ID && group.name == GROUP_NAME);
+                expect(expectedGroup).toBeDefined();
+            } else {
+                logger.info(`Skipping groups based endpoint as IN_CI is set to false`);
+            }
+        });
+
     });
 };

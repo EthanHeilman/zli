@@ -23,6 +23,7 @@ import { NewApiKeyResponse } from '../../../webshell-common-ts/http/v2/api-key/r
 import { TestTarget } from './system-test.types';
 import { EnvironmentHttpService } from '../../http-services/environment/environment.http-services';
 import { vtSuite } from './suites/vt';
+import { iperfSuite } from './suites/iperf';
 import { ssmTestTargetsToRun, vtTestTargetsToRun } from './targets-to-run';
 import { setupDOTestCluster, createDOTestTargets, setupSystemTestApiKeys } from './system-test-setup';
 import { cleanupDOTestCluster, cleanupDOTestTargets, cleanupSystemTestApiKeys } from './system-test-cleanup';
@@ -30,6 +31,7 @@ import { apiKeySuite } from './suites/rest-api/api-keys';
 import { organizationSuite } from './suites/rest-api/organization';
 import { environmentsSuite } from './suites/rest-api/environments';
 import { policySuite } from './suites/rest-api/policies/policies';
+import { groupsSuite } from './suites/groups';
 import { callZli } from './utils/zli-utils';
 
 // Uses config name from ZLI_CONFIG_NAME environment variable (defaults to prod
@@ -59,10 +61,29 @@ if (! bctlQuickstartVersion) {
     throw new Error('Must set the BCTL_QUICKSTART_VERSION environment variable');
 }
 
-const KUBE_ENABLED = process.env.KUBE_ENABLED ? (process.env.KUBE_ENABLED === 'true') : true;
+export const KUBE_ENABLED = process.env.KUBE_ENABLED ? (process.env.KUBE_ENABLED === 'true') : true;
 const VT_ENABLED = process.env.VT_ENABLED ? (process.env.VT_ENABLED === 'true') : true;
 const SSM_ENABLED =  process.env.SSM_ENABLED ? (process.env.SSM_ENABLED === 'true') : true;
 const API_ENABLED = process.env.API_ENABLED ? (process.env.API_ENABLED === 'true') : true;
+export const IN_PROD = process.env.IN_PROD ? process.env.IN_PROD === 'true' : false;;
+
+export const IN_CI = process.env.BZERO_IN_CI ? (process.env.BZERO_IN_CI === '1') : false;
+export const SERVICE_URL = configService.serviceUrl();
+
+// Make sure we have defined our groupId if we are configured against cloud-dev or cloud-staging
+export let GROUP_ID: string = undefined;
+export let GROUP_NAME: string = undefined;
+if (IN_CI && (SERVICE_URL.includes('cloud-dev') || SERVICE_URL.includes('cloud-dev'))) {
+    GROUP_ID = process.env.GROUP_ID;
+    if (! GROUP_ID) {
+        throw new Error('Must set the GROUP_ID environment variable');
+    }
+
+    GROUP_NAME = process.env.GROUP_NAME;
+    if (! GROUP_NAME) {
+        throw new Error('Must set the GROUP_NAME environment variable');
+    }
+}
 
 
 export const systemTestTags = process.env.SYSTEM_TEST_TAGS ? process.env.SYSTEM_TEST_TAGS.split(',').filter(t => t != '') : ['system-tests'];
@@ -163,9 +184,16 @@ beforeAll(async () => {
 
 // Cleanup droplets after running all tests
 afterAll(async () => {
+    // Always clean up any daemons otherwise this can
+    // lead to leaky child process'
+    logger.info('Calling zli disconnect...');
+    await callZli(['disconnect']);
+
     // Delete the API key created for system tests
+    logger.info('Cleaning up system test API keys...');
     await cleanupSystemTestApiKeys(systemTestRESTApiKey, systemTestRegistrationApiKey);
 
+    logger.info('Cleaning up any digital ocean objects...');
     await checkAllSettledPromise(Promise.allSettled([
         cleanupDOTestTargets(),
         async function() {
@@ -178,14 +206,11 @@ afterAll(async () => {
 
     // Delete the environment for this system test
     // Note this must be called after our cleanup, so we do not have any targets in the environment
+    logger.info('Cleaning up any BastionZero environments...');
     if (systemTestEnvId) {
         const environmentService = new EnvironmentHttpService(configService, logger);
         await environmentService.DeleteEnvironment(systemTestEnvId);
     }
-
-    // Always clean up any daemons otherwise this can
-    // lead to leaky child process'
-    await callZli(['disconnect']);
 }, 60 * 1000);
 
 // Call list target suite anytime a target test is called
@@ -197,6 +222,11 @@ if (SSM_ENABLED || KUBE_ENABLED || VT_ENABLED) {
 if(SSM_ENABLED) {
     connectSuite();
     sshSuite();
+
+    if (IN_CI && (SERVICE_URL.includes('cloud-dev') || SERVICE_URL.includes('cloud-dev'))) {
+        // Only run group tests if we are in CI and talking to staging or dev
+        groupsSuite();
+    };
 }
 
 if(KUBE_ENABLED) {
@@ -205,6 +235,7 @@ if(KUBE_ENABLED) {
 
 if(VT_ENABLED) {
     vtSuite();
+    iperfSuite();
 }
 
 if (API_ENABLED) {

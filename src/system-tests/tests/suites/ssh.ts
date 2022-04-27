@@ -8,15 +8,15 @@ import { configService, logger, systemTestEnvId, systemTestPolicyTemplate, syste
 import { callZli } from '../utils/zli-utils';
 import { removeIfExists } from '../../../utils/utils';
 import { DigitalOceanSSMTarget } from '../../digital-ocean/digital-ocean-ssm-target.service.types';
-import { VerbType } from '../../../../src/services/v1/policy-query/policy-query.types';
 import { SubjectType } from '../../../../webshell-common-ts/http/v2/common.types/subject.types';
-import { Subject } from '../../../../src/services/v1/policy/policy.types';
 import { Environment } from '../../../../webshell-common-ts/http/v2/policy/types/environment.types';
 import { TestTarget } from '../system-test.types';
 import { ssmTestTargetsToRun } from '../targets-to-run';
 import { cleanupTargetConnectPolicies } from '../system-test-cleanup';
 import { PolicyHttpService } from '../../../http-services/policy/policy.http-services';
 import { ConnectionHttpService } from '../../../http-services/connection/connection.http-services';
+import { Subject } from '../../../../webshell-common-ts/http/v2/policy/types/subject.types';
+import { VerbType } from '../../../../webshell-common-ts/http/v2/policy/types/verb-type.types';
 
 export const sshSuite = () => {
     describe('ssh suite', () => {

@@ -11,11 +11,11 @@ import { WebTargetService } from '../../../http-services/web-target/web-target.h
 import { TestUtils } from '../utils/test-utils';
 import { SubjectType } from '../../../../webshell-common-ts/http/v2/common.types/subject.types';
 import { Environment } from '../../../../webshell-common-ts/http/v2/policy/types/environment.types';
-import { Subject } from '../../../../src/services/v1/policy/policy.types';
 import { ConnectionEventType } from '../../../../webshell-common-ts/http/v2/event/types/connection-event.types';
 import { vtTestTargetsToRun } from '../targets-to-run';
 import { TestTarget } from '../system-test.types';
 import { PolicyHttpService } from '../../../http-services/policy/policy.http-services';
+import { Subject } from '../../../../webshell-common-ts/http/v2/policy/types/subject.types';
 
 const { Client } = require('pg');
 const fs = require('fs');
@@ -64,6 +64,10 @@ export const vtSuite = () => {
                 policy.name == systemTestPolicyTemplate.replace('$POLICY_TYPE', 'proxy')
             );
             policyService.DeleteProxyPolicy(proxyPolicy.id);
+
+            // Also attempt to close any daemons to avoid any leaks in the tests
+            await callZli(['disconnect', 'db']);
+            await callZli(['disconnect', 'web']);
         }, 15 * 1000);
 
 
@@ -72,8 +76,16 @@ export const vtSuite = () => {
             await testUtils.CheckDaemonLogs(testPassed, expect.getState().currentTestName);
 
             // Always make sure our ports are free, else throw an error
-            await testUtils.CheckPort(localDbPort);
-            await testUtils.CheckPort(localWebPort);
+            try {
+                await testUtils.CheckPort(localDbPort);
+                await testUtils.CheckPort(localWebPort);
+            } catch (e: any) {
+                // Always ensure we clean up any dangling connections if there are any errors
+                await callZli(['disconnect', 'web']);
+                await callZli(['disconnect', 'db']);
+
+                throw e;
+            }
 
             // Reset test passed
             testPassed = false;

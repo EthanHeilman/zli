@@ -2,25 +2,24 @@ import { MockSTDIN, stdin } from 'mock-stdin';
 import * as ShellUtils from '../../../utils/shell-utils';
 import * as CleanExitHandler from '../../../handlers/clean-exit.handler';
 import waitForExpect from 'wait-for-expect';
-import { configService, logger, loggerConfigService, systemTestEnvId, systemTestPolicyTemplate, systemTestUniqueId, testTargets } from '../system-test';
+import { configService, GROUP_ID, GROUP_NAME, logger, loggerConfigService, systemTestEnvId, systemTestPolicyTemplate, systemTestUniqueId, testTargets } from '../system-test';
 import { getMockResultValue } from '../utils/jest-utils';
 import { callZli } from '../utils/zli-utils';
 import { ConnectionHttpService } from '../../../http-services/connection/connection.http-services';
 import { DigitalOceanSSMTarget, getDOImageName } from '../../digital-ocean/digital-ocean-ssm-target.service.types';
 import { TestUtils } from '../utils/test-utils';
-import { SubjectType } from '../../../../webshell-common-ts/http/v2/common.types/subject.types';
 import { Environment } from '../../../../webshell-common-ts/http/v2/policy/types/environment.types';
-import { ConnectionEventType } from '../../../../webshell-common-ts/http/v2/event/types/connection-event.types';
 import { TestTarget } from '../system-test.types';
 import { ssmTestTargetsToRun } from '../targets-to-run';
 import { cleanupTargetConnectPolicies } from '../system-test-cleanup';
 import { PolicyHttpService } from '../../../http-services/policy/policy.http-services';
-import { Subject } from '../../../../webshell-common-ts/http/v2/policy/types/subject.types';
+import { OrganizationHttpService } from '../../../http-services/organization/organization.http-services';
 import { VerbType } from '../../../../webshell-common-ts/http/v2/policy/types/verb-type.types';
 
-export const connectSuite = () => {
-    describe('connect suite', () => {
+export const groupsSuite = () => {
+    describe('Groups suite', () => {
         let policyService: PolicyHttpService;
+        let organizationService: OrganizationHttpService;
         let testUtils: TestUtils;
 
         let mockStdin: MockSTDIN;
@@ -30,22 +29,28 @@ export const connectSuite = () => {
         beforeAll(async () => {
             // Construct all http services needed to run tests
             policyService = new PolicyHttpService(configService, logger);
+            organizationService = new OrganizationHttpService(configService, logger);
             testUtils = new TestUtils(configService, logger, loggerConfigService);
 
-            const currentUser: Subject = {
-                id: configService.me().id,
-                type: SubjectType.User
-            };
+
             const environment: Environment = {
                 id: systemTestEnvId
             };
 
-            // Then create our targetConnect policy
+            // Call fetch endpoint to get the latest group information for the current user
+            // We are fetching here as the python wrapper creates a dynamic group beforehand, but
+            // our backend requires a new login (or this endpoint) to update group IDP membership
+            await organizationService.FetchGroupsMembership(configService.me().id);
+
+            // Then create our group based targetConnect policy
             await policyService.AddTargetConnectPolicy({
-                name: systemTestPolicyTemplate.replace('$POLICY_TYPE', 'target-connect'),
-                subjects: [currentUser],
-                groups: [],
-                description: `Target connect policy created for system test: ${systemTestUniqueId}`,
+                name: systemTestPolicyTemplate.replace('$POLICY_TYPE', 'group-connect'),
+                subjects: [],
+                groups: [{
+                    id: GROUP_ID,
+                    name: GROUP_NAME
+                }],
+                description: `Target connect policy for groups based integration created for system test: ${systemTestUniqueId}`,
                 environments: [environment],
                 targets: [],
                 targetUsers: [{ userName: targetUser }],
@@ -56,7 +61,7 @@ export const connectSuite = () => {
         // Cleanup all policy after the tests
         afterAll(async () => {
             // Search and delete our target connect policy
-            await cleanupTargetConnectPolicies(systemTestPolicyTemplate.replace('$POLICY_TYPE', 'target-connect'));
+            await cleanupTargetConnectPolicies(systemTestPolicyTemplate.replace('$POLICY_TYPE', 'group-connect'));
         });
 
         // Called before each case
@@ -77,8 +82,9 @@ export const connectSuite = () => {
             }
         });
 
+        // Attempt to make a connection to our ssm targets via our groups based policy
         ssmTestTargetsToRun.forEach(async (testTarget: TestTarget) => {
-            it(`${testTarget.connectCaseId}: zli connect - ${testTarget.awsRegion} - ${testTarget.installType} - ${getDOImageName(testTarget.dropletImage)}`, async () => {
+            it(`${testTarget.groupConnectCaseId}: zli group connect - ${testTarget.awsRegion} - ${testTarget.installType} - ${getDOImageName(testTarget.dropletImage)}`, async () => {
                 const doTarget = testTargets.get(testTarget) as DigitalOceanSSMTarget;
 
                 // Spy on result Bastion gives for shell auth details. This spy is
@@ -96,15 +102,11 @@ export const connectSuite = () => {
                 // Call "zli connect"
                 const connectPromise = callZli(['connect', `${targetUser}@${doTarget.ssmTarget.name}`]);
 
-                // Ensure that the created and connect event exists
-                expect(await testUtils.EnsureConnectionEventCreated(doTarget.ssmTarget.id, doTarget.ssmTarget.name, targetUser, 'SSM', ConnectionEventType.ClientConnect));
-                expect(await testUtils.EnsureConnectionEventCreated(doTarget.ssmTarget.id, doTarget.ssmTarget.name, targetUser, 'SSM', ConnectionEventType.Created));
-
                 // Assert the output spy receives the same input sent to mock stdIn.
                 // Keep sending input until the output spy says we've received what
                 // we sent (possibly sends command more than once).
 
-                const commandToSend = 'echo "hello world"';
+                const commandToSend = 'echo "hello groups"';
                 await waitForExpect(
                     async () => {
                         // Wait for there to be some output
@@ -117,7 +119,7 @@ export const connectSuite = () => {
                         // output.
                         await testUtils.sendMockInput(commandToSend, mockStdin);
 
-                        // Check that "hello world" command exists in out backend, its possible this will fail if we go to fast
+                        // Check that "hello groups" command exists in out backend, its possible this will fail if we go to fast
                         try {
                             await testUtils.EnsureCommandLogExists(doTarget.ssmTarget.id, doTarget.ssmTarget.name, targetUser, 'SSM', commandToSend);
                         } catch (e: any) {
@@ -149,32 +151,6 @@ export const connectSuite = () => {
                 expect(shellConnectionAuthDetailsSpy).toHaveBeenCalled();
                 const gotShellConnectionAuthDetails = await getMockResultValue(shellConnectionAuthDetailsSpy.mock.results[0]);
                 expect(gotShellConnectionAuthDetails.region).toBe<string>(testTarget.awsRegion);
-
-                // Ensure that the client disconnect event is here
-                // Note, there is no close event since we do not close the connection, just disconnect from it
-                expect(await testUtils.EnsureConnectionEventCreated(doTarget.ssmTarget.id, doTarget.ssmTarget.name, targetUser, 'SSM', ConnectionEventType.ClientDisconnect));
-            }, 60 * 1000);
-        });
-
-        ssmTestTargetsToRun.forEach(async (testTarget: TestTarget) => {
-            it(`${testTarget.badConnectCaseId}: zli connect bad user - ${testTarget.awsRegion} - ${testTarget.installType} - ${getDOImageName(testTarget.dropletImage)}`, async () => {
-                const doTarget = testTargets.get(testTarget) as DigitalOceanSSMTarget;
-
-                // Spy on result Bastion gives for shell auth details. This spy is
-                // used at the end of the test to ensure it has not been called
-                const shellConnectionAuthDetailsSpy = jest.spyOn(ConnectionHttpService.prototype, 'GetShellConnectionAuthDetails');
-
-                // Call "zli connect"
-                const expectedErrorMessage = 'Expected error';
-                jest.spyOn(CleanExitHandler, 'cleanExit').mockImplementationOnce(() => {
-                    throw new Error(expectedErrorMessage);
-                });
-                const connectPromise = callZli(['connect', `baduser@${doTarget.ssmTarget.name}`]);
-
-                await expect(connectPromise).rejects.toThrow(expectedErrorMessage);
-
-                // Assert shell connection auth details has not been called
-                expect(shellConnectionAuthDetailsSpy).not.toHaveBeenCalled();
             }, 60 * 1000);
         });
     });

@@ -124,7 +124,7 @@ export function isPkgProcess() {
 
 export async function startDaemonInDebugMode(finalDaemonPath: string, cwd: string, args: string[]) {
     const startDaemonPromise = new Promise<void>(async (resolve) => {
-        // Start our daemon process, but stream our stdio to the user (pipe)
+        // Start our daemon process in its own process group, but stream our stdio to the user (pipe)
         const daemonProcess = await spawn(finalDaemonPath, args,
             {
                 cwd: cwd,
@@ -136,21 +136,7 @@ export async function startDaemonInDebugMode(finalDaemonPath: string, cwd: strin
 
         process.on('SIGINT', () => {
             // CNT+C Sent from the user, kill the daemon process, which will trigger an exit
-            if (process.platform === 'linux') {
-                spawn('pkill', ['-s', daemonProcess.pid], {
-                    cwd: process.cwd(),
-                    shell: true,
-                    detached: true,
-                    stdio: 'inherit'
-                });
-            } else {
-                spawn('pkill', ['-P', daemonProcess.pid], {
-                    cwd: process.cwd(),
-                    shell: true,
-                    detached: true,
-                    stdio: 'inherit'
-                });
-            }
+            killPid(daemonProcess.pid);
         });
 
         daemonProcess.on('exit', function () {
@@ -196,12 +182,7 @@ export async function copyExecutableToLocalDir(logger: Logger, configPath: strin
 
     let daemonExecPath = undefined;
     let finalDaemonPath = undefined;
-    if (process.platform === 'win32') {
-        daemonExecPath = path.join(prefix, DAEMON_PATH);
-
-        finalDaemonPath = path.join(configFileDir, 'daemon.exe');
-    }
-    else if (process.platform === 'linux' || process.platform === 'darwin') {
+    if (process.platform === 'linux' || process.platform === 'darwin') {
         daemonExecPath = path.join(prefix, DAEMON_PATH);
 
         finalDaemonPath = path.join(configFileDir, 'daemon');
@@ -233,7 +214,12 @@ async function deleteIfExists(pathToFile: string) {
     }
 }
 
-
+/**
+ * Helper function to kill a daemon process
+ * @param {number} localPid Local pid we are trying to kill
+ * @param {number} localPort Local port we are trying to clear
+ * @param {Logger} logger Logger
+ */
 export async function killDaemon(localPid: number, localPort: number, logger: Logger) {
     // then kill the daemon
     if ( localPid != null) {
@@ -286,14 +272,19 @@ export async function killPortProcess(port: number, logger: Logger) {
     }
 }
 
+/**
+ * Helper function to get a pids from a port number
+ * @param port Port number we are looking for
+ * @returns The process Ids using that port
+ */
 async function getPidForPort(port: number): Promise<number[]> {
-    // Helper function to get a pids from a port number
-    const getPidPromise = new Promise<number[]>(async (resolve, _) => {
+    const ports = new Promise<number[]>(async (resolve, _) => {
         pids(port).then((pids: any) => {
             resolve(pids.tcp);
         });
     });
-    return await getPidPromise;
+    const awaitedPorts = await ports;
+    return awaitedPorts;
 }
 
 function killPid(pid: string) {
@@ -302,13 +293,7 @@ function killPid(pid: string) {
     // For unix based os we kill all processes based on group id by using kill -{signal} -{pid}
     // https://stackoverflow.com/a/49842576/9186330
     const options = { stdio: ['ignore', 'ignore', 'ignore'] };
-    if (process.platform === 'win32') {
-        exec(`taskkill /F /T /PID ${pid}`, options);
-    } else if (process.platform === 'linux') {
-        exec(`kill -9 -${pid}`, options);
-    } else {
-        exec(`kill -9 -${pid}`, options);
-    }
+    exec(`kill -9 -${pid}`, options);
 }
 
 /**

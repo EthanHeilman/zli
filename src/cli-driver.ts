@@ -15,7 +15,6 @@ import { OAuthService } from './services/oauth/oauth.service';
 import { cleanExit } from './handlers/clean-exit.handler';
 import { GAService } from './services/Tracking/google-analytics.service';
 import { MixpanelService } from './services/Tracking/mixpanel.service';
-import { PolicyType } from './services/v1/policy/policy.types';
 import { TargetType } from '../webshell-common-ts/http/v2/target/types/target.types';
 import { TargetStatus } from '../webshell-common-ts/http/v2/target/types/targetStatus.types';
 import { TargetSummary } from '../webshell-common-ts/http/v2/target/targetSummary.types';
@@ -23,6 +22,7 @@ import { KubeClusterSummary } from '../webshell-common-ts/http/v2/target/kube/ty
 import { EnvironmentSummary } from '../webshell-common-ts/http/v2/environment/types/environment-summary.responses';
 import { version } from '../package.json';
 import { BzeroAgentSummary } from '../webshell-common-ts/http/v2/target/bzero/types/bzero-agent-summary.types';
+import { PolicyType } from '../webshell-common-ts/http/v2/policy/types/policy-type.types';
 
 // Handlers
 import { initMiddleware, oAuthMiddleware, fetchDataMiddleware, GATrackingMiddleware, initLoggerMiddleware, mixpanelTrackingMiddleware } from './handlers/middleware.handler';
@@ -48,24 +48,24 @@ import { quickstartHandler } from './handlers/quickstart/quickstart-handler';
 import { describeClusterPolicyHandler } from './handlers/describe-cluster-policy/describe-cluster-policy.handler';
 import { quickstartCmdBuilder } from './handlers/quickstart/quickstart.command-builder';
 import { defaultTargetGroupHandler } from './handlers/default-target-group/default-target-group.handler';
-import { addUserToPolicyHandler } from './handlers/user/add-user-policy.handler.v2';
-import { deleteUserFromPolicyHandler } from './handlers/user/delete-user-policy.handler.v2';
-import { addGroupToPolicyHandler } from './handlers/group/add-group-policy.handler.v2';
-import { deleteGroupFromPolicyHandler } from './handlers/group/delete-group-policy-handler.v2';
-import { addTargetUserHandler } from './handlers/target-user/add-target-user.handler.v2';
-import { deleteTargetUserHandler } from './handlers/target-user/delete-target-user.handler.v2';
-import { listTargetUsersHandler } from './handlers/target-user/list-target-users.handler.v2';
-import { addTargetGroupHandler } from './handlers/target-group/add-target-group.handler.v2';
-import { deleteTargetGroupHandler } from './handlers/target-group/delete-target-group.handler.v2';
-import { listTargetGroupHandler } from './handlers/target-group/list-target-group.handler.v2';
+import { addUserToPolicyHandler } from './handlers/user/add-user-policy.handler';
+import { deleteUserFromPolicyHandler } from './handlers/user/delete-user-policy.handler';
+import { addGroupToPolicyHandler } from './handlers/group/add-group-policy.handler';
+import { deleteGroupFromPolicyHandler } from './handlers/group/delete-group-policy-handler';
+import { addTargetUserHandler } from './handlers/target-user/add-target-user.handler';
+import { deleteTargetUserHandler } from './handlers/target-user/delete-target-user.handler';
+import { listTargetUsersHandler } from './handlers/target-user/list-target-users.handler';
+import { addTargetGroupHandler } from './handlers/target-group/add-target-group.handler';
+import { deleteTargetGroupHandler } from './handlers/target-group/delete-target-group.handler';
+import { listTargetGroupHandler } from './handlers/target-group/list-target-group.handler';
 import { listKubernetesPoliciesHandler } from './handlers/policy/list-kubernetes-policies.handler';
 import { listTargetConnectPoliciesHandler } from './handlers/policy/list-target-connect-policies.handler';
 import { listSessionRecordingPoliciesHandler } from './handlers/policy/list-session-recording-policies.handler';
 import { listOrganizationControlsPoliciesHandler } from './handlers/policy/list-organization-controls-policies.handler';
-import { listUsersHandler } from './handlers/user/list-users.handler.v2';
 import { generateKubeConfigHandler } from './handlers/generate/generate-kube-config.handler';
 import { generateSshConfigHandler } from './handlers/generate/generate-ssh-config.handler';
 import { sshProxyConfigHandler } from './handlers/generate/generate-ssh-proxy.handler';
+import { listUsersHandler } from './handlers/user/list-users.handler';
 
 
 // 3rd Party Modules
