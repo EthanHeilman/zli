@@ -10,6 +10,11 @@ export type RegisteredDigitalOceanKubernetesCluster = {
     doClusterSummary: IKubernetesCluster;
     bzeroClusterTargetSummary: KubeClusterSummary;
     kubeConfigFileContents: string;
+    kubeConfigFilePath: string;
+    // Name of the helm chart installed
+    helmChartName: string;
+    // Namespace the helm chart that manages the agent is installed in
+    helmChartNamespace: string;
 };
 
 /**

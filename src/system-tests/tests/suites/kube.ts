@@ -1,7 +1,8 @@
 import * as k8s from '@kubernetes/client-node';
+import * as CleanExitHandler from '../../../handlers/clean-exit.handler';
 import { callZli } from '../utils/zli-utils';
-import { HttpError } from '@kubernetes/client-node';
-import { clusterVersionsToRun, loggerConfigService, testClusters } from '../system-test';
+import { HttpError, V1Pod } from '@kubernetes/client-node';
+import { loggerConfigService, systemTestUniqueId, testCluster } from '../system-test';
 import { configService, logger } from '../system-test';
 import { TestUtils } from '../utils/test-utils';
 import { ConnectionEventType } from '../../../../webshell-common-ts/http/v2/event/types/connection-event.types';
@@ -10,8 +11,10 @@ import { PolicyHttpService } from '../../../http-services/policy/policy.http-ser
 const fs = require('fs');
 
 export const KubeTestUserName = 'foo';
+const BadKubeTestUserName = 'baduser';
 export const KubeTestTargetGroups = ['system:masters', 'foo'];
 export const KubeBctlNamespace = 'bastionzero';
+export const KubeHelmQuickstartChartName = 'bctlquickstart';
 
 export const kubeSuite = () => {
     describe('kube suite', () => {
@@ -19,12 +22,17 @@ export const kubeSuite = () => {
         let testUtils: TestUtils;
 
         let testPassed = false;
-        const kubeConfigYamlFilePath = '/tmp/bzero-agent-kubeconfig.yml';
+        const kubeConfigYamlFilePath = `/tmp/bzero-agent-kubeconfig-${systemTestUniqueId}.yml`;
 
         beforeAll(() => {
             // Construct all http services needed to run tests
             policyService = new PolicyHttpService(configService, logger);
             testUtils = new TestUtils(configService, logger, loggerConfigService);
+        });
+
+        afterAll(async () => {
+            // Also attempt to close the daemons to avoid any leaks in the tests
+            await callZli(['disconnect', 'kube']);
         });
 
         beforeEach(() => {
@@ -33,9 +41,6 @@ export const kubeSuite = () => {
         });
 
         afterEach(async () => {
-            // Always disconnect
-            await callZli(['disconnect']);
-
             // Check the daemon logs incase there is a test failure
             await testUtils.CheckDaemonLogs(testPassed, expect.getState().currentTestName);
 
@@ -45,11 +50,16 @@ export const kubeSuite = () => {
                 await testUtils.CheckPort(kubeConfig.localPort);
             }
 
+            if (!testPassed) {
+                // If the test did not pass attempt to close the daemon
+                await callZli(['disconnect', 'kube']);
+            }
+
             // Reset test passed
             testPassed = false;
         }, 15 * 1000);
 
-        test.each(clusterVersionsToRun)('zli generate kubeConfig %p', async (_) => {
+        test('2159: zli generate kubeConfig', async () => {
             // Generate the kubeConfig YAML and write to a file to be read by
             // the kubectl ts library
             await callZli(['generate', 'kubeConfig', '-o', kubeConfigYamlFilePath]);
@@ -58,8 +68,98 @@ export const kubeSuite = () => {
             expect(fs.existsSync(kubeConfigYamlFilePath));
         });
 
-        test.each(clusterVersionsToRun)('zli connect - Kube REST API plugin - get namespaces - %p', async (clusterVersion) => {
-            const doCluster = testClusters.get(clusterVersion);
+        test('2369: zli connect - Kube REST API plugin - Delete agent pod', async () => {
+            const doCluster = testCluster;
+
+            // Init Kube client using DigitalOcean kube-config. We fallback to
+            // this as we can't use the kube daemon when the pod is restarting
+            const digitalOceanKubeConfig = new k8s.KubeConfig();
+            digitalOceanKubeConfig.loadFromFile(doCluster.kubeConfigFilePath);
+            function waitForNewAgentPodToBeRunning(oldAgentPodName: string): Promise<V1Pod> {
+                return new Promise((resolve, reject) => {
+                    const watch = new k8s.Watch(digitalOceanKubeConfig);
+                    const req = watch.watch(
+                        `/api/v1/namespaces/${doCluster.helmChartNamespace}/pods`,
+                        {},
+                        (_, obj) => {
+                            if (obj.metadata.name != oldAgentPodName && obj.status.phase === 'Running') {
+                                // Cleanup the watch
+                                req.then(res => res.abort()).catch(err => reject(err));
+                                // Resolve!
+                                resolve(obj);
+                            }
+                        },
+                        // done callback is called if the watch terminates normally
+                        err => {
+                            if (err) {
+                                reject(err);
+                            }
+                        },
+                    );
+                });
+            }
+
+            // Init Kube client
+            const kc = new k8s.KubeConfig();
+            kc.loadFromFile(kubeConfigYamlFilePath);
+            const k8sApi = kc.makeApiClient(k8s.CoreV1Api);
+
+            // Start tunnel as system master so we can actually make a request
+            // If we add multiple groups, we will not be able to execute the
+            // request: Ref: https://kubernetes.io/docs/reference/access-authn-authz/authorization/#determine-whether-a-request-is-allowed-or-denied
+            const targetGroupArgs: string[] = ['--targetGroup', 'system:masters'];
+            let finalArgs: string[] = ['connect', `${KubeTestUserName}@${doCluster.bzeroClusterTargetSummary.name}`];
+            finalArgs = finalArgs.concat(targetGroupArgs);
+            await callZli(finalArgs);
+
+            // Ensure the created and connected event exist
+            expect(await testUtils.EnsureConnectionEventCreated(doCluster.bzeroClusterTargetSummary.id, doCluster.bzeroClusterTargetSummary.name, KubeTestUserName, 'CLUSTER', ConnectionEventType.Created));
+            expect(await testUtils.EnsureConnectionEventCreated(doCluster.bzeroClusterTargetSummary.id, doCluster.bzeroClusterTargetSummary.name, KubeTestUserName, 'CLUSTER', ConnectionEventType.ClientConnect));
+
+            // Delete the agent pod
+            let oldAgentPodName = '';
+            try {
+                const listPodsResp = await k8sApi.listNamespacedPod(doCluster.helmChartNamespace);
+                const listPodsParsed = listPodsResp.body;
+
+                // There should only be 1 pod in the bastionzero namespace
+                oldAgentPodName = listPodsParsed.items[0].metadata.name;
+                await k8sApi.deleteNamespacedPod(oldAgentPodName, doCluster.helmChartNamespace);
+            } catch (err) {
+                // Pretty print Kube API error
+                if (err instanceof HttpError) {
+                    console.log(`Kube API returned error: ${JSON.stringify(err.response, null, 4)}`);
+                }
+                throw err;
+            }
+
+            // Disconnect
+            await callZli(['disconnect', 'kube']);
+
+            // Ensure that the disconnect and close events exist
+            expect(await testUtils.EnsureConnectionEventCreated(doCluster.bzeroClusterTargetSummary.id, doCluster.bzeroClusterTargetSummary.name, KubeTestUserName, 'CLUSTER', ConnectionEventType.ClientDisconnect));
+            expect(await testUtils.EnsureConnectionEventCreated(doCluster.bzeroClusterTargetSummary.id, doCluster.bzeroClusterTargetSummary.name, KubeTestUserName, 'CLUSTER', ConnectionEventType.Closed));
+
+            // Ensure that we see a log of this under the kube logs
+            expect(await testUtils.EnsureKubeEvent(doCluster.bzeroClusterTargetSummary.name, KubeTestUserName, ['system:masters'], 'N/A', [`/api/v1/namespaces/${doCluster.helmChartNamespace}/pods`], []));
+            expect(await testUtils.EnsureKubeEvent(doCluster.bzeroClusterTargetSummary.name, KubeTestUserName, ['system:masters'], 'N/A', [`/api/v1/namespaces/${doCluster.helmChartNamespace}/pods/${oldAgentPodName}`], []));
+
+            // Wait for the agent pod to come online. The next test will ensure
+            // we can still connect
+            logger.info('Waiting for agent pod to restart...');
+            const newAgentPod = await waitForNewAgentPodToBeRunning(oldAgentPodName);
+            logger.info(`New agent pod is running! Name: ${newAgentPod.metadata.name}`);
+
+            const sleepTimeoutSeconds = 15;
+            logger.info(`Sleeping ${sleepTimeoutSeconds} seconds to give time for agent to reconnect...`);
+            await delay(1000 * sleepTimeoutSeconds);
+
+            testPassed = true;
+        }, (180 * 1000) + (1000 * 4 * 60)); // 180s max for all the kube events + connection, and 4m for the test to remain online
+
+
+        test('2160: zli connect - Kube REST API plugin - get namespaces', async () => {
+            const doCluster = testCluster;
 
             // Init Kube client
             const kc = new k8s.KubeConfig();
@@ -78,6 +178,7 @@ export const kubeSuite = () => {
             });
             let finalArgs: string[] = ['connect', `${KubeTestUserName}@${doCluster.bzeroClusterTargetSummary.name}`];
             finalArgs = finalArgs.concat(targetGroupArgs);
+
             await callZli(finalArgs);
 
             // Ensure the created and connected event exist
@@ -89,8 +190,8 @@ export const kubeSuite = () => {
                 const listNamespaceResp = await k8sApi.listNamespace();
                 const resp = listNamespaceResp.body;
 
-                // Assert that KubeBctlNamespace namespace (created by helm quickstart) exists
-                expect(resp.items.find(t => t.metadata.name === KubeBctlNamespace)).toBeTruthy();
+                // Assert that namespace created by helm quickstart exists
+                expect(resp.items.find(t => t.metadata.name === doCluster.helmChartNamespace)).toBeTruthy();
             } catch (err) {
                 // Pretty print Kube API error
                 if (err instanceof HttpError) {
@@ -109,10 +210,26 @@ export const kubeSuite = () => {
             // Ensure that we see a log of this under the kube logs
             expect(await testUtils.EnsureKubeEvent(doCluster.bzeroClusterTargetSummary.name, KubeTestUserName, ['system:masters'], 'N/A', ['/api/v1/namespaces'], []));
             testPassed = true;
+        }, 60 * 1000);
+
+        test('2370: zli connect bad user - Kube REST API plugin - get namespaces', async () => {
+            const doCluster = testCluster;
+
+            const finalArgs: string[] = ['connect', `${BadKubeTestUserName}@${doCluster.bzeroClusterTargetSummary.name}`];
+
+            const expectedErrorMessage = 'Expected error';
+            jest.spyOn(CleanExitHandler, 'cleanExit').mockImplementationOnce(() => {
+                throw new Error(expectedErrorMessage);
+            });
+            const callZliPromise =  callZli(finalArgs); // expect this to exit with exit code 1
+
+            await expect(callZliPromise).rejects.toThrow(expectedErrorMessage);
+
+            testPassed = true;
         }, 30 * 1000);
 
-        test.each(clusterVersionsToRun)('zli connect - Kube REST API plugin - multiple groups - %p', async (clusterVersion) => {
-            const doCluster = testClusters.get(clusterVersion);
+        test('2161: zli connect - Kube REST API plugin - multiple groups - %p', async () => {
+            const doCluster = testCluster;
 
             // Init Kube client
             const kc = new k8s.KubeConfig();
@@ -158,9 +275,9 @@ export const kubeSuite = () => {
             testPassed = true;
         }, 30 * 1000);
 
-        test.each(clusterVersionsToRun)('zli targetuser - add target user to policy %p', async (clusterVersion) => {
+        test('2162: zli targetuser - add target user to policy', async () => {
             // Grab our cluster information and set up our spy
-            const doCluster = testClusters.get(clusterVersion);
+            const doCluster = testCluster;
 
             // Call the target group function
             await callZli(['targetuser', `${doCluster.bzeroClusterTargetSummary.name}-policy`, 'someuser', '-a']);
@@ -177,9 +294,9 @@ export const kubeSuite = () => {
             testPassed = true;
         }, 30 * 1000);
 
-        test.each(clusterVersionsToRun)('zli targetuser - delete target user to policy %p', async (clusterVersion) => {
+        test('2163: zli targetuser - delete target user from policy %p', async () => {
             // Grab our cluster information and set up our spy
-            const doCluster = testClusters.get(clusterVersion);
+            const doCluster = testCluster;
 
             // Call the target group function
             await callZli(['targetuser', `${doCluster.bzeroClusterTargetSummary.name}-policy`, 'someuser', '-d']);
@@ -196,9 +313,9 @@ export const kubeSuite = () => {
             testPassed = true;
         }, 30 * 1000);
 
-        test.each(clusterVersionsToRun)('zli targetgroup - add target group to policy %p', async (clusterVersion) => {
+        test('2164: zli targetgroup - add target group to policy', async () => {
             // Grab our cluster information and set up our spy
-            const doCluster = testClusters.get(clusterVersion);
+            const doCluster = testCluster;
 
             // Call the target group function
             await callZli(['targetgroup', `${doCluster.bzeroClusterTargetSummary.name}-policy`, 'somegroup', '-a']);
@@ -215,9 +332,9 @@ export const kubeSuite = () => {
             testPassed = true;
         }, 30 * 1000);
 
-        test.each(clusterVersionsToRun)('zli targetgroup - delete target group to policy %p', async (clusterVersion) => {
+        test('2165: zli targetgroup - delete target group from policy', async () => {
             // Grab our cluster information and set up our spy
-            const doCluster = testClusters.get(clusterVersion);
+            const doCluster = testCluster;
 
             // Call the target group function
             await callZli(['targetgroup', `${doCluster.bzeroClusterTargetSummary.name}-policy`, 'somegroup', '-d']);
@@ -234,4 +351,6 @@ export const kubeSuite = () => {
             testPassed = true;
         }, 30 * 1000);
     });
+
+    const delay = (ms: number) => new Promise(res => setTimeout(res, ms));
 };

@@ -6,6 +6,8 @@ import { ConnectionEventResponse } from '../../../../webshell-common-ts/http/v2/
 import { configService } from '../system-test';
 import { LoggerConfigService } from '../../../../src/services/logger/logger-config.service';
 import { SubjectType } from '../../../../webshell-common-ts/http/v2/common.types/subject.types';
+import { MockSTDIN } from 'mock-stdin';
+import { CommandEventResponse } from '../../../../webshell-common-ts/http/v2/event/response/command-event-data-message';
 
 const fs = require('fs');
 const pids = require('port-pid');
@@ -34,7 +36,34 @@ export class TestUtils {
      * @param {string} targetName Target name we are looking for
      * @param {string} targetUsers Target user we are connected as
      * @param {string} targetType Target type we are looking for (i.e. CLUSTER)
-     * @param {ConnectionEventType} eventType Event we are checking for
+     * @param {string} command Command we are looking for
+     */
+    private async BuildCommandEvent(targetId: string, targetName: string, targetUser: string, targetType: string, command: string): Promise<CommandEventResponse> {
+        const me = configService.me();
+        const toReturn: CommandEventResponse = {
+            id: expect.anything(),
+            connectionId: expect.anything(),
+            subjectId: me.id,
+            subjectType: SubjectType.User,
+            userName: me.email,
+            organizationId: me.organizationId,
+            targetId: targetId,
+            targetType: targetType,
+            targetName: targetName,
+            targetUser: targetUser,
+            timestamp: expect.anything(),
+            command: command
+        };
+        return toReturn;
+    }
+
+    /**
+     * Helper function to build a command event so we can verify it exist in our backend
+     * @param {string} targetId Target id we are looking fo
+     * @param {string} targetName Target name we are looking for
+     * @param {string} targetUsers Target user we are connected as
+     * @param {string} targetType Target type we are looking for (i.e. CLUSTER)
+     * @param {ConnectionEventType} eventType Event we are looking for
      */
     private async BuildConnectionEvent(targetId: string, targetName: string, targetUser: string, targetType: string, eventType: ConnectionEventType): Promise<ConnectionEventResponse> {
         const me = configService.me();
@@ -57,6 +86,7 @@ export class TestUtils {
         };
         return toReturn;
     }
+
     /**
      * Helper function to ensure that a connection event was created
      * (i.e. client connect -> closed exists in our db events logs)
@@ -105,6 +135,40 @@ export class TestUtils {
 
         // Ensure the values match
         expect(eventCreated).toMatchObject(connectionEvent);
+    }
+
+    /**
+     * Helper function to ensure that a command log was created
+     * @param {string} targetId Target id we are looking for
+     * @param {string} targetName Target name we are looking for
+     * @param {string} targetUsers Target user we are connected as
+     * @param {string} targetType Target type we are looking for (i.e. CLUSTER)
+     * @param {string} command Command we are looking for
+     */
+    public async EnsureCommandLogExists(targetId: string, targetName: string, targetUser: string, targetType: string, command: string) {
+
+        // Query for our events
+        const startTimestamp = new Date();
+        startTimestamp.setHours(startTimestamp.getHours() - EVENT_QUERY_TIME);
+        const commands = await this.eventsService.GetCommandEvent(startTimestamp, [configService.me().id]);
+
+        const commandCreated = commands.find(event => {
+            if (event.targetId == targetId && event.targetType == targetType) {
+                if (event.command == command) {
+                    return true;
+                }
+            };
+        });
+
+        if (commandCreated == undefined) {
+            throw new Error(`Unable to find command: ${command} for targetId ${targetId}`);
+        }
+
+        // Build our connection event
+        const commandEvent = this.BuildCommandEvent(targetId, targetName, targetUser, targetType, command);
+
+        // Ensure the values match
+        expect(commandCreated).toMatchObject(commandEvent);
     }
 
     /**
@@ -170,7 +234,9 @@ export class TestUtils {
     public async CheckDaemonLogs(testPassed: boolean, testName: string) {
         const daemonLogPath = this.loggerConfigService.daemonLogPath();
         if (!fs.existsSync(daemonLogPath)) {
-            this.logger.warn(`No daemon logs found under ${daemonLogPath}`);
+            if (!testPassed) {
+                this.logger.warn(`No daemon logs found under ${daemonLogPath}`);
+            }
             return;
         };
 
@@ -202,9 +268,34 @@ export class TestUtils {
                 resolve(pids.tcp);
             });
         });
-        if ((await ports).length != 0) {
-            throw new Error(`There are currently processes using port ${port}: ${ports}`);
+        const awaitedPorts = await ports;
+        if (awaitedPorts.length != 0) {
+            throw new Error(`There are currently processes using port ${port}: ${awaitedPorts}`);
         }
+    }
+
+    /**
+     * Helper function to send mock input to a zli connect
+     * Real humans do not send commands instantaneously, this causes issues in command extraction
+     * and in general when sending the input. This function loops over the command and adds an artificial delay
+     * in order to allow the command to be logged at the bastion level
+     * @param {string} commandToSend Command we want to send
+     * @param {MockSTDIN} mockStdin Mock stdin object
+     */
+    public async sendMockInput(commandToSend: string, mockStdin: MockSTDIN) {
+        const commandSplit = commandToSend.split('');
+        for (let i : number = 0; i < commandSplit.length; i++ ){
+            const char = commandSplit[i];
+
+            // Send our input char by char
+            mockStdin.send(char);
+
+            // Wait in between each letter being sent
+            await this.sleepTimeout(100);
+        }
+
+        // Finally send our enter key
+        mockStdin.send('\r');
     }
 }
 

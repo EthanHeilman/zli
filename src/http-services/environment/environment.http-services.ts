@@ -1,4 +1,5 @@
 import { CreateEnvironmentRequest } from '../../../webshell-common-ts/http/v2/environment/requests/create-environment.requests';
+import { EditEnvironmentRequest } from '../../../webshell-common-ts/http/v2/environment/requests/edit-environment.requests';
 import { CreateEnvironmentResponse } from '../../../webshell-common-ts/http/v2/environment/responses/create-environment.responses';
 import { EnvironmentSummary } from '../../../webshell-common-ts/http/v2/environment/types/environment-summary.responses';
 import { ConfigService } from '../../services/config/config.service';
@@ -12,6 +13,14 @@ export class EnvironmentHttpService extends HttpService {
 
     public ListEnvironments(): Promise<EnvironmentSummary[]> {
         return this.Get();
+    }
+
+    public GetEnvironment(environmentId: string): Promise<EnvironmentSummary> {
+        return this.Get(environmentId);
+    }
+
+    public EditEnvironment(environmentId: string, req: EditEnvironmentRequest): Promise<void> {
+        return this.Patch(environmentId, req);
     }
 
     public CreateEnvironment(req: CreateEnvironmentRequest): Promise<CreateEnvironmentResponse> {

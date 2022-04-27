@@ -74,34 +74,17 @@ export class DigitalOceanKubeService {
     }
 
     /**
-     * Cleans up a DigitalOcean cluster by deleting the cluster on BastionZero
-     * and DigitalOcean
+     * Cleans up a DigitalOcean cluster by deleting the cluster target on
+     * BastionZero
      * @param registeredCluster The registered DigitalOcean cluster to clean up
      * @returns A promise that represents the results of deleting the cluster on
-     * DigitalOcean and BastionZero concurrently
+     * BastionZero
      */
     public async deleteRegisteredKubernetesCluster(
         registeredCluster: RegisteredDigitalOceanKubernetesCluster
     ): Promise<void> {
 
         const cleanupPromises = [];
-
-        // Only delete cluster on DigitalOcean if it is set
-        if (registeredCluster.doClusterSummary) {
-            // Try 3 times with a delay of 10 seconds between each attempt.
-            const retrier = new Retrier({
-                limit: 3,
-                delay: 1000 * 10
-            });
-
-            const deleteDOClusterPromise: Promise<void> = retrier.resolve((attempt) => {
-                this.logger.info(`Attempt ${attempt} deleting cluster ${registeredCluster.doClusterSummary.name}`);
-                return this.doClient.kubernetes.deleteKubernetesCluster({kubernetes_cluster_id: registeredCluster.doClusterSummary.id});
-            });
-
-            cleanupPromises.push(deleteDOClusterPromise);
-        }
-
 
         // NOTE: If cluster delete call fails, then there will also be an
         // extraneous env
@@ -129,7 +112,7 @@ export class DigitalOceanKubeService {
 
     private async deleteClusterPolicy(registeredCluster: RegisteredDigitalOceanKubernetesCluster): Promise<void> {
         // Find the policy that Helm creates and delete it
-        const policyName = this.getHelmClusterPolicyName(registeredCluster.doClusterSummary.name);
+        const policyName = this.getHelmClusterPolicyName(registeredCluster.bzeroClusterTargetSummary.name);
         const kubernetesPolicies = await this.policyHttpService.ListKubernetesPolicies();
         const kubernetesPolicy = kubernetesPolicies.find(p => p.name === policyName);
         if (kubernetesPolicy) {
@@ -141,7 +124,7 @@ export class DigitalOceanKubeService {
 
     private async deleteClusterEnv(registeredCluster: RegisteredDigitalOceanKubernetesCluster): Promise<void> {
         // Find the env that Helm creates and delete it
-        const envName = this.getHelmClusterEnvName(registeredCluster.doClusterSummary.name);
+        const envName = this.getHelmClusterEnvName(registeredCluster.bzeroClusterTargetSummary.name);
         const envs = await this.envHttpService.ListEnvironments();
         const kubeEnv = envs.find(e => e.name === envName);
         if (kubeEnv) {
@@ -157,9 +140,9 @@ export class DigitalOceanKubeService {
      * @returns Information about the cluster
      */
     public async pollClusterTargetOnline(clusterTargetName: string): Promise<KubeClusterSummary> {
-        // Try 30 times with a delay of 10 seconds between each attempt.
+        // Try 60 times with a delay of 10 seconds between each attempt.
         const retrier = new Retrier({
-            limit: 30,
+            limit: 60,
             delay: 1000 * 10,
             stopRetryingIf: (reason: any) => reason instanceof ClusterTargetStatusPollError && reason.clusterSummary.status === TargetStatus.Error
         });
@@ -227,6 +210,16 @@ export class DigitalOceanKubeService {
                 reject(error);
             }
         }));
+    }
+
+    /**
+     * Helper function to get digital ocean cluster info from a given clusterId
+     * @param clusterId Cluster Id to get the config for
+     * @returns DO Cluster config info
+     */
+    public async getDigitalOceanClusterById(clusterId: string): Promise<IKubernetesCluster> {
+        const getClusterResp = await this.doClient.kubernetes.getKubernetesCluster({ kubernetes_cluster_id: clusterId});
+        return getClusterResp.data.kubernetes_cluster;
     }
 
     /**

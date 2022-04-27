@@ -15,7 +15,6 @@ import { OAuthService } from './services/oauth/oauth.service';
 import { cleanExit } from './handlers/clean-exit.handler';
 import { GAService } from './services/Tracking/google-analytics.service';
 import { MixpanelService } from './services/Tracking/mixpanel.service';
-import { PolicyType } from './services/v1/policy/policy.types';
 import { TargetType } from '../webshell-common-ts/http/v2/target/types/target.types';
 import { TargetStatus } from '../webshell-common-ts/http/v2/target/types/targetStatus.types';
 import { TargetSummary } from '../webshell-common-ts/http/v2/target/targetSummary.types';
@@ -23,6 +22,7 @@ import { KubeClusterSummary } from '../webshell-common-ts/http/v2/target/kube/ty
 import { EnvironmentSummary } from '../webshell-common-ts/http/v2/environment/types/environment-summary.responses';
 import { version } from '../package.json';
 import { BzeroAgentSummary } from '../webshell-common-ts/http/v2/target/bzero/types/bzero-agent-summary.types';
+import { PolicyType } from '../webshell-common-ts/http/v2/policy/types/policy-type.types';
 
 // Handlers
 import { initMiddleware, oAuthMiddleware, fetchDataMiddleware, GATrackingMiddleware, initLoggerMiddleware, mixpanelTrackingMiddleware } from './handlers/middleware.handler';
@@ -48,24 +48,24 @@ import { quickstartHandler } from './handlers/quickstart/quickstart-handler';
 import { describeClusterPolicyHandler } from './handlers/describe-cluster-policy/describe-cluster-policy.handler';
 import { quickstartCmdBuilder } from './handlers/quickstart/quickstart.command-builder';
 import { defaultTargetGroupHandler } from './handlers/default-target-group/default-target-group.handler';
-import { addUserToPolicyHandler } from './handlers/user/add-user-policy.handler.v2';
-import { deleteUserFromPolicyHandler } from './handlers/user/delete-user-policy.handler.v2';
-import { addGroupToPolicyHandler } from './handlers/group/add-group-policy.handler.v2';
-import { deleteGroupFromPolicyHandler } from './handlers/group/delete-group-policy-handler.v2';
-import { addTargetUserHandler } from './handlers/target-user/add-target-user.handler.v2';
-import { deleteTargetUserHandler } from './handlers/target-user/delete-target-user.handler.v2';
-import { listTargetUsersHandler } from './handlers/target-user/list-target-users.handler.v2';
-import { addTargetGroupHandler } from './handlers/target-group/add-target-group.handler.v2';
-import { deleteTargetGroupHandler } from './handlers/target-group/delete-target-group.handler.v2';
-import { listTargetGroupHandler } from './handlers/target-group/list-target-group.handler.v2';
+import { addUserToPolicyHandler } from './handlers/user/add-user-policy.handler';
+import { deleteUserFromPolicyHandler } from './handlers/user/delete-user-policy.handler';
+import { addGroupToPolicyHandler } from './handlers/group/add-group-policy.handler';
+import { deleteGroupFromPolicyHandler } from './handlers/group/delete-group-policy-handler';
+import { addTargetUserHandler } from './handlers/target-user/add-target-user.handler';
+import { deleteTargetUserHandler } from './handlers/target-user/delete-target-user.handler';
+import { listTargetUsersHandler } from './handlers/target-user/list-target-users.handler';
+import { addTargetGroupHandler } from './handlers/target-group/add-target-group.handler';
+import { deleteTargetGroupHandler } from './handlers/target-group/delete-target-group.handler';
+import { listTargetGroupHandler } from './handlers/target-group/list-target-group.handler';
 import { listKubernetesPoliciesHandler } from './handlers/policy/list-kubernetes-policies.handler';
 import { listTargetConnectPoliciesHandler } from './handlers/policy/list-target-connect-policies.handler';
 import { listSessionRecordingPoliciesHandler } from './handlers/policy/list-session-recording-policies.handler';
 import { listOrganizationControlsPoliciesHandler } from './handlers/policy/list-organization-controls-policies.handler';
-import { listUsersHandler } from './handlers/user/list-users.handler.v2';
 import { generateKubeConfigHandler } from './handlers/generate/generate-kube-config.handler';
 import { generateSshConfigHandler } from './handlers/generate/generate-ssh-config.handler';
 import { sshProxyConfigHandler } from './handlers/generate/generate-ssh-proxy.handler';
+import { listUsersHandler } from './handlers/user/list-users.handler';
 
 
 // 3rd Party Modules
@@ -91,7 +91,10 @@ import { generateKubeConfigCmdBuilder, generateKubeYamlCmdBuilder } from './hand
 import { generateBashCmdBuilder } from './handlers/generate/generate-bash.command-builder';
 import { defaultTargetGroupCmdBuilder } from './handlers/default-target-group/default-target-group.command-builder';
 import { listProxyPoliciesHandler } from './handlers/policy/list-proxy-policies.handler';
+import { UserHttpService } from './http-services/user/user.http-services';
 import { generateSshConfigCmdBuilder } from './handlers/generate/generate-ssh-config.command-builder';
+import { createApiKeyCmdBuilder } from './handlers/api-key/create-api-key.command-builder';
+import { createApiKeyHandler } from './handlers/api-key/create-api-key.handler';
 
 export type EnvMap = Readonly<{
     configName: string;
@@ -143,8 +146,10 @@ export class CliDriver
         'ssh-proxy',
         'policy',
         'group',
+        'generate-bash',
+        'register',
         'generate',
-        'generate-bash'
+        'api-key'
     ]);
 
     private GACommands: Set<string> = new Set([
@@ -199,6 +204,7 @@ export class CliDriver
         'policy',
         'describe-cluster-policy',
         'generate-bash',
+        'api-key'
     ]);
 
     // available options for TargetType autogenerated from enum
@@ -223,7 +229,7 @@ export class CliDriver
                 this.loggerConfigService = initLoggerResponse.loggerConfigService;
             })
             .middleware(async (argv) => {
-                const initResponse = await initMiddleware(argv, this.logger);
+                const initResponse = await initMiddleware(argv, this.logger, isSystemTest);
                 this.configService = initResponse.configService;
                 this.keySplittingService = initResponse.keySplittingService;
             })
@@ -691,6 +697,34 @@ export class CliDriver
                     const oauth = new OAuthService(this.configService, this.logger);
                     await oauth.getIdTokenAndExitOnError();
                 }
+            )
+            .command(
+                'register',
+                false,
+                () => {},
+                async () => {
+                    const userHttpService = new UserHttpService(this.configService, this.logger);
+                    await userHttpService.Register();
+
+                    // Update me
+                    const me = await userHttpService.Me();
+                    this.configService.setMe(me);
+                }
+            )
+            .command(
+                // This grouping hosts all api-key related commands
+                'api-key',
+                false,
+                async (yargs) => {
+                    return yargs
+                        .command(
+                            'create <name>',
+                            'Create an API key',
+                            (yargs) => createApiKeyCmdBuilder(yargs),
+                            async (argv) => await createApiKeyHandler(argv, this.logger, this.configService),
+                        )
+                        .demandCommand(1, 'api-key requires a sub-command. Specify --help for available options');
+                },
             )
             .option('configName', {type: 'string', choices: ['prod', 'stage', 'dev'], default: envMap.configName, hidden: true})
             // Overwrites the default directory used by conf. Used by
