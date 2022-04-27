@@ -1,37 +1,33 @@
 import { MockSTDIN, stdin } from 'mock-stdin';
-import * as ShellUtils from '../../../utils/shell-utils';
-import * as CleanExitHandler from '../../../handlers/clean-exit.handler';
-import waitForExpect from 'wait-for-expect';
-import { configService, GROUP_ID, GROUP_NAME, logger, loggerConfigService, systemTestEnvId, systemTestPolicyTemplate, systemTestUniqueId, testTargets } from '../system-test';
-import { getMockResultValue } from '../utils/jest-utils';
-import { callZli } from '../utils/zli-utils';
+import { allTargets, configService, GROUP_ID, GROUP_NAME, logger, loggerConfigService, systemTestEnvId, systemTestPolicyTemplate, systemTestUniqueId, testTargets } from '../system-test';
 import { ConnectionHttpService } from '../../../http-services/connection/connection.http-services';
-import { DigitalOceanSSMTarget, getDOImageName } from '../../digital-ocean/digital-ocean-ssm-target.service.types';
+import { getDOImageName } from '../../digital-ocean/digital-ocean-ssm-target.service.types';
 import { TestUtils } from '../utils/test-utils';
 import { Environment } from '../../../../webshell-common-ts/http/v2/policy/types/environment.types';
 import { TestTarget } from '../system-test.types';
-import { ssmTestTargetsToRun } from '../targets-to-run';
 import { cleanupTargetConnectPolicies } from '../system-test-cleanup';
 import { PolicyHttpService } from '../../../http-services/policy/policy.http-services';
 import { OrganizationHttpService } from '../../../http-services/organization/organization.http-services';
 import { VerbType } from '../../../../webshell-common-ts/http/v2/policy/types/verb-type.types';
+import { bzeroTargetCustomUser } from '../system-test-setup';
+import { ConnectTestUtils } from '../utils/connect-utils';
 
 export const groupsSuite = () => {
     describe('Groups suite', () => {
         let policyService: PolicyHttpService;
+        let connectionService: ConnectionHttpService;
         let organizationService: OrganizationHttpService;
         let testUtils: TestUtils;
-
         let mockStdin: MockSTDIN;
-        const targetUser = 'ssm-user';
+        let connectTestUtils: ConnectTestUtils;
 
         // Set up the policy before all the tests
         beforeAll(async () => {
             // Construct all http services needed to run tests
             policyService = new PolicyHttpService(configService, logger);
+            connectionService = new ConnectionHttpService(configService, logger);
             organizationService = new OrganizationHttpService(configService, logger);
             testUtils = new TestUtils(configService, logger, loggerConfigService);
-
 
             const environment: Environment = {
                 id: systemTestEnvId
@@ -53,7 +49,7 @@ export const groupsSuite = () => {
                 description: `Target connect policy for groups based integration created for system test: ${systemTestUniqueId}`,
                 environments: [environment],
                 targets: [],
-                targetUsers: [{ userName: targetUser }],
+                targetUsers: [{ userName: 'ssm-user' }, {userName: bzeroTargetCustomUser }],
                 verbs: [{type: VerbType.Shell},]
             });
         }, 15 * 1000);
@@ -73,6 +69,8 @@ export const groupsSuite = () => {
             jest.restoreAllMocks();
             jest.clearAllMocks();
             mockStdin = stdin();
+
+            connectTestUtils = new ConnectTestUtils(mockStdin, connectionService, testUtils);
         });
 
         // Called after each case
@@ -83,74 +81,9 @@ export const groupsSuite = () => {
         });
 
         // Attempt to make a connection to our ssm targets via our groups based policy
-        ssmTestTargetsToRun.forEach(async (testTarget: TestTarget) => {
+        allTargets.forEach(async (testTarget: TestTarget) => {
             it(`${testTarget.groupConnectCaseId}: zli group connect - ${testTarget.awsRegion} - ${testTarget.installType} - ${getDOImageName(testTarget.dropletImage)}`, async () => {
-                const doTarget = testTargets.get(testTarget) as DigitalOceanSSMTarget;
-
-                // Spy on result Bastion gives for shell auth details. This spy is
-                // used at the end of the test to assert the correct regional
-                // connection node was used to establish the websocket.
-                const shellConnectionAuthDetailsSpy = jest.spyOn(ConnectionHttpService.prototype, 'GetShellConnectionAuthDetails');
-
-                // Spy on output pushed to stdout
-                const capturedOutput: string[] = [];
-                const outputSpy = jest.spyOn(ShellUtils, 'pushToStdOut')
-                    .mockImplementation((output) => {
-                        capturedOutput.push(Buffer.from(output).toString('utf-8'));
-                    });
-
-                // Call "zli connect"
-                const connectPromise = callZli(['connect', `${targetUser}@${doTarget.ssmTarget.name}`]);
-
-                // Assert the output spy receives the same input sent to mock stdIn.
-                // Keep sending input until the output spy says we've received what
-                // we sent (possibly sends command more than once).
-
-                const commandToSend = 'echo "hello groups"';
-                await waitForExpect(
-                    async () => {
-                        // Wait for there to be some output
-                        expect(outputSpy).toHaveBeenCalled();
-
-                        // There is still a chance that pty is not ready, or
-                        // blockInput is still true (no shell start received).
-                        // Therefore, we might send this command more than once.
-                        // Also, most likely there is some network delay to receive
-                        // output.
-                        await testUtils.sendMockInput(commandToSend, mockStdin);
-
-                        // Check that "hello groups" command exists in out backend, its possible this will fail if we go to fast
-                        try {
-                            await testUtils.EnsureCommandLogExists(doTarget.ssmTarget.id, doTarget.ssmTarget.name, targetUser, 'SSM', commandToSend);
-                        } catch (e: any) {
-                            if (!e.toString().contains('Unable to find command:')) {
-                                throw e;
-                            }
-                        }
-                    },
-                    1000 * 30,  // Timeout
-                );
-
-                // Send exit to the terminal so the zli connect handler will exit
-                // and the test can complete. However we must override the mock
-                // implementation of cleanExit to allow the zli connect command to
-                // exit with code 1 without causing the test to fail.
-
-                // TODO: This could be cleaned up in the future if we exit the zli
-                // with exit code = 0 in this case. Currently there is no way for us
-                // to distinguish between a normal closure (user types exit) and an
-                // abnormal websocket closure
-                jest.spyOn(CleanExitHandler, 'cleanExit').mockImplementationOnce(() => Promise.resolve());
-                testUtils.sendMockInput('exit', mockStdin);
-
-                // Wait for connect shell to cleanup
-                await connectPromise;
-
-                // Assert shell connection auth details returns expected connection
-                // node region
-                expect(shellConnectionAuthDetailsSpy).toHaveBeenCalled();
-                const gotShellConnectionAuthDetails = await getMockResultValue(shellConnectionAuthDetailsSpy.mock.results[0]);
-                expect(gotShellConnectionAuthDetails.region).toBe<string>(testTarget.awsRegion);
+                await connectTestUtils.runConnectTest(testTarget);
             }, 60 * 1000);
         });
     });

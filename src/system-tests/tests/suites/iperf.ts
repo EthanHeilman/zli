@@ -9,7 +9,7 @@ import { DigitalOceanBZeroTarget, getDOImageName } from '../../digital-ocean/dig
 import { TestUtils } from '../utils/test-utils';
 import { SubjectType } from '../../../../webshell-common-ts/http/v2/common.types/subject.types';
 import { Environment } from '../../../../webshell-common-ts/http/v2/policy/types/environment.types';
-import { vtTestTargetsToRun } from '../targets-to-run';
+import { bzeroTestTargetsToRun } from '../targets-to-run';
 import { TestTarget } from '../system-test.types';
 import { PolicyHttpService } from '../../../http-services/policy/policy.http-services';
 import { Subject } from '../../../../webshell-common-ts/http/v2/policy/types/subject.types';
@@ -110,7 +110,7 @@ export const iperfSuite = () => {
             testPassed = false;
         });
 
-        vtTestTargetsToRun.forEach(async (testTarget: TestTarget) => {
+        bzeroTestTargetsToRun.forEach(async (testTarget: TestTarget) => {
             it(`${testTarget.dbCaseId}: iperf upload test - ${testTarget.awsRegion} - ${getDOImageName(testTarget.dropletImage)}`, async () => {
                 const doTarget = testTargets.get(testTarget) as DigitalOceanBZeroTarget;
 
@@ -151,7 +151,7 @@ export const iperfSuite = () => {
             }, 60 * 1000);
         });
 
-        vtTestTargetsToRun.forEach(async (testTarget: TestTarget) => {
+        bzeroTestTargetsToRun.forEach(async (testTarget: TestTarget) => {
             it(`${testTarget.dbCaseId}: iperf download test - ${testTarget.awsRegion} - ${getDOImageName(testTarget.dropletImage)}`, async () => {
                 const doTarget = testTargets.get(testTarget) as DigitalOceanBZeroTarget;
 

@@ -1,10 +1,19 @@
 import * as pty from "node-pty";
-import { MockSTDIN, stdin } from "mock-stdin";
+import { MockSTDIN } from "mock-stdin";
 
-import { sleepTimeout } from "./test-utils";
+import * as CleanExitHandler from '../../../handlers/clean-exit.handler';
 import * as ShellUtilWrappers from '../../../utils/shell-util-wrappers';
+
+import { sleepTimeout, TestUtils } from "./test-utils";
 import { bzeroTargetCustomUser } from "../system-test-setup";
 import { DigitalOceanSSMTarget, DigitalOceanBZeroTarget} from "../../digital-ocean/digital-ocean-ssm-target.service.types";
+import { callZli } from "./zli-utils";
+import { ConnectionHttpService } from "../../../http-services/connection/connection.http-services";
+import { ConnectionEventType } from "../../../../webshell-common-ts/http/v2/event/types/connection-event.types";
+import waitForExpect from "wait-for-expect";
+import { getMockResultValue } from "./jest-utils";
+import { testTargets } from "../system-test";
+import { TestTarget } from "../system-test.types";
 
 
 /**
@@ -28,9 +37,115 @@ interface ConnectTarget {
     getCapturedOutput: () => string[];
 };
 
-export class ConnectTestUtils {
+interface CapturedConnectTest {
+    // The connection ID of the created connection
+    connectionId: string
+}
 
-    public constructor(private mockStdin: MockSTDIN) {}
+export class ConnectTestUtils {
+    public constructor(private mockStdin: MockSTDIN, private connectionService: ConnectionHttpService, private testUtils: TestUtils)
+    {
+    }
+
+    public async runConnectTest(testTarget: TestTarget): Promise<CapturedConnectTest> {
+        const doTarget = testTargets.get(testTarget);
+        const connectTarget = this.getConnectTarget(doTarget);
+                
+        // Spy on result of the ConnectionHttpService.GetConnection
+        // call. This spy is used to assert the correct regional
+        // connection node was used to establish the websocket.
+        const shellConnectionDetailsSpy = jest.spyOn(ConnectionHttpService.prototype, 'GetConnection');
+
+        // Also spy to get the connection Id
+        const createConnectionSpy = jest.spyOn(ConnectionHttpService.prototype, 'CreateConnection');
+
+        // Call "zli connect"
+        const connectPromise = callZli(['connect', `${connectTarget.targetUser}@${connectTarget.name}`]);
+
+        // Ensure that the created and connect event exists
+        expect(await this.testUtils.EnsureConnectionEventCreated(connectTarget.id, connectTarget.name, connectTarget.targetUser, connectTarget.eventTargetType, ConnectionEventType.ClientConnect));
+        expect(await this.testUtils.EnsureConnectionEventCreated(connectTarget.id, connectTarget.name, connectTarget.targetUser, connectTarget.eventTargetType, ConnectionEventType.Created));
+
+        // Caution to future users of waitForExpect. This function
+        // doesn't have a global timeout and instead retries for
+        // Math.ceil(timeout / interval) times before failing. Further
+        // the interval defaults to 10ms. So if each individual
+        // expectation function runs much longer than the 10ms  default
+        // interval this function is going to continue to run much
+        // longer than the actual timeout. So make sure you set a
+        // reasonable timeout and interval value compared to the overall
+        // jest test timeout.
+        // ref: https://github.com/TheBrainFamily/wait-for-expect/blob/6be6e2ed8e47fd5bc62ab2fc4bd39289c58f2f66/src/index.ts#L25
+        await waitForExpect(
+            async () => {
+                // We should get some captured output (from the command
+                // prompt on login) before even sending any input
+                const capturedOutput = connectTarget.getCapturedOutput();
+                expect(capturedOutput.length).toBeGreaterThan(0);
+
+                // Assert the output spy receives the same input sent to stdIn.
+                // Keep sending input until the output spy says we've received what
+                // we sent (possibly sends command more than once).
+
+                const commandToSend = 'echo "hello world"';
+                await connectTarget.writeToStdIn(commandToSend);
+
+                // Check that the full "hello world" string exists as
+                // one of the strings in the captured output. This
+                // should be the result of executing the command in the
+                // terminal and not a result of typing the 'echo "hello
+                // world"' command as writeToStdIn will write this
+                // character by character, i.e captured output will
+                // contain something like:
+                // [... "e","c","h","o"," ","\"","h","e","l","l","o"," ","w","o","r","l","d","\"","\r\n","hello world\r\n", ... ]
+                const expectedRegex = [
+                    expect.stringMatching(new RegExp('hello world'))
+                ];
+                expect(capturedOutput).toEqual(
+                    expect.arrayContaining(expectedRegex),
+                );
+
+                // Check that 'echo "hello world"' command exists in our backend, its possible this will fail on first attempts if we go too fast
+                await this.testUtils.EnsureCommandLogExists(connectTarget.id, connectTarget.name, connectTarget.targetUser, connectTarget.eventTargetType, commandToSend);
+            },
+            1000 * 10,  // Timeout,
+            1000 * 1    // Interval
+        );
+
+        // Assert shell connection auth details returns expected
+        // connection node aws region
+        expect(shellConnectionDetailsSpy).toHaveBeenCalled();
+        const gotShellConnectionDetails = await getMockResultValue(shellConnectionDetailsSpy.mock.results[0]);
+        const shellConnectionAuthDetails = await this.connectionService.GetShellConnectionAuthDetails(gotShellConnectionDetails.id);
+        expect(shellConnectionAuthDetails.region).toBe<string>(testTarget.awsRegion);
+
+        // Send exit to the terminal so the zli connect handler will exit
+        // and the test can complete. However we must override the mock
+        // implementation of cleanExit to allow the zli connect command to
+        // exit with code 1 without causing the test to fail.
+
+        // TODO: This could be cleaned up in the future if we exit the zli
+        // with exit code = 0 in this case. Currently there is no way for us
+        // to distinguish between a normal closure (user types exit) and an
+        // abnormal websocket closure
+        jest.spyOn(CleanExitHandler, 'cleanExit').mockImplementationOnce(() => Promise.resolve());
+        await connectTarget.writeToStdIn('exit');
+
+        // Wait for connect shell to cleanup
+        await connectPromise;
+
+        // Set our connectionId
+        expect(createConnectionSpy).toHaveBeenCalled();
+        const connectionId = await getMockResultValue(createConnectionSpy.mock.results[0]);
+
+        // Ensure that the client disconnect event is here
+        // Note, there is no close event since we do not close the connection, just disconnect from it
+        expect(await this.testUtils.EnsureConnectionEventCreated(connectTarget.id, connectTarget.name, connectTarget.targetUser, connectTarget.eventTargetType, ConnectionEventType.ClientDisconnect));
+
+        return {
+            connectionId: connectionId
+        }
+    }
 
     /**
      * Converts a DigitalOcean target which is either registered as a bzero or a
