@@ -21,6 +21,8 @@ import { LoggerConfigService } from '../../services/logger/logger-config.service
 
 export async function sshProxyHandler(configService: ConfigService, logger: Logger, sshTunnelParameters: SshTunnelParameters, keySplittingService: KeySplittingService, envMap: EnvMap, loggerConfigService: LoggerConfigService) {
 
+    logger.error("OMG a funnnnnction");
+
     if (!sshTunnelParameters.parsedTarget) {
         logger.error('No targets matched your targetName/targetId or invalid target string, must follow syntax:');
         logger.error(targetStringExample);

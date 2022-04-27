@@ -615,15 +615,16 @@ export class CliDriver {
 
                     // modify argv to have the targetString and targetType params
                     const targetString = argv.user + '@' + argv.host.substr(prefix.length);
-                    const parsedTarget = await disambiguateTarget(TargetType.SsmTarget.toString(), targetString, this.logger, this.dynamicConfigs, this.ssmTargets, this.clusterTargets, this.bzeroTargets, this.envs, this.configService);
+                    // have to game disambiguateTarget a bit by asking for no filter
+                    const parsedTarget = await disambiguateTarget(null, targetString, this.logger, this.dynamicConfigs, this.ssmTargets, this.clusterTargets, this.bzeroTargets, this.envs, this.configService);
 
                     if (parsedTarget == undefined) {
-                        this.logger.error(`Unable to find target with given user/host values: ${argv.user}/${argv.host}`);
+                        this.logger.error(`Unable to find target with given user / host values: ${argv.user} /${argv.host}`);
                         await cleanExit(1, this.logger);
                     }
 
-                    if (parsedTarget.type != TargetType.SsmTarget && parsedTarget.type != TargetType.DynamicAccessConfig) {
-                        this.logger.warn(`ssh-proxy only available on ssh and dynamic targets`);
+                    if (parsedTarget.type != TargetType.Bzero && parsedTarget.type != TargetType.DynamicAccessConfig) {
+                        this.logger.warn(`ssh-proxy only available on BZero, SSM, and dynamic targets`);
                         await cleanExit(1, this.logger);
                     }
 

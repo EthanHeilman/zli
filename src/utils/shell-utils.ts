@@ -29,7 +29,7 @@ export async function createAndRunShell(
 
         // Subscribe first so we don't miss events
         terminal.terminalRunning.subscribe(
-            () => {},
+            () => { },
             // If an error occurs in the terminal running observable then log the
             // error, clean up the connection, and exit zli
             async (error) => {
@@ -176,6 +176,7 @@ export async function startShellDaemon(
 ) {
     return new Promise<number>(async (resolve, reject) => {
 
+        logger.error("Well I'm here");
         // Build our args and cwd
         const baseArgs = getBaseDaemonArgs(configService, loggerConfigService, bzeroTarget.agentPublicKey);
         let pluginArgs = [
@@ -185,7 +186,7 @@ export async function startShellDaemon(
         ];
 
         // If we are attaching then add attach plugin args
-        if(attachDetails) {
+        if (attachDetails) {
             pluginArgs = pluginArgs.concat([
                 `-dataChannelId=${attachDetails.dataChannelId}`
             ]);
@@ -202,11 +203,13 @@ export async function startShellDaemon(
             cwd = process.env.ZLI_CUSTOM_DAEMON_PATH;
             finalDaemonPath = 'go';
             args = ['run', 'daemon.go'].concat(args);
+            logger.error(JSON.stringify(args))
         } else {
             finalDaemonPath = await copyExecutableToLocalDir(logger, configService.configPath());
         }
 
         try {
+            logger.error("Hi! Ho! Let's go!");
             // If we are not debugging, start the go subprocess in the background
             const options: SpawnOptions = {
                 cwd: cwd,
@@ -215,14 +218,14 @@ export async function startShellDaemon(
                 stdio: 'inherit'
             };
 
-            const daemonProcess = await spawn(finalDaemonPath, args, options);
+            const daemonProcess = spawn(finalDaemonPath, args, options);
 
             daemonProcess.on('close', (exitCode) => {
                 logger.debug(`Shell Daemon close event with exit code ${exitCode}`);
                 resolve(exitCode);
             });
 
-        } catch(err) {
+        } catch (err) {
             logger.error(`Error starting shell daemon: ${err}`);
             reject(1);
         }
