@@ -6,14 +6,15 @@ import { ConnectionEventResponse } from '../../../../webshell-common-ts/http/v2/
 import { configService } from '../system-test';
 import { LoggerConfigService } from '../../../../src/services/logger/logger-config.service';
 import { SubjectType } from '../../../../webshell-common-ts/http/v2/common.types/subject.types';
-import { MockSTDIN } from 'mock-stdin';
 import { CommandEventResponse } from '../../../../webshell-common-ts/http/v2/event/response/command-event-data-message';
 
-const fs = require('fs');
+import *  as fs from 'fs'
 const pids = require('port-pid');
 
 const EVENT_QUERY_TIME = 2;
 const SLEEP_TIME = 5;
+
+export const sleepTimeout = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 /**
  * Class that contains our common testing functions that can be used across tests
@@ -22,7 +23,6 @@ export class TestUtils {
     eventsService: EventsHttpService;
     loggerConfigService: LoggerConfigService;
     logger: Logger;
-    sleepTimeout = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
     constructor(configService: ConfigService, logger: Logger, loggerConfigService: LoggerConfigService) {
         this.eventsService = new EventsHttpService(configService, logger);
@@ -119,7 +119,7 @@ export class TestUtils {
             if (eventCreated == undefined) {
                 failures += 1;
                 this.logger.warn(`Unable to find event for targetId ${targetId} for type ${eventType}, sleeping for ${SLEEP_TIME}s and trying again. Failures: ${failures}`);
-                await this.sleepTimeout(SLEEP_TIME * 1000);
+                await sleepTimeout(SLEEP_TIME * 1000);
             } else {
                 // We were able to find the event, break
                 break;
@@ -272,30 +272,6 @@ export class TestUtils {
         if (awaitedPorts.length != 0) {
             throw new Error(`There are currently processes using port ${port}: ${awaitedPorts}`);
         }
-    }
-
-    /**
-     * Helper function to send mock input to a zli connect
-     * Real humans do not send commands instantaneously, this causes issues in command extraction
-     * and in general when sending the input. This function loops over the command and adds an artificial delay
-     * in order to allow the command to be logged at the bastion level
-     * @param {string} commandToSend Command we want to send
-     * @param {MockSTDIN} mockStdin Mock stdin object
-     */
-    public async sendMockInput(commandToSend: string, mockStdin: MockSTDIN) {
-        const commandSplit = commandToSend.split('');
-        for (let i : number = 0; i < commandSplit.length; i++ ){
-            const char = commandSplit[i];
-
-            // Send our input char by char
-            mockStdin.send(char);
-
-            // Wait in between each letter being sent
-            await this.sleepTimeout(100);
-        }
-
-        // Finally send our enter key
-        mockStdin.send('\r');
     }
 }
 

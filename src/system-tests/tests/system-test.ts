@@ -24,7 +24,7 @@ import { TestTarget } from './system-test.types';
 import { EnvironmentHttpService } from '../../http-services/environment/environment.http-services';
 import { vtSuite } from './suites/vt';
 import { iperfSuite } from './suites/iperf';
-import { ssmTestTargetsToRun, vtTestTargetsToRun } from './targets-to-run';
+import { ssmTestTargetsToRun, bzeroTestTargetsToRun } from './targets-to-run';
 import { setupDOTestCluster, createDOTestTargets, setupSystemTestApiKeys } from './system-test-setup';
 import { cleanupDOTestCluster, cleanupDOTestTargets, cleanupSystemTestApiKeys } from './system-test-cleanup';
 import { apiKeySuite } from './suites/rest-api/api-keys';
@@ -65,6 +65,7 @@ if (! bctlQuickstartVersion) {
 
 export const KUBE_ENABLED = process.env.KUBE_ENABLED ? (process.env.KUBE_ENABLED === 'true') : true;
 const VT_ENABLED = process.env.VT_ENABLED ? (process.env.VT_ENABLED === 'true') : true;
+const BZERO_ENABLED = process.env.BZERO_ENABLED ? (process.env.BZERO_ENABLED === 'true') : true;
 const SSM_ENABLED =  process.env.SSM_ENABLED ? (process.env.SSM_ENABLED === 'true') : true;
 const API_ENABLED = process.env.API_ENABLED ? (process.env.API_ENABLED === 'true') : true;
 export const IN_PIPELINE = process.env.IN_PIPELINE ? process.env.IN_PIPELINE === 'true' : false;;
@@ -133,10 +134,10 @@ if(SSM_ENABLED) {
     logger.info(`Skipping adding ssm targets because SSM_ENABLED is false`);
 }
 
-if(VT_ENABLED) {
-    allTargets = allTargets.concat(vtTestTargetsToRun);
+if(BZERO_ENABLED) {
+    allTargets = allTargets.concat(bzeroTestTargetsToRun);
 } else {
-    logger.info(`Skipping adding vt targets because VT_ENABLED is false`);
+    logger.info(`Skipping adding bzero targets because BZERO_ENABLED is false`);
 }
 
 // Global mapping of a registered Kubernetes system test cluster
@@ -224,13 +225,18 @@ afterAll(async () => {
 }, 60 * 1000);
 
 // Call list target suite anytime a target test is called
-if (SSM_ENABLED || KUBE_ENABLED || VT_ENABLED) {
+if (SSM_ENABLED || BZERO_ENABLED || KUBE_ENABLED) {
     listTargetsSuite();
+}
+
+// These suites are based on testing allTargets use SSM_ENABLED or BZERO_ENABLED
+// environment variables to control which targets are created
+if(SSM_ENABLED || BZERO_ENABLED) {
+    connectSuite();
 }
 
 // Call various test suites
 if(SSM_ENABLED) {
-    connectSuite();
     sshSuite();
     sessionRecordingSuite();
 

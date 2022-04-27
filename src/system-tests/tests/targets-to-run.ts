@@ -10,8 +10,8 @@ const defaultDigitalOceanRegion = convertAwsRegionToDigitalOceanRegion(defaultAw
 // new droplet.
 export const ssmTestTargetsToRun: TestTarget[] = [{ installType: 'pm', dropletImage: DigitalOceanDistroImage.Debian11, doRegion: defaultDigitalOceanRegion, awsRegion: defaultAwsRegion, connectCaseId: '2123', closeCaseId: '3655', badConnectCaseId: '2352', sshCaseId: '2150', badSshCaseId: '2361', groupConnectCaseId: '3094', sessionRecordingCaseId: '3042' }];
 
-// Different types of vt targets to create for each type of operating system
-export const vtTestTargetsToRun: TestTarget[] = [{ installType: 'pm-vt', dropletImage: DigitalOceanDistroImage.BzeroVTUbuntuTestImage, doRegion: defaultDigitalOceanRegion, awsRegion: defaultAwsRegion, webCaseId: '2155', dbCaseId: '2153', badDbCaseId: '2372', badWebCaseId: '2374' }];
+// Different types of bzero targets to create for each type of operating system
+export const bzeroTestTargetsToRun: TestTarget[] = [{ installType: 'pm-bzero', dropletImage: DigitalOceanDistroImage.BzeroVTUbuntuTestImage, doRegion: defaultDigitalOceanRegion, awsRegion: defaultAwsRegion, connectCaseId:'2125', webCaseId: '2155', dbCaseId: '2153', badDbCaseId: '2372', badWebCaseId: '2374' }];
 
 if (IN_PIPELINE && IN_CI) {
     ssmTestTargetsToRun.concat([
@@ -26,7 +26,7 @@ if (IN_PIPELINE && IN_CI) {
         { installType: 'as', dropletImage: DigitalOceanDistroImage.AmazonLinux2, doRegion: defaultDigitalOceanRegion, awsRegion: defaultAwsRegion, connectCaseId: '2349', closeCaseId: '3660', badConnectCaseId: '2355', sshCaseId: '2357', badSshCaseId: '2366', groupConnectCaseId: '3099', sessionRecordingCaseId: '4973' },
     ]);
 
-    vtTestTargetsToRun.concat([
-        { installType: 'pm-vt', dropletImage: DigitalOceanDistroImage.BzeroVTAL2TestImage, doRegion: defaultDigitalOceanRegion, awsRegion: defaultAwsRegion, webCaseId: '2154', dbCaseId: '2152', badDbCaseId: '2371', badWebCaseId: '2373' },
+    bzeroTestTargetsToRun.concat([
+        { installType: 'pm-bzero', dropletImage: DigitalOceanDistroImage.BzeroVTAL2TestImage, doRegion: defaultDigitalOceanRegion, awsRegion: defaultAwsRegion, webCaseId: '2154', dbCaseId: '2152', badDbCaseId: '2371', badWebCaseId: '2373' },
     ]);
 }

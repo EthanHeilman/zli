@@ -1,8 +1,7 @@
 import { MockSTDIN, stdin } from 'mock-stdin';
-import * as ShellUtils from '../../../utils/shell-utils';
 import * as CleanExitHandler from '../../../handlers/clean-exit.handler';
 import waitForExpect from 'wait-for-expect';
-import { configService, logger, loggerConfigService, systemTestEnvId, systemTestPolicyTemplate, systemTestUniqueId, testTargets } from '../system-test';
+import { configService, logger, loggerConfigService, systemTestEnvId, systemTestPolicyTemplate, systemTestUniqueId, testTargets, allTargets } from '../system-test';
 import { getMockResultValue } from '../utils/jest-utils';
 import { callZli } from '../utils/zli-utils';
 import { ConnectionHttpService } from '../../../http-services/connection/connection.http-services';
@@ -12,24 +11,26 @@ import { SubjectType } from '../../../../webshell-common-ts/http/v2/common.types
 import { Environment } from '../../../../webshell-common-ts/http/v2/policy/types/environment.types';
 import { ConnectionEventType } from '../../../../webshell-common-ts/http/v2/event/types/connection-event.types';
 import { TestTarget } from '../system-test.types';
-import { ssmTestTargetsToRun } from '../targets-to-run';
 import { cleanupTargetConnectPolicies } from '../system-test-cleanup';
 import { PolicyHttpService } from '../../../http-services/policy/policy.http-services';
 import { Subject } from '../../../../webshell-common-ts/http/v2/policy/types/subject.types';
 import { VerbType } from '../../../../webshell-common-ts/http/v2/policy/types/verb-type.types';
+import { bzeroTargetCustomUser } from '../system-test-setup';
+import { ConnectTestUtils } from '../utils/connect-utils';
 
 export const connectSuite = () => {
     describe('connect suite', () => {
         let policyService: PolicyHttpService;
+        let connectionService: ConnectionHttpService;
         let testUtils: TestUtils;
-
+        let connectTestUtils: ConnectTestUtils;
         let mockStdin: MockSTDIN;
-        const targetUser = 'ssm-user';
 
         // Set up the policy before all the tests
         beforeAll(async () => {
             // Construct all http services needed to run tests
             policyService = new PolicyHttpService(configService, logger);
+            connectionService = new ConnectionHttpService(configService, logger);
             testUtils = new TestUtils(configService, logger, loggerConfigService);
 
             const currentUser: Subject = {
@@ -48,7 +49,7 @@ export const connectSuite = () => {
                 description: `Target connect policy created for system test: ${systemTestUniqueId}`,
                 environments: [environment],
                 targets: [],
-                targetUsers: [{ userName: targetUser }],
+                targetUsers: [{ userName: 'ssm-user' }, {userName: bzeroTargetCustomUser }],
                 verbs: [{type: VerbType.Shell},]
             });
         }, 15 * 1000);
@@ -68,6 +69,8 @@ export const connectSuite = () => {
             jest.restoreAllMocks();
             jest.clearAllMocks();
             mockStdin = stdin();
+
+            connectTestUtils = new ConnectTestUtils(mockStdin);
         });
 
         // Called after each case
@@ -77,62 +80,80 @@ export const connectSuite = () => {
             }
         });
 
-        ssmTestTargetsToRun.forEach(async (testTarget: TestTarget) => {
+        allTargets.forEach(async (testTarget: TestTarget) => {
             // Keep track of our connection id so we can call the close endpoint
             let connectionId = '';
-
             it(`${testTarget.connectCaseId}: zli connect - ${testTarget.awsRegion} - ${testTarget.installType} - ${getDOImageName(testTarget.dropletImage)}`, async () => {
-                const doTarget = testTargets.get(testTarget) as DigitalOceanSSMTarget;
-
-                // Spy on result Bastion gives for shell auth details. This spy is
-                // used at the end of the test to assert the correct regional
+                const doTarget = testTargets.get(testTarget);
+                const connectTarget = connectTestUtils.getConnectTarget(doTarget);
+                
+                // Spy on result of the ConnectionHttpService.GetConnection
+                // call. This spy is used to assert the correct regional
                 // connection node was used to establish the websocket.
-                const shellConnectionAuthDetailsSpy = jest.spyOn(ConnectionHttpService.prototype, 'GetShellConnectionAuthDetails');
+                const shellConnectionDetailsSpy = jest.spyOn(ConnectionHttpService.prototype, 'GetConnection');
+
                 // Also spy to get the connection Id
                 const createConnectionSpy = jest.spyOn(ConnectionHttpService.prototype, 'CreateConnection');
 
-                // Spy on output pushed to stdout
-                const capturedOutput: string[] = [];
-                const outputSpy = jest.spyOn(ShellUtils, 'pushToStdOut')
-                    .mockImplementation((output) => {
-                        capturedOutput.push(Buffer.from(output).toString('utf-8'));
-                    });
-
                 // Call "zli connect"
-                const connectPromise = callZli(['connect', `${targetUser}@${doTarget.ssmTarget.name}`]);
+                const connectPromise = callZli(['connect', `${connectTarget.targetUser}@${connectTarget.name}`]);
 
                 // Ensure that the created and connect event exists
-                expect(await testUtils.EnsureConnectionEventCreated(doTarget.ssmTarget.id, doTarget.ssmTarget.name, targetUser, 'SSM', ConnectionEventType.ClientConnect));
-                expect(await testUtils.EnsureConnectionEventCreated(doTarget.ssmTarget.id, doTarget.ssmTarget.name, targetUser, 'SSM', ConnectionEventType.Created));
+                expect(await testUtils.EnsureConnectionEventCreated(connectTarget.id, connectTarget.name, connectTarget.targetUser, connectTarget.eventTargetType, ConnectionEventType.ClientConnect));
+                expect(await testUtils.EnsureConnectionEventCreated(connectTarget.id, connectTarget.name, connectTarget.targetUser, connectTarget.eventTargetType, ConnectionEventType.Created));
 
-                // Assert the output spy receives the same input sent to mock stdIn.
-                // Keep sending input until the output spy says we've received what
-                // we sent (possibly sends command more than once).
-
-                const commandToSend = 'echo "hello world"';
+                // Caution to future users of waitForExpect. This function
+                // doesn't have a global timeout and instead retries for
+                // Math.ceil(timeout / interval) times before failing. Further
+                // the interval defaults to 10ms. So if each individual
+                // expectation function runs much longer than the 10ms  default
+                // interval this function is going to continue to run much
+                // longer than the actual timeout. So make sure you set a
+                // reasonable timeout and interval value compared to the overall
+                // jest test timeout.
+                // ref: https://github.com/TheBrainFamily/wait-for-expect/blob/6be6e2ed8e47fd5bc62ab2fc4bd39289c58f2f66/src/index.ts#L25
                 await waitForExpect(
                     async () => {
-                        // Wait for there to be some output
-                        expect(outputSpy).toHaveBeenCalled();
+                        // We should get some captured output (from the command
+                        // prompt on login) before even sending any input
+                        const capturedOutput = connectTarget.getCapturedOutput();
+                        expect(capturedOutput.length).toBeGreaterThan(0);
 
-                        // There is still a chance that pty is not ready, or
-                        // blockInput is still true (no shell start received).
-                        // Therefore, we might send this command more than once.
-                        // Also, most likely there is some network delay to receive
-                        // output.
-                        await testUtils.sendMockInput(commandToSend, mockStdin);
+                        // Assert the output spy receives the same input sent to stdIn.
+                        // Keep sending input until the output spy says we've received what
+                        // we sent (possibly sends command more than once).
 
-                        // Check that "hello world" command exists in out backend, its possible this will fail if we go to fast
-                        try {
-                            await testUtils.EnsureCommandLogExists(doTarget.ssmTarget.id, doTarget.ssmTarget.name, targetUser, 'SSM', commandToSend);
-                        } catch (e: any) {
-                            if (!e.toString().contains('Unable to find command:')) {
-                                throw e;
-                            }
-                        }
+                        const commandToSend = 'echo "hello world"';
+                        await connectTarget.writeToStdIn(commandToSend);
+
+                        // Check that the full "hello world" string exists as
+                        // one of the strings in the captured output. This
+                        // should be the result of executing the command in the
+                        // terminal and not a result of typing the 'echo "hello
+                        // world"' command as writeToStdIn will write this
+                        // character by character, i.e captured output will
+                        // contain something like:
+                        // [... "e","c","h","o"," ","\"","h","e","l","l","o"," ","w","o","r","l","d","\"","\r\n","hello world\r\n", ... ]
+                        const expectedRegex = [
+                            expect.stringMatching(new RegExp('hello world'))
+                        ];
+                        expect(capturedOutput).toEqual(
+                            expect.arrayContaining(expectedRegex),
+                        );
+
+                        // Check that 'echo "hello world"' command exists in our backend, its possible this will fail on first attempts if we go too fast
+                        await testUtils.EnsureCommandLogExists(connectTarget.id, connectTarget.name, connectTarget.targetUser, connectTarget.eventTargetType, commandToSend);
                     },
-                    1000 * 30,  // Timeout
+                    1000 * 10,  // Timeout,
+                    1000 * 1    // Interval
                 );
+
+                // Assert shell connection auth details returns expected
+                // connection node aws region
+                expect(shellConnectionDetailsSpy).toHaveBeenCalled();
+                const gotShellConnectionDetails = await getMockResultValue(shellConnectionDetailsSpy.mock.results[0]);
+                const shellConnectionAuthDetails = await connectionService.GetShellConnectionAuthDetails(gotShellConnectionDetails.id);
+                expect(shellConnectionAuthDetails.region).toBe<string>(testTarget.awsRegion);
 
                 // Send exit to the terminal so the zli connect handler will exit
                 // and the test can complete. However we must override the mock
@@ -144,16 +165,10 @@ export const connectSuite = () => {
                 // to distinguish between a normal closure (user types exit) and an
                 // abnormal websocket closure
                 jest.spyOn(CleanExitHandler, 'cleanExit').mockImplementationOnce(() => Promise.resolve());
-                testUtils.sendMockInput('exit', mockStdin);
+                await connectTarget.writeToStdIn('exit');
 
                 // Wait for connect shell to cleanup
                 await connectPromise;
-
-                // Assert shell connection auth details returns expected connection
-                // node region
-                expect(shellConnectionAuthDetailsSpy).toHaveBeenCalled();
-                const gotShellConnectionAuthDetails = await getMockResultValue(shellConnectionAuthDetailsSpy.mock.results[0]);
-                expect(gotShellConnectionAuthDetails.region).toBe<string>(testTarget.awsRegion);
 
                 // Set our connectionId
                 expect(createConnectionSpy).toHaveBeenCalled();
@@ -161,42 +176,37 @@ export const connectSuite = () => {
 
                 // Ensure that the client disconnect event is here
                 // Note, there is no close event since we do not close the connection, just disconnect from it
-                expect(await testUtils.EnsureConnectionEventCreated(doTarget.ssmTarget.id, doTarget.ssmTarget.name, targetUser, 'SSM', ConnectionEventType.ClientDisconnect));
+                expect(await testUtils.EnsureConnectionEventCreated(connectTarget.id, connectTarget.name, connectTarget.targetUser, connectTarget.eventTargetType, ConnectionEventType.ClientDisconnect));
             }, 60 * 1000);
 
             it(`${testTarget.closeCaseId}: zli close - ${testTarget.awsRegion} - ${testTarget.installType} - ${getDOImageName(testTarget.dropletImage)}`, async () => {
-                const doTarget = testTargets.get(testTarget) as DigitalOceanSSMTarget;
+                // TODO-Yuval: Fix this
+                const doTarget = testTargets.get(testTarget);
+                const connectTarget = connectTestUtils.getConnectTarget(doTarget);
 
                 // Call zli close
                 await callZli(['close', connectionId]);
 
                 // Expect our close event now
-                expect(await testUtils.EnsureConnectionEventCreated(doTarget.ssmTarget.id, doTarget.ssmTarget.name, targetUser, 'SSM', ConnectionEventType.Closed));
+                expect(await testUtils.EnsureConnectionEventCreated(connectTarget.id, connectTarget.name, connectTarget.targetUser, 'SSM', ConnectionEventType.Closed));
 
             }, 60 * 1000);
         });
 
-
-
-        ssmTestTargetsToRun.forEach(async (testTarget: TestTarget) => {
+        allTargets.forEach(async (testTarget: TestTarget) => {
             it(`${testTarget.badConnectCaseId}: zli connect bad user - ${testTarget.awsRegion} - ${testTarget.installType} - ${getDOImageName(testTarget.dropletImage)}`, async () => {
-                const doTarget = testTargets.get(testTarget) as DigitalOceanSSMTarget;
-
-                // Spy on result Bastion gives for shell auth details. This spy is
-                // used at the end of the test to ensure it has not been called
-                const shellConnectionAuthDetailsSpy = jest.spyOn(ConnectionHttpService.prototype, 'GetShellConnectionAuthDetails');
+                const doTarget = testTargets.get(testTarget);
+                const connectTarget = connectTestUtils.getConnectTarget(doTarget);
 
                 // Call "zli connect"
+                const connectPromise = callZli(['connect', `baduser@${connectTarget.name}`]);
+
                 const expectedErrorMessage = 'Expected error';
                 jest.spyOn(CleanExitHandler, 'cleanExit').mockImplementationOnce(() => {
                     throw new Error(expectedErrorMessage);
                 });
-                const connectPromise = callZli(['connect', `baduser@${doTarget.ssmTarget.name}`]);
 
                 await expect(connectPromise).rejects.toThrow(expectedErrorMessage);
-
-                // Assert shell connection auth details has not been called
-                expect(shellConnectionAuthDetailsSpy).not.toHaveBeenCalled();
             }, 60 * 1000);
         });
     });

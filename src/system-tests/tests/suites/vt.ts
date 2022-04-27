@@ -12,7 +12,7 @@ import { TestUtils } from '../utils/test-utils';
 import { SubjectType } from '../../../../webshell-common-ts/http/v2/common.types/subject.types';
 import { Environment } from '../../../../webshell-common-ts/http/v2/policy/types/environment.types';
 import { ConnectionEventType } from '../../../../webshell-common-ts/http/v2/event/types/connection-event.types';
-import { vtTestTargetsToRun } from '../targets-to-run';
+import { bzeroTestTargetsToRun } from '../targets-to-run';
 import { TestTarget } from '../system-test.types';
 import { PolicyHttpService } from '../../../http-services/policy/policy.http-services';
 import { Subject } from '../../../../webshell-common-ts/http/v2/policy/types/subject.types';
@@ -91,7 +91,7 @@ export const vtSuite = () => {
             testPassed = false;
         });
 
-        vtTestTargetsToRun.forEach(async (testTarget: TestTarget) => {
+        bzeroTestTargetsToRun.forEach(async (testTarget: TestTarget) => {
             it(`${testTarget.dbCaseId}: db virtual target connect - ${testTarget.awsRegion} - ${getDOImageName(testTarget.dropletImage)}`, async () => {
                 const doTarget = testTargets.get(testTarget) as DigitalOceanBZeroTarget;
 
@@ -197,7 +197,8 @@ export const vtSuite = () => {
             }, 60 * 1000);
         });
 
-        vtTestTargetsToRun.forEach(async (testTarget) => {
+
+        bzeroTestTargetsToRun.forEach(async (testTarget) => {
             it(`${testTarget.webCaseId}: web virtual target connect - ${testTarget.awsRegion} - ${getDOImageName(testTarget.dropletImage)}`, async () => {
                 const doTarget = testTargets.get(testTarget) as DigitalOceanBZeroTarget;
 
