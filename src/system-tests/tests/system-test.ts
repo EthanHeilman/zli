@@ -156,7 +156,7 @@ if(BZERO_ENABLED) {
 // Global mapping of a registered Kubernetes system test cluster
 export let testCluster : RegisteredDigitalOceanKubernetesCluster = undefined;
 
-export const systemTestUniqueId = randomAlphaNumericString(15).toLowerCase();
+export const systemTestUniqueId = process.env.SYSTEM_TEST_UNIQUE_ID ? process.env.SYSTEM_TEST_UNIQUE_ID : randomAlphaNumericString(15).toLowerCase();
 
 // All BastionZero API resources created during system tests have a name that
 // begins with this prefix
