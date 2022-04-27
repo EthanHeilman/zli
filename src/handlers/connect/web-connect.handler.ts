@@ -46,7 +46,7 @@ export async function webConnectHandler(argv: yargs.Arguments<connectArgs>, targ
     const localHost = getOrDefaultLocalhost(webTarget.localHost);
 
     // Make sure we have set our local daemon port
-    let localPort = await getOrDefaultLocalport(webTarget.localPort, webConfig.localPort, logger);
+    let localPort = await getOrDefaultLocalport(webTarget.localPort?.value, webConfig.localPort, logger);
     if (argv.customPort != -1) {
         localPort = argv.customPort;
     }
@@ -64,7 +64,7 @@ export async function webConnectHandler(argv: yargs.Arguments<connectArgs>, targ
         `-localPort=${localPort}`,
         `-localHost=${localHost}`,
         `-targetId=${webTarget.id}`,
-        `-remotePort=${webTarget.remotePort}`,
+        `-remotePort=${webTarget.remotePort.value}`,
         `-remoteHost=${webTarget.remoteHost}`,
         `-plugin="web"`
     ];
