@@ -32,6 +32,7 @@ import { organizationSuite } from './suites/rest-api/organization';
 import { environmentsSuite } from './suites/rest-api/environments';
 import { policySuite } from './suites/rest-api/policies/policies';
 import { groupsSuite } from './suites/groups';
+import { sessionRecordingSuite } from './suites/session-recording';
 import { callZli } from './utils/zli-utils';
 import { UserHttpService } from '../../http-services/user/user.http-services';
 
@@ -231,6 +232,7 @@ if (SSM_ENABLED || KUBE_ENABLED || VT_ENABLED) {
 if(SSM_ENABLED) {
     connectSuite();
     sshSuite();
+    sessionRecordingSuite();
 
     if (IN_CI && (SERVICE_URL.includes('cloud-dev') || SERVICE_URL.includes('cloud-dev'))) {
         // Only run group tests if we are in CI and talking to staging or dev

@@ -58,6 +58,7 @@ interface BaseTarget {
     badDbCaseId?: string // For out db negation negation test
     webCaseId?: string; // For our web test suite
     badWebCaseId?: string; // For out web negation tests
+    sessionRecordingCaseId?: string;
 }
 
 export type TestTarget = SSMTestTargetAutoDiscovery | SSMTestTargetSelfRegistrationAutoDiscovery | SSMTestTargetAnsibleAutoDiscovery | VTTestTarget

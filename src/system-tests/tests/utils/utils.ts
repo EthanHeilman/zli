@@ -51,6 +51,8 @@ export function initRegionalSSMTargetsTestConfig(logger: Logger): TestTarget[] {
         let pmCloseCasedId = null;
         let pmGroupConnectCaseId = null;
         let adGroupConnectCaseId = null;
+        let adSessionRecordingCaseId = null;
+        let pmSessionRecordingCaseId = null;
 
         switch (awsRegion) {
         case 'ap-northeast-1':
@@ -69,6 +71,9 @@ export function initRegionalSSMTargetsTestConfig(logger: Logger): TestTarget[] {
             adBadSshCaseId = '2363';
             pmSshCaseId = '2179';
             pmBadSshCaseId = '2364';
+
+            adSessionRecordingCaseId = '5003';
+            pmSessionRecordingCaseId = '5004';
             break;
         default:
             logger.warn(`Unhandled TestRail awsRegion passed: ${awsRegion}`);
@@ -85,7 +90,8 @@ export function initRegionalSSMTargetsTestConfig(logger: Logger): TestTarget[] {
                 sshCaseId: adSshCaseId,
                 badSshCaseId: adBadSshCaseId,
                 groupConnectCaseId: adGroupConnectCaseId,
-                closeCaseId: adCloseCasedId
+                closeCaseId: adCloseCasedId,
+                sessionRecordingCaseId: adSessionRecordingCaseId
             },
             {
                 installType: 'pm',
@@ -97,7 +103,8 @@ export function initRegionalSSMTargetsTestConfig(logger: Logger): TestTarget[] {
                 sshCaseId: pmSshCaseId,
                 badSshCaseId: pmBadSshCaseId,
                 groupConnectCaseId: pmGroupConnectCaseId,
-                closeCaseId: pmCloseCasedId
+                closeCaseId: pmCloseCasedId,
+                sessionRecordingCaseId: pmSessionRecordingCaseId
             }
         );
     });
