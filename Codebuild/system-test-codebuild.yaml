@@ -5,6 +5,7 @@ env:
   variables:
     TZ: "America/New_York date"
     ReleaseDir: "release"
+    SYSTEM_TEST_ASSUME_ROLE_ARN: "arn:aws:iam::238681891460:role/cwcdev/cwc-dev-xaccount-run-st-role"
   parameter-store:
     # The SSH RSA Key used by our machine user
     build_ssh_key: "/cwc/ssh/rolandfrank"
@@ -36,7 +37,7 @@ phases:
       - git submodule init
       - git submodule update --recursive
       # Install Bzero-QA
-      - git clone git@github.com:bastionzero/cwc-infra.git  --branch develop /cwc-infra/
+      - git clone git@github.com:bastionzero/cwc-infra.git  --branch feat/cleanup-and-speed /cwc-infra/
       - pip3 install -e /cwc-infra/Bzero-Common/. && pip3 install -e /cwc-infra/Bzero-QA/.
       # Install npm dependencies
       - apt-get update -y && apt-get install build-essential cmake -y
