@@ -26,7 +26,7 @@ export class OrganizationHttpService extends HttpService
 
     public FetchGroupsMembership(id: string): Promise<GroupSummary[]>
     {
-        return this.Post(`groups-membership/fetch/${id}`, {});
+        return this.Post(`groups-memberships/fetch/${id}`, {});
     }
 
     public GetCredentialsMetadata(): Promise<IdentityProviderGroupsMetadataResponse>

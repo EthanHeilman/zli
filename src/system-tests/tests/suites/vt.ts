@@ -65,6 +65,9 @@ export const vtSuite = () => {
             );
             policyService.DeleteProxyPolicy(proxyPolicy.id);
 
+            // Also attempt to close any daemons to avoid any leaks in the tests
+            await callZli(['disconnect', 'db']);
+            await callZli(['disconnect', 'web']);
         }, 15 * 1000);
 
 

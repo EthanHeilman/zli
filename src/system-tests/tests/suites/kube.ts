@@ -30,6 +30,11 @@ export const kubeSuite = () => {
             testUtils = new TestUtils(configService, logger, loggerConfigService);
         });
 
+        afterAll(async () => {
+            // Also attempt to close the daemons to avoid any leaks in the tests
+            await callZli(['disconnect', 'kube']);
+        });
+
         beforeEach(() => {
             jest.restoreAllMocks();
             jest.clearAllMocks();
