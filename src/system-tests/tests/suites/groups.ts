@@ -8,13 +8,13 @@ import { callZli } from '../utils/zli-utils';
 import { ConnectionHttpService } from '../../../http-services/connection/connection.http-services';
 import { DigitalOceanSSMTarget, getDOImageName } from '../../digital-ocean/digital-ocean-ssm-target.service.types';
 import { TestUtils } from '../utils/test-utils';
-import { VerbType } from '../../../../src/services/v1/policy-query/policy-query.types';
 import { Environment } from '../../../../webshell-common-ts/http/v2/policy/types/environment.types';
 import { TestTarget } from '../system-test.types';
 import { ssmTestTargetsToRun } from '../targets-to-run';
 import { cleanupTargetConnectPolicies } from '../system-test-cleanup';
 import { PolicyHttpService } from '../../../http-services/policy/policy.http-services';
 import { OrganizationHttpService } from '../../../http-services/organization/organization.http-services';
+import { VerbType } from '../../../../webshell-common-ts/http/v2/policy/types/verb-type.types';
 
 export const groupsSuite = () => {
     describe('Groups suite', () => {

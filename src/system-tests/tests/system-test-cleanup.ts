@@ -1,6 +1,5 @@
 import { PolicyHttpService } from '../../http-services/policy/policy.http-services';
 import { ApiKeyHttpService } from '../../http-services/api-key/api-key.http-services';
-import { NewApiKeyResponse } from '../../services/v1/api-key/api-key.types';
 import { DigitalOceanSSMTargetService } from '../digital-ocean/digital-ocean-ssm-target-service';
 import { configService, doApiKey, logger, testTargets } from './system-test';
 import { checkAllSettledPromise } from './utils/utils';
@@ -8,6 +7,7 @@ import { uninstall } from './utils/helm/helm-utils';
 import { RegisteredDigitalOceanKubernetesCluster } from '../digital-ocean/digital-ocean-kube.service.types';
 import * as k8s from '@kubernetes/client-node';
 import { DigitalOceanKubeService } from '../digital-ocean/digital-ocean-kube-service';
+import { NewApiKeyResponse } from '../../../webshell-common-ts/http/v2/api-key/responses/new-api-key.responses';
 
 /**
  * Helper function to cleanup our system test api keys

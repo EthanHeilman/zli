@@ -1,4 +1,3 @@
-import { UserSummary } from '../services/v1/user/user.types';
 import { EnvironmentSummary } from '../../webshell-common-ts/http/v2/environment/types/environment-summary.responses';
 import { KubeClusterSummary } from '../../webshell-common-ts/http/v2/target/kube/types/kube-cluster-summary.types';
 import { TargetStatus } from '../../webshell-common-ts/http/v2/target/types/targetStatus.types';
@@ -21,6 +20,7 @@ import { ProxyPolicySummary } from '../../webshell-common-ts/http/v2/policy/prox
 import { SessionRecordingPolicySummary } from '../../webshell-common-ts/http/v2/policy/session-recording/types/session-recording-policy-summary.types';
 import { TargetConnectPolicySummary } from '../../webshell-common-ts/http/v2/policy/target-connect/types/target-connect-policy-summary.types';
 import { TargetUser } from '../../webshell-common-ts/http/v2/policy/types/target-user.types';
+import { UserSummary } from '../../webshell-common-ts/http/v2/user/types/user-summary.types';
 
 export const mockEnv: EnvironmentSummary = {
     id: 'test-env-id',
