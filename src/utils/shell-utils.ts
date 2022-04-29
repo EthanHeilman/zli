@@ -176,7 +176,6 @@ export async function startShellDaemon(
 ) {
     return new Promise<number>(async (resolve, reject) => {
 
-        logger.error("Well I'm here");
         // Build our args and cwd
         const baseArgs = getBaseDaemonArgs(configService, loggerConfigService, bzeroTarget.agentPublicKey);
         let pluginArgs = [
@@ -203,13 +202,11 @@ export async function startShellDaemon(
             cwd = process.env.ZLI_CUSTOM_DAEMON_PATH;
             finalDaemonPath = 'go';
             args = ['run', 'daemon.go'].concat(args);
-            logger.error(JSON.stringify(args))
         } else {
             finalDaemonPath = await copyExecutableToLocalDir(logger, configService.configPath());
         }
 
         try {
-            logger.error("Hi! Ho! Let's go!");
             // If we are not debugging, start the go subprocess in the background
             const options: SpawnOptions = {
                 cwd: cwd,

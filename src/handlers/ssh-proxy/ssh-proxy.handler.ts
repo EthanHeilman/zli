@@ -1,5 +1,6 @@
 import { includes } from 'lodash';
 import { SemVer, lt, parse } from 'semver';
+import { spawn, SpawnOptions } from 'child_process';
 
 import { KeySplittingService } from '../../../webshell-common-ts/keysplitting.service/keysplitting.service';
 import { ConfigService } from '../../services/config/config.service';
@@ -15,13 +16,15 @@ import { BzeroTargetHttpService } from '../../http-services/targets/bzero/bzero.
 import { TargetType } from '../../../webshell-common-ts/http/v2/target/types/target.types';
 import { BzeroAgentSummary } from '../../../webshell-common-ts/http/v2/target/bzero/types/bzero-agent-summary.types';
 import { SpaceHttpService } from '../../http-services/space/space.http-services';
-import { getCliSpace, startShellDaemon } from '../../utils/shell-utils';
+import { getCliSpace } from '../../utils/shell-utils';
 import { ConnectionHttpService } from '../../http-services/connection/connection.http-services';
 import { LoggerConfigService } from '../../services/logger/logger-config.service';
+import { copyExecutableToLocalDir, getBaseDaemonArgs } from '../../utils/daemon-utils';
+
 
 export async function sshProxyHandler(configService: ConfigService, logger: Logger, sshTunnelParameters: SshTunnelParameters, keySplittingService: KeySplittingService, envMap: EnvMap, loggerConfigService: LoggerConfigService) {
 
-    logger.error("OMG a funnnnnction");
+
 
     if (!sshTunnelParameters.parsedTarget) {
         logger.error('No targets matched your targetName/targetId or invalid target string, must follow syntax:');
@@ -89,7 +92,7 @@ export async function sshProxyHandler(configService: ConfigService, logger: Logg
             return 1;
         }
 
-        // FIXME: temp / pretend
+        // TODO: organize this differently?
         // make a new connection
         const targetUser = await connectCheckAllowedTargetUsers(sshTunnelParameters.parsedTarget.name, sshTunnelParameters.parsedTarget.user, allowedTargetUsers, logger);
         const spaceHttpService = new SpaceHttpService(configService, logger);
@@ -100,11 +103,51 @@ export async function sshProxyHandler(configService: ConfigService, logger: Logg
         } else {
             cliSpaceId = cliSpace.id;
         }
-        const connectionHttpService = new ConnectionHttpService(configService, logger);
-        const connectionId = await connectionHttpService.CreateConnection(sshTunnelParameters.parsedTarget.type, sshTunnelParameters.parsedTarget.id, cliSpaceId, targetUser);
-        const connectionSummary = await connectionHttpService.GetConnection(connectionId);
 
-        return startShellDaemon(configService, logger, loggerConfigService, connectionSummary, bzeroTarget, undefined);
+        // Build our args and cwd
+        // FIXME: revisit args, do I need targetUser?
+        const baseArgs = getBaseDaemonArgs(configService, loggerConfigService, bzeroTarget.agentPublicKey);
+        let pluginArgs = [
+            `-plugin="ssh"`
+        ];
+
+        let args = baseArgs.concat(pluginArgs);
+
+        let cwd = process.cwd();
+
+        // Copy over our executable to a temp file
+        let finalDaemonPath = '';
+        if (process.env.ZLI_CUSTOM_DAEMON_PATH) {
+            // If we set a custom path, we will try to start the daemon from the source code
+            cwd = process.env.ZLI_CUSTOM_DAEMON_PATH;
+            finalDaemonPath = 'go';
+            args = ['run', 'daemon.go'].concat(args);
+        } else {
+            finalDaemonPath = await copyExecutableToLocalDir(logger, configService.configPath());
+        }
+        logger.error(cwd);
+        logger.error(`${finalDaemonPath} ${args.join(" ")}`);
+
+        try {
+            // FIXME: for now assume we are not debugging, start the go subprocess in the background
+            const options: SpawnOptions = {
+                cwd: cwd,
+                detached: false,
+                shell: true,
+                stdio: 'inherit'
+            };
+
+            const daemonProcess = spawn(finalDaemonPath, args, options);
+
+            daemonProcess.on('close', async (exitCode) => {
+                logger.debug(`Ssh Daemon close event with exit code ${exitCode}`);
+                await cleanExit(exitCode, logger);
+            });
+
+        } catch (err) {
+            logger.error(`Error starting ssh daemon: ${err}`);
+            await cleanExit(1, logger);
+        }
     } else {
         throw new Error(`Unhandled target type ${sshTunnelParameters.parsedTarget.type}`);
     }
