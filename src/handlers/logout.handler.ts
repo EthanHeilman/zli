@@ -14,7 +14,7 @@ export async function logoutHandler(configService: ConfigService, logger: Logger
     // Close any daemon connections, start with kube
     logger.info('Closing any existing Kube Connections');
     const kubeConfig = configService.getKubeConfig();
-    killDaemon(kubeConfig['localPid'], kubeConfig['localPort'], logger);
+    killDaemon(kubeConfig['localPid'], logger);
 
     // Update the localPid
     kubeConfig['localPid'] = null;
@@ -23,7 +23,7 @@ export async function logoutHandler(configService: ConfigService, logger: Logger
     // Then db
     logger.info('Closing any existing Db Connections');
     const dbConfig = configService.getDbConfig();
-    killDaemon(dbConfig['localPid'], dbConfig['localPort'], logger);
+    killDaemon(dbConfig['localPid'], logger);
 
     // Update the localPid
     dbConfig['localPid'] = null;
@@ -32,7 +32,7 @@ export async function logoutHandler(configService: ConfigService, logger: Logger
     // Then web
     logger.info('Closing any existing Web Connections');
     const webConfig = configService.getWebConfig();
-    killDaemon(webConfig['localPid'],  webConfig['localPort'], logger);
+    killDaemon(webConfig['localPid'],  logger);
 
     // Update the localPid
     webConfig['localPid'] = null;
