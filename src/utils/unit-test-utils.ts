@@ -127,9 +127,9 @@ export const mockDbSummaryList: DbTargetSummary[] = [{
     lastAgentUpdate: new Date(1998, 3, 5, 0, 0, 0, 0),
     region: 'test-region',
     type: TargetType.Db,
-    localPort: 1234,
+    localPort: { value: 1234 },
     localHost: 'localhost',
-    remotePort: 1234,
+    remotePort: { value: 1234 },
     remoteHost: 'remotehost',
     proxyTargetId: 'some-proxy-id',
 }];
@@ -144,9 +144,9 @@ export const mockWebSummaryList: WebTargetSummary[] = [{
     lastAgentUpdate: new Date(1998, 3, 5, 0, 0, 0, 0),
     region: 'test-region',
     type: TargetType.Db,
-    localPort: 1234,
+    localPort: { value: 1234 },
     localHost: 'localhost',
-    remotePort: 1234,
+    remotePort: { value: 1234 },
     remoteHost: 'remotehost',
     proxyTargetId: 'some-proxy-id',
 }];

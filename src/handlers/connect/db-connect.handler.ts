@@ -45,7 +45,7 @@ export async function dbConnectHandler(argv: yargs.Arguments<connectArgs>, targe
     const localHost = getOrDefaultLocalhost(dbTarget.localHost);
 
     // Make sure we have set our local daemon port
-    let localPort = await getOrDefaultLocalport(dbTarget.localPort, dbConfig.localPort, logger);
+    let localPort = await getOrDefaultLocalport(dbTarget.localPort?.value, dbConfig.localPort, logger);
     if (argv.customPort != -1) {
         localPort = argv.customPort;
     }
@@ -63,7 +63,7 @@ export async function dbConnectHandler(argv: yargs.Arguments<connectArgs>, targe
         `-localPort=${localPort}`,
         `-localHost=${localHost}`,
         `-targetId=${dbTarget.id}`,
-        `-remotePort=${dbTarget.remotePort}`,
+        `-remotePort=${dbTarget.remotePort.value}`,
         `-remoteHost=${dbTarget.remoteHost}`,
         `-plugin="db"`
     ];
