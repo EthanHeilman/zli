@@ -6,6 +6,7 @@ import { OrganizationControlsPolicyUpdateRequest } from '../../../webshell-commo
 import { OrganizationControlsPolicySummary } from '../../../webshell-common-ts/http/v2/policy/organization-controls/types/organization-controls-policy-summary.types';
 import { ProxyPolicySummary } from '../../../webshell-common-ts/http/v2/policy/proxy/types/proxy-policy-summary.types';
 import { ProxyPolicyCreateRequest } from '../../../webshell-common-ts/http/v2/policy/proxy/requests/proxy-policy-create.requests';
+import { ProxyPolicyUpdateRequest } from '../../../webshell-common-ts/http/v2/policy/proxy/requests/proxy-policy-update.requests';
 import { SessionRecordingPolicyCreateRequest } from '../../../webshell-common-ts/http/v2/policy/session-recording/requests/session-recording-create.requests';
 import { SessionRecordingPolicyUpdateRequest } from '../../../webshell-common-ts/http/v2/policy/session-recording/requests/session-recording-policy-update.requests';
 import { SessionRecordingPolicySummary } from '../../../webshell-common-ts/http/v2/policy/session-recording/types/session-recording-policy-summary.types';
@@ -112,6 +113,20 @@ export class PolicyHttpService extends HttpService
             verbs: policy.verbs
         };
         return this.Patch(`${TARGET}/${policy.id}`, request);
+    }
+
+    public EditProxyPolicy(
+        policy: ProxyPolicySummary
+    ): Promise<ProxyPolicySummary> {
+        const request: ProxyPolicyUpdateRequest = {
+            name: policy.name,
+            subjects: policy.subjects,
+            groups: policy.groups,
+            description: policy.description,
+            environments: policy.environments,
+            targets: policy.targets
+        };
+        return this.Patch(`${PROXY}/${policy.id}`, request);
     }
 
 
