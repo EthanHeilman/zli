@@ -636,7 +636,8 @@ export class CliDriver {
                     const sshTunnelParameters: SshTunnelParameters = {
                         parsedTarget: parsedTarget,
                         port: argv.port,
-                        identityFile: argv.identityFile
+                        identityFile: argv.identityFile,
+                        targetUser: argv.user
                     };
 
                     await sshProxyHandler(this.configService, this.logger, sshTunnelParameters, this.keySplittingService, envMap, this.loggerConfigService,);

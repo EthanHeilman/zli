@@ -24,8 +24,6 @@ import { copyExecutableToLocalDir, getBaseDaemonArgs } from '../../utils/daemon-
 
 export async function sshProxyHandler(configService: ConfigService, logger: Logger, sshTunnelParameters: SshTunnelParameters, keySplittingService: KeySplittingService, envMap: EnvMap, loggerConfigService: LoggerConfigService) {
 
-
-
     if (!sshTunnelParameters.parsedTarget) {
         logger.error('No targets matched your targetName/targetId or invalid target string, must follow syntax:');
         logger.error(targetStringExample);
@@ -92,22 +90,12 @@ export async function sshProxyHandler(configService: ConfigService, logger: Logg
             return 1;
         }
 
-        // TODO: organize this differently?
-        // make a new connection
-        const targetUser = await connectCheckAllowedTargetUsers(sshTunnelParameters.parsedTarget.name, sshTunnelParameters.parsedTarget.user, allowedTargetUsers, logger);
-        const spaceHttpService = new SpaceHttpService(configService, logger);
-        const cliSpace = await getCliSpace(spaceHttpService, logger);
-        let cliSpaceId: string;
-        if (cliSpace === undefined) {
-            cliSpaceId = await spaceHttpService.CreateSpace('cli-space');
-        } else {
-            cliSpaceId = cliSpace.id;
-        }
-
         // Build our args and cwd
         // FIXME: revisit args, do I need targetUser?
         const baseArgs = getBaseDaemonArgs(configService, loggerConfigService, bzeroTarget.agentPublicKey);
         let pluginArgs = [
+            `-targetId="${bzeroTarget.id}"`,
+            `-targetUser="${sshTunnelParameters.targetUser}"`,
             `-plugin="ssh"`
         ];
 
@@ -157,4 +145,5 @@ export interface SshTunnelParameters {
     parsedTarget: ParsedTargetString;
     port: number;
     identityFile: string;
+    targetUser: string;
 }
