@@ -139,6 +139,23 @@ export class HttpService {
         }
     }
 
+    // Use this Get request when a string response is expected.
+    protected async GetText(route?: string, queryParams?: Dictionary<string> | URLSearchParams, extraHeaders?: Dictionary<string>): Promise<string> {
+        this.setHeaders(extraHeaders);
+
+        try {
+            const response = await this.httpClient.get(
+                route,
+                {
+                    searchParams: queryParams
+                }
+            ).text();
+            return response;
+        } catch (error) {
+            throw new Error(this.getHttpErrorMessage(route, error));
+        }
+    }
+
     protected async Delete<TResp>(route?: string, extraHeaders? : Dictionary<string>): Promise<TResp> {
         this.setHeaders(extraHeaders);
 

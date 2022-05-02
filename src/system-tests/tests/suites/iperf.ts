@@ -122,9 +122,9 @@ export const iperfSuite = () => {
                     targetName: dbIperfVtName,
                     proxyTargetId: doTarget.bzeroTarget.id,
                     remoteHost: 'localhost',
-                    remotePort: iperfPort,
+                    remotePort: { value: iperfPort },
                     localHost: 'localhost',
-                    localPort: localDbPort,
+                    localPort: { value: localDbPort },
                     environmentName: systemTestEnvName
                 });
 
@@ -163,9 +163,9 @@ export const iperfSuite = () => {
                     targetName: dbIperfVtName,
                     proxyTargetId: doTarget.bzeroTarget.id,
                     remoteHost: 'localhost',
-                    remotePort: iperfPort,
+                    remotePort: { value: iperfPort },
                     localHost: 'localhost',
-                    localPort: localDbPort,
+                    localPort: { value: localDbPort },
                     environmentName: systemTestEnvName
                 });
 

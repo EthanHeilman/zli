@@ -32,7 +32,9 @@ import { organizationSuite } from './suites/rest-api/organization';
 import { environmentsSuite } from './suites/rest-api/environments';
 import { policySuite } from './suites/rest-api/policies/policies';
 import { groupsSuite } from './suites/groups';
+import { sessionRecordingSuite } from './suites/session-recording';
 import { callZli } from './utils/zli-utils';
+import { UserHttpService } from '../../http-services/user/user.http-services';
 
 // Uses config name from ZLI_CONFIG_NAME environment variable (defaults to prod
 // if unset) This can be run against dev/stage/prod when running system tests
@@ -65,7 +67,7 @@ export const KUBE_ENABLED = process.env.KUBE_ENABLED ? (process.env.KUBE_ENABLED
 const VT_ENABLED = process.env.VT_ENABLED ? (process.env.VT_ENABLED === 'true') : true;
 const SSM_ENABLED =  process.env.SSM_ENABLED ? (process.env.SSM_ENABLED === 'true') : true;
 const API_ENABLED = process.env.API_ENABLED ? (process.env.API_ENABLED === 'true') : true;
-export const IN_PROD = process.env.IN_PROD ? process.env.IN_PROD === 'true' : false;;
+export const IN_PIPELINE = process.env.IN_PIPELINE ? process.env.IN_PIPELINE === 'true' : false;;
 
 export const IN_CI = process.env.BZERO_IN_CI ? (process.env.BZERO_IN_CI === '1') : false;
 export const SERVICE_URL = configService.serviceUrl();
@@ -154,8 +156,16 @@ export const systemTestPolicyTemplate = `${resourceNamePrefix}-$POLICY_TYPE-poli
 beforeAll(async () => {
     const oauthService = new OAuthService(configService, logger);
 
-    // Refresh the ID token because it is likely expired
-    await oauthService.getIdTokenAndExitOnError();
+    // Reset sessionId and sessionToken to get unique session for this test
+    configService.setSessionId('');
+    configService.setSessionToken('');
+
+    // Force refresh ID token and access token because it is likely expired
+    const newTokenSet = await oauthService.refresh();
+    configService.setTokenSet(newTokenSet);
+    // Ask bastion for new session token
+    const userHttpService = new UserHttpService(configService, logger);
+    await userHttpService.Register();
 
     // Create a new api key that can be used for system tests
     [systemTestRESTApiKey, systemTestRegistrationApiKey] = await setupSystemTestApiKeys();
@@ -222,6 +232,7 @@ if (SSM_ENABLED || KUBE_ENABLED || VT_ENABLED) {
 if(SSM_ENABLED) {
     connectSuite();
     sshSuite();
+    sessionRecordingSuite();
 
     if (IN_CI && (SERVICE_URL.includes('cloud-dev') || SERVICE_URL.includes('cloud-dev'))) {
         // Only run group tests if we are in CI and talking to staging or dev

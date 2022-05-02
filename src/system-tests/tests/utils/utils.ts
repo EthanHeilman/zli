@@ -47,8 +47,12 @@ export function initRegionalSSMTargetsTestConfig(logger: Logger): TestTarget[] {
         let adBadSshCaseId = null;
         let pmSshCaseId = null;
         let pmBadSshCaseId = null;
+        let adCloseCasedId = null;
+        let pmCloseCasedId = null;
         let pmGroupConnectCaseId = null;
         let adGroupConnectCaseId = null;
+        let adSessionRecordingCaseId = null;
+        let pmSessionRecordingCaseId = null;
 
         switch (awsRegion) {
         case 'ap-northeast-1':
@@ -56,6 +60,10 @@ export function initRegionalSSMTargetsTestConfig(logger: Logger): TestTarget[] {
             adBadConnectCaseId = '2367';
             pmConnectCaseId = '2177';
             pmBadConnectBaseId = '2368';
+
+            pmCloseCasedId = '3658';
+            adCloseCasedId = '3657';
+
             pmGroupConnectCaseId = '3097';
             adGroupConnectCaseId = '3096';
 
@@ -63,6 +71,9 @@ export function initRegionalSSMTargetsTestConfig(logger: Logger): TestTarget[] {
             adBadSshCaseId = '2363';
             pmSshCaseId = '2179';
             pmBadSshCaseId = '2364';
+
+            adSessionRecordingCaseId = '5003';
+            pmSessionRecordingCaseId = '5004';
             break;
         default:
             logger.warn(`Unhandled TestRail awsRegion passed: ${awsRegion}`);
@@ -78,7 +89,9 @@ export function initRegionalSSMTargetsTestConfig(logger: Logger): TestTarget[] {
                 badConnectCaseId: adBadConnectCaseId,
                 sshCaseId: adSshCaseId,
                 badSshCaseId: adBadSshCaseId,
-                groupConnectCaseId: adGroupConnectCaseId
+                groupConnectCaseId: adGroupConnectCaseId,
+                closeCaseId: adCloseCasedId,
+                sessionRecordingCaseId: adSessionRecordingCaseId
             },
             {
                 installType: 'pm',
@@ -89,7 +102,9 @@ export function initRegionalSSMTargetsTestConfig(logger: Logger): TestTarget[] {
                 badConnectCaseId: pmBadConnectBaseId,
                 sshCaseId: pmSshCaseId,
                 badSshCaseId: pmBadSshCaseId,
-                groupConnectCaseId: pmGroupConnectCaseId
+                groupConnectCaseId: pmGroupConnectCaseId,
+                closeCaseId: pmCloseCasedId,
+                sessionRecordingCaseId: pmSessionRecordingCaseId
             }
         );
     });

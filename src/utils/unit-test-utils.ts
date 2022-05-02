@@ -20,6 +20,10 @@ import { ProxyPolicySummary } from '../../webshell-common-ts/http/v2/policy/prox
 import { SessionRecordingPolicySummary } from '../../webshell-common-ts/http/v2/policy/session-recording/types/session-recording-policy-summary.types';
 import { TargetConnectPolicySummary } from '../../webshell-common-ts/http/v2/policy/target-connect/types/target-connect-policy-summary.types';
 import { TargetUser } from '../../webshell-common-ts/http/v2/policy/types/target-user.types';
+import { ConnectionSummary } from '../../webshell-common-ts/http/v2/connection/types/connection-summary.types';
+import { ConnectionState } from '../../webshell-common-ts/http/v2/connection/types/connection-state.types';
+import { SpaceSummary } from '../../webshell-common-ts/http/v2/space/types/space-summary.types';
+import { SpaceState } from '../../webshell-common-ts/http/v2/space/types/space-state.types';
 import { UserSummary } from '../../webshell-common-ts/http/v2/user/types/user-summary.types';
 
 export const mockEnv: EnvironmentSummary = {
@@ -123,9 +127,9 @@ export const mockDbSummaryList: DbTargetSummary[] = [{
     lastAgentUpdate: new Date(1998, 3, 5, 0, 0, 0, 0),
     region: 'test-region',
     type: TargetType.Db,
-    localPort: 1234,
+    localPort: { value: 1234 },
     localHost: 'localhost',
-    remotePort: 1234,
+    remotePort: { value: 1234 },
     remoteHost: 'remotehost',
     proxyTargetId: 'some-proxy-id',
 }];
@@ -140,9 +144,9 @@ export const mockWebSummaryList: WebTargetSummary[] = [{
     lastAgentUpdate: new Date(1998, 3, 5, 0, 0, 0, 0),
     region: 'test-region',
     type: TargetType.Db,
-    localPort: 1234,
+    localPort: { value: 1234 },
     localHost: 'localhost',
-    remotePort: 1234,
+    remotePort: { value: 1234 },
     remoteHost: 'remotehost',
     proxyTargetId: 'some-proxy-id',
 }];
@@ -239,6 +243,29 @@ export const mockTargetConnectPolicySummaryList: TargetConnectPolicySummary[] = 
         type: VerbType.Shell
     }]
 }];
+
+export const mockConnectionSummary: ConnectionSummary = {
+    id: 'cf8ce789-422b-4ace-8df5-d6c75b1fa1af',
+    timeCreated : new Date(1998, 3, 5, 0, 0, 0, 0),
+    spaceId : 'df262ee7-b749-4f08-ae61-3cd63a4fecd7', // This is the same as the mockSpaceSummary
+    state : ConnectionState.Open,
+    targetId : 'some-target-id',
+    targetType : TargetType.SsmTarget,
+    targetUser : 'some-target-user',
+    sessionRecordingAvailable : false,
+    sessionRecording : false,
+    inputRecording : false,
+    subjectId : 'some-subject-id'
+};
+
+export const mockSpaceSummary: SpaceSummary = {
+    id: 'df262ee7-b749-4f08-ae61-3cd63a4fecd7',
+    displayName: 'cli-space',
+    timeCreated: new Date(1998, 3, 5, 0, 0, 0, 0),
+    state: SpaceState.Active,
+    connections: [mockConnectionSummary],
+    terminalPreferences: 'some-preferences',
+};
 
 /**
  * Some of our zli code calls Table, which automatically adds color, this helper function removes any color from

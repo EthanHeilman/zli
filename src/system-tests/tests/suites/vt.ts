@@ -103,9 +103,9 @@ export const vtSuite = () => {
                     targetName: dbVtName,
                     proxyTargetId: doTarget.bzeroTarget.id,
                     remoteHost: 'localhost',
-                    remotePort: 5432,
+                    remotePort: { value: 5432 },
                     localHost: 'localhost',
-                    localPort: localDbPort,
+                    localPort: { value: localDbPort },
                     environmentName: systemTestEnvName
                 });
 
@@ -174,9 +174,9 @@ export const vtSuite = () => {
                     targetName: dbVtName,
                     proxyTargetId: doTarget.bzeroTarget.id,
                     remoteHost: 'localhost',
-                    remotePort: 5432,
+                    remotePort: { value: 5432 },
                     localHost: 'localhost',
-                    localPort: localDbPort,
+                    localPort: { value: localDbPort },
                     environmentName: 'Default'
                 });
 
@@ -209,9 +209,9 @@ export const vtSuite = () => {
                     targetName: webVtName,
                     proxyTargetId: doTarget.bzeroTarget.id,
                     remoteHost: 'http://localhost',
-                    remotePort: webserverRemotePort,
+                    remotePort: { value: webserverRemotePort },
                     localHost: 'localhost',
-                    localPort: localWebPort,
+                    localPort: { value: localWebPort },
                     environmentName: systemTestEnvName
                 });
 
@@ -295,9 +295,9 @@ export const vtSuite = () => {
                     targetName: webVtName,
                     proxyTargetId: doTarget.bzeroTarget.id,
                     remoteHost: 'http://localhost',
-                    remotePort: webserverRemotePort,
+                    remotePort: { value: webserverRemotePort },
                     localHost: 'localhost',
-                    localPort: localWebPort,
+                    localPort: { value: localWebPort },
                     environmentName: 'Default'
                 });
 
