@@ -1,15 +1,6 @@
 import { CliDriver } from '../../../cli-driver';
-import * as CleanExitHandler from '../../../handlers/clean-exit.handler';
 
 export async function callZli(zliArgs: string[], callback?: (err: Error, argv: any, output: string) => Promise<void>): Promise<void> {
-    // Spy on calls to cleanExit but dont call process.exit. Still throw an
-    // exception if exitCode != 0 which will fail the test
-    jest.spyOn(CleanExitHandler, 'cleanExit').mockImplementation(async (exitCode) => {
-        if (exitCode !== 0) {
-            throw new Error(`cleanExit was called with exitCode == ${exitCode}`);
-        }
-    });
-
     const cliDriver = new CliDriver();
     const callbackComplete = new Promise<void>(async (res, rej) => {
         try {

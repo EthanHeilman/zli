@@ -1,5 +1,3 @@
-import { MockSTDIN, stdin } from 'mock-stdin';
-import waitForExpect from 'wait-for-expect';
 import { SubjectType } from '../../../../webshell-common-ts/http/v2/common.types/subject.types';
 import { SessionRecordingPolicySummary } from '../../../../webshell-common-ts/http/v2/policy/session-recording/types/session-recording-policy-summary.types';
 import { TargetConnectPolicySummary } from '../../../../webshell-common-ts/http/v2/policy/target-connect/types/target-connect-policy-summary.types';
@@ -8,47 +6,38 @@ import { Subject } from '../../../../webshell-common-ts/http/v2/policy/types/sub
 import { VerbType } from '../../../../webshell-common-ts/http/v2/policy/types/verb-type.types';
 import { PolicyHttpService } from '../../../http-services/policy/policy.http-services';
 import { SessionRecordingHttpService } from '../../../http-services/session-recording/session-recording.http-services';
-import * as ShellUtils from '../../../utils/shell-utils';
-import * as CleanExitHandler from '../../../handlers/clean-exit.handler';
-import { DigitalOceanSSMTarget, getDOImageName } from '../../digital-ocean/digital-ocean-ssm-target.service.types';
+import { getDOImageName } from '../../digital-ocean/digital-ocean-ssm-target.service.types';
 import {
+    allTargets,
     configService,
     logger,
     loggerConfigService,
     systemTestEnvId,
     systemTestPolicyTemplate,
-    systemTestUniqueId,
-    testTargets
+    systemTestUniqueId
 } from '../system-test';
-import { ssmTestTargetsToRun } from '../targets-to-run';
 import { TestUtils } from '../utils/test-utils';
-import { callZli } from '../utils/zli-utils';
 import { ConnectionHttpService } from '../../../http-services/connection/connection.http-services';
-import { SpaceHttpService } from '../../../http-services/space/space.http-services';
-import { TargetType } from '../../../../webshell-common-ts/http/v2/target/types/target.types';
-import { SpaceSummary } from '../../../../webshell-common-ts/http/v2/space/types/space-summary.types';
 import { TestTarget } from '../system-test.types';
+import { ConnectTestUtils } from '../utils/connect-utils';
 
 export const sessionRecordingSuite = () => {
     describe('Session Recording Suite', () => {
         let testUtils: TestUtils;
         let sessionRecordingService: SessionRecordingHttpService;
         let policyService: PolicyHttpService;
-        let spaceService: SpaceHttpService;
         let connectionService: ConnectionHttpService;
-        let cliSpace: SpaceSummary;
         let targetConnectPolicy: TargetConnectPolicySummary;
         let sessionRecordingPolicy: SessionRecordingPolicySummary;
-        let mockStdin: MockSTDIN;
+        let connectTestUtils: ConnectTestUtils;
+        let testPassed: boolean = false;
 
         const allTestConnections: string[] = [];
-        const targetUser = 'ssm-user';
 
         beforeAll(async () => {
             testUtils = new TestUtils(configService, logger, loggerConfigService);
             sessionRecordingService = new SessionRecordingHttpService(configService, logger);
             policyService = new PolicyHttpService(configService, logger);
-            spaceService = new SpaceHttpService(configService, logger);
             connectionService = new ConnectionHttpService(configService, logger);
 
             const currentUser: Subject = {
@@ -70,11 +59,7 @@ export const sessionRecordingSuite = () => {
                     environment
                 ],
                 targets: [],
-                targetUsers: [
-                    {
-                        userName: targetUser
-                    }
-                ],
+                targetUsers: ConnectTestUtils.getPolicyTargetUsers(),
                 verbs: [
                     {
                         type: VerbType.Shell
@@ -90,7 +75,6 @@ export const sessionRecordingSuite = () => {
                 description: `Target connect policy created for system test: ${systemTestUniqueId}`,
                 recordInput: false
             });
-            cliSpace = await ShellUtils.getCliSpace(spaceService, logger);
         }, 15 * 1000);
 
         afterAll(async () => {
@@ -106,68 +90,33 @@ export const sessionRecordingSuite = () => {
             } catch (error) {
                 // catching and ignoring errors here so that test running can continue
             }
+
+            await connectTestUtils.cleanup();
         }, 15 * 1000);
 
         beforeEach(() => {
-            jest.restoreAllMocks();
-            jest.clearAllMocks();
-            mockStdin = stdin();
+            connectTestUtils = new ConnectTestUtils(connectionService, testUtils);
         });
 
-        afterEach(() => {
-            if (mockStdin) {
-                mockStdin.restore();
-            }
+        afterEach(async () => {
+            await connectTestUtils.cleanup();
+
+            // Check the daemon logs incase there is a test failure
+            await testUtils.CheckDaemonLogs(testPassed, expect.getState().currentTestName);
         });
 
-        ssmTestTargetsToRun.forEach(async (testTarget: TestTarget) => {
+        allTargets.forEach(async (testTarget: TestTarget) => {
             it(`${testTarget.sessionRecordingCaseId}: Connect to target and verify session is recorded (${testTarget.awsRegion} - ${testTarget.installType} - ${getDOImageName(testTarget.dropletImage)})`, async () => {
-                const doTarget = testTargets.get(testTarget) as DigitalOceanSSMTarget;
-
-                // Create a connection using REST API so that the ID can be known.
-                const testConnectionId = await connectionService.CreateConnection(
-                    TargetType.SsmTarget, doTarget.ssmTarget.id, cliSpace.id, targetUser);
-                allTestConnections.push(testConnectionId);
-
-                // Spy on output pushed to stdout
-                const outputSpy = jest.spyOn(ShellUtils, 'pushToStdOut');
-                const attachPromise = callZli(['attach', testConnectionId]);
-                const message = 'session recording testing 123';
-                const commandToSend = `echo "${message}"`;
-
-                await waitForExpect(
-                    async () => {
-                        // Wait for there to be some output
-                        expect(outputSpy).toHaveBeenCalled();
-
-                        await testUtils.sendMockInput(commandToSend, mockStdin);
-
-                        try {
-                            await testUtils.EnsureCommandLogExists(doTarget.ssmTarget.id, doTarget.ssmTarget.name, targetUser, 'SSM', commandToSend);
-                        } catch (e: any) {
-                            if (!e.toString().contains('Unable to find command:')) {
-                                throw e;
-                            }
-                        }
-                    },
-                    1000 * 30
-                );
-
-                // Send exit to the terminal so the zli connect handler will exit
-                // and the test can complete. However we must override the mock
-                // implementation of cleanExit to allow the zli connect command to
-                // exit with code 1 without causing the test to fail.
-                jest.spyOn(CleanExitHandler, 'cleanExit').mockImplementationOnce(() => Promise.resolve());
-                testUtils.sendMockInput('exit', mockStdin);
-
-                // Wait for connect shell to cleanup
-                await attachPromise;
+                const sessionRecordingTestMessage = `session recording test - ${systemTestUniqueId}`;
+                const connectionId = await connectTestUtils.runShellConnectTest(testTarget, sessionRecordingTestMessage, true);
 
                 // Get session recording and verify the echo'd message is in the asciicast data.
-                const downloadedSessionRecording = await sessionRecordingService.GetSessionRecording(testConnectionId);
-                const messageFound = downloadedSessionRecording.includes(message);
+                const downloadedSessionRecording = await sessionRecordingService.GetSessionRecording(connectionId);
+                const messageFound = downloadedSessionRecording.includes(sessionRecordingTestMessage);
                 expect(messageFound).toEqual(true);
-            }, 60 * 1000);
+
+                testPassed = true;
+            }, 2 * 60 * 1000);
         });
 
         test('3043: Get all session recordings', async () => {
@@ -175,6 +124,8 @@ export const sessionRecordingSuite = () => {
             // Using toBeGreaterThanOrEqual in case this suite is run in parallel with another one, which could
             // result in other recordings being created.
             expect(allRecordings.length).toBeGreaterThanOrEqual(allTestConnections.length);
+
+            testPassed= true;
         }, 15 * 1000);
 
         test('3044: Try to delete each session recording - should not delete because connections are open', async () => {
@@ -186,6 +137,8 @@ export const sessionRecordingSuite = () => {
             // Verify recordings still exist.
             const allRecordings = await sessionRecordingService.ListSessionRecordings();
             allTestConnections.forEach(connectionId => expect(allRecordings.find(recording => recording.connectionId === connectionId)).toBeDefined());
+
+            testPassed= true;
         }, 30 * 1000);
 
         test('3045: Delete each session recording - should succeed because connections are closed', async () => {
@@ -200,6 +153,8 @@ export const sessionRecordingSuite = () => {
             // Verify recordings no longer exist.
             const allRecordings = await sessionRecordingService.ListSessionRecordings();
             allTestConnections.forEach(connectionId => expect(allRecordings.find(recording => recording.connectionId === connectionId)).toBeUndefined());
+
+            testPassed= true;
         }, 30 * 1000);
     });
 };

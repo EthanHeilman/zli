@@ -312,8 +312,8 @@ export function getBaseDaemonArgs(configService: ConfigService, loggerConfigServ
         `-serviceURL=${configService.serviceUrl().slice(0, -1).replace('https://', '')}`,
         `-authHeader="${configService.getAuthHeader()}"`,
         `-configPath=${configService.configPath()}`,
-        `-refreshTokenCommand="${execPath + ' ' + entryPoint + ' refresh'}"`,
-        `-logPath="${loggerConfigService.daemonLogPath()}"`,
+        `-refreshTokenCommand="${execPath} ${entryPoint} refresh"`,
+        `-logPath=${loggerConfigService.daemonLogPath()}`,
         `-agentPubKey=${agentPubKey}`,
     ];
 }

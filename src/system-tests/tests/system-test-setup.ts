@@ -6,7 +6,7 @@ import { ClusterTargetStatusPollError, RegisteredDigitalOceanKubernetesCluster }
 import { promisify } from 'util';
 import fs from 'fs';
 import { KubeBctlNamespace, KubeHelmQuickstartChartName, KubeTestTargetGroups, KubeTestUserName } from './suites/kube';
-import { SSMTestTargetAnsibleAutoDiscovery, SSMTestTargetSelfRegistrationAutoDiscovery, TestTarget, VTTestTarget } from './system-test.types';
+import { SSMTestTargetAnsibleAutoDiscovery, SSMTestTargetSelfRegistrationAutoDiscovery, TestTarget, BzeroTestTarget } from './system-test.types';
 import { BzeroTargetStatusPollError, DigitalOceanBZeroTarget, DigitalOceanSSMTarget, getDOImageName, getPackageManagerType, SsmTargetStatusPollError } from '../digital-ocean/digital-ocean-ssm-target.service.types';
 import { randomAlphaNumericString } from '../../utils/utils';
 import { getAnsibleAutodiscoveryScript, getAutodiscoveryScript } from '../../http-services/auto-discovery-script/auto-discovery-script.http-services';
@@ -16,6 +16,9 @@ import { ApiKeyHttpService } from '../../http-services/api-key/api-key.http-serv
 import { DigitalOceanKubeService } from '../digital-ocean/digital-ocean-kube-service';
 import { DigitalOceanSSMTargetService } from '../digital-ocean/digital-ocean-ssm-target-service';
 import { cleanupHelmAgentInstallation } from './system-test-cleanup';
+
+// User to create for bzero targets to use for connect/ssh tests
+export const bzeroTargetCustomUser = 'bzuser';
 
 // Droplet size to create
 const vtDropletSize = DigitalOceanDropletSize.CPU_1_MEM_1GB;
@@ -211,7 +214,7 @@ export async function createDOTestTargets() {
             userDataScript = getPackageManagerRegistrationScript('bzero-ssm-agent', testTarget, systemTestEnvName, systemTestRegistrationApiKey.secret);
             dropletSizeToCreate = ssmDropletSize;
             break;
-        case 'pm-vt':
+        case 'pm-bzero':
             userDataScript = getPackageManagerRegistrationScript('bzero-beta', testTarget, systemTestEnvName, systemTestRegistrationApiKey.secret);
             dropletSizeToCreate = vtDropletSize;
             break;
@@ -267,7 +270,7 @@ export async function createDOTestTargets() {
                 \tSSM Target ID: ${digitalOceanSsmTarget.ssmTarget.id}`
             );
 
-        } else if(testTarget.installType === 'pm-vt') {
+        } else if(testTarget.installType === 'pm-bzero') {
             const digitalOceanBZeroTarget: DigitalOceanBZeroTarget = {  type: 'bzero', droplet: droplet, bzeroTarget: undefined};
             testTargets.set(testTarget, digitalOceanBZeroTarget);
 
@@ -369,7 +372,7 @@ ${ansibleInstall}
  * @param registrationApiKeySecret API key used to activate these agents
  * @returns User data script to run on droplet
  */
-function getPackageManagerRegistrationScript(packageName: string, testTarget: SSMTestTargetSelfRegistrationAutoDiscovery | VTTestTarget, envName: string, registrationApiKeySecret: string): string {
+function getPackageManagerRegistrationScript(packageName: string, testTarget: SSMTestTargetSelfRegistrationAutoDiscovery | BzeroTestTarget, envName: string, registrationApiKeySecret: string): string {
     let installBlock: string;
     const packageManager = getPackageManagerType(testTarget.dropletImage);
     const shouldBuildFromSource = packageName === 'bzero-beta' && bzeroAgentBranch;
@@ -437,13 +440,23 @@ sudo yum install ${packageName} iperf3 -y
     case 'pm':
         registerCommand = `${packageName} --serviceUrl ${configService.serviceUrl()} -registrationKey "${registrationApiKeySecret}" -envName "${envName}"`;
         break;
-    case 'pm-vt':
+    case 'pm-bzero':
         registerCommand = `${executableName} --serviceUrl ${configService.serviceUrl()} -registrationKey "${registrationApiKeySecret}" -environmentName "${envName}"`;
 
-        // Initialization for virtual targets
-        // Common code start python server
-        initBlock = String.raw`nohup python3 -m http.server > python-server.out 2> python-server.err < /dev/null &
-iperf3 -s </dev/null &>/dev/null &
+        // Common initialization for bzero targets
+
+        // Starts a python web server in background for web tests
+        const pythonWebServerCmd = 'nohup python3 -m http.server > python-server.out 2> python-server.err < /dev/null &';
+        const iperfCmd = `iperf3 -s </dev/null &>/dev/null &`;
+
+        // Add a bzero custom user for connect/ssh tests
+        // --shell options sets default shell as bash
+        // -m option will create a home directory with proper permissions
+        const createBzeroCustomerUserCmd = `useradd ${bzeroTargetCustomUser} --shell /bin/bash -m`;
+
+        initBlock = String.raw`${pythonWebServerCmd}
+${iperfCmd}
+${createBzeroCustomerUserCmd}
 `;
 
         switch (packageManager) {

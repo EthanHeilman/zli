@@ -3,7 +3,7 @@ import { parse } from 'semver';
 import { ConfigService } from '../../services/config/config.service';
 import { Logger } from '../../services/logger/logger.service';
 import { cleanExit } from '../clean-exit.handler';
-import { createAndRunShell, getCliSpace, pushToStdOut, startShellDaemon } from '../../utils/shell-utils';
+import { createAndRunShell, getCliSpace, startShellDaemon } from '../../utils/shell-utils';
 import { ConnectionHttpService } from '../../http-services/connection/connection.http-services';
 import { SpaceHttpService } from '../../http-services/space/space.http-services';
 import { ConnectionState } from '../../../webshell-common-ts/http/v2/connection/types/connection-state.types';
@@ -42,7 +42,7 @@ export async function attachHandler(
     }
 
     if(connectionSummary.targetType == TargetType.SsmTarget || connectionSummary.targetType == TargetType.DynamicAccessConfig) {
-        return createAndRunShell(configService, logger, connectionSummary, pushToStdOut);
+        return createAndRunShell(configService, logger, connectionSummary);
     } else if(connectionSummary.targetType == TargetType.Bzero) {
         // Get Attach Info for Bzero target. This currently just includes the datachannel id of the connection
         const attachInfoRequest = await connectionHttpService.GetShellConnectionAttachDetails(connectionId);

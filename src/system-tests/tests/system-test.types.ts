@@ -37,10 +37,11 @@ export type SSMTestTargetSelfRegistrationAutoDiscovery = BaseTarget &{
 }
 
 /**
- * VTTestTarget represents an virtual target test that uses our new agent
+ * BzeroTestTarget represents a bzero test target using an agent installed via
+ * linux package manager
  */
-export type VTTestTarget = BaseTarget & {
-    installType: 'pm-vt';
+export type BzeroTestTarget = BaseTarget & {
+    installType: 'pm-bzero';
     dropletImage: DigitalOceanDistroImage;
     doRegion: DigitalOceanRegion;
     awsRegion: string;
@@ -52,6 +53,7 @@ interface BaseTarget {
     badSshCaseId?: string // For our ssh test negation test
     connectCaseId?: string; // For our connect test suite
     closeCaseId?: string; // For our close test suite
+    attachCaseId?: string; //  For our attach test suite
     groupConnectCaseId?: string; // For our group based connect
     badConnectCaseId?: string; // for our connect negation test
     dbCaseId?: string; // For our db test suite
@@ -61,4 +63,4 @@ interface BaseTarget {
     sessionRecordingCaseId?: string;
 }
 
-export type TestTarget = SSMTestTargetAutoDiscovery | SSMTestTargetSelfRegistrationAutoDiscovery | SSMTestTargetAnsibleAutoDiscovery | VTTestTarget
+export type TestTarget = SSMTestTargetAutoDiscovery | SSMTestTargetSelfRegistrationAutoDiscovery | SSMTestTargetAnsibleAutoDiscovery | BzeroTestTarget

@@ -7,10 +7,6 @@ import { TargetType } from '../../../../webshell-common-ts/http/v2/target/types/
 
 export const listTargetsSuite = () => {
     describe('list targets suite', () => {
-        beforeEach(() => {
-            jest.restoreAllMocks();
-            jest.clearAllMocks();
-        });
 
         test('2117: list-targets', async () => {
             const listTargetsSpy = jest.spyOn(ListTargetsService, 'listTargets');

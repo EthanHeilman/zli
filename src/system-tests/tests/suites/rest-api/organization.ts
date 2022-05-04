@@ -3,6 +3,7 @@ import { OrganizationHttpService } from '../../../../http-services/organization/
 import { configService, GROUP_ID, GROUP_NAME, IN_CI, logger, SERVICE_URL, systemTestRegistrationApiKey } from '../../system-test';
 import { ApiKeyHttpService } from '../../../../http-services/api-key/api-key.http-services';
 import 'jest-extended';
+import { GroupSummary } from '../../../../../webshell-common-ts/http/v2/organization/types/group-summary.types';
 
 export const organizationSuite = () => {
     describe('Organization Suite', () => {
@@ -83,8 +84,11 @@ export const organizationSuite = () => {
             // Only run this test if we are in CI and talking to staging or dev
             if (IN_CI && (SERVICE_URL.includes('cloud-dev') || SERVICE_URL.includes('cloud-staging'))) {
                 const groups = await organizationService.FetchGroups();
-                const expectedGroup = groups.find(group => group.idPGroupId == GROUP_ID && group.name == GROUP_NAME);
-                expect(expectedGroup).toBeDefined();
+                expect(groups).toEqual(
+                    expect.arrayContaining([
+                        expect.objectContaining<GroupSummary>({name: GROUP_NAME, idPGroupId: GROUP_ID}),
+                    ])
+                );
             } else {
                 logger.info(`Skipping groups based endpoint as IN_CI is set to false`);
             }
@@ -95,8 +99,11 @@ export const organizationSuite = () => {
             // Only run this test if we are in CI and talking to staging or dev
             if (IN_CI && (SERVICE_URL.includes('cloud-dev') || SERVICE_URL.includes('cloud-staging'))) {
                 const groups = await organizationService.ListGroups();
-                const expectedGroup = groups.find(group => group.idPGroupId == GROUP_ID && group.name == GROUP_NAME);
-                expect(expectedGroup).toBeDefined();
+                expect(groups).toEqual(
+                    expect.arrayContaining([
+                        expect.objectContaining<GroupSummary>({name: GROUP_NAME, idPGroupId: GROUP_ID}),
+                    ])
+                );
             } else {
                 logger.info(`Skipping groups based endpoint as IN_CI is set to false`);
             }
