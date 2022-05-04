@@ -46,16 +46,6 @@ export const sshSuite = () => {
             removeIfExists(bzConfigFile);
         });
 
-        // Called before each case
-        beforeEach(() => {
-            // Mocks must be cleared and restored prior to running each test
-            // case. This is because Jest mocks and spies are global. We don't
-            // want any captured mock state (invocations, spied args, etc.) and
-            // mock implementations to leak through the different test runs.
-            jest.restoreAllMocks();
-            jest.clearAllMocks();
-        });
-
         test('2156: generate sshConfig', async () => {
             const currentUser: Subject = {
                 id: configService.me().id,

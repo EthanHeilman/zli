@@ -18,13 +18,13 @@ import { listTargetsSuite } from './suites/list-targets';
 import { versionSuite } from './suites/version';
 import { RegisteredDigitalOceanKubernetesCluster } from '../digital-ocean/digital-ocean-kube.service.types';
 import { kubeSuite } from './suites/kube';
-import { checkAllSettledPromise, initRegionalSSMTargetsTestConfig } from './utils/utils';
+import { checkAllSettledPromise } from './utils/utils';
 import { NewApiKeyResponse } from '../../../webshell-common-ts/http/v2/api-key/responses/new-api-key.responses';
 import { TestTarget } from './system-test.types';
 import { EnvironmentHttpService } from '../../http-services/environment/environment.http-services';
 import { vtSuite } from './suites/vt';
 import { iperfSuite } from './suites/iperf';
-import { ssmTestTargetsToRun, vtTestTargetsToRun } from './targets-to-run';
+import { extraSsmTestTargetsToRun, extraBzeroTestTargetsToRun, ssmTestTargetsToRun, bzeroTestTargetsToRun, initRegionalSSMTargetsTestConfig } from './targets-to-run';
 import { setupDOTestCluster, createDOTestTargets, setupSystemTestApiKeys } from './system-test-setup';
 import { cleanupDOTestCluster, cleanupDOTestTargets, cleanupSystemTestApiKeys } from './system-test-cleanup';
 import { apiKeySuite } from './suites/rest-api/api-keys';
@@ -35,6 +35,7 @@ import { groupsSuite } from './suites/groups';
 import { sessionRecordingSuite } from './suites/session-recording';
 import { callZli } from './utils/zli-utils';
 import { UserHttpService } from '../../http-services/user/user.http-services';
+import * as CleanExitHandler from '../../handlers/clean-exit.handler';
 
 // Uses config name from ZLI_CONFIG_NAME environment variable (defaults to prod
 // if unset) This can be run against dev/stage/prod when running system tests
@@ -65,6 +66,7 @@ if (! bctlQuickstartVersion) {
 
 export const KUBE_ENABLED = process.env.KUBE_ENABLED ? (process.env.KUBE_ENABLED === 'true') : true;
 const VT_ENABLED = process.env.VT_ENABLED ? (process.env.VT_ENABLED === 'true') : true;
+const BZERO_ENABLED = process.env.BZERO_ENABLED ? (process.env.BZERO_ENABLED === 'true') : true;
 const SSM_ENABLED =  process.env.SSM_ENABLED ? (process.env.SSM_ENABLED === 'true') : true;
 const API_ENABLED = process.env.API_ENABLED ? (process.env.API_ENABLED === 'true') : true;
 export const IN_PIPELINE = process.env.IN_PIPELINE ? process.env.IN_PIPELINE === 'true' : false;;
@@ -125,6 +127,12 @@ export const testTargets = new Map<TestTarget, DigitalOceanSSMTarget | DigitalOc
 // Add extra targets to test config based on EXTRA_REGIONS env var
 ssmTestTargetsToRun.push(...initRegionalSSMTargetsTestConfig(logger));
 
+// Add extra targets if in pipeline mode
+if (IN_PIPELINE && IN_CI) {
+    ssmTestTargetsToRun.push(...extraSsmTestTargetsToRun);
+    bzeroTestTargetsToRun.push(...extraBzeroTestTargetsToRun);
+}
+
 export let allTargets: TestTarget[] = [];
 
 if(SSM_ENABLED) {
@@ -133,10 +141,10 @@ if(SSM_ENABLED) {
     logger.info(`Skipping adding ssm targets because SSM_ENABLED is false`);
 }
 
-if(VT_ENABLED) {
-    allTargets = allTargets.concat(vtTestTargetsToRun);
+if(BZERO_ENABLED) {
+    allTargets = allTargets.concat(bzeroTestTargetsToRun);
 } else {
-    logger.info(`Skipping adding vt targets because VT_ENABLED is false`);
+    logger.info(`Skipping adding bzero targets because BZERO_ENABLED is false`);
 }
 
 // Global mapping of a registered Kubernetes system test cluster
@@ -223,21 +231,44 @@ afterAll(async () => {
     }
 }, 60 * 1000);
 
+beforeEach(async () => {
+    // Mocks must be cleared and restored prior to running each test
+    // case. This is because Jest mocks and spies are global. We don't
+    // want any captured mock state (invocations, spied args, etc.) and
+    // mock implementations to leak through the different test runs.
+    jest.restoreAllMocks();
+    jest.clearAllMocks();
+
+    // Always setup a mock implementation for cleanExit so we dont hit process.exit()
+    // Spy on calls to cleanExit but dont call process.exit. Still throw an
+    // exception if exitCode != 0 which will fail the test
+    jest.spyOn(CleanExitHandler, 'cleanExit').mockImplementation(async (exitCode) => {
+        if (exitCode !== 0) {
+            throw new Error(`cleanExit was called with exitCode == ${exitCode}`);
+        }
+    });
+});
+
 // Call list target suite anytime a target test is called
-if (SSM_ENABLED || KUBE_ENABLED || VT_ENABLED) {
+if (SSM_ENABLED || BZERO_ENABLED || KUBE_ENABLED) {
     listTargetsSuite();
+}
+
+// These suites are based on testing allTargets use SSM_ENABLED or BZERO_ENABLED
+// environment variables to control which targets are created
+if(SSM_ENABLED || BZERO_ENABLED) {
+    connectSuite();
+    sessionRecordingSuite();
+
+    if (IN_CI && (SERVICE_URL.includes('cloud-dev') || SERVICE_URL.includes('cloud-staging'))) {
+        // Only run group tests if we are in CI and talking to staging or dev
+        groupsSuite();
+    };
 }
 
 // Call various test suites
 if(SSM_ENABLED) {
-    connectSuite();
     sshSuite();
-    sessionRecordingSuite();
-
-    if (IN_CI && (SERVICE_URL.includes('cloud-dev') || SERVICE_URL.includes('cloud-dev'))) {
-        // Only run group tests if we are in CI and talking to staging or dev
-        groupsSuite();
-    };
 }
 
 if(KUBE_ENABLED) {
