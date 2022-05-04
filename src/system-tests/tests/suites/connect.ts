@@ -66,6 +66,7 @@ export const connectSuite = () => {
 
             // Check the daemon logs incase there is a test failure
             await testUtils.CheckDaemonLogs(testPassed, expect.getState().currentTestName);
+            testPassed = false;
         });
 
         allTargets.forEach(async (testTarget: TestTarget) => {

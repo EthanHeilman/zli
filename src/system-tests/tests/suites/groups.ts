@@ -69,6 +69,7 @@ export const groupsSuite = () => {
 
             // Check the daemon logs incase there is a test failure
             await testUtils.CheckDaemonLogs(testPassed, expect.getState().currentTestName);
+            testPassed = false;
         });
 
         // Attempt to make a connection to our ssm targets via our groups based policy
