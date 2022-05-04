@@ -1,6 +1,10 @@
-import { includes } from 'lodash';
+import { identity, includes } from 'lodash';
 import { SemVer, lt, parse } from 'semver';
+import crypto from 'crypto';
+import fs from 'fs';
 import { spawn, SpawnOptions } from 'child_process';
+import util from 'util';
+import SshPK from 'sshpk';
 
 import { KeySplittingService } from '../../../webshell-common-ts/keysplitting.service/keysplitting.service';
 import { ConfigService } from '../../services/config/config.service';
@@ -90,12 +94,17 @@ export async function sshProxyHandler(configService: ConfigService, logger: Logg
             return 1;
         }
 
+        await setupEphemeralSshKey(configService, sshTunnelParameters.identityFile);
+        const pubKey = await extractPubKeyFromIdentityFile(sshTunnelParameters.identityFile);
+        const [keyType, sshPubKey] = pubKey.toString('ssh').split(' ');
+
         // Build our args and cwd
-        // FIXME: revisit args, do I need targetUser?
         const baseArgs = getBaseDaemonArgs(configService, loggerConfigService, bzeroTarget.agentPublicKey);
         let pluginArgs = [
             `-targetId="${bzeroTarget.id}"`,
             `-targetUser="${sshTunnelParameters.targetUser}"`,
+            `-identityFile="${sshTunnelParameters.identityFile}"`,
+            `-publicKey="${sshPubKey}"`,
             `-plugin="ssh"`
         ];
 
@@ -113,7 +122,7 @@ export async function sshProxyHandler(configService: ConfigService, logger: Logg
         } else {
             finalDaemonPath = await copyExecutableToLocalDir(logger, configService.configPath());
         }
-        logger.error(cwd);
+
         logger.error(`${finalDaemonPath} ${args.join(" ")}`);
 
         try {
@@ -139,6 +148,51 @@ export async function sshProxyHandler(configService: ConfigService, logger: Logg
     } else {
         throw new Error(`Unhandled target type ${sshTunnelParameters.parsedTarget.type}`);
     }
+}
+
+
+async function setupEphemeralSshKey(configService: ConfigService, identityFile: string): Promise<void> {
+    const bzeroSshKeyPath = configService.sshKeyPath();
+
+    // Generate a new ssh key for each new tunnel as long as the identity
+    // file provided is managed by bzero
+    // TODO #39: Change the lifetime of this key?
+    if (identityFile === bzeroSshKeyPath) {
+        const privateKey = await generateEphemeralSshKey();
+        await util.promisify(fs.writeFile)(bzeroSshKeyPath, privateKey, {
+            mode: '0600'
+        });
+    }
+}
+
+async function generateEphemeralSshKey(): Promise<string> {
+
+    const { privateKey } = await util.promisify(crypto.generateKeyPair)('rsa', {
+        modulusLength: 4096,
+        publicKeyEncoding: {
+            type: 'spki',
+            format: 'pem'
+        },
+        privateKeyEncoding: {
+            type: 'pkcs1',
+            format: 'pem'
+        }
+    });
+
+    return privateKey;
+}
+
+async function extractPubKeyFromIdentityFile(identityFileName: string): Promise<SshPK.Key> {
+    const identityFile = await readIdentityFile(identityFileName);
+
+    // Use ssh-pk library to convert the public key to ssh RFC 4716 format
+    // https://stackoverflow.com/a/54406021/9186330
+    // https://github.com/joyent/node-sshpk/blob/4342c21c2e0d3860f5268fd6fd8af6bdeddcc6fc/lib/key.js#L234
+    return SshPK.parseKey(identityFile, 'auto');
+}
+
+async function readIdentityFile(identityFileName: string): Promise<string> {
+    return util.promisify(fs.readFile)(identityFileName, 'utf8');
 }
 
 export interface SshTunnelParameters {

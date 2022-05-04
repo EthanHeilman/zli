@@ -70,13 +70,6 @@ Host ${tunnel.targetName}
 `;
     }
 
-    // Also add our proxy wildcard command
-    contents += `
-Host ${configPrefix}*
-  ${identityFile}
-  ${proxyCommand}
-`;
-
     return contents;
 }
 
