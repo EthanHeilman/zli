@@ -217,10 +217,9 @@ async function deleteIfExists(pathToFile: string) {
 /**
  * Helper function to kill a daemon process
  * @param {number} localPid Local pid we are trying to kill
- * @param {number} localPort Local port we are trying to clear
  * @param {Logger} logger Logger
  */
-export async function killDaemon(localPid: number, localPort: number, logger: Logger) {
+export async function killDaemon(localPid: number, logger: Logger) {
     // then kill the daemon
     if (localPid != null) {
         // First try to kill the process
@@ -228,7 +227,7 @@ export async function killDaemon(localPid: number, localPort: number, logger: Lo
             killPid(localPid.toString());
         } catch (err: any) {
             // If the daemon pid was killed, or doesn't exist, just continue
-            logger.warn(`Attempt to kill existing daemon failed. This is expected if the daemon has been killed already. Make sure no program is using port: ${localPort}`);
+            logger.warn(`Attempt to kill existing daemon failed. This is expected if the daemon has been killed already. Make sure no program is using pid: ${localPid}. Try running \`kill -9 ${localPid}\``);
             logger.debug(`Error: ${err}`);
         }
     }
@@ -244,7 +243,7 @@ export async function killDaemon(localPid: number, localPort: number, logger: Lo
 export async function killLocalPortAndPid(savedPid: number, localPort: number, logger: Logger) {
     // Check if we've already started a process
     if (savedPid != null) {
-        killDaemon(savedPid, localPort, logger);
+        killDaemon(savedPid, logger);
     }
 
     // Also check if anything is using that local port
@@ -331,18 +330,17 @@ export function getOrDefaultLocalhost(passedLocalhost: string): string {
 }
 
 /**
- * Helper function to get the localport value (or return the default value via finding an open port)
- * @param {number} passedLocalport This is the value of the localport saved in our DB
- * @param {number} savedLocalPort This is the value of the localport saved in our local config
+ * Helper function that returns an available TCP port on the user's machine. If
+ * the user has configured a local port on BastionZero, then this function does
+ * not look for an available port and returns what's stored on BastionZero.
+ * @param {number} passedLocalport This is the value of the localport saved in
+ * BastionZero's DB
+ * @returns Port to use for daemon
  */
-export async function getOrDefaultLocalport(passedLocalport: number, savedLocalPort: number, logger: Logger): Promise<number> {
+export async function getOrDefaultLocalport(passedLocalport: number): Promise<number> {
     if (passedLocalport == null) {
-        if (savedLocalPort == null) {
-            logger.info('First time running connect, setting local daemon port');
-            const localPort = await findPort();
-            return localPort;
-        };
-        return savedLocalPort;
+        const availablePort = await findPort();
+        return availablePort;
     };
     return passedLocalport;
 }

@@ -135,6 +135,20 @@ export class PolicyHttpService extends HttpService
         return this.Patch(`${TARGET}/${policyId}`, request);
     }
 
+    public EditProxyPolicy(
+        policy: ProxyPolicySummary
+    ): Promise<ProxyPolicySummary> {
+        const request: ProxyPolicyUpdateRequest = {
+            name: policy.name,
+            subjects: policy.subjects,
+            groups: policy.groups,
+            description: policy.description,
+            environments: policy.environments,
+            targets: policy.targets
+        };
+        return this.Patch(`${TARGET}/${policy.id}`, request);
+    }
+
     public UpdateProxyPolicy(policyId: string, request: ProxyPolicyUpdateRequest):
             Promise<ProxyPolicySummary> {
         return this.Patch(`${PROXY}/${policyId}`, request);
