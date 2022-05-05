@@ -105,6 +105,7 @@ export async function sshProxyHandler(configService: ConfigService, logger: Logg
             `-targetUser="${sshTunnelParameters.targetUser}"`,
             `-identityFile="${sshTunnelParameters.identityFile}"`,
             `-publicKey="${sshPubKey}"`,
+            `-logPath="/Users/johncmerfeld/work/code/zli/logs"`,
             `-plugin="ssh"`
         ];
 
@@ -122,8 +123,6 @@ export async function sshProxyHandler(configService: ConfigService, logger: Logg
         } else {
             finalDaemonPath = await copyExecutableToLocalDir(logger, configService.configPath());
         }
-
-        logger.error(`${finalDaemonPath} ${args.join(" ")}`);
 
         try {
             // FIXME: for now assume we are not debugging, start the go subprocess in the background
