@@ -36,6 +36,7 @@ import { sessionRecordingSuite } from './suites/session-recording';
 import { callZli } from './utils/zli-utils';
 import { UserHttpService } from '../../http-services/user/user.http-services';
 import * as CleanExitHandler from '../../handlers/clean-exit.handler';
+import { ssmTargetRestApiSuite } from './suites/rest-api/ssm-targets';
 
 // Uses config name from ZLI_CONFIG_NAME environment variable (defaults to prod
 // if unset) This can be run against dev/stage/prod when running system tests
@@ -285,6 +286,12 @@ if (API_ENABLED) {
     organizationSuite();
     environmentsSuite();
     policySuite();
+
+    if (SSM_ENABLED) {
+        ssmTargetRestApiSuite();
+    } else {
+        logger.info('Skipping SSM target REST API suite because SSM target creation is disabled.');
+    }
 }
 
 // Always run the version suite
