@@ -90,6 +90,7 @@ export async function sshProxyHandler(configService: ConfigService, logger: Logg
         // agentVersion will be null if this isn't a valid version (i.e if its "$AGENT_VERSION" string during development)
         const agentVersion = parse(bzeroTarget.agentVersion);
         if (agentVersion && lt(agentVersion, new SemVer('5.2.0'))) {
+            // FIXME: revisit this, given pipelining version
             logger.error(`Tunneling to Bzero Target is only supported on agent versions >= 5.2.0. Agent version is ${agentVersion}`);
             return 1;
         }
@@ -130,10 +131,22 @@ export async function sshProxyHandler(configService: ConfigService, logger: Logg
                 cwd: cwd,
                 detached: false,
                 shell: true,
-                stdio: 'inherit'
+                stdio: 'pipe'
             };
 
             const daemonProcess = spawn(finalDaemonPath, args, options);
+
+            process.stdin.pipe(daemonProcess.stdin);
+            process.stdin.on('data', async (data) => {
+                daemonProcess.stdin.write(data)
+            });
+
+            daemonProcess.stdout.on("data", async (data) => {
+                process.stdout.write(data);
+                logger.error("I'm glad and I'm flying!");
+                cleanExit(100, logger);
+            })
+
 
             daemonProcess.on('close', async (exitCode) => {
                 logger.debug(`Ssh Daemon close event with exit code ${exitCode}`);
