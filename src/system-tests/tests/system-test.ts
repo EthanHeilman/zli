@@ -37,6 +37,7 @@ import { callZli } from './utils/zli-utils';
 import { UserHttpService } from '../../http-services/user/user.http-services';
 import * as CleanExitHandler from '../../handlers/clean-exit.handler';
 import { ssmTargetRestApiSuite } from './suites/rest-api/ssm-targets';
+import { bzeroTargetRestApiSuite } from './suites/rest-api/bzero-targets';
 
 // Uses config name from ZLI_CONFIG_NAME environment variable (defaults to prod
 // if unset) This can be run against dev/stage/prod when running system tests
@@ -288,9 +289,20 @@ if (API_ENABLED) {
     policySuite();
 
     if (SSM_ENABLED) {
+        // Since this suite modifies an SSM target name, we must be cautious if we parallelize test suite running because
+        // other SSM-related tests could fail that rely on the name, such as tests that use the name with 'zli connect'.
+        // It may be possible to allow parallelization if we use target IDs instead of names in `zli connect`.
         ssmTargetRestApiSuite();
     } else {
         logger.info('Skipping SSM target REST API suite because SSM target creation is disabled.');
+    }
+    if (VT_ENABLED) {
+        // Since this suite modifies a bzero target name, we must be cautious if we parallelize test suite running because
+        // other SSM-related tests could fail that rely on the name, such as tests that use the name with 'zli connect'.
+        // It may be possible to allow parallelization if we use target IDs instead of names in `zli connect`.
+        bzeroTargetRestApiSuite();
+    } else {
+        logger.info('Skipping Bzero target REST API suite because Bzero target creation is disabled.');
     }
 }
 
