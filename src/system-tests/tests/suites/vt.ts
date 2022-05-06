@@ -54,7 +54,7 @@ export const vtSuite = () => {
                 environments: [environment],
                 targets: []
             });
-        }, 15 * 1000);
+        }, 60 * 1000);
 
         // Cleanup all policy after the tests
         afterAll(async () => {
@@ -68,7 +68,7 @@ export const vtSuite = () => {
             // Also attempt to close any daemons to avoid any leaks in the tests
             await callZli(['disconnect', 'db']);
             await callZli(['disconnect', 'web']);
-        }, 15 * 1000);
+        }, 60 * 1000);
 
 
         afterEach(async () => {

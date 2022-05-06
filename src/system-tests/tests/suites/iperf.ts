@@ -79,7 +79,7 @@ export const iperfSuite = () => {
                 environments: [environment],
                 targets: []
             });
-        }, 15 * 1000);
+        }, 60 * 1000);
 
         // Cleanup all policy after the tests
         afterAll(async () => {
@@ -89,7 +89,7 @@ export const iperfSuite = () => {
                 policy.name == systemTestPolicyTemplate.replace('$POLICY_TYPE', 'iperf-proxy')
             );
             policyService.DeleteProxyPolicy(proxyPolicy.id);
-        }, 15 * 1000);
+        }, 60 * 1000);
 
 
         afterEach(async () => {
