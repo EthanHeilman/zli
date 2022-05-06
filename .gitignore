@@ -353,3 +353,5 @@ src/system-tests/coverage/
 # Ignore test coverage artifacts
 coverage/
 coverage-system-tests/
+
+.vscode/

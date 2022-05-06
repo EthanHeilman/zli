@@ -2,7 +2,7 @@ import { configService, logger, loggerConfigService, systemTestEnvId, systemTest
 import { callZli } from '../utils/zli-utils';
 import { ConnectionHttpService } from '../../../http-services/connection/connection.http-services';
 import { getDOImageName } from '../../digital-ocean/digital-ocean-ssm-target.service.types';
-import { sleepTimeout, TestUtils } from '../utils/test-utils';
+import { TestUtils } from '../utils/test-utils';
 import { SubjectType } from '../../../../webshell-common-ts/http/v2/common.types/subject.types';
 import { Environment } from '../../../../webshell-common-ts/http/v2/policy/types/environment.types';
 import { TestTarget } from '../system-test.types';
@@ -112,11 +112,6 @@ export const connectSuite = () => {
                     60 * 1000, // Timeout
                     1 * 1000   // Interval
                 );
-
-                // Artificial sleep to make sure terminal is ready to accept input
-                // otherwise some of the input may get dropped which breaks echo command
-                // test
-                await sleepTimeout(15 * 1000);
 
                 // Test sending an echo command in the attached terminal
                 await connectTestUtils.testEchoCommand(attachTarget, `after attach - ${systemTestUniqueId}`);

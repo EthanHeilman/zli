@@ -33,9 +33,8 @@ import { environmentsSuite } from './suites/rest-api/environments';
 import { policySuite } from './suites/rest-api/policies/policies';
 import { groupsSuite } from './suites/groups';
 import { sessionRecordingSuite } from './suites/session-recording';
-import { callZli } from './utils/zli-utils';
+import { callZli, mockCleanExit } from './utils/zli-utils';
 import { UserHttpService } from '../../http-services/user/user.http-services';
-import * as CleanExitHandler from '../../handlers/clean-exit.handler';
 import { ssmTargetRestApiSuite } from './suites/rest-api/ssm-targets';
 import { bzeroTargetRestApiSuite } from './suites/rest-api/bzero-targets';
 
@@ -164,6 +163,11 @@ export const systemTestPolicyTemplate = `${resourceNamePrefix}-$POLICY_TYPE-poli
 
 // Setup all droplets before running tests
 beforeAll(async () => {
+    // First mock clean exit in case anything in system test global
+    // setup/teardown hits a cleanExit e.g callZli(['disconnect']) in the
+    // teardown
+    mockCleanExit();
+
     const oauthService = new OAuthService(configService, logger);
 
     // Reset sessionId and sessionToken to get unique session for this test
@@ -244,11 +248,7 @@ beforeEach(async () => {
     // Always setup a mock implementation for cleanExit so we dont hit process.exit()
     // Spy on calls to cleanExit but dont call process.exit. Still throw an
     // exception if exitCode != 0 which will fail the test
-    jest.spyOn(CleanExitHandler, 'cleanExit').mockImplementation(async (exitCode) => {
-        if (exitCode !== 0) {
-            throw new Error(`cleanExit was called with exitCode == ${exitCode}`);
-        }
-    });
+    mockCleanExit();
 });
 
 // Call list target suite anytime a target test is called
