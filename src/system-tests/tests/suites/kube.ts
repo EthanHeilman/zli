@@ -61,6 +61,8 @@ export const kubeSuite = () => {
 
             // Now ensure that the file exists
             expect(fs.existsSync(kubeConfigYamlFilePath));
+
+            testPassed = true;
         });
 
         test('2369: zli connect - Kube REST API plugin - Delete agent pod', async () => {
