@@ -79,7 +79,7 @@ export const connectSuite = () => {
             // TODO: Disable attach tests for bzero targets until attach
             // flow is stable for bzero targets
             // https://commonwealthcrypto.atlassian.net/browse/CWC-1826
-            const runAttachTest = testTargets.get(testTarget).type !== 'bzero';
+            const runAttachTest = testTarget.installType !== 'pm-bzero';
             testIf(runAttachTest, `${testTarget.attachCaseId}: zli attach - ${testTarget.awsRegion} - ${testTarget.installType} - ${getDOImageName(testTarget.dropletImage)}`, async () => {
                 const doTarget = testTargets.get(testTarget);
                 const connectTarget = connectTestUtils.getConnectTarget(doTarget);
