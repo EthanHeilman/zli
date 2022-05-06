@@ -136,24 +136,25 @@ export async function sshProxyHandler(configService: ConfigService, logger: Logg
 
             const daemonProcess = spawn(finalDaemonPath, args, options);
 
-            daemonProcess.stdin.pipe(process.stdin);
-            daemonProcess.stdout.pipe(process.stdout);
-            /*
+
+            //daemonProcess.stdin.pipe(process.stdin);
+            //daemonProcess.stdout.pipe(process.stdout);
+
             process.stdin.on('data', async (data) => {
                 daemonProcess.stdin.write(data)
             });
-            
+
             // this definitely works
             daemonProcess.stdout.on("data", async (data) => {
                 process.stdout.write(data);
                 //logger.error(`${data}`);
                 //cleanExit(100, logger);
             })
-            */
+
 
 
             daemonProcess.on('close', async (exitCode) => {
-                logger.debug(`Ssh Daemon close event with exit code ${exitCode}`);
+                logger.error(`Ssh Daemon close event with exit code ${exitCode}`);
                 await cleanExit(exitCode, logger);
             });
 
