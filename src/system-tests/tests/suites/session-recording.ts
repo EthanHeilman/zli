@@ -117,7 +117,7 @@ export const sessionRecordingSuite = () => {
                 expect(messageFound).toEqual(true);
 
                 testPassed = true;
-            }, 2 * 60 * 1000);
+            }, 3 * 60 * 1000);
         });
 
         test('3043: Get all session recordings', async () => {
