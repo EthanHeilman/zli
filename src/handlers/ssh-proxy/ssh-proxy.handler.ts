@@ -141,12 +141,10 @@ export async function sshProxyHandler(configService: ConfigService, logger: Logg
                 daemonProcess.stdin.write(data)
             });
 
-            process.stdin.pipe(daemonProcess.stdin);
-
             daemonProcess.stdout.on("data", async (data) => {
-                process.stdout.write(`${data}`);
-                //logger.error(`I got ${data}`);
-                //cleanExit(100, logger);
+                process.stdout.write(data);
+                logger.error("I'm glad and I'm flying!");
+                cleanExit(100, logger);
             })
 
 
