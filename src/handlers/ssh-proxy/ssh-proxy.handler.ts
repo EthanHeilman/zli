@@ -95,9 +95,9 @@ export async function sshProxyHandler(configService: ConfigService, logger: Logg
             return 1;
         }
 
-        await setupEphemeralSshKey(configService, sshTunnelParameters.identityFile);
-        const pubKey = await extractPubKeyFromIdentityFile(`${sshTunnelParameters.identityFile}.pub`);
-        const [keyType, sshPubKey] = pubKey.toString('ssh').split(' ');
+        //await setupEphemeralSshKey(configService, sshTunnelParameters.identityFile);
+        //const pubKey = await extractPubKeyFromIdentityFile(`${sshTunnelParameters.identityFile}.pub`);
+        //const [keyType, sshPubKey] = pubKey.toString('ssh').split(' ');
 
         // Build our args and cwd
         const baseArgs = getBaseDaemonArgs(configService, loggerConfigService, bzeroTarget.agentPublicKey);
@@ -105,7 +105,6 @@ export async function sshProxyHandler(configService: ConfigService, logger: Logg
             `-targetId="${bzeroTarget.id}"`,
             `-targetUser="${sshTunnelParameters.targetUser}"`,
             `-identityFile="${sshTunnelParameters.identityFile}"`,
-            `-publicKey="${sshPubKey}"`,
             `-logPath="/Users/johncmerfeld/work/code/zli/logs"`,
             `-plugin="ssh"`
         ];
@@ -136,10 +135,6 @@ export async function sshProxyHandler(configService: ConfigService, logger: Logg
 
             const daemonProcess = spawn(finalDaemonPath, args, options);
 
-
-            //daemonProcess.stdin.pipe(process.stdin);
-            //daemonProcess.stdout.pipe(process.stdout);
-
             process.stdin.on('data', async (data) => {
                 daemonProcess.stdin.write(data)
             });
@@ -147,11 +142,7 @@ export async function sshProxyHandler(configService: ConfigService, logger: Logg
             // this definitely works
             daemonProcess.stdout.on("data", async (data) => {
                 process.stdout.write(data);
-                //logger.error(`${data}`);
-                //cleanExit(100, logger);
             })
-
-
 
             daemonProcess.on('close', async (exitCode) => {
                 logger.error(`Ssh Daemon close event with exit code ${exitCode}`);
@@ -165,56 +156,6 @@ export async function sshProxyHandler(configService: ConfigService, logger: Logg
     } else {
         throw new Error(`Unhandled target type ${sshTunnelParameters.parsedTarget.type}`);
     }
-}
-
-
-async function setupEphemeralSshKey(configService: ConfigService, identityFile: string): Promise<void> {
-    const bzeroSshKeyPath = configService.sshKeyPath();
-
-    // Generate a new ssh key for each new tunnel as long as the identity
-    // file provided is managed by bzero
-    // TODO #39: Change the lifetime of this key?
-    if (identityFile === bzeroSshKeyPath) {
-        const privateKey = await generateEphemeralSshKey(bzeroSshKeyPath);
-        await util.promisify(fs.writeFile)(bzeroSshKeyPath, privateKey, {
-            mode: '0600'
-        });
-    }
-}
-
-async function generateEphemeralSshKey(path: string): Promise<string> {
-
-    const { publicKey, privateKey } = await util.promisify(crypto.generateKeyPair)('rsa', {
-        modulusLength: 4096,
-        publicKeyEncoding: {
-            type: 'spki',
-            format: 'pem'
-        },
-        privateKeyEncoding: {
-            type: 'pkcs1',
-            format: 'pem'
-        }
-    });
-
-    fs.writeFileSync(`${path}.pub`, publicKey, {
-        mode: '0600'
-    });
-
-    return privateKey;
-
-}
-
-async function extractPubKeyFromIdentityFile(identityFileName: string): Promise<SshPK.Key> {
-    const identityFile = await readIdentityFile(identityFileName);
-
-    // Use ssh-pk library to convert the public key to ssh RFC 4716 format
-    // https://stackoverflow.com/a/54406021/9186330
-    // https://github.com/joyent/node-sshpk/blob/4342c21c2e0d3860f5268fd6fd8af6bdeddcc6fc/lib/key.js#L234
-    return SshPK.parseKey(identityFile, 'auto');
-}
-
-async function readIdentityFile(identityFileName: string): Promise<string> {
-    return util.promisify(fs.readFile)(identityFileName, 'utf8');
 }
 
 export interface SshTunnelParameters {
