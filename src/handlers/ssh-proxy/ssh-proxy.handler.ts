@@ -96,7 +96,7 @@ export async function sshProxyHandler(configService: ConfigService, logger: Logg
         }
 
         await setupEphemeralSshKey(configService, sshTunnelParameters.identityFile);
-        const pubKey = await extractPubKeyFromIdentityFile(sshTunnelParameters.identityFile);
+        const pubKey = await extractPubKeyFromIdentityFile(`${sshTunnelParameters.identityFile}.pub`);
         const [keyType, sshPubKey] = pubKey.toString('ssh').split(' ');
 
         // Build our args and cwd
@@ -175,16 +175,16 @@ async function setupEphemeralSshKey(configService: ConfigService, identityFile: 
     // file provided is managed by bzero
     // TODO #39: Change the lifetime of this key?
     if (identityFile === bzeroSshKeyPath) {
-        const privateKey = await generateEphemeralSshKey();
+        const privateKey = await generateEphemeralSshKey(bzeroSshKeyPath);
         await util.promisify(fs.writeFile)(bzeroSshKeyPath, privateKey, {
             mode: '0600'
         });
     }
 }
 
-async function generateEphemeralSshKey(): Promise<string> {
+async function generateEphemeralSshKey(path: string): Promise<string> {
 
-    const { privateKey } = await util.promisify(crypto.generateKeyPair)('rsa', {
+    const { publicKey, privateKey } = await util.promisify(crypto.generateKeyPair)('rsa', {
         modulusLength: 4096,
         publicKeyEncoding: {
             type: 'spki',
@@ -196,7 +196,12 @@ async function generateEphemeralSshKey(): Promise<string> {
         }
     });
 
+    fs.writeFileSync(`${path}.pub`, publicKey, {
+        mode: '0600'
+    });
+
     return privateKey;
+
 }
 
 async function extractPubKeyFromIdentityFile(identityFileName: string): Promise<SshPK.Key> {
