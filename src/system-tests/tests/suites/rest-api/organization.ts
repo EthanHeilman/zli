@@ -1,6 +1,6 @@
 import { OrganizationSummary } from '../../../../../webshell-common-ts/http/v2/organization/types/organization-summary.types';
 import { OrganizationHttpService } from '../../../../http-services/organization/organization.http-services';
-import { configService, GROUP_ID, GROUP_NAME, IN_CI, logger, SERVICE_URL, systemTestRegistrationApiKey } from '../../system-test';
+import { configService, GROUP_ID, GROUP_NAME, IN_PIPELINE, logger, SERVICE_URL, systemTestRegistrationApiKey } from '../../system-test';
 import { ApiKeyHttpService } from '../../../../http-services/api-key/api-key.http-services';
 import 'jest-extended';
 import { GroupSummary } from '../../../../../webshell-common-ts/http/v2/organization/types/group-summary.types';
@@ -82,7 +82,7 @@ export const organizationSuite = () => {
 
         test(`${fetchGroupsCaseId}: Fetch groups from the identity provider`, async () => {
             // Only run this test if we are in CI and talking to staging or dev
-            if (IN_CI && (SERVICE_URL.includes('cloud-dev') || SERVICE_URL.includes('cloud-staging'))) {
+            if (IN_PIPELINE && (SERVICE_URL.includes('cloud-dev') || SERVICE_URL.includes('cloud-staging'))) {
                 const groups = await organizationService.FetchGroups();
                 expect(groups).toEqual(
                     expect.arrayContaining([
@@ -97,7 +97,7 @@ export const organizationSuite = () => {
         // Test our group based endpoints
         test(`${getGroupsCaseId}: Get Groups configured for this org`, async () => {
             // Only run this test if we are in CI and talking to staging or dev
-            if (IN_CI && (SERVICE_URL.includes('cloud-dev') || SERVICE_URL.includes('cloud-staging'))) {
+            if (IN_PIPELINE && (SERVICE_URL.includes('cloud-dev') || SERVICE_URL.includes('cloud-staging'))) {
                 const groups = await organizationService.ListGroups();
                 expect(groups).toEqual(
                     expect.arrayContaining([

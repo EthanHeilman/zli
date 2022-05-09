@@ -78,7 +78,7 @@ export const SERVICE_URL = configService.serviceUrl();
 // Make sure we have defined our groupId if we are configured against cloud-dev or cloud-staging
 export let GROUP_ID: string = undefined;
 export let GROUP_NAME: string = undefined;
-if (IN_CI && (SERVICE_URL.includes('cloud-dev') || SERVICE_URL.includes('cloud-dev'))) {
+if (IN_PIPELINE && (SERVICE_URL.includes('cloud-dev') || SERVICE_URL.includes('cloud-dev'))) {
     GROUP_ID = process.env.GROUP_ID;
     if (! GROUP_ID) {
         throw new Error('Must set the GROUP_ID environment variable');
@@ -262,7 +262,7 @@ if(SSM_ENABLED || BZERO_ENABLED) {
     connectSuite();
     sessionRecordingSuite();
 
-    if (IN_CI && (SERVICE_URL.includes('cloud-dev') || SERVICE_URL.includes('cloud-staging'))) {
+    if (IN_PIPELINE && (SERVICE_URL.includes('cloud-dev') || SERVICE_URL.includes('cloud-staging'))) {
         // Only run group tests if we are in CI and talking to staging or dev
         groupsSuite();
     };
