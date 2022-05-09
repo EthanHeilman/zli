@@ -54,8 +54,8 @@ export const iperfSuite = () => {
 
         let testPassed = false;
 
-        const localDbPort = 6100;
-        const secondlocalDbPort = 6101;
+        const localDbPort = 6101;
+        const secondlocalDbPort = 6102;
         const iperfPort = 5201;
 
         // Set up the policy before all the tests
