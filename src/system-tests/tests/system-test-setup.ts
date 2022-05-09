@@ -448,7 +448,7 @@ sudo yum install ${packageName} iperf3 -y
         // Starts a python web server in background for web tests
         const pythonWebServerCmd = 'nohup python3 -m http.server > python-server.out 2> python-server.err < /dev/null &';
         const iperfCmd = `nohup iperf3 -s > /var/log/iperf.log 2>&1 &`;
-        
+
 
         // Add a bzero custom user for connect/ssh tests
         // --shell options sets default shell as bash
