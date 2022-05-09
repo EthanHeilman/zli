@@ -37,6 +37,7 @@ import { callZli, mockCleanExit } from './utils/zli-utils';
 import { UserHttpService } from '../../http-services/user/user.http-services';
 import { ssmTargetRestApiSuite } from './suites/rest-api/ssm-targets';
 import { bzeroTargetRestApiSuite } from './suites/rest-api/bzero-targets';
+import { kubeClusterRestApiSuite } from './suites/rest-api/kube-targets';
 
 // Uses config name from ZLI_CONFIG_NAME environment variable (defaults to prod
 // if unset) This can be run against dev/stage/prod when running system tests
@@ -303,6 +304,12 @@ if (API_ENABLED) {
         bzeroTargetRestApiSuite();
     } else {
         logger.info('Skipping Bzero target REST API suite because Bzero target creation is disabled.');
+    }
+    if (KUBE_ENABLED) {
+        // See notes above about running this suite in parallel - the same caution applies here.
+        kubeClusterRestApiSuite();
+    } else {
+        logger.info('Skipping kube cluster REST API suite because kube cluster creation is disabled.');
     }
 }
 
