@@ -22,7 +22,8 @@ export const sshSuite = () => {
     describe('ssh suite', () => {
         let policyService: PolicyHttpService;
 
-        const targetUser = 'ssm-user';
+        const ssmUser = 'ssm-user';
+        const ec2User = 'ec2-user';
         const badTargetUser = 'bad-user';
         const uniqueUser = `user-${systemTestUniqueId}`;
 
@@ -63,7 +64,7 @@ export const sshSuite = () => {
                 description: `Target ssh policy created for system test: ${systemTestUniqueId}`,
                 environments: [environment],
                 targets: [],
-                targetUsers: [{ userName: targetUser }],
+                targetUsers: [{ userName: ssmUser }, { userName: ec2User }],
                 verbs: [{ type: VerbType.Tunnel }]
             });
 
@@ -79,8 +80,9 @@ export const sshSuite = () => {
             // expect all of the targets to appear in the bz-config
             expectTargetsInBzConfig(bzConfigContents, true);
 
+            // TODO: can be reinstated when transition to bzero agents is complete
             // expect the default username to appear in the bz-config
-            expect(bzConfigContents.includes(targetUser)).toBe(true);
+            //expect(bzConfigContents.includes(targetUser)).toBe(true);
 
             // don't delete policies, because ssh tunnel tests need them
         }, 60 * 1000);
@@ -89,7 +91,8 @@ export const sshSuite = () => {
             it(`${testTarget.sshCaseId}: ssh tunnel - ${testTarget.awsRegion} - ${testTarget.installType} - ${testTarget.dropletImage}`, async () => {
                 // use the config file we just created to ssh without specifying a user or identity file
                 const doTarget = testTargets.get(testTarget) as DigitalOceanSSMTarget;
-                const command = `ssh -F ${userConfigFile} -o CheckHostIP=no -o StrictHostKeyChecking=no ${doTarget.ssmTarget.name} echo success`;
+                const user = doTarget.type === 'ssm' ? ssmUser : ec2User;
+                const command = `ssh -F ${userConfigFile} -o CheckHostIP=no -o StrictHostKeyChecking=no ${user}@${doTarget.ssmTarget.name} echo success`;
 
                 const pexec = promisify(exec);
                 const { stdout } = await pexec(command);
@@ -112,7 +115,7 @@ export const sshSuite = () => {
                     throw new Error(expectedErrorMessage);
                 });
                 // Call "zli connect"
-                const connectPromise = callZli(['connect', `${targetUser}@${doTarget.ssmTarget.name}`]);
+                const connectPromise = callZli(['connect', `${ssmUser}@${doTarget.ssmTarget.name}`]);
 
                 await expect(connectPromise).rejects.toThrow(expectedErrorMessage);
 
@@ -145,6 +148,7 @@ export const sshSuite = () => {
             }, 60 * 1000);
         });
 
+        /* TODO: can be reinstated when transition to bzero agents is complete
         test('2157: generate sshConfig with multiple users', async () => {
             // delete policy from previous test
             await cleanupTargetConnectPolicies(systemTestPolicyTemplate.replace('$POLICY_TYPE', 'target-connect'));
@@ -165,7 +169,7 @@ export const sshSuite = () => {
                 description: `Target ssh policy created for system test: ${systemTestUniqueId}`,
                 environments: [environment],
                 targets: [],
-                targetUsers: [{ userName: targetUser }, { userName: uniqueUser }],
+                targetUsers: [{ userName: ssmUser }, { userName: uniqueUser }],
                 verbs: [{ type: VerbType.Tunnel }]
             });
 
@@ -187,6 +191,7 @@ export const sshSuite = () => {
             await cleanupTargetConnectPolicies(systemTestPolicyTemplate.replace('$POLICY_TYPE', 'target-connect'));
 
         }, 60 * 1000);
+        */
 
         test('2158: generate sshConfig without tunnel access', async () => {
             const currentUser: Subject = {
