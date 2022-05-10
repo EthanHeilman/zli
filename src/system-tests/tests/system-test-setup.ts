@@ -403,7 +403,7 @@ export GOROOT=/usr/local/go
 export GOPATH=/root/go
 export GOCACHE=/root/.cache/go-build
 git clone -b ${bzeroAgentBranch} https://github.com/bastionzero/bzero.git /root/bzero
-./root/bzero/update-agent-version.sh
+sh /root/bzero/update-agent-version.sh
 cd /root/bzero/bctl/agent
 /usr/local/go/bin/go build
 cd /
