@@ -107,7 +107,6 @@ export const sshSuite = () => {
                 // used at the end of the test to ensure it has not been called
                 const shellConnectionAuthDetailsSpy = jest.spyOn(ConnectionHttpService.prototype, 'GetShellConnectionAuthDetails');
 
-
                 const expectedErrorMessage = 'Expected error';
                 jest.spyOn(CleanExitHandler, 'cleanExit').mockImplementationOnce(() => {
                     throw new Error(expectedErrorMessage);
