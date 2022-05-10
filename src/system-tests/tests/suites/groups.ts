@@ -50,7 +50,7 @@ export const groupsSuite = () => {
                 targetUsers: ConnectTestUtils.getPolicyTargetUsers(),
                 verbs: [{type: VerbType.Shell},]
             });
-        }, 15 * 1000);
+        }, 60 * 1000);
 
         // Cleanup all policy after the tests
         afterAll(async () => {
@@ -69,6 +69,7 @@ export const groupsSuite = () => {
 
             // Check the daemon logs incase there is a test failure
             await testUtils.CheckDaemonLogs(testPassed, expect.getState().currentTestName);
+            testPassed = false;
         });
 
         // Attempt to make a connection to our ssm targets via our groups based policy

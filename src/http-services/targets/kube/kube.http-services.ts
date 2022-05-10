@@ -1,4 +1,5 @@
 import { AddNewAgentRequest } from '../../../../webshell-common-ts/http/v2/target/kube/requests/add-new-agent.requests';
+import { EditClusterRequest } from '../../../../webshell-common-ts/http/v2/target/kube/requests/edit-cluster.request';
 import { KubeGetAgentYamlResponse } from '../../../../webshell-common-ts/http/v2/target/kube/responses/kube-get-agent-yaml.response';
 import { KubeClusterSummary } from '../../../../webshell-common-ts/http/v2/target/kube/types/kube-cluster-summary.types';
 import { ConfigService } from '../../../services/config/config.service';
@@ -38,5 +39,9 @@ export class KubeHttpService extends HttpService
 
     public DeleteKubeCluster(id : string): Promise<void> {
         return this.Delete(id);
+    }
+
+    public EditKubeCluster(id : string, request: EditClusterRequest): Promise<void> {
+        return this.Patch(id, request);
     }
 }

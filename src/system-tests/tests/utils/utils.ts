@@ -14,3 +14,13 @@ export async function checkAllSettledPromise<T>(allSettledPromise: Promise<Promi
         throw((failedPromiseResults as PromiseRejectedResult).reason);
     }
 }
+
+/**
+ * Either runs or skips a test conditionally
+ * @param condition boolean to indicate if test should be skipped
+ * @param args args to pass through to test case
+ */
+export async function testIf(condition: boolean, ...args: any[]) {
+    // @ts-ignore
+    condition ? it(...args) : it.skip(...args);
+}

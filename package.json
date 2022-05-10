@@ -1,6 +1,6 @@
 {
   "name": "@bastionzero/zli",
-  "version": "6.3.4",
+  "version": "6.3.11",
   "description": "BastionZero cli",
   "repository": {
     "type": "git",
@@ -37,7 +37,7 @@
   "license": "Apache-2.0",
   "devDependencies": {
     "@kubernetes/client-node": "^0.16.1",
-    "@types/jest": "^26.0.20",
+    "@types/jest": "^27.5.0",
     "@types/uuid": "^8.3.4",
     "@typescript-eslint/eslint-plugin": "^4.17.0",
     "@typescript-eslint/parser": "^4.17.0",

@@ -77,11 +77,6 @@ export class ConnectTestUtils {
         expect(await this.testUtils.EnsureConnectionEventCreated(connectTarget.id, connectTarget.name, connectTarget.targetUser, connectTarget.eventTargetType, ConnectionEventType.ClientConnect));
         expect(await this.testUtils.EnsureConnectionEventCreated(connectTarget.id, connectTarget.name, connectTarget.targetUser, connectTarget.eventTargetType, ConnectionEventType.Created));
 
-        // Artificial sleep to make sure terminal is ready to accept input
-        // otherwise some of the input may get dropped which breaks echo command
-        // test
-        await sleepTimeout(15 * 1000);
-
         await this.testEchoCommand(connectTarget, stringToEcho);
 
         // Assert shell connection auth details returns expected
@@ -131,7 +126,7 @@ export class ConnectTestUtils {
                 // Keep sending input until the output spy says we've received what
                 // we sent (possibly sends command more than once).
 
-                const commandToSend = `echo "${stringToEcho}"`;
+                const commandToSend = `echo ${stringToEcho}`;
                 await connectTarget.writeToStdIn(commandToSend);
 
                 // Check that the full "hello world" string exists as

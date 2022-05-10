@@ -54,7 +54,8 @@ export const iperfSuite = () => {
 
         let testPassed = false;
 
-        const localDbPort = 6100;
+        const localDbPort = 6101;
+        const secondlocalDbPort = 6102;
         const iperfPort = 5201;
 
         // Set up the policy before all the tests
@@ -79,7 +80,7 @@ export const iperfSuite = () => {
                 environments: [environment],
                 targets: []
             });
-        }, 15 * 1000);
+        }, 60 * 1000);
 
         // Cleanup all policy after the tests
         afterAll(async () => {
@@ -89,7 +90,7 @@ export const iperfSuite = () => {
                 policy.name == systemTestPolicyTemplate.replace('$POLICY_TYPE', 'iperf-proxy')
             );
             policyService.DeleteProxyPolicy(proxyPolicy.id);
-        }, 15 * 1000);
+        }, 60 * 1000);
 
 
         afterEach(async () => {
@@ -124,7 +125,7 @@ export const iperfSuite = () => {
                     remoteHost: 'localhost',
                     remotePort: { value: iperfPort },
                     localHost: 'localhost',
-                    localPort: { value: localDbPort },
+                    localPort: { value: secondlocalDbPort },
                     environmentName: systemTestEnvName
                 });
 
@@ -138,7 +139,7 @@ export const iperfSuite = () => {
 
                 // -i pause n seconds between periodic throughput reports
                 // -t time in seconds to transmit for
-                const { stdout } = await pexec(`iperf3 -c 127.0.0.1 -p ${localDbPort} -i 1 -t 5 --json`);
+                const { stdout } = await pexec(`iperf3 -c 127.0.0.1 -p ${secondlocalDbPort} -i 1 -t 5 --json`);
                 const iperfResult: IperfUploadOutput = JSON.parse(stdout);
 
                 expect(iperfResult.end.sum_sent.bits_per_second).toBeGreaterThan(6000000);

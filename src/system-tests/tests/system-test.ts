@@ -33,9 +33,13 @@ import { environmentsSuite } from './suites/rest-api/environments';
 import { policySuite } from './suites/rest-api/policies/policies';
 import { groupsSuite } from './suites/groups';
 import { sessionRecordingSuite } from './suites/session-recording';
-import { callZli } from './utils/zli-utils';
+import { callZli, mockCleanExit } from './utils/zli-utils';
 import { UserHttpService } from '../../http-services/user/user.http-services';
-import * as CleanExitHandler from '../../handlers/clean-exit.handler';
+import { ssmTargetRestApiSuite } from './suites/rest-api/ssm-targets';
+import { bzeroTargetRestApiSuite } from './suites/rest-api/bzero-targets';
+import { kubeClusterRestApiSuite } from './suites/rest-api/kube-targets';
+import { databaseTargetRestApiSuite } from './suites/rest-api/database-targets';
+import { webTargetRestApiSuite } from './suites/rest-api/web-targets';
 
 // Uses config name from ZLI_CONFIG_NAME environment variable (defaults to prod
 // if unset) This can be run against dev/stage/prod when running system tests
@@ -162,6 +166,11 @@ export const systemTestPolicyTemplate = `${resourceNamePrefix}-$POLICY_TYPE-poli
 
 // Setup all droplets before running tests
 beforeAll(async () => {
+    // First mock clean exit in case anything in system test global
+    // setup/teardown hits a cleanExit e.g callZli(['disconnect']) in the
+    // teardown
+    mockCleanExit();
+
     const oauthService = new OAuthService(configService, logger);
 
     // Reset sessionId and sessionToken to get unique session for this test
@@ -242,11 +251,7 @@ beforeEach(async () => {
     // Always setup a mock implementation for cleanExit so we dont hit process.exit()
     // Spy on calls to cleanExit but dont call process.exit. Still throw an
     // exception if exitCode != 0 which will fail the test
-    jest.spyOn(CleanExitHandler, 'cleanExit').mockImplementation(async (exitCode) => {
-        if (exitCode !== 0) {
-            throw new Error(`cleanExit was called with exitCode == ${exitCode}`);
-        }
-    });
+    mockCleanExit();
 });
 
 // Call list target suite anytime a target test is called
@@ -285,6 +290,32 @@ if (API_ENABLED) {
     organizationSuite();
     environmentsSuite();
     policySuite();
+
+    if (SSM_ENABLED) {
+        // Since this suite modifies an SSM target name, we must be cautious if we parallelize test suite running because
+        // other SSM-related tests could fail that rely on the name, such as tests that use the name with 'zli connect'.
+        // It may be possible to allow parallelization if we use target IDs instead of names in `zli connect`.
+        ssmTargetRestApiSuite();
+    } else {
+        logger.info('Skipping SSM target REST API suite because SSM target creation is disabled.');
+    }
+    if (VT_ENABLED) {
+        // Since this suite modifies a bzero target name, we must be cautious if we parallelize test suite running because
+        // other SSM-related tests could fail that rely on the name, such as tests that use the name with 'zli connect'.
+        // It may be possible to allow parallelization if we use target IDs instead of names in `zli connect`.
+        bzeroTargetRestApiSuite();
+
+        databaseTargetRestApiSuite();
+        webTargetRestApiSuite();
+    } else {
+        logger.info('Skipping Bzero, web, and db target REST API suites because Bzero target creation is disabled.');
+    }
+    if (KUBE_ENABLED) {
+        // See notes above about running this suite in parallel - the same caution applies here.
+        kubeClusterRestApiSuite();
+    } else {
+        logger.info('Skipping kube cluster REST API suite because kube cluster creation is disabled.');
+    }
 }
 
 // Always run the version suite

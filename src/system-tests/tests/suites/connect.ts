@@ -2,7 +2,7 @@ import { configService, logger, loggerConfigService, systemTestEnvId, systemTest
 import { callZli } from '../utils/zli-utils';
 import { ConnectionHttpService } from '../../../http-services/connection/connection.http-services';
 import { getDOImageName } from '../../digital-ocean/digital-ocean-ssm-target.service.types';
-import { sleepTimeout, TestUtils } from '../utils/test-utils';
+import { TestUtils } from '../utils/test-utils';
 import { SubjectType } from '../../../../webshell-common-ts/http/v2/common.types/subject.types';
 import { Environment } from '../../../../webshell-common-ts/http/v2/policy/types/environment.types';
 import { TestTarget } from '../system-test.types';
@@ -12,6 +12,7 @@ import { Subject } from '../../../../webshell-common-ts/http/v2/policy/types/sub
 import { VerbType } from '../../../../webshell-common-ts/http/v2/policy/types/verb-type.types';
 import { ConnectTestUtils } from '../utils/connect-utils';
 import { ConnectionEventType } from '../../../../webshell-common-ts/http/v2/event/types/connection-event.types';
+import { testIf } from '../utils/utils';
 
 export const connectSuite = () => {
     describe('connect suite', () => {
@@ -47,7 +48,7 @@ export const connectSuite = () => {
                 targetUsers: ConnectTestUtils.getPolicyTargetUsers(),
                 verbs: [{type: VerbType.Shell},]
             });
-        }, 15 * 1000);
+        }, 60 * 1000);
 
         // Cleanup all policy after the tests
         afterAll(async () => {
@@ -66,6 +67,7 @@ export const connectSuite = () => {
 
             // Check the daemon logs incase there is a test failure
             await testUtils.CheckDaemonLogs(testPassed, expect.getState().currentTestName);
+            testPassed = false;
         });
 
         allTargets.forEach(async (testTarget: TestTarget) => {
@@ -74,7 +76,11 @@ export const connectSuite = () => {
                 testPassed = true;
             }, 2 * 60 * 1000);
 
-            it(`${testTarget.attachCaseId}: zli attach - ${testTarget.awsRegion} - ${testTarget.installType} - ${getDOImageName(testTarget.dropletImage)}`, async () => {
+            // TODO: Disable attach tests for bzero targets until attach
+            // flow is stable for bzero targets
+            // https://commonwealthcrypto.atlassian.net/browse/CWC-1826
+            const runAttachTest = testTarget.installType !== 'pm-bzero';
+            testIf(runAttachTest, `${testTarget.attachCaseId}: zli attach - ${testTarget.awsRegion} - ${testTarget.installType} - ${getDOImageName(testTarget.dropletImage)}`, async () => {
                 const doTarget = testTargets.get(testTarget);
                 const connectTarget = connectTestUtils.getConnectTarget(doTarget);
 
@@ -111,11 +117,6 @@ export const connectSuite = () => {
                     60 * 1000, // Timeout
                     1 * 1000   // Interval
                 );
-
-                // Artificial sleep to make sure terminal is ready to accept input
-                // otherwise some of the input may get dropped which breaks echo command
-                // test
-                await sleepTimeout(15 * 1000);
 
                 // Test sending an echo command in the attached terminal
                 await connectTestUtils.testEchoCommand(attachTarget, `after attach - ${systemTestUniqueId}`);
