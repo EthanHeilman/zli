@@ -12,6 +12,7 @@ import { Subject } from '../../../../webshell-common-ts/http/v2/policy/types/sub
 import { VerbType } from '../../../../webshell-common-ts/http/v2/policy/types/verb-type.types';
 import { ConnectTestUtils } from '../utils/connect-utils';
 import { ConnectionEventType } from '../../../../webshell-common-ts/http/v2/event/types/connection-event.types';
+import { testIf } from '../utils/utils';
 
 export const connectSuite = () => {
     describe('connect suite', () => {
@@ -47,7 +48,7 @@ export const connectSuite = () => {
                 targetUsers: ConnectTestUtils.getPolicyTargetUsers(),
                 verbs: [{type: VerbType.Shell},]
             });
-        }, 15 * 1000);
+        }, 60 * 1000);
 
         // Cleanup all policy after the tests
         afterAll(async () => {
@@ -75,7 +76,11 @@ export const connectSuite = () => {
                 testPassed = true;
             }, 2 * 60 * 1000);
 
-            it(`${testTarget.attachCaseId}: zli attach - ${testTarget.awsRegion} - ${testTarget.installType} - ${getDOImageName(testTarget.dropletImage)}`, async () => {
+            // TODO: Disable attach tests for bzero targets until attach
+            // flow is stable for bzero targets
+            // https://commonwealthcrypto.atlassian.net/browse/CWC-1826
+            const runAttachTest = testTarget.installType !== 'pm-bzero';
+            testIf(runAttachTest, `${testTarget.attachCaseId}: zli attach - ${testTarget.awsRegion} - ${testTarget.installType} - ${getDOImageName(testTarget.dropletImage)}`, async () => {
                 const doTarget = testTargets.get(testTarget);
                 const connectTarget = connectTestUtils.getConnectTarget(doTarget);
 

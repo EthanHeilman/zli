@@ -75,7 +75,7 @@ export const sessionRecordingSuite = () => {
                 description: `Target connect policy created for system test: ${systemTestUniqueId}`,
                 recordInput: false
             });
-        }, 15 * 1000);
+        }, 60 * 1000);
 
         afterAll(async () => {
             const allDeleteSessionRecordingPromises: Promise<void>[] = [];
@@ -92,7 +92,7 @@ export const sessionRecordingSuite = () => {
             }
 
             await connectTestUtils.cleanup();
-        }, 15 * 1000);
+        }, 60 * 1000);
 
         beforeEach(() => {
             connectTestUtils = new ConnectTestUtils(connectionService, testUtils);
@@ -117,7 +117,7 @@ export const sessionRecordingSuite = () => {
                 expect(messageFound).toEqual(true);
 
                 testPassed = true;
-            }, 2 * 60 * 1000);
+            }, 3 * 60 * 1000);
         });
 
         test('3043: Get all session recordings', async () => {
