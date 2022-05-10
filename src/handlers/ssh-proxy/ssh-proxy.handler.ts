@@ -1,17 +1,14 @@
-import { identity, includes } from 'lodash';
+import { includes } from 'lodash';
 import { SemVer, lt, parse } from 'semver';
-import crypto from 'crypto';
-import fs from 'fs';
+
 import { spawn, SpawnOptions } from 'child_process';
-import util from 'util';
-import SshPK from 'sshpk';
 
 import { KeySplittingService } from '../../../webshell-common-ts/keysplitting.service/keysplitting.service';
 import { ConfigService } from '../../services/config/config.service';
 import { Logger } from '../../services/logger/logger.service';
 import { SsmTunnelService } from '../../services/ssm-tunnel/ssm-tunnel.service';
 import { cleanExit } from '../clean-exit.handler';
-import { connectCheckAllowedTargetUsers, targetStringExample } from '../../utils/utils';
+import { targetStringExample } from '../../utils/utils';
 import { ParsedTargetString } from '../../services/common.types';
 import { EnvMap } from '../../cli-driver';
 import { VerbType } from '../../../webshell-common-ts/http/v2/policy/types/verb-type.types';
@@ -19,12 +16,11 @@ import { SsmTargetHttpService } from '../../http-services/targets/ssm/ssm-target
 import { BzeroTargetHttpService } from '../../http-services/targets/bzero/bzero.http-services';
 import { TargetType } from '../../../webshell-common-ts/http/v2/target/types/target.types';
 import { BzeroAgentSummary } from '../../../webshell-common-ts/http/v2/target/bzero/types/bzero-agent-summary.types';
-import { SpaceHttpService } from '../../http-services/space/space.http-services';
-import { getCliSpace } from '../../utils/shell-utils';
-import { ConnectionHttpService } from '../../http-services/connection/connection.http-services';
 import { LoggerConfigService } from '../../services/logger/logger-config.service';
 import { copyExecutableToLocalDir, getBaseDaemonArgs } from '../../utils/daemon-utils';
 
+// FIXME: revisit this, given pipelining version
+const minimumAgentVersion = "6.1.0";
 
 export async function sshProxyHandler(configService: ConfigService, logger: Logger, sshTunnelParameters: SshTunnelParameters, keySplittingService: KeySplittingService, envMap: EnvMap, loggerConfigService: LoggerConfigService) {
 
@@ -89,15 +85,10 @@ export async function sshProxyHandler(configService: ConfigService, logger: Logg
     } else if (sshTunnelParameters.parsedTarget.type == TargetType.Bzero) {
         // agentVersion will be null if this isn't a valid version (i.e if its "$AGENT_VERSION" string during development)
         const agentVersion = parse(bzeroTarget.agentVersion);
-        if (agentVersion && lt(agentVersion, new SemVer('5.2.0'))) {
-            // FIXME: revisit this, given pipelining version
-            logger.error(`Tunneling to Bzero Target is only supported on agent versions >= 5.2.0. Agent version is ${agentVersion}`);
+        if (agentVersion && lt(agentVersion, new SemVer(minimumAgentVersion))) {
+            logger.error(`Tunneling to Bzero Target is only supported on agent versions >= ${minimumAgentVersion}. Agent version is ${agentVersion}`);
             return 1;
         }
-
-        //await setupEphemeralSshKey(configService, sshTunnelParameters.identityFile);
-        //const pubKey = await extractPubKeyFromIdentityFile(`${sshTunnelParameters.identityFile}.pub`);
-        //const [keyType, sshPubKey] = pubKey.toString('ssh').split(' ');
 
         // Build our args and cwd
         const baseArgs = getBaseDaemonArgs(configService, loggerConfigService, bzeroTarget.agentPublicKey);
@@ -105,7 +96,7 @@ export async function sshProxyHandler(configService: ConfigService, logger: Logg
             `-targetId="${bzeroTarget.id}"`,
             `-targetUser="${sshTunnelParameters.targetUser}"`,
             `-identityFile="${sshTunnelParameters.identityFile}"`,
-            `-logPath="/Users/johncmerfeld/work/code/zli/logs"`,
+            `-logPath="${loggerConfigService.logPath()}"`,
             `-plugin="ssh"`
         ];
 
@@ -126,6 +117,8 @@ export async function sshProxyHandler(configService: ConfigService, logger: Logg
 
         try {
             // FIXME: for now assume we are not debugging, start the go subprocess in the background
+            // not sure there's ever a situation where we wouldn't do it this way, but
+            // TODO: where do the logs go?
             const options: SpawnOptions = {
                 cwd: cwd,
                 detached: false,
@@ -139,11 +132,11 @@ export async function sshProxyHandler(configService: ConfigService, logger: Logg
                 daemonProcess.stdin.write(data)
             });
 
-            // this definitely works
             daemonProcess.stdout.on("data", async (data) => {
                 process.stdout.write(data);
             })
 
+            // FIXME: but is this happening?
             daemonProcess.on('close', async (exitCode) => {
                 logger.error(`Ssh Daemon close event with exit code ${exitCode}`);
                 await cleanExit(exitCode, logger);
