@@ -38,6 +38,8 @@ import { UserHttpService } from '../../http-services/user/user.http-services';
 import { ssmTargetRestApiSuite } from './suites/rest-api/ssm-targets';
 import { bzeroTargetRestApiSuite } from './suites/rest-api/bzero-targets';
 import { kubeClusterRestApiSuite } from './suites/rest-api/kube-targets';
+import { databaseTargetRestApiSuite } from './suites/rest-api/database-targets';
+import { webTargetRestApiSuite } from './suites/rest-api/web-targets';
 
 // Uses config name from ZLI_CONFIG_NAME environment variable (defaults to prod
 // if unset) This can be run against dev/stage/prod when running system tests
@@ -302,8 +304,11 @@ if (API_ENABLED) {
         // other SSM-related tests could fail that rely on the name, such as tests that use the name with 'zli connect'.
         // It may be possible to allow parallelization if we use target IDs instead of names in `zli connect`.
         bzeroTargetRestApiSuite();
+
+        databaseTargetRestApiSuite();
+        webTargetRestApiSuite();
     } else {
-        logger.info('Skipping Bzero target REST API suite because Bzero target creation is disabled.');
+        logger.info('Skipping Bzero, web, and db target REST API suites because Bzero target creation is disabled.');
     }
     if (KUBE_ENABLED) {
         // See notes above about running this suite in parallel - the same caution applies here.
