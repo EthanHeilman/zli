@@ -112,7 +112,7 @@ export const iperfSuite = () => {
         });
 
         bzeroTestTargetsToRun.forEach(async (testTarget: TestTarget) => {
-            it(`${testTarget.dbCaseId}: iperf upload test - ${testTarget.awsRegion} - ${getDOImageName(testTarget.dropletImage)}`, async () => {
+            it(`${testTarget.iperfUpload}: iperf upload test - ${testTarget.awsRegion} - ${getDOImageName(testTarget.dropletImage)}`, async () => {
                 const doTarget = testTargets.get(testTarget) as DigitalOceanBZeroTarget;
 
                 // Create a new db virtual target
@@ -153,7 +153,7 @@ export const iperfSuite = () => {
         });
 
         bzeroTestTargetsToRun.forEach(async (testTarget: TestTarget) => {
-            it(`${testTarget.dbCaseId}: iperf download test - ${testTarget.awsRegion} - ${getDOImageName(testTarget.dropletImage)}`, async () => {
+            it(`${testTarget.iperfDownload}: iperf download test - ${testTarget.awsRegion} - ${getDOImageName(testTarget.dropletImage)}`, async () => {
                 const doTarget = testTargets.get(testTarget) as DigitalOceanBZeroTarget;
 
                 // Create a new db virtual target
