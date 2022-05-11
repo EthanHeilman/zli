@@ -1,4 +1,4 @@
-import { systemTestEnvId, testClusters, testTargets } from '../system-test';
+import { systemTestEnvId, testCluster, testTargets } from '../system-test';
 import * as ListTargetsService from '../../../services/list-targets/list-targets.service';
 import { getMockResultValue } from '../utils/jest-utils';
 import { TargetSummary } from '../../../../webshell-common-ts/http/v2/target/targetSummary.types';
@@ -7,20 +7,17 @@ import { TargetType } from '../../../../webshell-common-ts/http/v2/target/types/
 
 export const listTargetsSuite = () => {
     describe('list targets suite', () => {
-        beforeEach(() => {
-            jest.restoreAllMocks();
-            jest.clearAllMocks();
-        });
 
-        test('list-targets', async () => {
+        test('2117: list-targets', async () => {
             const listTargetsSpy = jest.spyOn(ListTargetsService, 'listTargets');
             await callZli(['list-targets', '--json']);
 
             expect(listTargetsSpy).toHaveBeenCalledTimes(1);
             const returnedTargetSummaries = (await getMockResultValue(listTargetsSpy.mock.results[0]));
+            const expectedTargetSummaries = [];
 
             const expectedSSMTargetSummaries = Array.from(testTargets.values()).map<TargetSummary>(t => {
-                if(t.type === 'ssm') {
+                if (t.type === 'ssm') {
                     return {
                         type: TargetType.SsmTarget,
                         agentPublicKey: t.ssmTarget.agentPublicKey,
@@ -32,7 +29,7 @@ export const listTargetsSuite = () => {
                         targetUsers: t.ssmTarget.allowedTargetUsers.map(tu => tu.userName),
                         region: t.ssmTarget.region
                     };
-                } else if(t.type === 'bzero') {
+                } else if (t.type === 'bzero') {
                     return {
                         type: TargetType.Bzero,
                         agentPublicKey: t.bzeroTarget.agentPublicKey,
@@ -46,22 +43,23 @@ export const listTargetsSuite = () => {
                     };
                 }
             });
+            expectedTargetSummaries.push(...expectedSSMTargetSummaries);
 
-            const expectedClusterSummaries = Array.from(testClusters.values()).map<TargetSummary>(cluster => {
-                return {
+            if (testCluster) {
+                expectedTargetSummaries.push({
                     type: TargetType.Cluster,
-                    agentPublicKey:  cluster.bzeroClusterTargetSummary.agentPublicKey,
-                    id: cluster.bzeroClusterTargetSummary.id,
-                    name: cluster.bzeroClusterTargetSummary.name,
-                    environmentId: cluster.bzeroClusterTargetSummary.environmentId,
-                    agentVersion: cluster.bzeroClusterTargetSummary.agentVersion,
-                    status: cluster.bzeroClusterTargetSummary.status,
-                    targetUsers: cluster.bzeroClusterTargetSummary.allowedClusterUsers,
-                    region: cluster.bzeroClusterTargetSummary.region
-                };
-            });
+                    agentPublicKey: testCluster.bzeroClusterTargetSummary.agentPublicKey,
+                    id: testCluster.bzeroClusterTargetSummary.id,
+                    name: testCluster.bzeroClusterTargetSummary.name,
+                    environmentId: testCluster.bzeroClusterTargetSummary.environmentId,
+                    agentVersion: testCluster.bzeroClusterTargetSummary.agentVersion,
+                    status: testCluster.bzeroClusterTargetSummary.status,
+                    targetUsers: testCluster.bzeroClusterTargetSummary.allowedClusterUsers,
+                    region: testCluster.bzeroClusterTargetSummary.region
+                });
+            }
 
-            for (const target of [...expectedClusterSummaries, ...expectedSSMTargetSummaries]) {
+            for (const target of expectedTargetSummaries) {
                 const foundObject = returnedTargetSummaries.find(t => t.id === target.id);
 
                 if (foundObject) {

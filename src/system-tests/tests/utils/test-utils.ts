@@ -6,12 +6,16 @@ import { ConnectionEventResponse } from '../../../../webshell-common-ts/http/v2/
 import { configService } from '../system-test';
 import { LoggerConfigService } from '../../../../src/services/logger/logger-config.service';
 import { SubjectType } from '../../../../webshell-common-ts/http/v2/common.types/subject.types';
+import { CommandEventResponse } from '../../../../webshell-common-ts/http/v2/event/response/command-event-data-message';
 
-const fs = require('fs');
+import *  as fs from 'fs';
+
 const pids = require('port-pid');
 
 const EVENT_QUERY_TIME = 2;
 const SLEEP_TIME = 5;
+
+export const sleepTimeout = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 /**
  * Class that contains our common testing functions that can be used across tests
@@ -20,7 +24,6 @@ export class TestUtils {
     eventsService: EventsHttpService;
     loggerConfigService: LoggerConfigService;
     logger: Logger;
-    sleepTimeout = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
     constructor(configService: ConfigService, logger: Logger, loggerConfigService: LoggerConfigService) {
         this.eventsService = new EventsHttpService(configService, logger);
@@ -34,7 +37,34 @@ export class TestUtils {
      * @param {string} targetName Target name we are looking for
      * @param {string} targetUsers Target user we are connected as
      * @param {string} targetType Target type we are looking for (i.e. CLUSTER)
-     * @param {ConnectionEventType} eventType Event we are checking for
+     * @param {string} command Command we are looking for
+     */
+    private async BuildCommandEvent(targetId: string, targetName: string, targetUser: string, targetType: string, command: string): Promise<CommandEventResponse> {
+        const me = configService.me();
+        const toReturn: CommandEventResponse = {
+            id: expect.anything(),
+            connectionId: expect.anything(),
+            subjectId: me.id,
+            subjectType: SubjectType.User,
+            userName: me.email,
+            organizationId: me.organizationId,
+            targetId: targetId,
+            targetType: targetType,
+            targetName: targetName,
+            targetUser: targetUser,
+            timestamp: expect.anything(),
+            command: command
+        };
+        return toReturn;
+    }
+
+    /**
+     * Helper function to build a command event so we can verify it exist in our backend
+     * @param {string} targetId Target id we are looking fo
+     * @param {string} targetName Target name we are looking for
+     * @param {string} targetUsers Target user we are connected as
+     * @param {string} targetType Target type we are looking for (i.e. CLUSTER)
+     * @param {ConnectionEventType} eventType Event we are looking for
      */
     private async BuildConnectionEvent(targetId: string, targetName: string, targetUser: string, targetType: string, eventType: ConnectionEventType): Promise<ConnectionEventResponse> {
         const me = configService.me();
@@ -57,6 +87,7 @@ export class TestUtils {
         };
         return toReturn;
     }
+
     /**
      * Helper function to ensure that a connection event was created
      * (i.e. client connect -> closed exists in our db events logs)
@@ -89,7 +120,7 @@ export class TestUtils {
             if (eventCreated == undefined) {
                 failures += 1;
                 this.logger.warn(`Unable to find event for targetId ${targetId} for type ${eventType}, sleeping for ${SLEEP_TIME}s and trying again. Failures: ${failures}`);
-                await this.sleepTimeout(SLEEP_TIME * 1000);
+                await sleepTimeout(SLEEP_TIME * 1000);
             } else {
                 // We were able to find the event, break
                 break;
@@ -105,6 +136,40 @@ export class TestUtils {
 
         // Ensure the values match
         expect(eventCreated).toMatchObject(connectionEvent);
+    }
+
+    /**
+     * Helper function to ensure that a command log was created
+     * @param {string} targetId Target id we are looking for
+     * @param {string} targetName Target name we are looking for
+     * @param {string} targetUsers Target user we are connected as
+     * @param {string} targetType Target type we are looking for (i.e. CLUSTER)
+     * @param {string} command Command we are looking for
+     */
+    public async EnsureCommandLogExists(targetId: string, targetName: string, targetUser: string, targetType: string, command: string) {
+
+        // Query for our events
+        const startTimestamp = new Date();
+        startTimestamp.setHours(startTimestamp.getHours() - EVENT_QUERY_TIME);
+        const commands = await this.eventsService.GetCommandEvent(startTimestamp, [configService.me().id]);
+
+        const commandCreated = commands.find(event => {
+            if (event.targetId == targetId && event.targetType == targetType) {
+                if (event.command == command) {
+                    return true;
+                }
+            };
+        });
+
+        if (commandCreated == undefined) {
+            throw new Error(`Unable to find command: ${command} for targetId ${targetId}`);
+        }
+
+        // Build our connection event
+        const commandEvent = this.BuildCommandEvent(targetId, targetName, targetUser, targetType, command);
+
+        // Ensure the values match
+        expect(commandCreated).toMatchObject(commandEvent);
     }
 
     /**
@@ -170,7 +235,9 @@ export class TestUtils {
     public async CheckDaemonLogs(testPassed: boolean, testName: string) {
         const daemonLogPath = this.loggerConfigService.daemonLogPath();
         if (!fs.existsSync(daemonLogPath)) {
-            this.logger.warn(`No daemon logs found under ${daemonLogPath}`);
+            if (!testPassed) {
+                this.logger.warn(`No daemon logs found under ${daemonLogPath}`);
+            }
             return;
         };
 
@@ -202,9 +269,49 @@ export class TestUtils {
                 resolve(pids.tcp);
             });
         });
-        if ((await ports).length != 0) {
-            throw new Error(`There are currently processes using port ${port}: ${ports}`);
+        const awaitedPorts = await ports;
+        if (awaitedPorts.length != 0) {
+            throw new Error(`There are currently processes using port ${port}: ${awaitedPorts}`);
         }
     }
-}
 
+    /**
+     * Retries an expectation function until it either succeeds or hits a global
+     * time out
+     * @param expectationFunc The function to retry until it doesnt throw an
+     * error
+     * @param timeout A global timeout that will reject this promise with the
+     * last known error from the expectation function as soon as the timeout is
+     * reached. Doesnt wait for the  final expectation function to finish before
+     * rejecting.
+     * @param retryInterval Time to wait in-between invocations of
+     * expectationFunc
+     */
+    public async waitForExpect<T>(expectationFunc: () => Promise<T>, timeout: number = 30 * 1000, retryInterval: number = 1 * 1000): Promise<T> {
+        let done = false;
+        let lastError = new Error('Timed out without any error');
+
+        const expectationTimeout = new Promise<T>(async (_, reject) => {
+            await sleepTimeout(timeout);
+
+            // Reject with the last error to have occurred
+            done = true;
+            reject(lastError);
+        });
+
+        const runExpectation = new Promise<T>(async (resolve, _) => {
+            while(! done) {
+                try {
+                    const res = await expectationFunc();
+                    done = true;
+                    resolve(res);
+                } catch(err) {
+                    lastError = err;
+                    await sleepTimeout(retryInterval);
+                }
+            }
+        });
+
+        return Promise.race([expectationTimeout, runExpectation]);
+    }
+}

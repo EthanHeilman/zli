@@ -1,4 +1,5 @@
 import { SsmTargetSummary } from '../../../../webshell-common-ts/http/v2/target/ssm/types/ssm-target-summary.types';
+import { EditSsmTargetRequest } from '../../../../webshell-common-ts/http/v2/target/ssm/requests/edit-ssm-target.requests';
 import { ConfigService } from '../../../services/config/config.service';
 import { HttpService } from '../../../services/http/http.service';
 import { Logger } from '../../../services/logger/logger.service';
@@ -18,5 +19,9 @@ export class SsmTargetHttpService extends HttpService {
 
     public ListSsmTargets(showDynamic: boolean): Promise<SsmTargetSummary[]> {
         return this.Get('', {showDynamicAccessTargets: String(showDynamic)});
+    }
+
+    public EditSsmTarget(targetId: string, request: EditSsmTargetRequest): Promise<SsmTargetSummary> {
+        return this.Patch<EditSsmTargetRequest, SsmTargetSummary>(targetId, request);
     }
 }

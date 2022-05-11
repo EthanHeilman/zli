@@ -49,7 +49,8 @@ export class HttpService {
                         return response;
                     }
                 ]
-            }
+            },
+            timeout: 30000 // Timeout after 30 seconds
             // throwHttpErrors: false // potentially do this if we want to check http without exceptions
         });
     }
@@ -133,6 +134,23 @@ export class HttpService {
                 }
             ).json();
             return resp;
+        } catch (error) {
+            throw new Error(this.getHttpErrorMessage(route, error));
+        }
+    }
+
+    // Use this Get request when a string response is expected.
+    protected async GetText(route?: string, queryParams?: Dictionary<string> | URLSearchParams, extraHeaders?: Dictionary<string>): Promise<string> {
+        this.setHeaders(extraHeaders);
+
+        try {
+            const response = await this.httpClient.get(
+                route,
+                {
+                    searchParams: queryParams
+                }
+            ).text();
+            return response;
         } catch (error) {
             throw new Error(this.getHttpErrorMessage(route, error));
         }

@@ -4,7 +4,7 @@ import { cleanExit } from '../clean-exit.handler';
 import { SemVer, lt, parse } from 'semver';
 
 import { connectCheckAllowedTargetUsers, targetStringExample } from '../../utils/utils';
-import { createAndRunShell, getCliSpace, pushToStdOut, startShellDaemon } from '../../utils/shell-utils';
+import { createAndRunShell, getCliSpace, startShellDaemon } from '../../utils/shell-utils';
 import { ParsedTargetString } from '../../services/common.types';
 import { MixpanelService } from '../../services/Tracking/mixpanel.service';
 import { ConnectionHttpService } from '../../http-services/connection/connection.http-services';
@@ -100,7 +100,7 @@ export async function shellConnectHandler(
     mixpanelService.TrackNewConnection(parsedTarget.type);
 
     if(parsedTarget.type == TargetType.SsmTarget || parsedTarget.type == TargetType.DynamicAccessConfig) {
-        return createAndRunShell(configService, logger, connectionSummary, pushToStdOut);
+        return createAndRunShell(configService, logger, connectionSummary);
     } else if(parsedTarget.type == TargetType.Bzero) {
 
         // agentVersion will be null if this isn't a valid version (i.e if its "$AGENT_VERSION" string during development)

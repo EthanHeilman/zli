@@ -4,12 +4,12 @@ import { Logger } from '../logger/logger.service';
 import { KeySplittingConfigSchema, ConfigInterface, getDefaultKeysplittingConfig } from '../../../webshell-common-ts/keysplitting.service/keysplitting.service.types';
 import path from 'path';
 import { Observable, Subject } from 'rxjs';
-import { DbConfig, getDefaultDbConfig } from '../db/db.service';
+import { DbConfig, getDefaultDbConfig } from '../database/database.service';
 import { WebConfig, getDefaultWebConfig } from '../web/web.service';
-import { UserSummary } from '../v1/user/user.types';
-import { KubeConfig, getDefaultKubeConfig } from '../v1/kube/kube.service';
 import { IdentityProvider } from '../../../webshell-common-ts/auth-service/auth.types';
 import { TokenHttpService } from '../../http-services/token/token.http-services';
+import { UserSummary } from '../../../webshell-common-ts/http/v2/user/types/user-summary.types';
+import { getDefaultKubeConfig, KubeConfig } from '../../utils/kubernetes.utils';
 
 
 // refL: https://github.com/sindresorhus/conf/blob/master/test/index.test-d.ts#L5-L14
@@ -41,7 +41,7 @@ export class ConfigService implements ConfigInterface {
 
     public logoutDetected : Observable<boolean> = this.logoutDetectedSubject.asObservable();
 
-    constructor(configName: string, private logger: Logger, configDir?: string) {
+    constructor(configName: string, private logger: Logger, configDir?: string, isSystemTest? : boolean) {
         const projectName = 'bastionzero-zli';
 
         // If a custom configDir append the projectName to the path to keep
@@ -49,6 +49,11 @@ export class ConfigService implements ConfigInterface {
         // overlap and use the same configuration file.
         if(configDir) {
             configDir = path.join(configDir, projectName);
+        }
+
+        let watch = true;
+        if (isSystemTest != undefined && isSystemTest == true) {
+            watch = false;
         }
 
         const appName = this.getAppName(configName);
@@ -88,7 +93,7 @@ export class ConfigService implements ConfigInterface {
                         config.set('serviceUrl', this.getServiceUrl(appName));
                 }
             },
-            watch: true
+            watch: watch
         });
 
         if(configName == 'dev' && ! this.config.get('serviceUrl')) {

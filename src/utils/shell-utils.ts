@@ -1,5 +1,6 @@
 import termsize from 'term-size';
 import readline from 'readline';
+
 import { ConfigService } from '../services/config/config.service';
 import { Logger } from '../services/logger/logger.service';
 import { SsmShellTerminal } from '../terminal/terminal';
@@ -10,16 +11,15 @@ import { SpaceSummary } from '../../webshell-common-ts/http/v2/space/types/space
 import { TargetType } from '../../webshell-common-ts/http/v2/target/types/target.types';
 
 import { copyExecutableToLocalDir, getBaseDaemonArgs } from '../utils/daemon-utils';
-import { spawn, SpawnOptions } from 'child_process';
 import { LoggerConfigService } from '../services/logger/logger-config.service';
 import { BzeroAgentSummary } from '../../webshell-common-ts/http/v2/target/bzero/types/bzero-agent-summary.types';
 import { ShellConnectionAttachDetails } from '../../webshell-common-ts/http/v2/connection/types/shell-connection-attach-details.types';
+import { pushToStdOut, spawnDaemon } from './shell-util-wrappers';
 
 export async function createAndRunShell(
     configService: ConfigService,
     logger: Logger,
-    connectionSummary: ConnectionSummary,
-    onOutput: (output: Uint8Array) => any
+    connectionSummary: ConnectionSummary
 ) {
     return new Promise<number>(async (resolve, _) => {
         if (connectionSummary.targetType === TargetType.Bzero)
@@ -135,15 +135,12 @@ export async function createAndRunShell(
             }
         });
 
-        // Write received output to output func
+        // Push to standard out using an imported function so we can spyOn and
+        // capture this output in system tests
         terminal.outputObservable.subscribe(async data => {
-            onOutput(data);
+            pushToStdOut(data);
         });
     });
-}
-
-export function pushToStdOut(output: Uint8Array) {
-    process.stdout.write(output);
 }
 
 export async function getCliSpace(
@@ -181,7 +178,7 @@ export async function startShellDaemon(
         let pluginArgs = [
             `-targetUser=${connectionSummary.targetUser}`,
             `-connectionId=${connectionSummary.id}`,
-            `-plugin="shell"`
+            `-plugin=shell`
         ];
 
         // If we are attaching then add attach plugin args
@@ -207,21 +204,9 @@ export async function startShellDaemon(
         }
 
         try {
-            // If we are not debugging, start the go subprocess in the background
-            const options: SpawnOptions = {
-                cwd: cwd,
-                detached: false,
-                shell: true,
-                stdio: 'inherit'
-            };
-
-            const daemonProcess = await spawn(finalDaemonPath, args, options);
-
-            daemonProcess.on('close', (exitCode) => {
-                logger.debug(`Shell Daemon close event with exit code ${exitCode}`);
-                resolve(exitCode);
-            });
-
+            const daemonProcessExitCode = await spawnDaemon(finalDaemonPath, args, cwd);
+            logger.debug(`Shell Daemon closed with exit code ${daemonProcessExitCode}`);
+            resolve(daemonProcessExitCode);
         } catch(err) {
             logger.error(`Error starting shell daemon: ${err}`);
             reject(1);

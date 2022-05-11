@@ -60,6 +60,6 @@ export function userCmdBuilder(yargs: yargs.Argv<{}>) : yargs.Argv<userArgs> {
             }
         )
         .example('$0 user --json', 'List all users, output as json, pipeable')
-        .example('$0 user --add test@test.com test-cluster', 'Adds the test@test.com IDP user to test-cluster policy')
-        .example('$0 user -d test@test.com test-cluster', 'Removes the test@test.com IDP user from test-cluster policy');
+        .example('$0 user --add test-cluster test@test.com', 'Adds the test@test.com IDP user to test-cluster policy')
+        .example('$0 user -d test-cluster test@test.com', 'Removes the test@test.com IDP user from test-cluster policy');
 }

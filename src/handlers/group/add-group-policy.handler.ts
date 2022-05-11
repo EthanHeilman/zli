@@ -1,10 +1,14 @@
-import { GroupSummary } from '../../services/v1/groups/groups.types';
-import { PolicyService } from '../../services/v1/policy/policy.service';
-import { PolicyType, Group } from '../../services/v1/policy/policy.types';
 import { ConfigService } from '../../services/config/config.service';
 import { Logger } from '../../services/logger/logger.service';
 import { cleanExit } from '../clean-exit.handler';
 import { OrganizationHttpService } from '../../http-services/organization/organization.http-services';
+import { PolicyHttpService } from '../../../src/http-services/policy/policy.http-services';
+import { KubernetesPolicySummary } from '../../../webshell-common-ts/http/v2/policy/kubernetes/types/kubernetes-policy-summary.types';
+import { TargetConnectPolicySummary } from '../../../webshell-common-ts/http/v2/policy/target-connect/types/target-connect-policy-summary.types';
+import { PolicyType } from '../../../webshell-common-ts/http/v2/policy/types/policy-type.types';
+import { ProxyPolicySummary } from '../../../webshell-common-ts/http/v2/policy/proxy/types/proxy-policy-summary.types';
+import { GroupSummary } from '../../../webshell-common-ts/http/v2/organization/types/group-summary.types';
+import { Group } from '../../../webshell-common-ts/http/v2/policy/types/group.types';
 
 export async function addGroupToPolicyHandler(groupName: string, policyName: string, configService: ConfigService, logger: Logger) {
     // First ensure we can lookup the group
@@ -21,25 +25,30 @@ export async function addGroupToPolicyHandler(groupName: string, policyName: str
     }
 
     // Get the existing policy
-    const policyService = new PolicyService(configService, logger);
-    const policies = await policyService.ListAllPolicies();
+    const policyHttpService = new PolicyHttpService(configService, logger);
+    const kubePolicies = await policyHttpService.ListKubernetesPolicies();
+    const targetPolicies = await policyHttpService.ListTargetConnectPolicies();
+    const proxyPolicies = await policyHttpService.ListProxyPolicies();
 
     // Loop till we find the one we are looking for
-    const policy = policies.find(p => p.name == policyName);
+    const kubePolicy = kubePolicies.find(p => p.name == policyName);
+    const targetPolicy = targetPolicies.find(p => p.name == policyName);
+    const proxyPolicy = proxyPolicies.find(p => p.name == policyName);
 
-    if (!policy) {
+    if (!kubePolicy &&
+        !targetPolicy &&
+        !proxyPolicy) {
         // Log an error
         logger.error(`Unable to find policy with name: ${policyName}`);
         await cleanExit(1, logger);
     }
 
-    if (policy.type !== PolicyType.Kubernetes && policy.type !== PolicyType.TargetConnect){
-        logger.error(`Adding group to policy ${policyName} failed. Adding groups to ${policy.type} policies is not currently supported.`);
-        await cleanExit(1, logger);
-    }
+    // Assign to policy whichever of the three policies is not null
+    const policy = proxyPolicy ? proxyPolicy :
+        kubePolicy ? kubePolicy : targetPolicy;
 
     // If this group exists already
-    const group = policy.groups.find(g => g.name == groupSummary.name);
+    const group = policy.groups.find((g: Group) => g.name == groupSummary.name);
     if (group) {
         logger.error(`Group ${groupSummary.name} exists already for policy: ${policyName}`);
         await cleanExit(1, logger);
@@ -53,9 +62,22 @@ export async function addGroupToPolicyHandler(groupName: string, policyName: str
     policy.groups.push(groupToAdd);
 
     // And finally update the policy
-    await policyService.EditPolicy(policy);
+    switch (policy.type) {
+    case PolicyType.TargetConnect:
+        await policyHttpService.EditTargetConnectPolicy(policy as TargetConnectPolicySummary);
+        break;
+    case PolicyType.Kubernetes:
+        await policyHttpService.EditKubernetesPolicy(policy as KubernetesPolicySummary);
+        break;
+    case PolicyType.Proxy:
+        await policyHttpService.EditProxyPolicy(policy as ProxyPolicySummary);
+        break;
+    default:
+        const exhaustiveCheck: never = policy;
+        return exhaustiveCheck;
+        break;
+    }
 
     logger.info(`Added ${groupName} to ${policyName} policy!`);
     await cleanExit(0, logger);
 }
-
