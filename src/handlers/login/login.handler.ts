@@ -12,6 +12,7 @@ import { UserHttpService } from '../../http-services/user/user.http-services';
 import { UserSummary } from '../../../webshell-common-ts/http/v2/user/types/user-summary.types';
 import { MfaActionRequired } from '../../../webshell-common-ts/http/v2/mfa/types/mfa-action-required.types';
 import { UserRegisterResponse } from '../../../webshell-common-ts/http/v2/user/responses/user-register.responses';
+import { removeIfExists } from '../../utils/utils';
 
 export interface LoginResult {
     userSummary: UserSummary;
@@ -69,44 +70,47 @@ export async function login(keySplittingService: KeySplittingService, configServ
     // Check if we must MFA and act upon it
     const mfaHttpService = new MfaHttpService(configService, logger);
     switch (registerResponse.mfaActionRequired) {
-    case MfaActionRequired.NONE:
-        break;
-    case MfaActionRequired.TOTP:
-        if (mfaToken) {
-            await mfaHttpService.VerifyMfaTotp(mfaToken);
-        } else {
-            logger.info('MFA token required for this account');
-            const token = await interactiveTOTPMFA();
-            if (token) {
-                await mfaHttpService.VerifyMfaTotp(token);
+        case MfaActionRequired.NONE:
+            break;
+        case MfaActionRequired.TOTP:
+            if (mfaToken) {
+                await mfaHttpService.VerifyMfaTotp(mfaToken);
+            } else {
+                logger.info('MFA token required for this account');
+                const token = await interactiveTOTPMFA();
+                if (token) {
+                    await mfaHttpService.VerifyMfaTotp(token);
+                } else {
+                    return undefined;
+                }
+            }
+            break;
+        case MfaActionRequired.RESET:
+            logger.info('MFA reset detected, requesting new MFA token');
+            logger.info('Please scan the following QR code with your device (Google Authenticator recommended) and enter code below.');
+
+            const resp = await mfaHttpService.ResetSecret(true);
+            const data = await qrcode.toString(resp.mfaSecretUrl, { type: 'terminal', scale: 2 });
+            console.log(data);
+
+            const code = await interactiveResetMfa();
+            if (code) {
+                await mfaHttpService.VerifyMfaTotp(code);
             } else {
                 return undefined;
             }
-        }
-        break;
-    case MfaActionRequired.RESET:
-        logger.info('MFA reset detected, requesting new MFA token');
-        logger.info('Please scan the following QR code with your device (Google Authenticator recommended) and enter code below.');
 
-        const resp = await mfaHttpService.ResetSecret(true);
-        const data = await qrcode.toString(resp.mfaSecretUrl, { type: 'terminal', scale: 2 });
-        console.log(data);
-
-        const code = await interactiveResetMfa();
-        if (code) {
-            await mfaHttpService.VerifyMfaTotp(code);
-        } else {
-            return undefined;
-        }
-
-        break;
-    default:
-        logger.warn(`Unexpected MFA response ${registerResponse.mfaActionRequired}`);
-        break;
+            break;
+        default:
+            logger.warn(`Unexpected MFA response ${registerResponse.mfaActionRequired}`);
+            break;
     }
 
     const me = await userHttpService.Me();
     configService.setMe(me);
+
+    // clear temporary SSH identity file
+    removeIfExists(configService.sshKeyPath());
 
     return {
         userRegisterResponse: registerResponse,
