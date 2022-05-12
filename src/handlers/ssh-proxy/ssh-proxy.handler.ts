@@ -1,7 +1,7 @@
 import { includes } from 'lodash';
 import { SemVer, lt, parse } from 'semver';
-
-import { spawn, SpawnOptions } from 'child_process';
+import { spawn, SpawnOptions, exec } from 'child_process';
+import { promisify } from 'util';
 
 import { KeySplittingService } from '../../../webshell-common-ts/keysplitting.service/keysplitting.service';
 import { ConfigService } from '../../services/config/config.service';
@@ -20,7 +20,7 @@ import { LoggerConfigService } from '../../services/logger/logger-config.service
 import { copyExecutableToLocalDir, getBaseDaemonArgs } from '../../utils/daemon-utils';
 
 // FIXME: revisit this, given pipelining version
-const minimumAgentVersion = "6.1.0";
+const minimumAgentVersion = '6.1.0';
 
 export async function sshProxyHandler(configService: ConfigService, logger: Logger, sshTunnelParameters: SshTunnelParameters, keySplittingService: KeySplittingService, envMap: EnvMap, loggerConfigService: LoggerConfigService) {
 
@@ -92,7 +92,7 @@ export async function sshProxyHandler(configService: ConfigService, logger: Logg
 
         // Build our args and cwd
         const baseArgs = getBaseDaemonArgs(configService, loggerConfigService, bzeroTarget.agentPublicKey);
-        let pluginArgs = [
+        const pluginArgs = [
             `-targetId="${bzeroTarget.id}"`,
             `-targetUser="${sshTunnelParameters.targetUser}"`,
             `-identityFile="${sshTunnelParameters.identityFile}"`,
@@ -115,42 +115,121 @@ export async function sshProxyHandler(configService: ConfigService, logger: Logg
             finalDaemonPath = await copyExecutableToLocalDir(logger, configService.configPath());
         }
 
-        try {
-            // FIXME: for now assume we are not debugging, start the go subprocess in the background
-            // not sure there's ever a situation where we wouldn't do it this way, but
-            // TODO: where do the logs go?
-            const options: SpawnOptions = {
-                cwd: cwd,
-                detached: false,
-                shell: true,
-                stdio: 'pipe'
-            };
+        if (sshTunnelParameters.internal) {
+            try {
+                // FIXME: for now assume we are not debugging, start the go subprocess in the background
+                // not sure there's ever a situation where we wouldn't do it this way, but
+                // TODO: where do the logs go?
+                const options: SpawnOptions = {
+                    cwd: cwd,
+                    detached: false,
+                    shell: true,
+                    stdio: 'pipe'
+                };
 
-            const daemonProcess = spawn(finalDaemonPath, args, options);
+                const daemonProcess = spawn(finalDaemonPath, args, options);
 
-            process.stdin.on('data', async (data) => {
-                daemonProcess.stdin.write(data)
-            });
+                process.stdin.on('data', async (data) => {
+                    daemonProcess.stdin.write(data)
+                });
 
-            daemonProcess.stdout.on("data", async (data) => {
-                process.stdout.write(data);
-            })
+                daemonProcess.stdout.on("data", async (data) => {
+                    process.stdout.write(data);
+                })
 
-            // FIXME: but is this happening?
-            daemonProcess.on('close', async (exitCode) => {
-                if (exitCode !== 0) {
-                    logger.error(`Ssh Daemon close event with exit code ${exitCode} -- for more details, see ${loggerConfigService.logPath()}`)
-                }
-                await cleanExit(exitCode, logger);
-            });
+                // FIXME: but is this happening?
+                daemonProcess.on('close', async (exitCode) => {
+                    if (exitCode !== 0) {
+                        logger.error(`Ssh Daemon close event with exit code ${exitCode} -- for more details, see ${loggerConfigService.logPath()}`)
+                    }
+                    await cleanExit(exitCode, logger);
+                });
 
-        } catch (err) {
-            logger.error(`Error starting ssh daemon: ${err}`);
-            await cleanExit(1, logger);
+            } catch (err) {
+                logger.error(`Error starting ssh daemon: ${err}`);
+                await cleanExit(1, logger);
+            }
+        } else {
+            const sshPath = await getPath(`ssh`);
+            const sshCmd = `${sshPath} ${sshTunnelParameters.parsedTarget.user}@${sshTunnelParameters.parsedTarget.name} -i ${sshTunnelParameters.identityFile}`;
+
+            const sshdPath = await getPath('sshd');
+            const sshdCmd = `${sshdPath} -d`
+
+            logger.error(sshCmd);
+            logger.error(sshdCmd);
+
+            try {
+                // FIXME: for now assume we are not debugging, start the go subprocess in the background
+                // not sure there's ever a situation where we wouldn't do it this way, but
+                const daemonOptions: SpawnOptions = {
+                    cwd: cwd,
+                    detached: false,
+                    shell: true,
+                    stdio: 'pipe'
+                };
+
+                const sshOptions: SpawnOptions = {
+                    cwd: cwd,
+                    detached: false,
+                    shell: true,
+                    stdio: 'pipe'
+                };
+
+                const ssh = spawn(sshCmd, [], sshOptions);
+                const sshd = spawn(sshdCmd, [], sshOptions);
+                const daemon = spawn(finalDaemonPath, args, daemonOptions);
+
+                ssh.stderr.on('data', async (data) => {
+                    logger.error(`ssh: ${data}`);
+                })
+                sshd.stderr.on('data', async (data) => {
+                    logger.error(`sshd: ${data}`);
+                })
+
+                // pipe my input to sshd's input
+                process.stdin.on('data', async (data) => {
+                    logger.error(`user -> sshd ${data}`)
+                    sshd.stdin.write(data);
+                });
+                // pipe sshd's output to daemon's input
+                sshd.stdout.on('data', async (data) => {
+                    logger.error(`sshd -> daemon ${data}`)
+                    daemon.stdin.write(data);
+                });
+                // pipe daemon's output to ssh's input
+                daemon.stdout.on('data', async (data) => {
+                    logger.error(`daemon -> ssh ${data}`)
+                    ssh.stdin.write(data);
+                });
+                // pipe ssh's output to my output
+                ssh.stdout.on('data', async (data) => {
+                    logger.error(`ssh -> user ${data}`)
+                    process.stdout.write(data);
+                });
+
+                // FIXME: but is this happening?
+                daemon.on('close', async (exitCode) => {
+                    if (exitCode !== 0) {
+                        logger.error(`Ssh Daemon close event with exit code ${exitCode} -- for more details, see ${loggerConfigService.logPath()}`);
+                    }
+                    await cleanExit(exitCode, logger);
+                });
+
+            } catch (err) {
+                logger.error(`Error starting ssh daemon: ${err}`);
+                await cleanExit(1, logger);
+            }
         }
     } else {
         throw new Error(`Unhandled target type ${sshTunnelParameters.parsedTarget.type}`);
     }
+}
+
+async function getPath(command: string): Promise<string> {
+    const pexec = promisify(exec);
+    const { stdout } = await pexec(`which ${command}`);
+    return stdout.trim();
 }
 
 export interface SshTunnelParameters {
@@ -158,4 +237,6 @@ export interface SshTunnelParameters {
     port: number;
     identityFile: string;
     targetUser: string;
+    originalHost: string;
+    internal: boolean;
 }

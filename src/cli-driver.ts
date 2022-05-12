@@ -637,7 +637,9 @@ export class CliDriver {
                         parsedTarget: parsedTarget,
                         port: argv.port,
                         identityFile: argv.identityFile,
-                        targetUser: argv.user
+                        targetUser: argv.user,
+                        originalHost: argv.host,
+                        internal: argv.internal,
                     };
 
                     await sshProxyHandler(this.configService, this.logger, sshTunnelParameters, this.keySplittingService, envMap, this.loggerConfigService,);
