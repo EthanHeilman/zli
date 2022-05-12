@@ -138,7 +138,9 @@ export async function sshProxyHandler(configService: ConfigService, logger: Logg
 
             // FIXME: but is this happening?
             daemonProcess.on('close', async (exitCode) => {
-                logger.error(`Ssh Daemon close event with exit code ${exitCode}`);
+                if (exitCode !== 0) {
+                    logger.error(`Ssh Daemon close event with exit code ${exitCode} -- for more details, see ${loggerConfigService.logPath()}`)
+                }
                 await cleanExit(exitCode, logger);
             });
 
