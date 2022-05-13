@@ -17,6 +17,15 @@ describe('Close Connection suite', () => {
 
         // Always mock out the following services
         jest.spyOn(middlewareHandler, 'oAuthMiddleware').mockImplementationOnce(async (_configService, _logger) => Promise.resolve());
+        jest.spyOn(middlewareHandler, 'fetchDataMiddleware').mockImplementationOnce(() => {
+            return {
+                dynamicConfigs: Promise.resolve([]),
+                ssmTargets: Promise.resolve([]),
+                clusterTargets: Promise.resolve([]),
+                bzeroTargets:  Promise.resolve([]),
+                envs: Promise.resolve([]),
+            };
+        });
         jest.spyOn(GAService.prototype, 'TrackCliCommand').mockImplementationOnce(() => Promise.resolve());
         jest.spyOn(ConfigService.prototype, 'me').mockImplementation(() => mockUserSummary);
     });
