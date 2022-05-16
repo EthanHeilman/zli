@@ -104,12 +104,13 @@ export type EnvMap = Readonly<{
 
 // Mapping from env vars to options if they exist
 export const envMap: EnvMap = {
-    'configName': process.env.ZLI_CONFIG_NAME || 'prod',
-    'enableKeysplitting': process.env.ZLI_ENABLE_KEYSPLITTING || 'true',
-    'configDir': process.env.ZLI_CONFIG_DIR || undefined
+    'configName'        : process.env.ZLI_CONFIG_NAME           || 'prod',
+    'enableKeysplitting': process.env.ZLI_ENABLE_KEYSPLITTING   || 'true',
+    'configDir'         : process.env.ZLI_CONFIG_DIR            || undefined
 };
 
-export class CliDriver {
+export class CliDriver
+{
     private configService: ConfigService;
     private keySplittingService: KeySplittingService
     private loggerConfigService: LoggerConfigService;
@@ -233,13 +234,13 @@ export class CliDriver {
                 this.keySplittingService = initResponse.keySplittingService;
             })
             .middleware(async (_) => {
-                if (!this.GACommands.has(baseCmd)) {
+                if(!this.GACommands.has(baseCmd)) {
                     this.GAService = null;
                     return;
                 }
 
                 // Attempt to re-get the token if we dont have it
-                if (!this.configService.GAToken()) {
+                if(! this.configService.GAToken()) {
                     await this.configService.fetchGAToken();
                 }
 
@@ -255,32 +256,32 @@ export class CliDriver {
                 this.logger.setGAService(this.GAService);
             })
             .middleware(async (argv) => {
-                if (!this.GACommands.has(baseCmd))
+                if(!this.GACommands.has(baseCmd))
                     return;
-                if (!this.configService.mixpanelToken()) {
+                if(!this.configService.mixpanelToken()) {
                     await this.configService.fetchMixpanelToken();
                 }
                 this.mixpanelService = mixpanelTrackingMiddleware(this.configService, argv);
             })
             .middleware(async (_) => {
-                if (!(this.oauthCommands.has(baseCmd)))
+                if(!(this.oauthCommands.has(baseCmd)))
                     return;
                 await checkVersionMiddleware(this.configService, this.logger);
             })
             .middleware(async () => {
-                if (!this.oauthCommands.has(baseCmd))
+                if(!this.oauthCommands.has(baseCmd))
                     return;
                 await oAuthMiddleware(this.configService, this.logger);
             })
             .middleware(async (argv) => {
                 const isGenerateBash = argv._[0] == 'generate' && argv._[1] == 'bash';
-                if ((this.adminOnlyCommands.has(baseCmd) || isGenerateBash) && !this.configService.me().isAdmin) {
+                if((this.adminOnlyCommands.has(baseCmd) || isGenerateBash) && !this.configService.me().isAdmin){
                     this.logger.error(`This is an admin restricted command. Please login as an admin to perform it.`);
                     await cleanExit(1, this.logger);
                 }
             })
             .middleware(() => {
-                if (!this.fetchCommands.has(baseCmd))
+                if(!this.fetchCommands.has(baseCmd))
                     return;
                 const fetchDataResponse = fetchDataMiddleware(this.configService, this.logger);
                 this.dynamicConfigs = fetchDataResponse.dynamicConfigs;
@@ -383,7 +384,7 @@ export class CliDriver {
                         .command(
                             'ssh-proxy',
                             'Print an ssh configuration to be used with the ssh-proxy command',
-                            () => { },
+                            () => {},
                             () => sshProxyConfigHandler(this.configService, getZliRunCommand(), this.logger),
                         )
                         .command(
@@ -400,8 +401,8 @@ export class CliDriver {
                         )
                         .demandCommand(1, '')
                         .strict()
-                        .fail((_msg: string, _err: string | Error, yargs) => {
-                            const subcommand: string = process.argv[3];
+                        .fail((_msg: string, _err : string | Error, yargs) => {
+                            const subcommand : string = process.argv[3];
                             console.error(`Error: '${subcommand}' is not a valid subcommand of generate.\n`);
                             yargs.showHelp();
                         });
@@ -416,7 +417,7 @@ export class CliDriver {
                 async (argv) => {
                     // If provided type filter, apply it
                     let policyType: PolicyType = undefined;
-                    if (!!argv.type) {
+                    if(!! argv.type) {
                         policyType = parsePolicyType(argv.type);
                     }
 
@@ -464,7 +465,7 @@ export class CliDriver {
                     return attachCmdBuilder(yargs);
                 },
                 async (argv) => {
-                    if (!isGuid(argv.connectionId)) {
+                    if (!isGuid(argv.connectionId)){
                         this.logger.error(`Passed connection id ${argv.connectionId} is not a valid Guid`);
                         await cleanExit(1, this.logger);
                     }
@@ -480,7 +481,7 @@ export class CliDriver {
                     return closeConnectionCmdBuilder(yargs);
                 },
                 async (argv) => {
-                    if (!argv.all && !isGuid(argv.connectionId)) {
+                    if (! argv.all && ! isGuid(argv.connectionId)){
                         this.logger.error(`Passed connection id ${argv.connectionId} is not a valid Guid`);
                         await cleanExit(1, this.logger);
                     }
@@ -494,7 +495,7 @@ export class CliDriver {
                     return listTargetsCmdBuilder(yargs, this.targetTypeChoices, this.targetStatusChoices);
                 },
                 async (argv) => {
-                    await listTargetsHandler(this.configService, this.logger, argv);
+                    await listTargetsHandler(this.configService,this.logger, argv);
                 }
             )
             .command(
@@ -514,9 +515,9 @@ export class CliDriver {
                     return userCmdBuilder(yargs);
                 },
                 async (argv) => {
-                    if (!!argv.add) {
+                    if (!! argv.add) {
                         await addUserToPolicyHandler(argv.idpEmail, argv.policyName, this.configService, this.logger);
-                    } else if (!!argv.delete) {
+                    } else if (!! argv.delete) {
                         await deleteUserFromPolicyHandler(argv.idpEmail, argv.policyName, this.configService, this.logger);
                     } else if (!(!!argv.add && !!argv.delete)) {
                         await listUsersHandler(argv, this.configService, this.logger);
@@ -533,9 +534,9 @@ export class CliDriver {
                     return groupCmdBuilder(yargs);
                 },
                 async (argv) => {
-                    if (!!argv.add) {
+                    if (!! argv.add) {
                         await addGroupToPolicyHandler(argv.groupName, argv.policyName, this.configService, this.logger);
-                    } else if (!!argv.delete) {
+                    } else if (!! argv.delete) {
                         await deleteGroupFromPolicyHandler(argv.groupName, argv.policyName, this.configService, this.logger);
                     } else if (!(!!argv.add && !!argv.delete)) {
                         await fetchGroupsHandler(argv, this.configService, this.logger);
@@ -552,9 +553,9 @@ export class CliDriver {
                     return targetUserCmdBuilder(yargs);
                 },
                 async (argv) => {
-                    if (!!argv.add) {
+                    if (!! argv.add) {
                         await addTargetUserHandler(argv.user, argv.policyName, this.configService, this.logger);
-                    } else if (!!argv.delete) {
+                    } else if (!! argv.delete) {
                         await deleteTargetUserHandler(argv.user, argv.policyName, this.configService, this.logger);
                     } else if (!(!!argv.add && !!argv.delete)) {
                         await listTargetUsersHandler(this.configService, this.logger, argv, argv.policyName);
@@ -571,7 +572,7 @@ export class CliDriver {
                     return targetGroupCmdBuilder(yargs);
                 },
                 async (argv) => {
-                    if (!!argv.add) {
+                    if (!! argv.add) {
                         await addTargetGroupHandler(argv.group, argv.policyName, this.configService, this.logger);
                     }
                     else if (!!argv.delete) {
@@ -587,7 +588,7 @@ export class CliDriver {
             .command(
                 'ssh-proxy-config',
                 'Generate ssh configuration to be used with the ssh-proxy command',
-                () => { },
+                () => {},
                 async () => {
                     await sshProxyConfigHandler(this.configService, getZliRunCommand(), this.logger);
                     this.logger.warn('The ssh-proxy-config command is deprecated and will be removed soon, please use its equivalent \'zli generate ssh-proxy\'');
@@ -604,31 +605,33 @@ export class CliDriver {
                 async (argv) => {
                     let prefix = 'bzero-';
                     const configName = this.configService.getConfigName();
-                    if (configName != 'prod') {
+                    if(configName != 'prod') {
                         prefix = `${configName}-${prefix}`;
                     }
 
-                    if (!argv.host.startsWith(prefix)) {
+                    if(! argv.host.startsWith(prefix)) {
                         this.logger.error(`Invalid host provided must have form ${prefix}<target>. Target must be either target id or name`);
                         await cleanExit(1, this.logger);
                     }
 
                     // modify argv to have the targetString and targetType params
                     const targetString = argv.user + '@' + argv.host.substr(prefix.length);
+
                     // have to game disambiguateTarget a bit by asking for no filter
                     const parsedTarget = await disambiguateTarget(null, targetString, this.logger, this.dynamicConfigs, this.ssmTargets, this.clusterTargets, this.bzeroTargets, this.envs, this.configService);
 
                     if (parsedTarget == undefined) {
-                        this.logger.error(`Unable to find target with given user / host values: ${argv.user} /${argv.host}`);
+                        this.logger.error(`Unable to find target with given user/host values: ${argv.user}/${argv.host}`);
                         await cleanExit(1, this.logger);
                     }
 
-                    if (parsedTarget.type != TargetType.Bzero && parsedTarget.type != TargetType.DynamicAccessConfig) {
-                        this.logger.warn(`ssh-proxy only available on BZero, SSM, and dynamic targets`);
+                    if (parsedTarget.type != TargetType.Bzero && parsedTarget.type != TargetType.SsmTarget && parsedTarget.type != TargetType.DynamicAccessConfig) {
+                        this.logger.warn(`ssh-proxy only available on Bzero, SSM, and dynamic targets`);
                         await cleanExit(1, this.logger);
                     }
 
-                    if (argv.port < 1 || argv.port > 65535) {
+                    if(argv.port < 1 || argv.port > 65535)
+                    {
                         this.logger.warn(`Port ${argv.port} outside of port range [1-65535]`);
                         await cleanExit(1, this.logger);
                     }
@@ -646,7 +649,7 @@ export class CliDriver {
             .command(
                 'configure',
                 'Returns config file path',
-                () => { },
+                () => {},
                 async () => {
                     await configHandler(this.logger, this.configService, this.loggerConfigService);
                 }
@@ -655,7 +658,7 @@ export class CliDriver {
                 'generate-bash',
                 'Returns a bash script to autodiscover a target.',
                 (yargs) => {
-                    return generateBashCmdBuilder(yargs);
+                    return generateBashCmdBuilder(yargs) ;
                 },
                 async (argv) => {
                     await generateBashHandler(argv, this.logger, this.configService, this.envs);
@@ -677,7 +680,7 @@ export class CliDriver {
             .command(
                 'logout',
                 'Deauthenticate the client',
-                () => { },
+                () => {},
                 async () => {
                     await logoutHandler(this.configService, this.logger);
                 }
@@ -692,7 +695,7 @@ export class CliDriver {
             .command(
                 'refresh',
                 false,
-                () => { },
+                () => {},
                 async () => {
                     const oauth = new OAuthService(this.configService, this.logger);
                     await oauth.getIdTokenAndExitOnError();
@@ -701,7 +704,7 @@ export class CliDriver {
             .command(
                 'register',
                 false,
-                () => { },
+                () => {},
                 async () => {
                     const userHttpService = new UserHttpService(this.configService, this.logger);
                     await userHttpService.Register();
@@ -726,13 +729,13 @@ export class CliDriver {
                         .demandCommand(1, 'api-key requires a sub-command. Specify --help for available options');
                 },
             )
-            .option('configName', { type: 'string', choices: ['prod', 'stage', 'dev'], default: envMap.configName, hidden: true })
+            .option('configName', {type: 'string', choices: ['prod', 'stage', 'dev'], default: envMap.configName, hidden: true})
             // Overwrites the default directory used by conf. Used by
             // system-tests to use an isolated configuration file with a
             // pre-loaded logged in user
-            .option('configDir', { type: 'string', default: envMap.configDir, hidden: true })
-            .option('debug', { type: 'boolean', default: false, describe: 'Flag to show debug logs' })
-            .option('silent', { alias: 's', type: 'boolean', default: false, describe: 'Silence all zli messages, only returns command output' })
+            .option('configDir', {type: 'string', default: envMap.configDir, hidden: true})
+            .option('debug', {type: 'boolean', default: false, describe: 'Flag to show debug logs'})
+            .option('silent', {alias: 's', type: 'boolean', default: false, describe: 'Silence all zli messages, only returns command output'})
             .strictCommands() // if unknown command, show help
             .demandCommand(1, '') // if no command, raise failure
             .strict() // any command-line argument given that is not demanded, or does not have a corresponding description, will be reported as an error.
@@ -748,7 +751,7 @@ Command arguments key:
  - [arg] is optional or sometimes required
 
 Need help? https://cloud.bastionzero.com/support`)
-            .fail(isSystemTest ? false : (msg: string, err: string | Error, yargs) => {
+            .fail(isSystemTest ? false : (msg: string, err : string | Error, yargs) => {
                 if (this.logger) {
                     if (msg) {
                         this.logger.error(msg);
@@ -776,7 +779,7 @@ Need help? https://cloud.bastionzero.com/support`)
                 }
 
                 // If there are no args passed, show help screen
-                if (process.argv.slice(2).length == 0) {
+                if (process.argv.slice(2).length == 0){
                     yargs.showHelp();
                 }
 
