@@ -18,7 +18,7 @@ import { DbTargetService } from '../../http-services/db-target/db-target.http-se
 import { WebTargetService } from '../../http-services/web-target/web-target.http-service';
 
 
-describe('List Targets suite', () => {
+describe('List Policies suite', () => {
     const targetConnectPolicyOutput = String.raw`┌────────────────────────┬───────────────────┬──────────────────────────┬────────────────────────────┬─────────────────────────────┬──────────────┐
 │ Name                   │ Type              │ Subject                  │ Resource                   │ Target Users                │ Target Group │
 ├────────────────────────┼───────────────────┼──────────────────────────┼────────────────────────────┼─────────────────────────────┼──────────────┤

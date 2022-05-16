@@ -57,6 +57,8 @@ interface BaseTarget {
     groupConnectCaseId?: string; // For our group based connect
     badConnectCaseId?: string; // for our connect negation test
     dbCaseId?: string; // For our db test suite
+    iperfUpload?: string; // For our iperf upload suite
+    iperfDownload?: string; // For our iperf download suite
     badDbCaseId?: string // For out db negation negation test
     webCaseId?: string; // For our web test suite
     badWebCaseId?: string; // For out web negation tests

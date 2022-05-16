@@ -40,6 +40,7 @@ import { bzeroTargetRestApiSuite } from './suites/rest-api/bzero-targets';
 import { kubeClusterRestApiSuite } from './suites/rest-api/kube-targets';
 import { databaseTargetRestApiSuite } from './suites/rest-api/database-targets';
 import { webTargetRestApiSuite } from './suites/rest-api/web-targets';
+import { dynamicAccessConfigRestApiSuite } from './suites/rest-api/dynamic-access-configs';
 
 // Uses config name from ZLI_CONFIG_NAME environment variable (defaults to prod
 // if unset) This can be run against dev/stage/prod when running system tests
@@ -81,7 +82,8 @@ export const SERVICE_URL = configService.serviceUrl();
 // Make sure we have defined our groupId if we are configured against cloud-dev or cloud-staging
 export let GROUP_ID: string = undefined;
 export let GROUP_NAME: string = undefined;
-if (IN_CI && (SERVICE_URL.includes('cloud-dev') || SERVICE_URL.includes('cloud-dev'))) {
+const NOT_USING_RUNNER: boolean = SERVICE_URL.includes('cloud-dev') || SERVICE_URL.includes('cloud-staging');
+if (IN_CI && NOT_USING_RUNNER) {
     GROUP_ID = process.env.GROUP_ID;
     if (! GROUP_ID) {
         throw new Error('Must set the GROUP_ID environment variable');
@@ -265,7 +267,7 @@ if(SSM_ENABLED || BZERO_ENABLED) {
     connectSuite();
     sessionRecordingSuite();
 
-    if (IN_CI && (SERVICE_URL.includes('cloud-dev') || SERVICE_URL.includes('cloud-staging'))) {
+    if (IN_CI && NOT_USING_RUNNER) {
         // Only run group tests if we are in CI and talking to staging or dev
         groupsSuite();
     };
@@ -290,6 +292,7 @@ if (API_ENABLED) {
     organizationSuite();
     environmentsSuite();
     policySuite();
+    dynamicAccessConfigRestApiSuite();
 
     if (SSM_ENABLED) {
         // Since this suite modifies an SSM target name, we must be cautious if we parallelize test suite running because
