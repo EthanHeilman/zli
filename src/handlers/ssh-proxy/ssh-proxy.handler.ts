@@ -17,7 +17,7 @@ import { BzeroTargetHttpService } from '../../http-services/targets/bzero/bzero.
 import { TargetType } from '../../../webshell-common-ts/http/v2/target/types/target.types';
 import { BzeroAgentSummary } from '../../../webshell-common-ts/http/v2/target/bzero/types/bzero-agent-summary.types';
 import { LoggerConfigService } from '../../services/logger/logger-config.service';
-import { killPid, copyExecutableToLocalDir, getBaseDaemonArgs } from '../../utils/daemon-utils';
+import { copyExecutableToLocalDir, getBaseDaemonArgs } from '../../utils/daemon-utils';
 
 // FIXME: revisit this, given pipelining version
 const minimumAgentVersion = '6.1.0';
