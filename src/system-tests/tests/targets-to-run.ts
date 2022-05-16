@@ -149,7 +149,7 @@ export const extraBzeroTestTargetsToRun: TestTarget[] = [
         dbCaseId: '2152',
         badDbCaseId: '2371',
         iperfUpload: '14969',
-        iperfDownload: '14972',
+        iperfDownload: '14971',
         badWebCaseId: '2373',
         connectCaseId: '6462',
         closeCaseId: '6564',
