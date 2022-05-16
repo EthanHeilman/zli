@@ -124,21 +124,10 @@ export async function sshProxyHandler(configService: ConfigService, logger: Logg
             });
             */
 
-
-
-            /*
-            process.on('exit', function () {
-                daemonProcess.stdin.write("SSH END");
-                logger.error("Heh?");
-            })*/
-
-            // FIXME: for now assume we are not debugging, start the go subprocess in the background
-            // not sure there's ever a situation where we wouldn't do it this way, but
-            // TODO: where do the logs go?
             const options: SpawnOptions = {
                 cwd: cwd,
                 detached: false,
-                shell: true, // TODO: try flipping this
+                shell: true,
                 stdio: 'pipe'
             };
 
@@ -152,107 +141,17 @@ export async function sshProxyHandler(configService: ConfigService, logger: Logg
             });
 
             process.stdin.on('close', function () {
+                logger.error("SSH closed");
                 daemonProcess.stdin.end();
             })
 
             daemonProcess.on('close', async (exitCode) => {
+                logger.error("Daemon closed");
                 if (exitCode !== 0) {
                     logger.error(`ssh daemon close event with nonzero exit code ${exitCode} -- for more details, see ${loggerConfigService.logPath()}`);
                 }
                 await cleanExit(exitCode, logger);
             });
-
-            /*
-            process.on('disconnect', () => {
-                logger.error("Sure I'll exit it");
-                daemonProcess.stdin.write("SSH END");
-                killPid(daemonProcess.pid.toString());
-                if (!daemonProcess.kill()) {
-                    logger.error('failed to kill ssh daemon gracefully');
-                }
-            })
-
-            process.stdin.on('disconnect', () => {
-                logger.error("Sure I'll exit it");
-                daemonProcess.stdin.write("SSH END");
-                killPid(daemonProcess.pid.toString());
-                if (!daemonProcess.kill()) {
-                    logger.error('failed to kill ssh daemon gracefully');
-                }
-            })
-
-            process.on('close', () => {
-                logger.error("Sure I'll exit it");
-                daemonProcess.stdin.write("SSH END");
-                killPid(daemonProcess.pid.toString());
-                if (!daemonProcess.kill()) {
-                    logger.error('failed to kill ssh daemon gracefully');
-                }
-            })
-
-            process.stdin.on('close', () => {
-                logger.error("Sure I'll exit it");
-                daemonProcess.stdin.write("SSH END");
-                killPid(daemonProcess.pid.toString());
-                if (!daemonProcess.kill()) {
-                    logger.error('failed to kill ssh daemon gracefully');
-                }
-            })
-
-            process.on('exit', () => {
-                logger.error("Sure I'll exit it");
-                daemonProcess.stdin.write("SSH END");
-                killPid(daemonProcess.pid.toString());
-                if (!daemonProcess.kill()) {
-                    logger.error('failed to kill ssh daemon gracefully');
-                }
-            })
-
-            process.on('SIGINT', () => {
-                logger.error("Sure I'll int it");
-                daemonProcess.stdin.write("SSH END");
-                killPid(daemonProcess.pid.toString());
-                if (!daemonProcess.kill()) {
-                    logger.error('failed to kill ssh daemon gracefully');
-                }
-            })
-
-            process.on('SIGTERM', () => {
-                logger.error("Sure I'll SIGUSR1 it");
-                daemonProcess.stdin.write("SSH END");
-                killPid(daemonProcess.pid.toString());
-                if (!daemonProcess.kill()) {
-                    logger.error('failed to kill ssh daemon gracefully');
-                }
-            })
-
-            process.on('SIGUSR1', () => {
-                logger.error("Sure I'll SIGUSR2 it");
-                daemonProcess.stdin.write("SSH END");
-                killPid(daemonProcess.pid.toString());
-                if (!daemonProcess.kill()) {
-                    logger.error('failed to kill ssh daemon gracefully');
-                }
-            })
-
-            process.on('SIGUSR2', () => {
-                logger.error("Sure I'll term it");
-                daemonProcess.stdin.write("SSH END");
-                killPid(daemonProcess.pid.toString());
-                if (!daemonProcess.kill()) {
-                    logger.error('failed to kill ssh daemon gracefully');
-                }
-            })
-
-            process.on('uncaughtException', () => {
-                logger.error("Sure I'll uncaughtException it");
-                daemonProcess.stdin.write("SSH END");
-                killPid(daemonProcess.pid.toString());
-                if (!daemonProcess.kill()) {
-                    logger.error('failed to kill ssh daemon gracefully');
-                }
-            })
-            */
 
         } catch (err) {
             logger.error(`Error starting ssh daemon: ${err}`);
