@@ -29,7 +29,7 @@ export async function createAndRunShell(
 
         // Subscribe first so we don't miss events
         terminal.terminalRunning.subscribe(
-            () => { },
+            () => {},
             // If an error occurs in the terminal running observable then log the
             // error, clean up the connection, and exit zli
             async (error) => {
@@ -182,7 +182,7 @@ export async function startShellDaemon(
         ];
 
         // If we are attaching then add attach plugin args
-        if (attachDetails) {
+        if(attachDetails) {
             pluginArgs = pluginArgs.concat([
                 `-dataChannelId=${attachDetails.dataChannelId}`
             ]);
@@ -207,7 +207,7 @@ export async function startShellDaemon(
             const daemonProcessExitCode = await spawnDaemon(finalDaemonPath, args, cwd);
             logger.debug(`Shell Daemon closed with exit code ${daemonProcessExitCode}`);
             resolve(daemonProcessExitCode);
-        } catch (err) {
+        } catch(err) {
             logger.error(`Error starting shell daemon: ${err}`);
             reject(1);
         }

@@ -14,7 +14,7 @@ const readLastLines = require('read-last-lines');
 const randtoken = require('rand-token');
 const findPort = require('find-open-port');
 
-export const DAEMON_PATH: string = 'bzero/bctl/daemon/daemon';
+export const DAEMON_PATH : string = 'bzero/bctl/daemon/daemon';
 
 const WAIT_UNTIL_USED_ON_HOST_TIMEOUT = 1000 * 60;
 const WAIT_UTIL_USED_ON_HOST_RETRY_TIME = 100;
@@ -22,9 +22,9 @@ const WAIT_UTIL_USED_ON_HOST_RETRY_TIME = 100;
 // Allow errors on early daemon startup to bubble up to the user
 export async function handleServerStart(logPath: string, localPort: number, localHost: string) {
     await new Promise<void>(async (resolve, reject) => {
-        await waitUntilUsedOnHost(localPort, localHost, WAIT_UTIL_USED_ON_HOST_RETRY_TIME, WAIT_UNTIL_USED_ON_HOST_TIMEOUT).then(function () {
+        await waitUntilUsedOnHost(localPort, localHost, WAIT_UTIL_USED_ON_HOST_RETRY_TIME, WAIT_UNTIL_USED_ON_HOST_TIMEOUT).then(function() {
             resolve();
-        }, function (err) {
+        }, function(err) {
             if (fs.existsSync(logPath)) {
                 readLastLines.read(logPath, 1)
                     .then((line: string) => {
@@ -32,7 +32,7 @@ export async function handleServerStart(logPath: string, localPort: number, loca
                             const lastLog = JSON.parse(line);
                             reject(`Error kept daemon from starting up correctly\n. waitUntilUsedOnHost error: ${err}. Last daemon log entry: ${lastLog.message}`);
                         }
-                        catch (e) {
+                        catch(e) {
                             reject(`Error parsing last line in log: ${e}`);
                         }
                     });
@@ -48,7 +48,7 @@ export async function handleServerStart(logPath: string, localPort: number, loca
 export function getAppEntrypoint() {
     const pkgProcess = isPkgProcess();
 
-    if (pkgProcess) {
+    if(pkgProcess) {
         return pkgProcess.entrypoint;
     } else {
         return `${process.cwd()}/src/index.ts`;
@@ -56,7 +56,7 @@ export function getAppEntrypoint() {
 }
 
 export function getAppExecPath() {
-    if (isPkgProcess()) {
+    if(isPkgProcess()) {
         return process.execPath;
     } else {
         return 'npx ts-node';
@@ -71,7 +71,7 @@ export function getAppExecPath() {
  * @param {string} configName  Dev, stage, prod
  * @returns Path to the key, path to the cert, path to the certificate signing request.
  */
-export async function generateNewCert(pathToConfig: string, name: string, configName: string): Promise<string[]> {
+export async function generateNewCert(pathToConfig: string, name: string, configName: string ): Promise<string[]> {
     const options = { stdio: ['ignore', 'ignore', 'ignore'] };
 
     // Create and save key/cert
@@ -153,7 +153,7 @@ export async function copyExecutableToLocalDir(logger: Logger, configPath: strin
     // Ref: https://github.com/vercel/pkg/issues/342
 
     let prefix = '';
-    if (isPkgProcess()) {
+    if(isPkgProcess()) {
         // /snapshot/zli/dist/src/handlers/tunnel
         prefix = path.join(__dirname, '../../../');
     } else {
@@ -221,7 +221,7 @@ async function deleteIfExists(pathToFile: string) {
  */
 export async function killDaemon(localPid: number, logger: Logger) {
     // then kill the daemon
-    if (localPid != null) {
+    if ( localPid != null) {
         // First try to kill the process
         try {
             killPid(localPid.toString());
@@ -255,17 +255,17 @@ export async function killLocalPortAndPid(savedPid: number, localPort: number, l
 }
 
 export async function killPortProcess(port: number, logger: Logger) {
-    if (port == null) return;
+    if(port == null) return;
 
     // Helper function to kill a process running on a given port (if it exists)
     try {
         const portPids = await getPidForPort(port);
 
         // Loop over all pids and kill
-        portPids.forEach((portPid: number) => {
+        portPids.forEach( (portPid: number) => {
             killPid(portPid.toString());
         });
-    } catch (err) {
+    } catch(err) {
         // Don't try to capture any errors incase the process has already been killed
         logger.debug(`Error killing process on port ${port}: ${err}`);
     }
@@ -286,7 +286,7 @@ async function getPidForPort(port: number): Promise<number[]> {
     return awaitedPorts;
 }
 
-export function killPid(pid: string) {
+function killPid(pid: string) {
     // Helper function to kill a process for a given pid
     // Ignore output and do not show that to the user
     // For unix based os we kill all processes based on group id by using kill -{signal} -{pid}
