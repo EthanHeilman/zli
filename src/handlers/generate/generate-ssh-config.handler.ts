@@ -21,7 +21,7 @@ export async function generateSshConfigHandler(argv: yargs.Arguments<generateSsh
 
     // Build our ssh config file -- note that by using this function with 'true' we are chosing to add the prefix before our hostname token in the proxycommand
     const { identityFile, proxyCommand, prefix } = await buildSshConfigStrings(configService, processName, logger, true);
-    const bzConfigContentsFormatted = formatBzConfigContents(tunnels, identityFile, proxyCommand, prefix);
+    const bzConfigContentsFormatted = formatBzConfigContents(tunnels, identityFile, proxyCommand);
 
     // Determine and write to the user's ssh and bzero-ssh config path
     const { userConfigPath, bzConfigPath } = getFilePaths(argv.mySshPath, argv.bzSshPath, prefix);
@@ -55,7 +55,7 @@ function getFilePaths(userSshPath: string, bzSshPath: string, configPrefix: stri
  * @param configPrefix {string} assigns a prefix to the bz config filename based on runtime environment (e.g. dev, stage)
  * @returns {string} the bz config file contents
  */
-function formatBzConfigContents(tunnels: TunnelsResponse[], identityFile: string, proxyCommand: string, configPrefix: string): string {
+function formatBzConfigContents(tunnels: TunnelsResponse[], identityFile: string, proxyCommand: string): string {
     let contents = ``;
 
     // add per-target configs
