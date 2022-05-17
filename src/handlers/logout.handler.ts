@@ -11,7 +11,7 @@ export async function logoutHandler(configService: ConfigService, logger: Logger
     configService.logout();
     configService.deleteSessionId();
     logger.info('Closing any existing SSH Tunnel Connections');
-    // FIXME: is the above actually happening?
+    // FIXME: why do we log this? Doesn't seem like it's happening
     logger.info('Clearing temporary SSH identity file');
     removeIfExists(configService.sshKeyPath());
 
