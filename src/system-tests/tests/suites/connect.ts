@@ -13,6 +13,7 @@ import { VerbType } from '../../../../webshell-common-ts/http/v2/policy/types/ve
 import { ConnectTestUtils } from '../utils/connect-utils';
 import { ConnectionEventType } from '../../../../webshell-common-ts/http/v2/event/types/connection-event.types';
 import { testIf } from '../utils/utils';
+import * as CleanExitHandler from '../../../handlers/clean-exit.handler';
 
 export const connectSuite = () => {
     describe('connect suite', () => {
@@ -137,16 +138,22 @@ export const connectSuite = () => {
                 const doTarget = testTargets.get(testTarget);
                 const connectTarget = connectTestUtils.getConnectTarget(doTarget);
 
-                // Bzero targets will close the connection automatically when
-                // exiting. We do not yet support a way to exit the terminal and
-                // keep the connection open (detach)
-                const shouldExit = connectTarget.type === 'ssm' ? true : false;
-
-                // Run normal connect test first
+                // Run normal connect test first but do not exit so the terminal and zli connect command remain running
+                const shouldExit = false;
                 const connectionId = await connectTestUtils.runShellConnectTest(testTarget, `connect test - ${systemTestUniqueId}`, shouldExit);
 
-                // Call zli close
+                // Call zli close which should cause the zli connect command to also exit
+                const cleanExitSpy = jest.spyOn(CleanExitHandler, 'cleanExit').mockImplementation(() => Promise.resolve());
                 await callZli(['close', connectionId]);
+
+                // cleanExit should be called twice. Once when the zli close
+                // command exits and once when the zli connect command
+                // exits.
+                await testUtils.waitForExpect(
+                    async () => expect(cleanExitSpy).toBeCalledTimes(2),
+                    30 * 1000,
+                    1 * 1000
+                );
 
                 // Expect our close event now
                 expect(await testUtils.EnsureConnectionEventCreated(connectTarget.id, connectTarget.name, connectTarget.targetUser, connectTarget.eventTargetType, ConnectionEventType.Closed));
