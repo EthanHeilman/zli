@@ -26,7 +26,7 @@ import { PolicyType } from '../webshell-common-ts/http/v2/policy/types/policy-ty
 
 // Handlers
 import { initMiddleware, oAuthMiddleware, fetchDataMiddleware, GATrackingMiddleware, initLoggerMiddleware, mixpanelTrackingMiddleware } from './handlers/middleware.handler';
-import { sshProxyHandler, SshTunnelParameters } from './handlers/ssh-proxy/ssh-proxy.handler';
+import { bzeroSshProxyHandler, ssmSshProxyHandler, SshTunnelParameters } from './handlers/ssh-proxy/ssh-proxy.handler';
 import { loginHandler } from './handlers/login/login.handler';
 import { shellConnectHandler } from './handlers/connect/shell-connect.handler';
 import { listTargetsHandler } from './handlers/list-targets/list-targets.handler';
@@ -643,7 +643,11 @@ export class CliDriver
                         targetUser: argv.user
                     };
 
-                    await sshProxyHandler(this.configService, this.logger, sshTunnelParameters, this.keySplittingService, envMap, this.loggerConfigService,);
+                    if (parsedTarget.type == TargetType.Bzero) {
+                        await bzeroSshProxyHandler(this.configService, this.logger, sshTunnelParameters, this.keySplittingService, envMap, this.loggerConfigService,);
+                    } else {
+                        await ssmSshProxyHandler(this.configService, this.logger, sshTunnelParameters, this.keySplittingService, envMap);
+                    }
                 }
             )
             .command(
