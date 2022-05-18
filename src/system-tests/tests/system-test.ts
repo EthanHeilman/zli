@@ -41,6 +41,7 @@ import { kubeClusterRestApiSuite } from './suites/rest-api/kube-targets';
 import { databaseTargetRestApiSuite } from './suites/rest-api/database-targets';
 import { webTargetRestApiSuite } from './suites/rest-api/web-targets';
 import { dynamicAccessConfigRestApiSuite } from './suites/rest-api/dynamic-access-configs';
+import { userRestApiSuite } from './suites/rest-api/users';
 
 // Uses config name from ZLI_CONFIG_NAME environment variable (defaults to prod
 // if unset) This can be run against dev/stage/prod when running system tests
@@ -293,6 +294,7 @@ if (API_ENABLED) {
     environmentsSuite();
     policySuite();
     dynamicAccessConfigRestApiSuite();
+    userRestApiSuite();
 
     if (SSM_ENABLED) {
         // Since this suite modifies an SSM target name, we must be cautious if we parallelize test suite running because
