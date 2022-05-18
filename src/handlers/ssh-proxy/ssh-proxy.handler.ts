@@ -254,12 +254,12 @@ export async function bzeroSshProxyHandler(configService: ConfigService, logger:
                 });
 
                 process.stdin.on('data', async (data) => {
-                    logger.error(`client: ${data}`)
+                    //logger.error(`client: ${data}`)
                     client.write(data);
                 });
 
                 client.on("data", async (data) => {
-                    logger.error(`server: ${data}`)
+                    //logger.error(`server: ${data}`)
                     process.stdout.write(data);
                 });
                 /*
