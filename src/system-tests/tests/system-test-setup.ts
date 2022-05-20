@@ -231,7 +231,7 @@ export async function createDOTestTargets() {
                 dropletSize: dropletSizeToCreate,
                 dropletImage: testTarget.dropletImage,
                 dropletRegion: testTarget.doRegion,
-                dropletTags: systemTestTags,
+                dropletTags: [...systemTestTags, systemTestUniqueId],
             }
         }, userDataScript);
 
