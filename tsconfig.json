@@ -25,5 +25,5 @@
         "src/**/*"
     ],
     "files": ["src/index.ts"], // Mark index.ts as our entry point for packaged release
-    "exclude": ["node_modules"]
+    "exclude": ["node_modules", "src/system-tests"]
 }
