@@ -26,7 +26,7 @@
     "release-macos": "npm run build-binaries-macos && npm run copy-files && pkg . -t node14-macos-x64 -o bin/zli-macos",
     "release-linux": "npm run build-binaries-linux && npm run copy-files && pkg . -t node14-linux-x64 -o bin/zli-linux",
     "release-prod": "npm run update-daemon-version && npm run release-all",
-    "copy-files": "copyfiles src/**/*.html src/**/*.css bzero/bctl/daemon/* dist/ ",
+    "copy-files": "copyfiles src/**/*.html src/**/*.css bzero/bctl/daemon/* dist/",
     "package": "npm run copy-files && pkg .",
     "clean": "rimraf dist/ && rimraf bin/",
     "test": "jest --config src/jest-config-unit-tests.js --verbose",
