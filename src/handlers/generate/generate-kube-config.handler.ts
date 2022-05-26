@@ -1,18 +1,19 @@
+import util from 'util';
+import yargs from 'yargs';
 import { ConfigService } from '../../services/config/config.service';
 import { Logger } from '../../services/logger/logger.service';
-import util from 'util';
 import { exec } from 'child_process';
-import yargs from 'yargs';
 import { generateKubeConfigArgs } from './generate-kube.command-builder';
 import { cleanExit } from '../clean-exit.handler';
 import { generateNewCert } from '../../utils/daemon-utils';
 
 const path = require('path');
 const fs = require('fs');
-const findPort = require('find-open-port');
 const tmp = require('tmp');
-const randtoken = require('rand-token');
 const execPromise = util.promisify(exec);
+// Exporting for use during testing
+export const randtoken = require('rand-token');
+export const findPort = require('find-open-port');
 
 export async function generateKubeConfigHandler(
     argv: yargs.Arguments<generateKubeConfigArgs>,
@@ -98,7 +99,7 @@ users:
   - name: ${userName}
     user:
       token: "${kubeConfig['token']}"
-    `;
+`;
 
     // Show it to the user or write to file
     if (argv.outputFile) {
@@ -152,7 +153,7 @@ async function flattenKubeConfig(config: string, logger: Logger) {
             fs.writeFileSync(tempFilePath, config);
 
             // Create backup of kubeconfig
-            const backupFilePath = path.join(kubeConfigDir, 'config.bzero.bak');
+            const backupFilePath = ( process.env.KUBECONFIG ? path.join(path.dirname(process.env.KUBECONFIG), 'config.bzero.bak') : path.join(kubeConfigDir, 'config.bzero.bak') );
             fs.copyFileSync(kubeConfigPath, backupFilePath);
 
             // Create our custom exec env
