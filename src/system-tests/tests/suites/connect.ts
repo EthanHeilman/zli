@@ -14,20 +14,24 @@ import { ConnectTestUtils } from '../utils/connect-utils';
 import { ConnectionEventType } from '../../../../webshell-common-ts/http/v2/event/types/connection-event.types';
 import { testIf } from '../utils/utils';
 import * as CleanExitHandler from '../../../handlers/clean-exit.handler';
+import { EventsHttpService } from '../../../http-services/events/events.http-server';
 
 export const connectSuite = () => {
     describe('connect suite', () => {
         let policyService: PolicyHttpService;
         let connectionService: ConnectionHttpService;
+        let eventsService: EventsHttpService;
         let testUtils: TestUtils;
         let connectTestUtils: ConnectTestUtils;
         let testPassed = false;
+        let userLogFilterStartTime: Date;
 
         // Set up the policy before all the tests
         beforeAll(async () => {
             // Construct all http services needed to run tests
             policyService = new PolicyHttpService(configService, logger);
             connectionService = new ConnectionHttpService(configService, logger);
+            eventsService = new EventsHttpService(configService, logger);
             testUtils = new TestUtils(configService, logger, loggerConfigService);
 
             const currentUser: Subject = {
@@ -49,6 +53,9 @@ export const connectSuite = () => {
                 targetUsers: ConnectTestUtils.getPolicyTargetUsers(),
                 verbs: [{type: VerbType.Shell},]
             });
+
+            const mostRecentUserEvent = await eventsService.GetUserEvents(null, [configService.me().id], 1);
+            userLogFilterStartTime = mostRecentUserEvent[0]?.timestamp;
         }, 60 * 1000);
 
         // Cleanup all policy after the tests
@@ -103,6 +110,8 @@ export const connectSuite = () => {
 
                 // After attaching we should see another client connection event
                 expect(await testUtils.EnsureConnectionEventCreated(attachTarget.id, attachTarget.name, attachTarget.targetUser, attachTarget.eventTargetType, ConnectionEventType.ClientConnect));
+                const eventExists = await testUtils.EnsureUserEventExists('connectionservice:connect', true, attachTarget.id, new Date(userLogFilterStartTime));
+                expect(eventExists).toBeTrue();
 
                 // Make sure terminal output is replayed before sending new input
                 await testUtils.waitForExpect(

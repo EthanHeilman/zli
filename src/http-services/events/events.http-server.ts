@@ -4,6 +4,7 @@ import { Logger } from '../../services/logger/logger.service';
 import { ConnectionEventResponse } from '../../../webshell-common-ts/http/v2/event/response/connection-event-data-message';
 import { CommandEventResponse } from '../../../webshell-common-ts/http/v2/event/response/command-event-data-message';
 import { KubeEventDataResponse } from '../../../webshell-common-ts/http/v2/event/response/kube-event-data-message';
+import { UserEventDataMessage } from '../../../webshell-common-ts/http/v2/event/types/user-event-data-message.types';
 
 
 export class EventsHttpService extends HttpService
@@ -34,5 +35,15 @@ export class EventsHttpService extends HttpService
     public GetKubeEvents() : Promise<KubeEventDataResponse[]>
     {
         return this.Get('kube');
+    }
+
+    public GetUserEvents(startTime?: Date, subjectIds?: string[], count?: number) : Promise<UserEventDataMessage[]>
+    {
+        const params = {
+            startTimestamp: startTime?.toJSON(),
+            subjectIds: subjectIds?.toString(),
+            eventCount: count?.toString()
+        };
+        return this.Get('user', params);
     }
 }

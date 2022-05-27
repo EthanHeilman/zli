@@ -44,6 +44,7 @@ import { dynamicAccessConfigRestApiSuite } from './suites/rest-api/dynamic-acces
 import { userRestApiSuite } from './suites/rest-api/users';
 import { spacesRestApiSuite } from './suites/rest-api/spaces';
 import { mfaSuite } from './suites/rest-api/mfa';
+import { eventsRestApiSuite } from './suites/rest-api/events';
 
 // Uses config name from ZLI_CONFIG_NAME environment variable (defaults to prod
 // if unset) This can be run against dev/stage/prod when running system tests
@@ -299,6 +300,7 @@ if (API_ENABLED) {
     userRestApiSuite();
     spacesRestApiSuite();
     mfaSuite();
+    eventsRestApiSuite();
 
     if (SSM_ENABLED) {
         // Since this suite modifies an SSM target name, we must be cautious if we parallelize test suite running because
