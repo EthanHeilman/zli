@@ -1,6 +1,5 @@
 import { ConfigService } from '../../services/config/config.service';
 import { Logger } from '../../services/logger/logger.service';
-import { cleanExit } from '../clean-exit.handler';
 import { TargetSummary } from '../../../webshell-common-ts/http/v2/target/targetSummary.types';
 import yargs from 'yargs';
 import { policyArgs } from './policy.command-builder';
@@ -69,12 +68,12 @@ export async function listTargetConnectPoliciesHandler(
     } else {
         if (targetConnectPolicies.length === 0){
             logger.info('There are no available Target Connect policies');
-            await cleanExit(0, logger);
+        } else {
+            // regular table output
+            const tableString = getTableOfTargetConnectPolicies(targetConnectPolicies, userMap, apiKeyMap, environmentMap, targetNameMap, groupMap);
+            logger.warn('Target Connect Policies:\n');
+            console.log(tableString);
+            console.log('\n\n');
         }
-        // regular table output
-        const tableString = getTableOfTargetConnectPolicies(targetConnectPolicies, userMap, apiKeyMap, environmentMap, targetNameMap, groupMap);
-        logger.warn('Target Connect Policies:\n');
-        console.log(tableString);
-        console.log('\n\n');
     }
 }

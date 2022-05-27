@@ -1,6 +1,5 @@
 import { ConfigService } from '../../services/config/config.service';
 import { Logger } from '../../services/logger/logger.service';
-import { cleanExit } from '../clean-exit.handler';
 import yargs from 'yargs';
 import { policyArgs } from './policy.command-builder';
 import { ApiKeyHttpService } from '../../http-services/api-key/api-key.http-services';
@@ -77,12 +76,12 @@ export async function listProxyPoliciesHandler(
     } else {
         if (proxyPolicies.length === 0){
             logger.info('There are no available Proxy policies');
-            await cleanExit(0, logger);
+        } else {
+            // regular table output
+            const tableString = getTableOfProxyPolicies(proxyPolicies, userMap, environmentMap, targetNameMap, apiKeyMap, groupMap);
+            logger.warn('Proxy Policies:\n');
+            console.log(tableString);
+            console.log('\n\n');
         }
-        // regular table output
-        const tableString = getTableOfProxyPolicies(proxyPolicies, userMap, environmentMap, targetNameMap, apiKeyMap, groupMap);
-        logger.warn('Proxy Policies:\n');
-        console.log(tableString);
-        console.log('\n\n');
     }
 }
