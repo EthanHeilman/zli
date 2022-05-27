@@ -10,7 +10,6 @@ import { BzeroAgentSummary } from '../../../webshell-common-ts/http/v2/target/bz
 import { BzeroTargetHttpService } from '../../http-services/targets/bzero/bzero.http-services';
 import { createApiClient } from 'dots-wrapper';
 import { IDroplet } from 'dots-wrapper/dist/droplet/types/droplet';
-import axios from 'axios';
 
 
 export class DigitalOceanSSMTargetService {
@@ -181,7 +180,6 @@ export class DigitalOceanSSMTargetService {
         const retrier = new Retrier({
             limit: 80,
             delay: 1000 * 10,
-            stopRetryingIf: (reason: any) => axios.isAxiosError(reason)
         });
 
         return retrier.resolve(() => new Promise<IDroplet>(async (resolve, reject) => {

@@ -11,7 +11,7 @@ export async function getAutodiscoveryScript(
     environmentId: string,
     scriptTargetNameOption: ScriptTargetNameOption,
     agentVersion: string
-) {
+): Promise<string> {
     const autodiscoveryScriptHttpService = new AutoDiscoveryScriptHttpService(configService, logger);
     const scriptResponse = await autodiscoveryScriptHttpService.GetAutodiscoveryScript(scriptTargetNameOption, environmentId, agentVersion);
 

@@ -73,8 +73,8 @@ Host ${tunnel.targetName}
     // Also add our proxy wildcard command
     contents += `
 Host ${configPrefix}*
-  ${identityFile}
-  ${proxyCommand}
+    ${identityFile}
+    ${proxyCommand}
 `;
 
     return contents;
@@ -113,4 +113,3 @@ function linkNewConfigFile(userConfigFile: string, bzConfigFile: string, logger:
         fs.close(fd, () => { });
     }
 }
-

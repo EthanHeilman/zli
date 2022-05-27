@@ -1,15 +1,10 @@
-import { CliDriver } from '../../cli-driver';
 import mockArgv from 'mock-argv';
-import * as middlewareHandler from '../middleware.handler';
-import { GAService } from '../../services/Tracking/google-analytics.service';
-import * as CleanExitHandler from '../clean-exit.handler';
-import { ConfigService } from '../../services/config/config.service';
-import { cleanConsoleLog, mockApiKeySummaryList, mockBzeroSummaryList, mockDatSummaryList, mockDbSummaryList, mockEnvList, mockGroupsSummaryList, mockKubernetesPolicySummaryList, mockKubeSummaryList, mockOrganizationControlsPolicySummaryList, mockProxyPolicySummaryList, mockSessionRecordingPolicySummaryList, mockSsmSummaryList, mockTargetConnectPolicySummaryList, mockUserSummary, mockUserSummaryList, mockWebSummaryList } from '../../utils/unit-test-utils';
+import { CliDriver } from '../../cli-driver';
+import { cleanConsoleLog, mockApiKeySummaryList, mockBzeroSummaryList, mockDatSummaryList, mockDbSummaryList, mockGroupsSummaryList, mockKubernetesPolicySummaryList, mockKubeSummaryList, mockOrganizationControlsPolicySummaryList, mockProxyPolicySummaryList, mockSessionRecordingPolicySummaryList, unitTestMockSetup, mockSsmSummaryList, mockTargetConnectPolicySummaryList, mockUserSummaryList, mockWebSummaryList } from '../../utils/unit-test-utils';
 import { OrganizationHttpService } from '../../http-services/organization/organization.http-services';
 import { ApiKeyHttpService } from '../../http-services/api-key/api-key.http-services';
 import { UserHttpService } from '../../http-services/user/user.http-services';
 import { PolicyHttpService } from '../../http-services/policy/policy.http-services';
-import { EnvironmentHttpService } from '../../http-services/environment/environment.http-services';
 import { KubeHttpService } from '../../http-services/targets/kube/kube.http-services';
 import { SsmTargetHttpService } from '../../http-services/targets/ssm/ssm-target.http-services';
 import { DynamicAccessConfigHttpService } from '../../http-services/targets/dynamic-access/dynamic-access-config.http-services';
@@ -60,11 +55,7 @@ describe('List Policies suite', () => {
         jest.clearAllMocks();
 
         // Always mock out the following services
-        jest.spyOn(middlewareHandler, 'oAuthMiddleware').mockImplementationOnce(async (_configService, _logger) => Promise.resolve());
-        jest.spyOn(CleanExitHandler, 'cleanExit').mockImplementationOnce(() => Promise.resolve());
-        jest.spyOn(GAService.prototype, 'TrackCliCommand').mockImplementationOnce(() => Promise.resolve());
-        jest.spyOn(ConfigService.prototype, 'me').mockImplementation(() => mockUserSummary);
-        jest.spyOn(EnvironmentHttpService.prototype, 'ListEnvironments').mockImplementation(async () => mockEnvList);
+        unitTestMockSetup(true);
 
         jest.spyOn(OrganizationHttpService.prototype, 'ListGroups').mockImplementation(async () => {
             return mockGroupsSummaryList;

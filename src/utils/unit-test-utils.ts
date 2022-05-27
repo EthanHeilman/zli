@@ -1,3 +1,4 @@
+import fs from 'fs';
 import { EnvironmentSummary } from '../../webshell-common-ts/http/v2/environment/types/environment-summary.responses';
 import { KubeClusterSummary } from '../../webshell-common-ts/http/v2/target/kube/types/kube-cluster-summary.types';
 import { TargetStatus } from '../../webshell-common-ts/http/v2/target/types/targetStatus.types';
@@ -25,6 +26,23 @@ import { ConnectionState } from '../../webshell-common-ts/http/v2/connection/typ
 import { SpaceSummary } from '../../webshell-common-ts/http/v2/space/types/space-summary.types';
 import { SpaceState } from '../../webshell-common-ts/http/v2/space/types/space-state.types';
 import { UserSummary } from '../../webshell-common-ts/http/v2/user/types/user-summary.types';
+import { TunnelsResponse } from '../../webshell-common-ts/http/v2/policy-query/responses/tunnels.response';
+import { GAService } from '../services/Tracking/google-analytics.service';
+import { EnvironmentHttpService } from '../http-services/environment/environment.http-services';
+import { ConfigService } from '../services/config/config.service';
+import * as middlewareHandler from '../handlers/middleware.handler';
+import * as CleanExitHandler from '../handlers/clean-exit.handler';
+
+export function unitTestMockSetup(withCleanExit: boolean): void {
+    // Always mock out the following services
+    if (withCleanExit) {
+        jest.spyOn(CleanExitHandler, 'cleanExit').mockImplementationOnce(() => Promise.resolve());
+    }
+    jest.spyOn(middlewareHandler, 'oAuthMiddleware').mockImplementationOnce(async (_configService, _logger) => Promise.resolve());
+    jest.spyOn(GAService.prototype, 'TrackCliCommand').mockImplementationOnce(() => Promise.resolve());
+    jest.spyOn(EnvironmentHttpService.prototype, 'ListEnvironments').mockImplementation(async () => mockEnvList);
+    jest.spyOn(ConfigService.prototype, 'me').mockImplementation(() => mockUserSummary);
+}
 
 export const mockEnv: EnvironmentSummary = {
     id: 'test-env-id',
@@ -36,6 +54,13 @@ export const mockEnv: EnvironmentSummary = {
     offlineCleanupTimeoutHours: 1,
     targets : []
 };
+
+// To avoid having to mock getEnvironmentFromName() when environmentName is not specified
+const defaultMockEnv: EnvironmentSummary = JSON.parse(JSON.stringify(mockEnv));
+defaultMockEnv.name = 'Default';
+export const defaultMockEnvList: EnvironmentSummary[] = [
+    defaultMockEnv, mockEnv
+];
 
 export const mockEnvList: EnvironmentSummary[] = [
     mockEnv
@@ -72,6 +97,10 @@ export const mockKubeSummaryList: KubeClusterSummary[] = [{
 export const mockTargetUser: TargetUser = {
     userName: 'test-user'
 };
+
+export const mockTargetUserList: TargetUser[] = [
+    mockTargetUser
+];
 
 export const mockSsmSummaryList: SsmTargetSummary[] = [{
     id: 'test-mock-ssm-id',
@@ -266,6 +295,49 @@ export const mockSpaceSummary: SpaceSummary = {
     connections: [mockConnectionSummary],
     terminalPreferences: 'some-preferences',
 };
+
+export const mockScript: string = 'test-script';
+
+export const mockTunnelsResponse: TunnelsResponse = {
+    guid: 'test-guid',
+    targetName: 'test-target-name',
+    targetUsers: mockTargetUserList
+};
+
+export const mockTunnelsResponseList: TunnelsResponse[] = [
+    mockTunnelsResponse
+];
+
+/**
+ * This helper function creates a temporary directory at the specified path as well as writes to
+ * file(s) within the temporary directory for testing.
+ * @param pathToDir Path to temp dir to be created
+ * @param files Array of file(s) to be created
+ * @param fileContents String(s) to be written to the corresponding file in files
+ */
+export function createTempDirectory(pathToDir: string, files: string[], fileContents: string[]): void {
+    // Delete dir first if it already exists
+    deleteDirectory(pathToDir);
+
+    // Create temp dir
+    fs.mkdirSync(pathToDir, { recursive: true });
+
+    // Write to file(s) within temp dir
+    for (let i = 0; i < files.length; i++) {
+        fs.writeFileSync(files[i], fileContents[i]);
+        i += 1;
+    };
+}
+
+/**
+ * This helper function recursively deletes a directory at the specified path.
+ * @param pathToDir Path to temp dir to be created
+ */
+export function deleteDirectory(pathToDir: string) {
+    if (fs.existsSync(pathToDir)) {
+        fs.rmdirSync(pathToDir, { recursive: true });
+    }
+}
 
 /**
  * Some of our zli code calls Table, which automatically adds color, this helper function removes any color from

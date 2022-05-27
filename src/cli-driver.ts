@@ -388,7 +388,7 @@ export class CliDriver
                             () => sshProxyConfigHandler(this.configService, getZliRunCommand(), this.logger),
                         )
                         .command(
-                            'kubeConfig [clusterName]',
+                            'kubeConfig',
                             'Generate a configuration file for Kubernetes',
                             (yargs) => generateKubeConfigCmdBuilder(yargs),
                             async (argv) => await generateKubeConfigHandler(argv, this.configService, this.logger)
@@ -400,12 +400,7 @@ export class CliDriver
                             async (argv) => await generateKubeYamlHandler(argv, this.envs, this.configService, this.logger)
                         )
                         .demandCommand(1, '')
-                        .strict()
-                        .fail((_msg: string, _err : string | Error, yargs) => {
-                            const subcommand : string = process.argv[3];
-                            console.error(`Error: '${subcommand}' is not a valid subcommand of generate.\n`);
-                            yargs.showHelp();
-                        });
+                        .strict();
                 },
             )
             .command(

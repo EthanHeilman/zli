@@ -1,11 +1,6 @@
-import { EnvironmentHttpService } from '../../http-services/environment/environment.http-services';
-import { CliDriver } from '../../cli-driver';
 import mockArgv from 'mock-argv';
-import * as middlewareHandler from '../middleware.handler';
-import { GAService } from '../../services/Tracking/google-analytics.service';
-import * as CleanExitHandler from '../clean-exit.handler';
-import { ConfigService } from '../../services/config/config.service';
-import { cleanConsoleLog, mockBzeroSummaryList, mockDatSummaryList, mockDbSummaryList, mockEnvList, mockKubeSummaryList, mockSsmSummaryList, mockUserSummary, mockWebSummaryList } from '../../utils/unit-test-utils';
+import { CliDriver } from '../../cli-driver';
+import { cleanConsoleLog, mockBzeroSummaryList, mockDatSummaryList, mockDbSummaryList, mockKubeSummaryList, unitTestMockSetup, mockSsmSummaryList, mockWebSummaryList } from '../../utils/unit-test-utils';
 import { KubeHttpService } from '../../http-services/targets/kube/kube.http-services';
 import { SsmTargetHttpService } from '../../http-services/targets/ssm/ssm-target.http-services';
 import { DynamicAccessConfigHttpService } from '../../http-services/targets/dynamic-access/dynamic-access-config.http-services';
@@ -14,17 +9,14 @@ import { DbTargetService } from '../../http-services/db-target/db-target.http-se
 import { WebTargetService } from '../../http-services/web-target/web-target.http-service';
 
 
+
 describe('List Targets suite', () => {
     beforeEach(() => {
         jest.resetModules();
         jest.clearAllMocks();
 
-        // Always mock out the following services
-        jest.spyOn(middlewareHandler, 'oAuthMiddleware').mockImplementationOnce(async (_configService, _logger) => Promise.resolve());
-        jest.spyOn(CleanExitHandler, 'cleanExit').mockImplementationOnce(() => Promise.resolve());
-        jest.spyOn(GAService.prototype, 'TrackCliCommand').mockImplementationOnce(() => Promise.resolve());
-        jest.spyOn(EnvironmentHttpService.prototype, 'ListEnvironments').mockImplementation(async () => mockEnvList);
-        jest.spyOn(ConfigService.prototype, 'me').mockImplementation(() => mockUserSummary);
+        // Mock out necessary services
+        unitTestMockSetup(true);
     });
 
     afterEach(() => {
