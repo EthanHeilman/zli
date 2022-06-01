@@ -21,7 +21,9 @@ export async function generateSshConfigHandler(argv: yargs.Arguments<generateSsh
 
     // Build our ssh config file -- note that by using this function with 'true' we are chosing to add the prefix before our hostname token in the proxycommand
     const { identityFile, proxyCommand, prefix } = await buildSshConfigStrings(configService, processName, logger, true);
-    const bzConfigContentsFormatted = formatBzConfigContents(tunnels, identityFile, proxyCommand, prefix);
+    // here we set it to false to get the special case of the wildcard proxyCommand, which shouldn't have a prefix
+    const { proxyCommand: proxyWithoutPrefix } = await buildSshConfigStrings(configService, processName, logger, false);
+    const bzConfigContentsFormatted = formatBzConfigContents(tunnels, identityFile, proxyCommand, proxyWithoutPrefix, prefix);
 
     // Determine and write to the user's ssh and bzero-ssh config path
     const { userConfigPath, bzConfigPath } = getFilePaths(argv.mySshPath, argv.bzSshPath, prefix);
@@ -52,10 +54,11 @@ function getFilePaths(userSshPath: string, bzSshPath: string, configPrefix: stri
  * @param tunnels {TunnelsResponse[]} A list of targets the user can access over SSH tunnel
  * @param identityFile {string} A path to the user's key file
  * @param proxyCommand {string} A proxy command routing SSH requests to the ZLI
+ * @param proxyWildcard {string} A proxy command specific to the wildcard entry
  * @param configPrefix {string} assigns a prefix to the bz config filename based on runtime environment (e.g. dev, stage)
  * @returns {string} the bz config file contents
  */
-function formatBzConfigContents(tunnels: TunnelsResponse[], identityFile: string, proxyCommand: string, configPrefix: string): string {
+function formatBzConfigContents(tunnels: TunnelsResponse[], identityFile: string, proxyCommand: string, proxyWildcard: string, configPrefix: string): string {
     let contents = ``;
 
     // add per-target configs
@@ -74,7 +77,7 @@ Host ${tunnel.targetName}
     contents += `
 Host ${configPrefix}*
     ${identityFile}
-    ${proxyCommand}
+    ${proxyWildcard}
 `;
 
     return contents;

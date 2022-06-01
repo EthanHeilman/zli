@@ -10,7 +10,7 @@ export function sshConfigMockSetup(): void {
             dynamicConfigs: Promise.resolve([]),
             ssmTargets: Promise.resolve([]),
             clusterTargets: Promise.resolve([]),
-            bzeroTargets:  Promise.resolve([]),
+            bzeroTargets: Promise.resolve([]),
             envs: Promise.resolve([]),
         };
     });
@@ -30,7 +30,7 @@ Host test-target-name
 
 Host test-config-bzero-*
     IdentityFile /test/sshKeyPath
-    ProxyCommand npm run start ssh-proxy --configName=test-config -s test-config-bzero-%n %r %p /test/sshKeyPath
+    ProxyCommand npm run start ssh-proxy --configName=test-config -s %n %r %p /test/sshKeyPath
 `;
 
 /**
@@ -46,5 +46,5 @@ export function getMockSshConfigContents(withBzSshPathOption: boolean): string {
     // Config path supplied by user
     const expectedBzConfigPathPassedByUser = path.join(tempDir, 'bzSshPath');
 
-    return `Include ${(!withBzSshPathOption) ? expectedBzConfigPathDefault: expectedBzConfigPathPassedByUser}\n\n`;
+    return `Include ${(!withBzSshPathOption) ? expectedBzConfigPathDefault : expectedBzConfigPathPassedByUser}\n\n`;
 }

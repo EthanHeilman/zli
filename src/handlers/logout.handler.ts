@@ -1,4 +1,5 @@
 import { killDaemon } from '../utils/daemon-utils';
+import { removeIfExists } from '../utils/utils';
 import { ConfigService } from '../services/config/config.service';
 import { Logger } from '../services/logger/logger.service';
 import { cleanExit } from './clean-exit.handler';
@@ -10,6 +11,8 @@ export async function logoutHandler(configService: ConfigService, logger: Logger
     configService.logout();
     configService.deleteSessionId();
     logger.info('Closing any existing SSH Tunnel Connections');
+    logger.info('Clearing temporary SSH identity file');
+    removeIfExists(configService.sshKeyPath());
 
     // Close any daemon connections, start with kube
     logger.info('Closing any existing Kube Connections');
@@ -32,7 +35,7 @@ export async function logoutHandler(configService: ConfigService, logger: Logger
     // Then web
     logger.info('Closing any existing Web Connections');
     const webConfig = configService.getWebConfig();
-    killDaemon(webConfig['localPid'],  logger);
+    killDaemon(webConfig['localPid'], logger);
 
     // Update the localPid
     webConfig['localPid'] = null;

@@ -270,16 +270,12 @@ if (SSM_ENABLED || BZERO_ENABLED || KUBE_ENABLED) {
 if(SSM_ENABLED || BZERO_ENABLED) {
     connectSuite();
     sessionRecordingSuite();
+    sshSuite();
 
     if (IN_CI && NOT_USING_RUNNER) {
         // Only run group tests if we are in CI and talking to staging or dev
         groupsSuite();
     };
-}
-
-// Call various test suites
-if(SSM_ENABLED) {
-    sshSuite();
 }
 
 if(KUBE_ENABLED) {
