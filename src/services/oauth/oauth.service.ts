@@ -18,6 +18,17 @@ import { UserHttpService } from '../../../src/http-services/user/user.http-servi
 // Do not remove any of these, clients have integrations set up based on these!
 const callbackPorts: number[] = [49172, 51252, 58243, 59360, 62109];
 
+// Global timeout used for all http requests inside openid-client library
+// including discovery and token requests.We could use more specific timeouts on
+// a per-request basis in the future if we need to
+// https://github.com/panva/node-openid-client/blob/main/docs/README.md#customizing-individual-http-requests
+const OAUTH_GLOBAL_HTTP_TIMEOUT = 10 * 1000;
+custom.setHttpOptionsDefaults({
+    timeout: custom.setHttpOptionsDefaults({
+        timeout: OAUTH_GLOBAL_HTTP_TIMEOUT,
+    })
+});
+
 export class OAuthService implements IDisposable {
     private server: http.Server; // callback listener
     private host: string = 'localhost';
