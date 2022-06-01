@@ -26,7 +26,7 @@ import { PolicyType } from '../webshell-common-ts/http/v2/policy/types/policy-ty
 
 // Handlers
 import { initMiddleware, oAuthMiddleware, fetchDataMiddleware, GATrackingMiddleware, initLoggerMiddleware, mixpanelTrackingMiddleware } from './handlers/middleware.handler';
-import { sshProxyHandler, SshTunnelParameters } from './handlers/ssh-proxy/ssh-proxy.handler';
+import { bzeroSshProxyHandler, ssmSshProxyHandler, SshTunnelParameters } from './handlers/ssh-proxy/ssh-proxy.handler';
 import { loginHandler } from './handlers/login/login.handler';
 import { shellConnectHandler } from './handlers/connect/shell-connect.handler';
 import { listTargetsHandler } from './handlers/list-targets/list-targets.handler';
@@ -388,7 +388,7 @@ export class CliDriver
                             () => sshProxyConfigHandler(this.configService, getZliRunCommand(), this.logger),
                         )
                         .command(
-                            'kubeConfig [clusterName]',
+                            'kubeConfig',
                             'Generate a configuration file for Kubernetes',
                             (yargs) => generateKubeConfigCmdBuilder(yargs),
                             async (argv) => await generateKubeConfigHandler(argv, this.configService, this.logger)
@@ -400,12 +400,7 @@ export class CliDriver
                             async (argv) => await generateKubeYamlHandler(argv, this.envs, this.configService, this.logger)
                         )
                         .demandCommand(1, '')
-                        .strict()
-                        .fail((_msg: string, _err : string | Error, yargs) => {
-                            const subcommand : string = process.argv[3];
-                            console.error(`Error: '${subcommand}' is not a valid subcommand of generate.\n`);
-                            yargs.showHelp();
-                        });
+                        .strict();
                 },
             )
             .command(
@@ -616,15 +611,17 @@ export class CliDriver
 
                     // modify argv to have the targetString and targetType params
                     const targetString = argv.user + '@' + argv.host.substr(prefix.length);
-                    const parsedTarget = await disambiguateTarget(TargetType.SsmTarget.toString(), targetString, this.logger, this.dynamicConfigs, this.ssmTargets, this.clusterTargets, this.bzeroTargets, this.envs, this.configService);
+
+                    // have to game disambiguateTarget a bit by asking for no filter
+                    const parsedTarget = await disambiguateTarget(null, targetString, this.logger, this.dynamicConfigs, this.ssmTargets, this.clusterTargets, this.bzeroTargets, this.envs, this.configService);
 
                     if (parsedTarget == undefined) {
                         this.logger.error(`Unable to find target with given user/host values: ${argv.user}/${argv.host}`);
                         await cleanExit(1, this.logger);
                     }
 
-                    if (parsedTarget.type != TargetType.SsmTarget && parsedTarget.type != TargetType.DynamicAccessConfig) {
-                        this.logger.warn(`ssh-proxy only available on ssh and dynamic targets`);
+                    if (parsedTarget.type != TargetType.Bzero && parsedTarget.type != TargetType.SsmTarget && parsedTarget.type != TargetType.DynamicAccessConfig) {
+                        this.logger.warn(`ssh-proxy only available on Bzero, SSM, and dynamic targets`);
                         await cleanExit(1, this.logger);
                     }
 
@@ -637,10 +634,15 @@ export class CliDriver
                     const sshTunnelParameters: SshTunnelParameters = {
                         parsedTarget: parsedTarget,
                         port: argv.port,
-                        identityFile: argv.identityFile
+                        identityFile: argv.identityFile,
+                        targetUser: argv.user
                     };
 
-                    await sshProxyHandler(this.configService, this.logger, sshTunnelParameters, this.keySplittingService, envMap);
+                    if (parsedTarget.type == TargetType.Bzero) {
+                        await bzeroSshProxyHandler(this.configService, this.logger, sshTunnelParameters, this.keySplittingService, envMap, this.loggerConfigService,);
+                    } else {
+                        await ssmSshProxyHandler(this.configService, this.logger, sshTunnelParameters, this.keySplittingService, envMap);
+                    }
                 }
             )
             .command(

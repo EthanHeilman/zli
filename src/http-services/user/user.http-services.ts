@@ -2,6 +2,7 @@ import { Dictionary } from 'lodash';
 import { Cookie } from 'tough-cookie';
 import { UserRegisterResponse } from '../../../webshell-common-ts/http/v2/user/responses/user-register.responses';
 import { UserSummary } from '../../../webshell-common-ts/http/v2/user/types/user-summary.types';
+import { UpdateUserRequest } from '../../../webshell-common-ts/http/v2/user/requests/update-user.requests';
 import { ConfigService } from '../../services/config/config.service';
 import { HttpService } from '../../services/http/http.service';
 import { Logger } from '../../services/logger/logger.service';
@@ -56,5 +57,13 @@ export class UserHttpService extends HttpService
     ): Promise<UserSummary>
     {
         return this.Get(email);
+    }
+
+    public GetUserById(id: string): Promise<UserSummary> {
+        return this.Get(id);
+    }
+
+    public EditUser(id: string, request: UpdateUserRequest): Promise<void> {
+        return this.Patch(id, request);
     }
 }

@@ -228,6 +228,29 @@ export class TestUtils {
     }
 
     /**
+     * Helper function to check whether a user log was created.
+     *
+     * @param {string} serviceAction Service action we are looking for
+     * @param {boolean} allowed Expected policy evaluation
+     * @param {string} context Any expected context string or substring
+     * @param {Date} startTime The searched events should be on or after this time. null indicates no filtering based on time.
+     */
+    public async EnsureUserEventExists(serviceAction: string, allowed?: boolean, context?: string, startTime?: Date): Promise<boolean> {
+        const userEvents = await this.eventsService.GetUserEvents(startTime, [configService.me().id]);
+
+        for (let index = 0; index < userEvents.length; index++) {
+            const event = userEvents[index];
+            if (event.serviceAction === serviceAction &&
+                event.evaluation === allowed &&
+                (!context || event.context.includes(context))) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
      * Helper function to check if a test passed, and if not log the contents of the daemon logs
      * @param {boolean} testPassed Boolean to indicate if the test passed or not
      * @param {string} testName Test name to log incase of failure

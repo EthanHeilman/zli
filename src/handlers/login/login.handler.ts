@@ -12,6 +12,7 @@ import { UserHttpService } from '../../http-services/user/user.http-services';
 import { UserSummary } from '../../../webshell-common-ts/http/v2/user/types/user-summary.types';
 import { MfaActionRequired } from '../../../webshell-common-ts/http/v2/mfa/types/mfa-action-required.types';
 import { UserRegisterResponse } from '../../../webshell-common-ts/http/v2/user/responses/user-register.responses';
+import { removeIfExists } from '../../utils/utils';
 
 export interface LoginResult {
     userSummary: UserSummary;
@@ -107,6 +108,9 @@ export async function login(keySplittingService: KeySplittingService, configServ
 
     const me = await userHttpService.Me();
     configService.setMe(me);
+
+    // clear temporary SSH identity file
+    removeIfExists(configService.sshKeyPath());
 
     return {
         userRegisterResponse: registerResponse,

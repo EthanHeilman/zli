@@ -41,6 +41,10 @@ import { kubeClusterRestApiSuite } from './suites/rest-api/kube-targets';
 import { databaseTargetRestApiSuite } from './suites/rest-api/database-targets';
 import { webTargetRestApiSuite } from './suites/rest-api/web-targets';
 import { dynamicAccessConfigRestApiSuite } from './suites/rest-api/dynamic-access-configs';
+import { userRestApiSuite } from './suites/rest-api/users';
+import { spacesRestApiSuite } from './suites/rest-api/spaces';
+import { mfaSuite } from './suites/rest-api/mfa';
+import { eventsRestApiSuite } from './suites/rest-api/events';
 
 // Uses config name from ZLI_CONFIG_NAME environment variable (defaults to prod
 // if unset) This can be run against dev/stage/prod when running system tests
@@ -156,7 +160,7 @@ if(BZERO_ENABLED) {
 // Global mapping of a registered Kubernetes system test cluster
 export let testCluster : RegisteredDigitalOceanKubernetesCluster = undefined;
 
-export const systemTestUniqueId = randomAlphaNumericString(15).toLowerCase();
+export const systemTestUniqueId = process.env.SYSTEM_TEST_UNIQUE_ID ? process.env.SYSTEM_TEST_UNIQUE_ID : randomAlphaNumericString(15).toLowerCase();
 
 // All BastionZero API resources created during system tests have a name that
 // begins with this prefix
@@ -266,16 +270,12 @@ if (SSM_ENABLED || BZERO_ENABLED || KUBE_ENABLED) {
 if(SSM_ENABLED || BZERO_ENABLED) {
     connectSuite();
     sessionRecordingSuite();
+    sshSuite();
 
     if (IN_CI && NOT_USING_RUNNER) {
         // Only run group tests if we are in CI and talking to staging or dev
         groupsSuite();
     };
-}
-
-// Call various test suites
-if(SSM_ENABLED) {
-    sshSuite();
 }
 
 if(KUBE_ENABLED) {
@@ -293,6 +293,10 @@ if (API_ENABLED) {
     environmentsSuite();
     policySuite();
     dynamicAccessConfigRestApiSuite();
+    userRestApiSuite();
+    spacesRestApiSuite();
+    mfaSuite();
+    eventsRestApiSuite();
 
     if (SSM_ENABLED) {
         // Since this suite modifies an SSM target name, we must be cautious if we parallelize test suite running because

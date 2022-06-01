@@ -40,6 +40,8 @@ export const bzeroTestTargetsToRun: TestTarget[] = [
         badWebCaseId: '2374',
         connectCaseId: '6529',
         closeCaseId: '6565',
+        sshCaseId: '46456',
+        badSshCaseId: '46459',
         badConnectCaseId: '6559',
         groupConnectCaseId: '6561',
         sessionRecordingCaseId: '6572',
@@ -151,6 +153,8 @@ export const extraBzeroTestTargetsToRun: TestTarget[] = [
         iperfUpload: '14969',
         iperfDownload: '14971',
         badWebCaseId: '2373',
+        sshCaseId: '46454',
+        badSshCaseId: '46458',
         connectCaseId: '6462',
         closeCaseId: '6564',
         badConnectCaseId: '6558',
@@ -176,7 +180,7 @@ export function initRegionalSSMTargetsTestConfig(logger: Logger): TestTarget[] {
         enabledExtraRegions.push(...enabledExtraRegionsEnvVarSplitAwsRegions);
     }
 
-    const toReturn : TestTarget[]= [];
+    const toReturn: TestTarget[] = [];
     enabledExtraRegions.forEach(awsRegion => {
         // Depending on the awsRegion we have different ssh and connect caseIds
         let adConnectCaseId = null;
