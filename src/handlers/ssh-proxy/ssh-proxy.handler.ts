@@ -17,7 +17,7 @@ import { BzeroTargetHttpService } from '../../http-services/targets/bzero/bzero.
 import { LoggerConfigService } from '../../services/logger/logger-config.service';
 import { copyExecutableToLocalDir, getBaseDaemonArgs } from '../../utils/daemon-utils';
 
-const minimumAgentVersion = '6.1.0';
+const minimumAgentVersion = '6.1.0-beta';
 
 /**
  * Launch an SSH tunnel session to an SSM target
