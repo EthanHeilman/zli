@@ -60,19 +60,30 @@ export class DigitalOceanSSMTargetService {
             cleanupPromises.push(this.doClient.droplet.deleteDroplet({ droplet_id: doTarget.droplet.id}));
         }
 
-        if(doTarget.type === 'ssm' ) {
+        const targetType = doTarget.type;
+        if(targetType === 'ssm' ) {
             // Only delete SSM target if it is set
             if (doTarget.ssmTarget) {
                 cleanupPromises.push(this.ssmTargetHttpService.DeleteSsmTarget(doTarget.ssmTarget.id));
             }
-        } else if(doTarget.type === 'bzero') {
+        } else if(targetType === 'bzero') {
             // Only delete bzero target if it is set
             if (doTarget.bzeroTarget) {
                 cleanupPromises.push(this.bzeroTargetHttpService.DeleteBzeroTarget(doTarget.bzeroTarget.id));
             }
+        } else {
+            throw new Error(`Invalid target type passed: ${targetType}`);
         }
 
         await checkAllSettledPromise(Promise.allSettled(cleanupPromises));
+    }
+
+    /**
+     * Helper function to delete a bzero target from Bastion
+     * @param targetId Target id we are deleting
+     */
+    public async deleteBzeroTarget(targetId: string) {
+        this.bzeroTargetHttpService.DeleteBzeroTarget(targetId);
     }
 
     /**

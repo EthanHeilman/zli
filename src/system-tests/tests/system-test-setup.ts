@@ -25,7 +25,7 @@ const vtDropletSize = DigitalOceanDropletSize.CPU_1_MEM_1GB;
 const ssmDropletSize =  DigitalOceanDropletSize.CPU_1_MEM_1GB;
 
 // DigitalOcean cluster ID that is used by all kube system tests
-const systemTestDigitalOceanClusterId = 'e3dd3573-6c83-40de-bd50-7ddef43dea7c';
+export const systemTestDigitalOceanClusterId = 'e3dd3573-6c83-40de-bd50-7ddef43dea7c';
 
 /**
  * Helper function to setup our system test registration API key
@@ -48,7 +48,6 @@ export async function setupSystemTestApiKeys() {
  * Helper function to create our Digital ocean test cluster
  */
 export async function setupDOTestCluster(): Promise<RegisteredDigitalOceanKubernetesCluster> {
-
     // Gets cluster information for our static DO cluster
     const doKubeService = new DigitalOceanKubeService(doApiKey, configService, logger);
     const cluster = await doKubeService.getDigitalOceanClusterById(systemTestDigitalOceanClusterId);

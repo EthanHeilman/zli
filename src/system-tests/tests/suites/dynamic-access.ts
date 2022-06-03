@@ -101,7 +101,7 @@ export const dynamicAccessSuite = () => {
 
         test(`3090: Connect to DAT target`, async () => {
             const exit = true;
-            const connectionId = await connectTestUtils.runDATShellConnectTest(dynamicAccessTestTarget, `DAT connect test - ${systemTestUniqueId}`, exit);
+            const connectionId = await connectTestUtils.runNonTestTargetShellConnectTest(dynamicAccessTestTarget, `DAT connect test - ${systemTestUniqueId}`, exit);
 
             // After the connection is closed we should eventually see the DAT
             // state move to Stopped once the stop webhook is successfully sent

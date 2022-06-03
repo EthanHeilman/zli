@@ -6,7 +6,7 @@ import * as ShellUtilWrappers from '../../../utils/shell-util-wrappers';
 
 import { sleepTimeout, TestUtils } from './test-utils';
 import { bzeroTargetCustomUser } from '../system-test-setup';
-import { DigitalOceanSSMTarget, DigitalOceanBZeroTarget} from '../../digital-ocean/digital-ocean-ssm-target.service.types';
+import { DigitalOceanSSMTarget, DigitalOceanBZeroTarget } from '../../digital-ocean/digital-ocean-ssm-target.service.types';
 import { callZli } from './zli-utils';
 import { ConnectionHttpService } from '../../../http-services/connection/connection.http-services';
 import { ConnectionEventType } from '../../../../webshell-common-ts/http/v2/event/types/connection-event.types';
@@ -16,6 +16,7 @@ import { TestTarget } from '../system-test.types';
 import { TargetUser } from '../../../../webshell-common-ts/http/v2/policy/types/target-user.types';
 import { DynamicAccessConnectionUtils } from '../../../handlers/connect/dynamic-access-connect-utils';
 import { DATBzeroTarget } from '../suites/dynamic-access';
+import { ContainerBzeroTarget } from '../suites/agent-container';
 
 /**
  * Interface that can be used to abstract any differences between ssm/bzero
@@ -25,7 +26,7 @@ interface ConnectTarget {
     // Connect tests only rely on fields that are common between both ssm/bzero targets (id/name)
     id: string;
     name: string;
-    type: 'ssm' | 'bzero' | 'dat-bzero';
+    type: 'ssm' | 'bzero' | 'dat-bzero' | 'container-bzero';
     awsRegion: string;
 
     // The target type is still using the database "ConnectionType" enum from the backend so will either be "SHELL" or "SSM"
@@ -70,11 +71,11 @@ export class ConnectTestUtils {
     }
 
     /**
-     * Runs shell connect test for a DATBzeroTarget instead of a TestTarget
+     * Runs shell connect test for a non TestTarget
      * which is specific to Digital Ocean
      */
-    public async runDATShellConnectTest(datTarget: DATBzeroTarget, stringToEcho: string, exit: boolean): Promise<string> {
-        const connectTarget = this.getConnectTarget(datTarget, datTarget.awsRegion);
+    public async runNonTestTargetShellConnectTest(target: DATBzeroTarget | ContainerBzeroTarget, stringToEcho: string, exit: boolean): Promise<string> {
+        const connectTarget = this.getConnectTarget(target, target.awsRegion);
         return await this.runShellConnectTestHelper(connectTarget, stringToEcho, exit);
     }
 
@@ -185,8 +186,8 @@ export class ConnectTestUtils {
      * ssm target or a Bzero DAT target into a common interface ConnectTarget
      * that can be used in system-tests
      */
-    public getConnectTarget(target: DigitalOceanSSMTarget | DigitalOceanBZeroTarget | DATBzeroTarget, awsRegion: string) : ConnectTarget {
-        if(target.type === 'bzero' || target.type === 'dat-bzero') {
+    public getConnectTarget(target: DigitalOceanSSMTarget | DigitalOceanBZeroTarget | DATBzeroTarget | ContainerBzeroTarget, awsRegion: string) : ConnectTarget {
+        if(target.type === 'bzero' || target.type === 'dat-bzero' || target.type == 'container-bzero' ) {
             const bzeroConnectTarget = this.getBZeroConnectTarget(target, awsRegion);
             this._connectTargets.push(bzeroConnectTarget);
             return bzeroConnectTarget;
@@ -231,7 +232,7 @@ export class ConnectTestUtils {
         });
     }
 
-    private getBZeroConnectTarget(target: DigitalOceanBZeroTarget | DATBzeroTarget, awsRegion: string) {
+    private getBZeroConnectTarget(target: DigitalOceanBZeroTarget | DATBzeroTarget | ContainerBzeroTarget, awsRegion: string) {
         let daemonPty: pty.IPty;
         const capturedOutput: string[] = [];
 
@@ -251,10 +252,14 @@ export class ConnectTestUtils {
         let targetName: string;
         let targetUser: string;
 
-        if(target.type === 'bzero') {
+        if(target.type === 'bzero' || target.type == 'container-bzero') {
             targetId = target.bzeroTarget.id;
             targetName = target.bzeroTarget.name;
-            targetUser = bzeroTargetCustomUser;
+            if (target.type === 'bzero') {
+                targetUser = bzeroTargetCustomUser;
+            } else if (target.type === 'container-bzero') {
+                targetUser = 'root';
+            }
         } else if(target.type === 'dat-bzero') {
             // For DATs we do not know the target ID until after the DAT is
             // created and registers. So set the id as undefined and handle

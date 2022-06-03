@@ -41,6 +41,7 @@ import { kubeClusterRestApiSuite } from './suites/rest-api/kube-targets';
 import { databaseTargetRestApiSuite } from './suites/rest-api/database-targets';
 import { webTargetRestApiSuite } from './suites/rest-api/web-targets';
 import { dynamicAccessConfigRestApiSuite } from './suites/rest-api/dynamic-access-configs';
+import { agentContainerSuite } from './suites/agent-container';
 import { dynamicAccessSuite } from './suites/dynamic-access';
 import { userRestApiSuite } from './suites/rest-api/users';
 import { spacesRestApiSuite } from './suites/rest-api/spaces';
@@ -154,6 +155,10 @@ if (IN_PIPELINE && IN_CI) {
     bzeroTestTargetsToRun.push(...extraBzeroTestTargetsToRun);
 }
 
+// Global mapping of a registered Kubernetes system test cluster
+export let testCluster : RegisteredDigitalOceanKubernetesCluster = undefined;
+
+// Global mapping of all other targets
 export let allTargets: TestTarget[] = [];
 
 if(SSM_ENABLED) {
@@ -167,9 +172,6 @@ if(BZERO_ENABLED) {
 } else {
     logger.info(`Skipping adding bzero targets because BZERO_ENABLED is false`);
 }
-
-// Global mapping of a registered Kubernetes system test cluster
-export let testCluster : RegisteredDigitalOceanKubernetesCluster = undefined;
 
 export const systemTestUniqueId = process.env.SYSTEM_TEST_UNIQUE_ID ? process.env.SYSTEM_TEST_UNIQUE_ID : randomAlphaNumericString(15).toLowerCase();
 
@@ -244,7 +246,7 @@ afterAll(async () => {
             if (testCluster === undefined) {
                 return;
             }
-            cleanupDOTestCluster(testCluster);
+            await cleanupDOTestCluster(testCluster);
         }()
     ]));
 
@@ -287,6 +289,17 @@ if(SSM_ENABLED || BZERO_ENABLED) {
         // Only run group tests if we are in CI and talking to staging or dev
         groupsSuite();
     };
+}
+
+// BZero only test suites
+if(BZERO_ENABLED) {
+    dynamicAccessSuite();
+}
+
+// Only run the agent container suite when we are running
+// in the pipeline
+if(IN_PIPELINE) {
+    agentContainerSuite();
 }
 
 // BZero only test suites
