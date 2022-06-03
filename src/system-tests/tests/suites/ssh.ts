@@ -8,7 +8,6 @@ import { allTargets, configService, logger, systemTestEnvId, loggerConfigService
 import { callZli } from '../utils/zli-utils';
 import { removeIfExists } from '../../../utils/utils';
 import { TestUtils } from '../utils/test-utils';
-import { ConnectTestUtils } from '../utils/connect-utils';
 import { bzeroTargetCustomUser } from '../system-test-setup';
 import { SubjectType } from '../../../../webshell-common-ts/http/v2/common.types/subject.types';
 import { Environment } from '../../../../webshell-common-ts/http/v2/policy/types/environment.types';
@@ -237,7 +236,7 @@ export const sshSuite = () => {
                     description: `Target ssh policy created for system test: ${systemTestUniqueId}`,
                     environments: [environment],
                     targets: [],
-                    targetUsers: ConnectTestUtils.getPolicyTargetUsers(),
+                    targetUsers: [{ userName: bzeroTargetCustomUser }, { userName: ssmUser }],
                     verbs: [{ type: VerbType.Tunnel }]
                 });
 
@@ -274,7 +273,7 @@ export const sshSuite = () => {
                     description: `Target ssh policy created for system test: ${systemTestUniqueId}`,
                     environments: [environment],
                     targets: [],
-                    targetUsers: ConnectTestUtils.getPolicyTargetUsers(),
+                    targetUsers: [{ userName: bzeroTargetCustomUser }, { userName: ssmUser }],
                     verbs: [{ type: VerbType.Tunnel }]
                 });
 
@@ -320,7 +319,7 @@ export const sshSuite = () => {
                     description: `Target ssh policy created for system test: ${systemTestUniqueId}`,
                     environments: [environment],
                     targets: [],
-                    targetUsers: ConnectTestUtils.getPolicyTargetUsers(),
+                    targetUsers: [{ userName: bzeroTargetCustomUser }, { userName: ssmUser }],
                     verbs: [{ type: VerbType.Tunnel }]
                 });
 

@@ -41,6 +41,7 @@ import { kubeClusterRestApiSuite } from './suites/rest-api/kube-targets';
 import { databaseTargetRestApiSuite } from './suites/rest-api/database-targets';
 import { webTargetRestApiSuite } from './suites/rest-api/web-targets';
 import { dynamicAccessConfigRestApiSuite } from './suites/rest-api/dynamic-access-configs';
+import { dynamicAccessSuite } from './suites/dynamic-access';
 import { userRestApiSuite } from './suites/rest-api/users';
 import { spacesRestApiSuite } from './suites/rest-api/spaces';
 import { mfaSuite } from './suites/rest-api/mfa';
@@ -61,6 +62,16 @@ export const configService = new ConfigService(configName, logger, envMap.config
 export const doApiKey = process.env.DO_API_KEY;
 if (!doApiKey) {
     throw new Error('Must set the DO_API_KEY environment variable');
+}
+
+export const datEndpoint = process.env.DAT_SERVER_ENDPOINT;
+if (!datEndpoint) {
+    throw new Error('Must set the DAT_SERVER_ENDPOINT environment variable');
+}
+
+export const datSecret = process.env.DAT_SERVER_SHARED_SECRET;
+if (!datSecret) {
+    throw new Error('Must set the DAT_SERVER_SHARED_SECRET environment variable');
 }
 
 export const bzeroAgentVersion = process.env.BZERO_AGENT_VERSION;
@@ -276,6 +287,11 @@ if(SSM_ENABLED || BZERO_ENABLED) {
         // Only run group tests if we are in CI and talking to staging or dev
         groupsSuite();
     };
+}
+
+// BZero only test suites
+if(BZERO_ENABLED) {
+    dynamicAccessSuite();
 }
 
 if(KUBE_ENABLED) {

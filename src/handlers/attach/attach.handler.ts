@@ -19,7 +19,7 @@ export async function attachHandler(
 ){
     // Get Connection Info
     const connectionHttpService = new ConnectionHttpService(configService, logger);
-    const connectionSummaryRequest = connectionHttpService.GetConnection(connectionId);
+    const connectionSummaryRequest = connectionHttpService.GetShellConnection(connectionId);
 
     // Get Space Info
     const spaceHttpService = new SpaceHttpService(configService, logger);

@@ -13,7 +13,7 @@ import { TargetType } from '../../webshell-common-ts/http/v2/target/types/target
 import { TargetStatus } from '../../webshell-common-ts/http/v2/target/types/targetStatus.types';
 import { TargetBase } from '../../webshell-common-ts/http/v2/target/types/targetBase.types';
 import { EnvironmentSummary } from '../../webshell-common-ts/http/v2/environment/types/environment-summary.responses';
-import { ConnectionSummary } from '../../webshell-common-ts/http/v2/connection/types/connection-summary.types';
+import { ShellConnectionSummary } from '../../webshell-common-ts/http/v2/connection/types/shell-connection-summary.types';
 import { UserSummary } from '../../webshell-common-ts/http/v2/user/types/user-summary.types';
 import { KubernetesPolicySummary } from '../../webshell-common-ts/http/v2/policy/kubernetes/types/kubernetes-policy-summary.types';
 import { TargetConnectPolicySummary } from '../../webshell-common-ts/http/v2/policy/target-connect/types/target-connect-policy-summary.types';
@@ -34,6 +34,7 @@ import { ConfigService } from '../services/config/config.service';
 import { listDbTargets, listWebTargets } from './list-utils';
 import { BzeroAgentSummary } from '../../webshell-common-ts/http/v2/target/bzero/types/bzero-agent-summary.types';
 import { KubeConfig } from './kubernetes.utils';
+import { DynamicAccessConfigStatus } from '../../webshell-common-ts/http/v2/target/dynamic/types/dynamic-access-config-status.types';
 
 
 // case insensitive substring search, 'find targetString in searchString'
@@ -46,23 +47,20 @@ export const targetStringExample : string = '[targetUser@]<targetId-or-targetNam
 
 export function parseTargetType(targetType: string) : TargetType
 {
-    const connectionTypePattern = /^(ssmtarget|dynamicaccessconfig|cluster|bzero|db|web)$/i; // case insensitive check for targetType
-
-    if(! connectionTypePattern.test(targetType))
-        return undefined;
+    if(! targetType) return undefined;
 
     switch (targetType.toLowerCase()) {
-    case TargetType.SsmTarget.toLowerCase():
+    case targetTypeDisplay(TargetType.SsmTarget).toLowerCase():
         return TargetType.SsmTarget;
-    case TargetType.DynamicAccessConfig.toLowerCase():
+    case targetTypeDisplay(TargetType.DynamicAccessConfig).toLowerCase():
         return TargetType.DynamicAccessConfig;
-    case TargetType.Cluster.toLowerCase():
+    case targetTypeDisplay(TargetType.Cluster).toLowerCase():
         return TargetType.Cluster;
-    case TargetType.Bzero.toLowerCase():
+    case targetTypeDisplay(TargetType.Bzero).toLowerCase():
         return TargetType.Bzero;
-    case TargetType.Db.toLowerCase():
+    case targetTypeDisplay(TargetType.Db).toLowerCase():
         return TargetType.Db;
-    case TargetType.Web.toLowerCase():
+    case targetTypeDisplay(TargetType.Web).toLowerCase():
         return TargetType.Web;
     default:
         return undefined;
@@ -173,12 +171,32 @@ export function isGuid(id: string): boolean{
     return guidPattern.test(id);
 }
 
+export function targetTypeDisplay(type: TargetType) : string {
+    switch(type) {
+    case TargetType.SsmTarget:
+        return 'SSM';
+    case TargetType.DynamicAccessConfig:
+        return 'Dynamic';
+    case TargetType.Cluster:
+        return 'Cluster';
+    case TargetType.Bzero:
+        return 'Bzero';
+    case TargetType.Web:
+        return 'Web';
+    case TargetType.Db:
+        return 'Db';
+    default:
+        const _exhaustiveCheck: never = type;
+        return _exhaustiveCheck;
+    }
+}
+
 export function getTableOfTargets(targets: TargetSummary[], envs: EnvironmentSummary[], showDetail: boolean = false, showGuid: boolean = false) : string
 {
     // The following constant numbers are set specifically to conform with the specified 80/132 cols term size - do not change
     const targetNameLength = max(targets.map(t => t.name.length)) + 2 || 16; // || 16 here means that when there are no targets default the length to 16
     const envNameLength = max([max(envs.map(e => e.name.length)) + 2, 16]);
-    const targetTypeLength = max([max(targets.map(t => t.type.length)) + 2, 6]);
+    const targetTypeLength = max([max(targets.map(t => targetTypeDisplay(t.type).length)) + 2, 6]);
 
     const header: string[] = ['Type', 'Name', 'Environment'];
     const columnWidths = [];
@@ -213,7 +231,7 @@ export function getTableOfTargets(targets: TargetSummary[], envs: EnvironmentSum
             env = envs.filter(e => e.id == target.environmentId).pop().name;
         }
 
-        const row = [target.type, target.name, env];
+        const row = [targetTypeDisplay(target.type), target.name, env];
 
         if(showGuid) {
             row.push(target.id);
@@ -233,7 +251,7 @@ export function getTableOfTargets(targets: TargetSummary[], envs: EnvironmentSum
     return table.toString();
 }
 
-export function getTableOfConnections(connections: ConnectionSummary[], allTargets: TargetSummary[]) : string
+export function getTableOfConnections(connections: ShellConnectionSummary[], allTargets: TargetSummary[]) : string
 {
     const connIdLength = max(connections.map(c => c.id.length).concat(36));
     const targetUserLength = max(connections.map(c => c.targetUser.length).concat(16));
@@ -1004,7 +1022,8 @@ export function dynamicConfigToTargetSummary(config: DynamicAccessConfigSummary)
         name: config.name,
         environmentId: config.environmentId,
         agentVersion: 'N/A',
-        status: undefined,
+        // DynamicAccessConfigStatus only has offline/online states
+        status: (config.status === DynamicAccessConfigStatus.Offline) ? TargetStatus.Offline : TargetStatus.Online,
         targetUsers: config.allowedTargetUsers?.map(u => u.userName),
         region: 'N/A',
         agentPublicKey: 'N/A'

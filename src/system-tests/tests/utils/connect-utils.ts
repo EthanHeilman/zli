@@ -14,7 +14,8 @@ import { getMockResultValue } from './jest-utils';
 import { testTargets } from '../system-test';
 import { TestTarget } from '../system-test.types';
 import { TargetUser } from '../../../../webshell-common-ts/http/v2/policy/types/target-user.types';
-
+import { DynamicAccessConnectionUtils } from '../../../handlers/connect/dynamic-access-connect-utils';
+import { DATBzeroTarget } from '../suites/dynamic-access';
 
 /**
  * Interface that can be used to abstract any differences between ssm/bzero
@@ -24,7 +25,8 @@ interface ConnectTarget {
     // Connect tests only rely on fields that are common between both ssm/bzero targets (id/name)
     id: string;
     name: string;
-    type: 'ssm' | 'bzero';
+    type: 'ssm' | 'bzero' | 'dat-bzero';
+    awsRegion: string;
 
     // The target type is still using the database "ConnectionType" enum from the backend so will either be "SHELL" or "SSM"
     // TODO: Events API should be refactored to use our new API TargetType enum instead
@@ -63,15 +65,38 @@ export class ConnectTestUtils {
      */
     public async runShellConnectTest(testTarget: TestTarget, stringToEcho: string, exit: boolean): Promise<string> {
         const doTarget = testTargets.get(testTarget);
-        const connectTarget = this.getConnectTarget(doTarget);
+        const connectTarget = this.getConnectTarget(doTarget, testTarget.awsRegion);
+        return await this.runShellConnectTestHelper(connectTarget, stringToEcho, exit);
+    }
 
+    /**
+     * Runs shell connect test for a DATBzeroTarget instead of a TestTarget
+     * which is specific to Digital Ocean
+     */
+    public async runDATShellConnectTest(datTarget: DATBzeroTarget, stringToEcho: string, exit: boolean): Promise<string> {
+        const connectTarget = this.getConnectTarget(datTarget, datTarget.awsRegion);
+        return await this.runShellConnectTestHelper(connectTarget, stringToEcho, exit);
+    }
+
+    private async runShellConnectTestHelper(connectTarget: ConnectTarget, stringToEcho: string, exit: boolean): Promise<string> {
         // Spy on result of the ConnectionHttpService.GetConnection
         // call. This spy is used to assert the correct regional
         // connection node was used to establish the websocket.
-        const shellConnectionDetailsSpy = jest.spyOn(ConnectionHttpService.prototype, 'GetConnection');
+        const shellConnectionDetailsSpy = jest.spyOn(ConnectionHttpService.prototype, 'GetShellConnection');
 
         // Call "zli connect"
         const connectPromise = callZli(['connect', `${connectTarget.targetUser}@${connectTarget.name}`]);
+
+        if(connectTarget.type === 'dat-bzero') {
+            // For DATs we have to wait for the waitForDATConnection method to
+            // return a connection summary which will have the targetId set.
+            // Before this the connectTarget.id will be undefined and its used
+            // in the rest of the test to assert connection/command events
+            const waitForDATConnectionSpy = jest.spyOn(DynamicAccessConnectionUtils.prototype, 'waitForDATConnection');
+            await this.testUtils.waitForExpect(async () => expect(waitForDATConnectionSpy).toHaveBeenCalled());
+            const finalConnectionSummary = await getMockResultValue(waitForDATConnectionSpy.mock.results[0]);
+            connectTarget.id = finalConnectionSummary.targetId;
+        }
 
         // Ensure that the created and connect event exists
         expect(await this.testUtils.EnsureConnectionEventCreated(connectTarget.id, connectTarget.name, connectTarget.targetUser, connectTarget.eventTargetType, ConnectionEventType.ClientConnect));
@@ -82,9 +107,13 @@ export class ConnectTestUtils {
         // Assert shell connection auth details returns expected
         // connection node aws region
         expect(shellConnectionDetailsSpy).toHaveBeenCalled();
-        const gotShellConnectionDetails = await getMockResultValue(shellConnectionDetailsSpy.mock.results[0]);
+
+        // Spy on the last returned value because for DATs we will call
+        // GetShellConnection once the DAT comes online in order to get the
+        // updated base target info which includes the aws region
+        const gotShellConnectionDetails = await getMockResultValue(shellConnectionDetailsSpy.mock.results.slice(-1)[0]);
         const shellConnectionAuthDetails = await this.connectionService.GetShellConnectionAuthDetails(gotShellConnectionDetails.id);
-        expect(shellConnectionAuthDetails.region).toBe<string>(testTarget.awsRegion);
+        expect(shellConnectionAuthDetails.region).toBe<string>(connectTarget.awsRegion);
 
         if(exit) {
             await this.sendExitCommand(connectTarget);
@@ -95,7 +124,6 @@ export class ConnectTestUtils {
             // Ensure that the client disconnect event is here
             expect(await this.testUtils.EnsureConnectionEventCreated(connectTarget.id, connectTarget.name, connectTarget.targetUser, connectTarget.eventTargetType, ConnectionEventType.ClientDisconnect));
         }
-
 
         return gotShellConnectionDetails.id;
     }
@@ -154,52 +182,15 @@ export class ConnectTestUtils {
 
     /**
      * Converts a DigitalOcean target which is either registered as a bzero or a
-     * ssm target into a common interface ConnectTarget that can be used in
-     * system-tests
+     * ssm target or a Bzero DAT target into a common interface ConnectTarget
+     * that can be used in system-tests
      */
-    public getConnectTarget(doTarget: DigitalOceanSSMTarget | DigitalOceanBZeroTarget) : ConnectTarget {
-        if(doTarget.type === 'bzero') {
-
-            let daemonPty: pty.IPty;
-            const capturedOutput: string[] = [];
-
-            jest.spyOn(ShellUtilWrappers, 'spawnDaemon').mockImplementation((finalDaemonPath, args, cwd) => {
-                return new Promise((resolve, reject) => {
-                    try {
-                        daemonPty = this.spawnDaemonPty(finalDaemonPath, args, cwd);
-                        daemonPty.onData((data: string) => capturedOutput.push(data));
-                        daemonPty.onExit((e: { exitCode: number | PromiseLike<number>; }) => resolve(e.exitCode));
-                    } catch(err) {
-                        reject(err);
-                    }
-                });
-            });
-
-            const bzeroConnectTarget: ConnectTarget = {
-                id: doTarget.bzeroTarget.id,
-                name: doTarget.bzeroTarget.name,
-                eventTargetType: 'SHELL',
-                targetUser: bzeroTargetCustomUser,
-                type: 'bzero',
-                writeToStdIn: async (data) => {
-                    if(! daemonPty) {
-                        throw new Error('daemonPty is undefined');
-                    }
-
-                    await this.sendMockInput(data, (data) => daemonPty.write(data));
-                },
-                getCapturedOutput: () => {
-                    return capturedOutput;
-                },
-                cleanup: () => {
-                    if(daemonPty) daemonPty.kill();
-                }
-            };
-
+    public getConnectTarget(target: DigitalOceanSSMTarget | DigitalOceanBZeroTarget | DATBzeroTarget, awsRegion: string) : ConnectTarget {
+        if(target.type === 'bzero' || target.type === 'dat-bzero') {
+            const bzeroConnectTarget = this.getBZeroConnectTarget(target, awsRegion);
             this._connectTargets.push(bzeroConnectTarget);
             return bzeroConnectTarget;
-        } else if(doTarget.type === 'ssm') {
-
+        } else if(target.type === 'ssm') {
             const mockStdin = stdin();
             const capturedOutput: string[] = [];
             jest.spyOn(ShellUtilWrappers, 'pushToStdOut').mockImplementation((output) => {
@@ -207,8 +198,9 @@ export class ConnectTestUtils {
             });
 
             const ssmConnectTarget: ConnectTarget = {
-                id: doTarget.ssmTarget.id,
-                name: doTarget.ssmTarget.name,
+                id: target.ssmTarget.id,
+                name: target.ssmTarget.name,
+                awsRegion: awsRegion,
                 eventTargetType: 'SSM',
                 targetUser: 'ssm-user',
                 type: 'ssm',
@@ -239,12 +231,77 @@ export class ConnectTestUtils {
         });
     }
 
+    private getBZeroConnectTarget(target: DigitalOceanBZeroTarget | DATBzeroTarget, awsRegion: string) {
+        let daemonPty: pty.IPty;
+        const capturedOutput: string[] = [];
+
+        jest.spyOn(ShellUtilWrappers, 'spawnDaemon').mockImplementation((finalDaemonPath, args, cwd) => {
+            return new Promise((resolve, reject) => {
+                try {
+                    daemonPty = this.spawnDaemonPty(finalDaemonPath, args, cwd);
+                    daemonPty.onData((data: string) => capturedOutput.push(data));
+                    daemonPty.onExit((e: { exitCode: number | PromiseLike<number>; }) => resolve(e.exitCode));
+                } catch(err) {
+                    reject(err);
+                }
+            });
+        });
+
+        let targetId: string;
+        let targetName: string;
+        let targetUser: string;
+
+        if(target.type === 'bzero') {
+            targetId = target.bzeroTarget.id;
+            targetName = target.bzeroTarget.name;
+            targetUser = bzeroTargetCustomUser;
+        } else if(target.type === 'dat-bzero') {
+            // For DATs we do not know the target ID until after the DAT is
+            // created and registers. So set the id as undefined and handle
+            // updating this value during the connect test.
+            targetId = undefined;
+            targetName = target.dynamicAccessConfiguration.name;
+
+            // dat provisioner creates docker container targets that only have a
+            // single root user
+            targetUser = 'root';
+        }
+
+        const bzeroConnectTarget: ConnectTarget = {
+            id: targetId,
+            name: targetName,
+            awsRegion: awsRegion,
+            eventTargetType: 'SHELL',
+            targetUser: targetUser,
+            type: target.type,
+            writeToStdIn: async (data) => {
+                if(! daemonPty) {
+                    throw new Error('daemonPty is undefined');
+                }
+
+                await this.sendMockInput(data, (data) => daemonPty.write(data));
+            },
+            getCapturedOutput: () => {
+                return capturedOutput;
+            },
+            cleanup: () => {
+                if(daemonPty) daemonPty.kill();
+            }
+        };
+
+        return bzeroConnectTarget;
+    }
+
     /**
      * Gets list of TargetUsers needed in bzero TargetConnect policies to be
      * able to connect to bzero/ssm targets
      */
     static getPolicyTargetUsers() : TargetUser[] {
-        return [{ userName: 'ssm-user' }, {userName: bzeroTargetCustomUser }];
+        return [
+            {userName: 'ssm-user' }, // ssm targets
+            {userName: bzeroTargetCustomUser }, // bzero targets
+            {userName: 'root'} // dat targets
+        ];
     }
 
     /**

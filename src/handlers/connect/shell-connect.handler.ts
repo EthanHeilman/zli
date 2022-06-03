@@ -17,6 +17,8 @@ import { DynamicAccessConfigHttpService } from '../../http-services/targets/dyna
 import { BzeroTargetHttpService } from '../../http-services/targets/bzero/bzero.http-services';
 import { BzeroAgentSummary } from '../../../webshell-common-ts/http/v2/target/bzero/types/bzero-agent-summary.types';
 import { LoggerConfigService } from '../../services/logger/logger-config.service';
+import { ConnectionState } from '../../../webshell-common-ts/http/v2/connection/types/connection-state.types';
+import { DynamicAccessConnectionUtils } from './dynamic-access-connect-utils';
 
 
 export async function shellConnectHandler(
@@ -45,6 +47,7 @@ export async function shellConnectHandler(
         }
     }
 
+    const bzeroTargetService = new BzeroTargetHttpService(configService, logger);
     let bzeroTarget: BzeroAgentSummary;
 
     // Check targetUser/Verb
@@ -61,7 +64,6 @@ export async function shellConnectHandler(
         allowedTargetUsers = dynamicAccessTarget.allowedTargetUsers.map(u => u.userName);
         allowedVerbs = dynamicAccessTarget.allowedVerbs.map(v => v.type);
     } else if (parsedTarget.type == TargetType.Bzero) {
-        const bzeroTargetService = new BzeroTargetHttpService(configService, logger);
         bzeroTarget = await bzeroTargetService.GetBzeroTarget(parsedTarget.id);
         allowedTargetUsers = bzeroTarget.allowedTargetUsers.map(u => u.userName);
         allowedVerbs = bzeroTarget.allowedVerbs.map(v => v.type);
@@ -88,20 +90,33 @@ export async function shellConnectHandler(
     // make a new connection
     const connectionHttpService = new ConnectionHttpService(configService, logger);
     const connectionId = await connectionHttpService.CreateConnection(parsedTarget.type, parsedTarget.id, cliSpaceId, targetUser);
-
-    // Note: For DATs the actual target to connect to will be a dynamically
-    // created ssm target that is provisioned by the DynamicAccessTarget and not
-    // the id of the dynamic access target. The dynamically created ssm target should be
-    // returned in the connectionSummary.targetId for this newly created
-    // connection
-
-    const connectionSummary = await connectionHttpService.GetConnection(connectionId);
+    let connectionSummary = await connectionHttpService.GetShellConnection(connectionId);
 
     mixpanelService.TrackNewConnection(parsedTarget.type);
 
-    if(parsedTarget.type == TargetType.SsmTarget || parsedTarget.type == TargetType.DynamicAccessConfig) {
+    if(parsedTarget.type == TargetType.SsmTarget) {
         return createAndRunShell(configService, logger, connectionSummary);
-    } else if(parsedTarget.type == TargetType.Bzero) {
+    } else if(parsedTarget.type == TargetType.Bzero || parsedTarget.type == TargetType.DynamicAccessConfig) {
+        if(parsedTarget.type == TargetType.DynamicAccessConfig) {
+            // Note: For DATs the actual target to connect to will be a
+            // dynamically created target and not the id of the dynamic access
+            // configuration. The dynamically created target should be returned
+            // in the connectionSummary.targetId once the DAT has registered and
+            // come online
+            const dynamicAccessConnectionUtils = new DynamicAccessConnectionUtils(logger, configService);
+
+            // Wait for the DAT to come online and then get the updated
+            // connection summary.
+            connectionSummary = await dynamicAccessConnectionUtils.waitForDATConnection(connectionSummary.id);
+
+            // Make sure the connection hasnt been closed in the meantime
+            if(connectionSummary.state != ConnectionState.Open)
+                throw new Error('Connection closed');
+
+            // Finally once the dat is created and the connection is open get
+            // the updated bzero target details so we can connect
+            bzeroTarget = await bzeroTargetService.GetBzeroTarget(connectionSummary.targetId);
+        }
 
         // agentVersion will be null if this isn't a valid version (i.e if its "$AGENT_VERSION" string during development)
         const agentVersion = parse(bzeroTarget.agentVersion);

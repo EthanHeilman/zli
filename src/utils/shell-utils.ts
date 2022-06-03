@@ -4,7 +4,7 @@ import readline from 'readline';
 import { ConfigService } from '../services/config/config.service';
 import { Logger } from '../services/logger/logger.service';
 import { SsmShellTerminal } from '../terminal/terminal';
-import { ConnectionSummary } from '../../webshell-common-ts/http/v2/connection/types/connection-summary.types';
+import { ShellConnectionSummary } from '../../webshell-common-ts/http/v2/connection/types/shell-connection-summary.types';
 import { SpaceHttpService } from '../http-services/space/space.http-services';
 import { SpaceState } from '../../webshell-common-ts/http/v2/space/types/space-state.types';
 import { SpaceSummary } from '../../webshell-common-ts/http/v2/space/types/space-summary.types';
@@ -19,7 +19,7 @@ import { pushToStdOut, spawnDaemon } from './shell-util-wrappers';
 export async function createAndRunShell(
     configService: ConfigService,
     logger: Logger,
-    connectionSummary: ConnectionSummary
+    connectionSummary: ShellConnectionSummary
 ) {
     return new Promise<number>(async (resolve, _) => {
         if (connectionSummary.targetType === TargetType.Bzero)
@@ -167,7 +167,7 @@ export async function startShellDaemon(
     configService: ConfigService,
     logger: Logger,
     loggerConfigService: LoggerConfigService,
-    connectionSummary: ConnectionSummary,
+    connectionSummary: ShellConnectionSummary,
     bzeroTarget: BzeroAgentSummary,
     attachDetails: ShellConnectionAttachDetails
 ) {
@@ -204,6 +204,7 @@ export async function startShellDaemon(
         }
 
         try {
+            logger.debug(`Starting daemon ${Date.now()}`);
             const daemonProcessExitCode = await spawnDaemon(finalDaemonPath, args, cwd);
             logger.debug(`Shell Daemon closed with exit code ${daemonProcessExitCode}`);
             resolve(daemonProcessExitCode);

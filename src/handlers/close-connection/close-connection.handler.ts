@@ -26,7 +26,7 @@ export async function closeConnectionHandler(
         await spaceHttpService.CloseSpace(cliSpace.id);
         await spaceHttpService.CreateSpace('cli-space');
     } else {
-        const conn = await connectionHttpService.GetConnection(connectionId);
+        const conn = await connectionHttpService.GetShellConnection(connectionId);
         // if the connection does belong to the cli space
         if (conn.spaceId !== cliSpace.id){
             logger.error(`Connection ${connectionId} does not belong to the cli space`);
