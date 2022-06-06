@@ -4,6 +4,9 @@ import { ShellConnectionSummary } from '../../../webshell-common-ts/http/v2/conn
 import { DynamicAccessConnectionSummary } from '../../../webshell-common-ts/http/v2/connection/types/dynamic-access-connection-summary';
 import { ShellConnectionAuthDetails } from '../../../webshell-common-ts/http/v2/connection/types/shell-connection-auth-details.types';
 import { ShellConnectionAttachDetails } from '../../../webshell-common-ts/http/v2/connection/types/shell-connection-attach-details.types';
+import { CreateUniversalConnectionRequest } from '../../../webshell-common-ts/http/v2/connection/requests/create-universal-connection.request';
+import { CreateUniversalSshConnectionRequest } from '../../../webshell-common-ts/http/v2/connection/requests/create-universal-ssh-connection.request';
+import { CreateUniversalConnectionResponse } from '../../../webshell-common-ts/http/v2/connection/responses/create-universal-connection.response';
 import { TargetType } from '../../../webshell-common-ts/http/v2/target/types/target.types';
 import { ConfigService } from '../../services/config/config.service';
 import { HttpService } from '../../services/http/http.service';
@@ -52,6 +55,16 @@ export class ConnectionHttpService extends HttpService
 
     public GetDATConnectionDetails(connectionId: string): Promise<DynamicAccessConnectionSummary>
     {
-        return  this.Get(`dynamic-access/${connectionId}`);
+        return this.Get(`dynamic-access/${connectionId}`);
+    }
+
+    public CreateUniversalConnection(req: CreateUniversalConnectionRequest) : Promise<CreateUniversalConnectionResponse>
+    {
+        return this.Post('universal', req);
+    }
+
+    public CreateUniversalSshConnection(req: CreateUniversalSshConnectionRequest) : Promise<CreateUniversalConnectionResponse>
+    {
+        return this.Post('universal/ssh', req);
     }
 }

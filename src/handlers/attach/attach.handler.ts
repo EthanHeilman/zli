@@ -49,11 +49,13 @@ export async function attachHandler(
 
         const bzeroTargetService = new BzeroTargetHttpService(configService, logger);
         const bzeroTargetRequest = bzeroTargetService.GetBzeroTarget(connectionSummary.targetId);
+        const connectionAuthRequest = connectionHttpService.GetShellConnectionAuthDetails(connectionSummary.id);
 
         // Make requests in parallel
-        const [bzeroTarget, attachInfo] = await Promise.all([bzeroTargetRequest, attachInfoRequest]);
+        const [bzeroTarget, attachInfo, connectionAuthDetails] = await Promise.all([bzeroTargetRequest, attachInfoRequest, connectionAuthRequest]);
 
-        // TODO: Adjust this version check once pipelining changes are in and we support attaching
+        // TODO: Adjust this check once attach is working for bzero targets
+        // https://commonwealthcrypto.atlassian.net/browse/CWC-1826
         // agentVersion will be null if this isn't a valid version (i.e if its "$AGENT_VERSION" string during development)
         const agentVersion = parse(bzeroTarget.agentVersion);
         if(configService.getConfigName() == 'prod' && agentVersion) {
@@ -61,7 +63,7 @@ export async function attachHandler(
             return 1;
         }
 
-        return startShellDaemon(configService, logger, loggerConfigService, connectionSummary, bzeroTarget, attachInfo);
+        return startShellDaemon(configService, logger, loggerConfigService, connectionSummary.id, connectionSummary.targetUser, bzeroTarget.agentPublicKey, connectionAuthDetails, attachInfo);
     } else {
         throw new Error(`Unhandled target type ${connectionSummary.targetType}`);
     }

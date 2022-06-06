@@ -1,9 +1,7 @@
 import Table from 'cli-table3';
 import fs from 'fs';
 import util from 'util';
-import { concat, filter, includes, map, max } from 'lodash';
-import { WebTargetSummary } from '../../webshell-common-ts/http/v2/target/web/types/web-target-summary.types';
-import { DbTargetSummary } from '../../webshell-common-ts/http/v2/target/db/types/db-target-summary.types';
+import { includes, map, max } from 'lodash';
 import { IdentityProvider } from '../../webshell-common-ts/auth-service/auth.types';
 import { cleanExit } from '../handlers/clean-exit.handler';
 import { ParsedTargetString } from '../services/common.types';
@@ -11,7 +9,6 @@ import { TargetSummary } from '../../webshell-common-ts/http/v2/target/targetSum
 import { Logger } from '../services/logger/logger.service';
 import { TargetType } from '../../webshell-common-ts/http/v2/target/types/target.types';
 import { TargetStatus } from '../../webshell-common-ts/http/v2/target/types/targetStatus.types';
-import { TargetBase } from '../../webshell-common-ts/http/v2/target/types/targetBase.types';
 import { EnvironmentSummary } from '../../webshell-common-ts/http/v2/environment/types/environment-summary.responses';
 import { ShellConnectionSummary } from '../../webshell-common-ts/http/v2/connection/types/shell-connection-summary.types';
 import { UserSummary } from '../../webshell-common-ts/http/v2/user/types/user-summary.types';
@@ -27,11 +24,8 @@ import { DynamicAccessConfigSummary } from '../../webshell-common-ts/http/v2/tar
 import { ApiKeySummary } from '../../webshell-common-ts/http/v2/api-key/types/api-key-summary.types';
 import { WebConfig } from '../services/web/web.service';
 import { DbConfig } from '../services/database/database.service';
-import { KubeClusterSummary } from '../../webshell-common-ts/http/v2/target/kube/types/kube-cluster-summary.types';
 import { ProxyPolicySummary } from '../../webshell-common-ts/http/v2/policy/proxy/types/proxy-policy-summary.types';
 import { Group } from '../../webshell-common-ts/http/v2/policy/types/group.types';
-import { ConfigService } from '../services/config/config.service';
-import { listDbTargets, listWebTargets } from './list-utils';
 import { BzeroAgentSummary } from '../../webshell-common-ts/http/v2/target/bzero/types/bzero-agent-summary.types';
 import { KubeConfig } from './kubernetes.utils';
 import { DynamicAccessConfigStatus } from '../../webshell-common-ts/http/v2/target/dynamic/types/dynamic-access-config-status.types';
@@ -786,161 +780,6 @@ function getGroupName(groupId: string, groupMap: {[id: string]: GroupSummary}) :
     return groupMap[groupId]
         ? groupMap[groupId].name
         : 'GROUP DELETED';
-}
-
-// Interface that we can use to compare target info between TargetsSummary, DbTargetSummary, WebTargetSummary
-interface CommonTargetInfo extends TargetBase {
-    type: TargetType;
-}
-
-// Figure out target id based on target name and target type.
-// Also preforms error checking on target type and target string passed in
-export async function disambiguateTarget(
-    targetTypeString: string,
-    targetString: string,
-    logger: Logger,
-    dynamicConfigs: Promise<TargetSummary[]>,
-    ssmTargets: Promise<TargetSummary[]>,
-    clusterTargets: Promise<KubeClusterSummary[]>,
-    bzeroTargets: Promise<BzeroAgentSummary[]>,
-    envs: Promise<EnvironmentSummary[]>,
-    configService: ConfigService): Promise<ParsedTargetString> {
-
-    // First query for our web + db targets as we no longer pre-fetch
-    const dbTargets = await listDbTargets(logger, configService);
-    const webTargets = await listWebTargets(logger, configService);
-
-    const parsedTarget = parseTargetString(targetString);
-
-    if(! parsedTarget) {
-        return undefined;
-    }
-
-    let zippedShellTargetsUnformatted = concat(await ssmTargets, await dynamicConfigs);
-
-    // Filter out Error and Terminated SSM targets
-    zippedShellTargetsUnformatted = filter(zippedShellTargetsUnformatted, t => t.type !== TargetType.SsmTarget || (t.status !== TargetStatus.Error && t.status !== TargetStatus.Terminated));
-
-    // Now cast everything to a common target info object
-    const zippedTargetsSsmShell: CommonTargetInfo[] = [];
-    zippedShellTargetsUnformatted.forEach((targetSummary: TargetSummary) => {
-        const newVal: CommonTargetInfo = {
-            name: targetSummary.name,
-            agentPublicKey: targetSummary.agentPublicKey,
-            id: targetSummary.id,
-            type: targetSummary.type,
-            status: targetSummary.status,
-            environmentId: targetSummary.environmentId,
-            region: targetSummary.region,
-            agentVersion: targetSummary.agentVersion
-        };
-        zippedTargetsSsmShell.push(newVal);
-    });
-
-    // Now create similar lists for the other types of targets, db, web
-    const zippedTargetsDb: CommonTargetInfo[] = [];
-    const awaitedDbTarget = await dbTargets;
-    awaitedDbTarget.forEach((targetSummary: DbTargetSummary) => {
-        const newVal: CommonTargetInfo = {
-            name: targetSummary.name,
-            agentPublicKey: targetSummary.agentPublicKey,
-            id: targetSummary.id,
-            type: TargetType.Db,
-            status: targetSummary.status,
-            environmentId: targetSummary.environmentId,
-            region: targetSummary.region,
-            agentVersion: targetSummary.agentVersion
-        };
-        zippedTargetsDb.push(newVal);
-    });
-
-    const zippedTargetsWeb: CommonTargetInfo[] = [];
-    const awaitedWebTarget = await webTargets;
-    awaitedWebTarget.forEach((targetSummary: WebTargetSummary) => {
-        const newVal: CommonTargetInfo = {
-            name: targetSummary.name,
-            agentPublicKey: targetSummary.agentPublicKey,
-            id: targetSummary.id,
-            type: TargetType.Web,
-            status: targetSummary.status,
-            environmentId: targetSummary.environmentId,
-            region: targetSummary.region,
-            agentVersion: targetSummary.agentVersion
-        };
-        zippedTargetsWeb.push(newVal);
-    });
-
-    const zippedTargetsKube: CommonTargetInfo[] = [];
-    const awaitedKubeTarget = await clusterTargets;
-    awaitedKubeTarget.forEach((targetSummary: KubeClusterSummary) => {
-        const newVal: CommonTargetInfo = {
-            name: targetSummary.name,
-            agentPublicKey: targetSummary.agentPublicKey,
-            id: targetSummary.id,
-            type: TargetType.Cluster,
-            status: targetSummary.status,
-            environmentId: targetSummary.environmentId,
-            region: targetSummary.region,
-            agentVersion: targetSummary.agentVersion
-        };
-        zippedTargetsKube.push(newVal);
-    });
-
-    // Now cast everything to a common target info object
-
-    const zippedTargetsBzero: CommonTargetInfo[] = [];
-    const awaitedBzeroTargets = await bzeroTargets;
-    awaitedBzeroTargets.forEach((targetSummary: BzeroAgentSummary) => {
-        const newVal: CommonTargetInfo = {
-            name: targetSummary.name,
-            agentPublicKey: targetSummary.agentPublicKey,
-            id: targetSummary.id,
-            type: TargetType.Bzero,
-            status: targetSummary.status,
-            environmentId: targetSummary.environmentId,
-            region: targetSummary.region,
-            agentVersion: targetSummary.agentVersion
-        };
-        zippedTargetsBzero.push(newVal);
-    });
-
-    // Now concat all the types of targets
-    let zippedTargets = concat (zippedTargetsSsmShell, zippedTargetsDb, zippedTargetsWeb, zippedTargetsKube, zippedTargetsBzero);
-
-    if(!! targetTypeString) {
-        const targetType = parseTargetType(targetTypeString);
-        zippedTargets = filter(zippedTargets,t => t.type == targetType);
-    }
-
-    let matchedTargets: CommonTargetInfo[];
-
-    if(!! parsedTarget.id) {
-        matchedTargets = filter(zippedTargets,t => t.id == parsedTarget.id);
-    } else if(!! parsedTarget.name) {
-        matchedTargets = filter(zippedTargets,t => t.name == parsedTarget.name);
-    }
-
-    if(matchedTargets.length == 0) {
-        return undefined;
-    } else if(matchedTargets.length == 1) {
-        parsedTarget.id = matchedTargets[0].id;
-        parsedTarget.name = matchedTargets[0].name;
-        parsedTarget.type = matchedTargets[0].type;
-        parsedTarget.envId = matchedTargets[0].environmentId;
-        parsedTarget.envName = filter(await envs, e => e.id == parsedTarget.envId)[0].name;
-    } else {
-        logger.warn('More than one target found with the same targetName');
-
-        // Print the targets we have found so the user can easily type the next command
-        logger.info(`Matched ${matchedTargets.length} targets:`);
-        matchedTargets.forEach((matchedTarget: CommonTargetInfo) => {
-            logger.warn(`    * ${matchedTarget.name} (${matchedTarget.id}): ${matchedTarget.type}`);
-        });
-        logger.info(`Please connect using targetId instead of the targetName (zli connect test@1234)`);
-        await cleanExit(1, logger);
-    }
-
-    return parsedTarget;
 }
 
 // Checks if the target user that is provided is allowed. Defaults to using a

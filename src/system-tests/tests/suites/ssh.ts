@@ -14,7 +14,6 @@ import { Environment } from '../../../../webshell-common-ts/http/v2/policy/types
 import { TestTarget } from '../system-test.types';
 import { cleanupTargetConnectPolicies } from '../system-test-cleanup';
 import { PolicyHttpService } from '../../../http-services/policy/policy.http-services';
-import { ConnectionHttpService } from '../../../http-services/connection/connection.http-services';
 import { Subject } from '../../../../webshell-common-ts/http/v2/policy/types/subject.types';
 import { VerbType } from '../../../../webshell-common-ts/http/v2/policy/types/verb-type.types';
 import { ssmUser, getTargetInfo, expectIncludeStmtInConfig, expectTargetsInBzConfig } from '../utils/ssh-utils';
@@ -279,10 +278,6 @@ export const sshSuite = () => {
 
                 const { targetName } = getTargetInfo(testTarget);
 
-                // Spy on result Bastion gives for shell auth details. This spy is
-                // used at the end of the test to ensure it has not been called
-                const shellConnectionAuthDetailsSpy = jest.spyOn(ConnectionHttpService.prototype, 'GetShellConnectionAuthDetails');
-
                 const expectedErrorMessage = 'Expected error';
                 jest.spyOn(CleanExitHandler, 'cleanExit').mockImplementationOnce(() => {
                     throw new Error(expectedErrorMessage);
@@ -291,9 +286,6 @@ export const sshSuite = () => {
                 const connectPromise = callZli(['connect', `${ssmUser}@${targetName}`]);
 
                 await expect(connectPromise).rejects.toThrow(expectedErrorMessage);
-
-                // Assert shell connection auth details has not been called
-                expect(shellConnectionAuthDetailsSpy).not.toHaveBeenCalled();
 
                 testPassed = true;
 
@@ -339,7 +331,7 @@ export const sshSuite = () => {
                 // Ensure we see the expected error message
                 expect(error).not.toEqual(undefined);
                 const stdError = error.stderr;
-                expect(stdError).toMatch(new RegExp(`You do not have permission to tunnel as targetUser: ${badTargetUser}. Current allowed users for you: ${bzeroTargetCustomUser},${ssmUser}`));
+                expect(stdError).toMatch(new RegExp(`You do not have permission to tunnel as targetUser: ${badTargetUser}.\nCurrent allowed users for you: ${bzeroTargetCustomUser},${ssmUser}`));
 
                 testPassed = true;
 

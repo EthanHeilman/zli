@@ -6,38 +6,22 @@ import yargs from 'yargs';
 import open from 'open';
 import { handleServerStart, startDaemonInDebugMode, copyExecutableToLocalDir, getBaseDaemonArgs, getOrDefaultLocalhost, getOrDefaultLocalport, killLocalPortAndPid } from '../../utils/daemon-utils';
 import { connectArgs } from './connect.command-builder';
-import { TargetType } from '../../../webshell-common-ts/http/v2/target/types/target.types';
-import { TargetStatus } from '../../../webshell-common-ts/http/v2/target/types/targetStatus.types';
-import { PolicyQueryHttpService } from '../../../src/http-services/policy-query/policy-query.http-services';
-import { listWebTargets } from '../../utils/list-utils';
-import { WebTargetSummary } from '../../../webshell-common-ts/http/v2/target/web/types/web-target-summary.types';
+import { WebTargetService } from '../../http-services/web-target/web-target.http-service';
+import { CreateUniversalConnectionResponse } from '../../../webshell-common-ts/http/v2/connection/responses/create-universal-connection.response';
 
 const { spawn } = require('child_process');
 
 
-export async function webConnectHandler(argv: yargs.Arguments<connectArgs>, targetName: string, configService: ConfigService, logger: Logger, loggerConfigService: LoggerConfigService): Promise<number>{
-    // First ensure the target is online
-    const webTargets = await listWebTargets(logger, configService);
-    const webTarget = await getWebTargetInfoFromName(webTargets, targetName, logger);
-    if (webTarget.status != TargetStatus.Online) {
-        logger.error('Target is offline!');
-        await cleanExit(1, logger);
-    }
-
-    // Make our API client
-    const policyService = new PolicyQueryHttpService(configService, logger);
-
-    // If the user is an admin make sure they have a policy that allows access
-    // to the target. If they are a non-admin then they must have a policy that
-    // allows access to even be able to list and parse the target
-    const me = configService.me();
-    if(me.isAdmin) {
-        const response = await policyService.ProxyPolicyQuery([webTarget.id], TargetType.Web, me.email);
-        if (response[webTarget.id].allowed != true) {
-            logger.error(`You do not have a Proxy policy setup to access ${webTarget.name}!`);
-            await cleanExit(1, logger);
-        }
-    }
+export async function webConnectHandler(
+    argv: yargs.Arguments<connectArgs>,
+    targetId: string,
+    createUniversalConnectionResponse: CreateUniversalConnectionResponse,
+    configService: ConfigService,
+    logger: Logger,
+    loggerConfigService: LoggerConfigService
+): Promise<number>{
+    const webTargetService = new WebTargetService(configService, logger);
+    const webTarget = await webTargetService.GetWebTarget(targetId);
 
     // Open up our zli dbConfig
     const webConfig = configService.getWebConfig();
@@ -59,7 +43,7 @@ export async function webConnectHandler(argv: yargs.Arguments<connectArgs>, targ
     await killLocalPortAndPid(webConfig.localPid, webConfig.localPort, logger);
 
     // Build our args and cwd
-    const baseArgs = getBaseDaemonArgs(configService, loggerConfigService, webTarget.agentPublicKey);
+    const baseArgs = getBaseDaemonArgs(configService, loggerConfigService, webTarget.agentPublicKey, createUniversalConnectionResponse.connectionId, createUniversalConnectionResponse.connectionAuthDetails);
     const pluginArgs = [
         `-localPort=${localPort}`,
         `-localHost=${localHost}`,
@@ -107,7 +91,7 @@ export async function webConnectHandler(argv: yargs.Arguments<connectArgs>, targ
             // Wait for daemon HTTP server to be bound and running
             await handleServerStart(loggerConfigService.daemonLogPath(), webConfig.localPort, webConfig.localHost);
 
-            logger.info(`Started web daemon at ${localHost}:${localPort} for ${targetName}`);
+            logger.info(`Started web daemon at ${localHost}:${localPort} for ${webTarget.name}`);
 
             // Open our browser window
             if(argv.openBrowser) {
@@ -116,7 +100,7 @@ export async function webConnectHandler(argv: yargs.Arguments<connectArgs>, targ
 
             return 0;
         } else {
-            logger.warn(`Started web daemon in debug mode at ${localHost}:${localPort} for ${targetName}`);
+            logger.warn(`Started web daemon in debug mode at ${localHost}:${localPort} for ${webTarget.name}`);
             await startDaemonInDebugMode(finalDaemonPath, cwd, args);
             await cleanExit(0, logger);
         }
@@ -124,14 +108,4 @@ export async function webConnectHandler(argv: yargs.Arguments<connectArgs>, targ
         logger.error(`Something went wrong starting the Web Daemon: ${error}`);
         return 1;
     }
-}
-
-async function getWebTargetInfoFromName(webTargets: WebTargetSummary[], targetName: string, logger: Logger): Promise<WebTargetSummary> {
-    for (const webTarget of webTargets) {
-        if (webTarget.name == targetName) {
-            return webTarget;
-        }
-    }
-    logger.error('Unable to find web target!');
-    await cleanExit(1, logger);
 }

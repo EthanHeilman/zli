@@ -80,10 +80,15 @@ export class ConnectTestUtils {
     }
 
     private async runShellConnectTestHelper(connectTarget: ConnectTarget, stringToEcho: string, exit: boolean): Promise<string> {
-        // Spy on result of the ConnectionHttpService.GetConnection
-        // call. This spy is used to assert the correct regional
-        // connection node was used to establish the websocket.
-        const shellConnectionDetailsSpy = jest.spyOn(ConnectionHttpService.prototype, 'GetShellConnection');
+        // Spy on result of the ConnectionHttpService.CreateUniversalConnection
+        // call. This spy is used to return the connectionId. For non-DAT
+        // targets its also used to assert the correct regional connection node
+        // was used to establish the websocket. For DATs spy on
+        // ConnectionHttpService.GetShellConnectionAuthDetails because the auth
+        // details are only resolved once the DAT comes online and not returned
+        // in the original CreateUniversalConnection response
+        const createUniversalConnectionSpy = jest.spyOn(ConnectionHttpService.prototype, 'CreateUniversalConnection');
+        const getShellAuthDetailsSpy = jest.spyOn(ConnectionHttpService.prototype, 'GetShellConnectionAuthDetails');
 
         // Call "zli connect"
         const connectPromise = callZli(['connect', `${connectTarget.targetUser}@${connectTarget.name}`]);
@@ -105,16 +110,18 @@ export class ConnectTestUtils {
 
         await this.testEchoCommand(connectTarget, stringToEcho);
 
-        // Assert shell connection auth details returns expected
-        // connection node aws region
-        expect(shellConnectionDetailsSpy).toHaveBeenCalled();
+        expect(createUniversalConnectionSpy).toHaveBeenCalledOnce();
+        const gotUniversalConnectionResponse = await getMockResultValue(createUniversalConnectionSpy.mock.results[0]);
 
-        // Spy on the last returned value because for DATs we will call
-        // GetShellConnection once the DAT comes online in order to get the
-        // updated base target info which includes the aws region
-        const gotShellConnectionDetails = await getMockResultValue(shellConnectionDetailsSpy.mock.results.slice(-1)[0]);
-        const shellConnectionAuthDetails = await this.connectionService.GetShellConnectionAuthDetails(gotShellConnectionDetails.id);
-        expect(shellConnectionAuthDetails.region).toBe<string>(connectTarget.awsRegion);
+        // Assert connection auth details returns expected aws region
+        if(connectTarget.type === 'dat-bzero') {
+            expect(getShellAuthDetailsSpy).toHaveBeenCalledOnce();
+            const gotShellAuthDetails = await getMockResultValue(getShellAuthDetailsSpy.mock.results[0]);
+            expect(gotShellAuthDetails.region).toBe<string>(connectTarget.awsRegion);
+        } else {
+            expect(gotUniversalConnectionResponse.connectionAuthDetails.region).toBe<string>(connectTarget.awsRegion);
+        }
+
 
         if(exit) {
             await this.sendExitCommand(connectTarget);
@@ -126,7 +133,7 @@ export class ConnectTestUtils {
             expect(await this.testUtils.EnsureConnectionEventCreated(connectTarget.id, connectTarget.name, connectTarget.targetUser, connectTarget.eventTargetType, ConnectionEventType.ClientDisconnect));
         }
 
-        return gotShellConnectionDetails.id;
+        return gotUniversalConnectionResponse.connectionId;
     }
 
     public async sendExitCommand(connectTarget: ConnectTarget) {

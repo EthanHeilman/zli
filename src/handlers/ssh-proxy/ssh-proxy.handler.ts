@@ -1,6 +1,4 @@
-import { includes } from 'lodash';
 import { SemVer, lt, parse } from 'semver';
-
 import { spawn, SpawnOptions } from 'child_process';
 
 import { KeySplittingService } from '../../../webshell-common-ts/keysplitting.service/keysplitting.service';
@@ -8,44 +6,89 @@ import { ConfigService } from '../../services/config/config.service';
 import { Logger } from '../../services/logger/logger.service';
 import { SsmTunnelService } from '../../services/ssm-tunnel/ssm-tunnel.service';
 import { cleanExit } from '../clean-exit.handler';
-import { targetStringExample } from '../../utils/utils';
-import { ParsedTargetString } from '../../services/common.types';
-import { EnvMap } from '../../cli-driver';
-import { VerbType } from '../../../webshell-common-ts/http/v2/policy/types/verb-type.types';
-import { SsmTargetHttpService } from '../../http-services/targets/ssm/ssm-target.http-services';
-import { BzeroTargetHttpService } from '../../http-services/targets/bzero/bzero.http-services';
+import { parseTargetString } from '../../utils/utils';
 import { LoggerConfigService } from '../../services/logger/logger-config.service';
 import { copyExecutableToLocalDir, getBaseDaemonArgs } from '../../utils/daemon-utils';
+import { sshProxyArg } from './ssh-proxy.command-builder';
+import yargs from 'yargs';
+import { ConnectionHttpService } from '../../http-services/connection/connection.http-services';
+import { TargetType } from '../../../webshell-common-ts/http/v2/target/types/target.types';
+import { CreateUniversalConnectionResponse } from '../../../webshell-common-ts/http/v2/connection/responses/create-universal-connection.response';
 
 const minimumAgentVersion = '6.1.0';
+
+
+export async function sshProxyHandler(
+    argv: yargs.Arguments<sshProxyArg>,
+    configService: ConfigService,
+    logger: Logger,
+    keySplittingService: KeySplittingService,
+    loggerConfigService: LoggerConfigService
+) {
+    let prefix = 'bzero-';
+    const configName = configService.getConfigName();
+    if(configName != 'prod') {
+        prefix = `${configName}-${prefix}`;
+    }
+
+    if(! argv.host.startsWith(prefix)) {
+        this.logger.error(`Invalid host provided: must have form ${prefix}<target>. Target must be either target id or name`);
+        await cleanExit(1, this.logger);
+    }
+
+    // modify argv to have the targetString and targetType params
+    const targetString = argv.user + '@' + argv.host.substr(prefix.length);
+    const parsedTarget = parseTargetString(targetString);
+    const targetUser = parsedTarget.user;
+    if(! targetUser) {
+        this.logger.error('No user provided for ssh proxy');
+        await cleanExit(1, this.logger);
+    }
+
+    if(argv.port < 1 || argv.port > 65535)
+    {
+        this.logger.error(`Port ${argv.port} outside of port range [1-65535]`);
+        await cleanExit(1, this.logger);
+    }
+
+    const connectionHttpService = new ConnectionHttpService(configService, logger);
+    const createUniversalConnectionResponse = await connectionHttpService.CreateUniversalSshConnection({
+        targetId: parsedTarget.id,
+        targetName: parsedTarget.name,
+        targetUser: targetUser,
+        remoteHost: 'localhost',
+        remotePort: argv.port
+    });
+
+    const sshTunnelParameters: SshTunnelParameters = {
+        port: argv.port,
+        identityFile: argv.identityFile,
+        targetUser: argv.user
+    };
+
+    switch(createUniversalConnectionResponse.targetType)
+    {
+    case TargetType.SsmTarget:
+        return await ssmSshProxyHandler(configService, logger, sshTunnelParameters, createUniversalConnectionResponse, keySplittingService);
+    case TargetType.Bzero:
+        return await bzeroSshProxyHandler(configService, logger, sshTunnelParameters, createUniversalConnectionResponse, loggerConfigService);
+    default:
+        logger.error(`Unhandled ssh target type ${createUniversalConnectionResponse.targetType}`);
+        return -1;
+    }
+}
 
 /**
  * Launch an SSH tunnel session to an SSM target
  */
-export async function ssmSshProxyHandler(configService: ConfigService, logger: Logger, sshTunnelParameters: SshTunnelParameters, keySplittingService: KeySplittingService, envMap: EnvMap) {
-    await validateTarget(sshTunnelParameters.parsedTarget, logger);
-
-    const ssmTargetHttpService = new SsmTargetHttpService(configService, logger);
-    const ssmTarget = await ssmTargetHttpService.GetSsmTarget(sshTunnelParameters.parsedTarget.id);
-
-    if (!ssmTarget.allowedVerbs.map(v => v.type).includes(VerbType.Tunnel)) {
-        logger.error('You do not have sufficient permission to open a ssh tunnel to the target');
-        await cleanExit(1, logger);
-    }
-
-    const allowedTargetUsers = ssmTarget.allowedTargetUsers.map(u => u.userName);
-    if (!includes(allowedTargetUsers, sshTunnelParameters.parsedTarget.user)) {
-        logger.error(`You do not have permission to tunnel as targetUser: ${sshTunnelParameters.parsedTarget.user}. Current allowed users for you: ${allowedTargetUsers}`);
-        await cleanExit(1, logger);
-    }
-
-    const ssmTunnelService = new SsmTunnelService(logger, configService, keySplittingService, envMap.enableKeysplitting == 'true');
+async function ssmSshProxyHandler(configService: ConfigService, logger: Logger, sshTunnelParameters: SshTunnelParameters, createUniversalConnectionResponse: CreateUniversalConnectionResponse, keySplittingService: KeySplittingService) {
+    const ssmTunnelService = new SsmTunnelService(logger, configService, keySplittingService, true);
     ssmTunnelService.errors.subscribe(async errorMessage => {
         logger.error(errorMessage);
         await cleanExit(1, logger);
     });
 
-    if (await ssmTunnelService.setupWebsocketTunnel(sshTunnelParameters.parsedTarget, sshTunnelParameters.port, sshTunnelParameters.identityFile)) {
+    if (await ssmTunnelService.setupWebsocketTunnel(createUniversalConnectionResponse.targetId, sshTunnelParameters.targetUser, sshTunnelParameters.port, sshTunnelParameters.identityFile)) {
         process.stdin.on('data', async (data) => {
             ssmTunnelService.sendData(data);
         });
@@ -69,34 +112,18 @@ export async function ssmSshProxyHandler(configService: ConfigService, logger: L
 /**
  * Launch an SSH tunnel session to a bzero target
  */
-export async function bzeroSshProxyHandler(configService: ConfigService, logger: Logger, sshTunnelParameters: SshTunnelParameters, keySplittingService: KeySplittingService, envMap: EnvMap, loggerConfigService: LoggerConfigService) {
-    await validateTarget(sshTunnelParameters.parsedTarget, logger);
-
-    const bzeroTargetHttpService = new BzeroTargetHttpService(configService, logger);
-    const bzeroTarget = await bzeroTargetHttpService.GetBzeroTarget(sshTunnelParameters.parsedTarget.id);
-
-    if (!bzeroTarget.allowedVerbs.map(v => v.type).includes(VerbType.Tunnel)) {
-        logger.error('You do not have sufficient permission to open a ssh tunnel to the target');
-        await cleanExit(1, logger);
-    }
-
-    const allowedTargetUsers = bzeroTarget.allowedTargetUsers.map(u => u.userName);
-    if (!includes(allowedTargetUsers, sshTunnelParameters.parsedTarget.user)) {
-        logger.error(`You do not have permission to tunnel as targetUser: ${sshTunnelParameters.parsedTarget.user}. Current allowed users for you: ${allowedTargetUsers}`);
-        await cleanExit(1, logger);
-    }
-
+async function bzeroSshProxyHandler(configService: ConfigService, logger: Logger, sshTunnelParameters: SshTunnelParameters, createUniversalConnectionResponse: CreateUniversalConnectionResponse, loggerConfigService: LoggerConfigService) {
     // agentVersion will be null if this isn't a valid version (i.e if its "$AGENT_VERSION" string during development)
-    const agentVersion = parse(bzeroTarget.agentVersion);
+    const agentVersion = parse(createUniversalConnectionResponse.agentVersion);
     if (agentVersion && lt(agentVersion, new SemVer(minimumAgentVersion))) {
         logger.error(`Tunneling to Bzero Target is only supported on agent versions >= ${minimumAgentVersion}. Agent version is ${agentVersion}`);
         return 1;
     }
 
     // Build our args and cwd
-    const baseArgs = getBaseDaemonArgs(configService, loggerConfigService, bzeroTarget.agentPublicKey);
+    const baseArgs = getBaseDaemonArgs(configService, loggerConfigService, createUniversalConnectionResponse.agentPublicKey, createUniversalConnectionResponse.connectionId, createUniversalConnectionResponse.connectionAuthDetails);
     const pluginArgs = [
-        `-targetId="${bzeroTarget.id}"`,
+        `-targetId="${createUniversalConnectionResponse.targetId}"`,
         `-targetUser="${sshTunnelParameters.targetUser}"`,
         `-remoteHost="localhost"`,
         `-remotePort="${sshTunnelParameters.port}"`,
@@ -163,19 +190,7 @@ export async function bzeroSshProxyHandler(configService: ConfigService, logger:
 }
 
 export interface SshTunnelParameters {
-    parsedTarget: ParsedTargetString;
     port: number;
     identityFile: string;
     targetUser: string;
-}
-
-/**
- * Validates a parsed target string and exits if there is no valid target
- */
-async function validateTarget(target: ParsedTargetString, logger: Logger) {
-    if (!target) {
-        logger.error('No targets matched your targetName/targetId or invalid target string, must follow syntax:');
-        logger.error(targetStringExample);
-        await cleanExit(1, logger);
-    }
 }

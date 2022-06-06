@@ -14,7 +14,6 @@ import { ConfigService } from '../config/config.service';
 
 import { SsmTunnelWebsocketService } from '../../../webshell-common-ts/ssm-tunnel-websocket.service/ssm-tunnel-websocket.service';
 import { ZliAuthConfigService } from '../config/zli-auth-config.service';
-import { ParsedTargetString } from '../common.types';
 import { SsmTargetHttpService } from '../../http-services/targets/ssm/ssm-target.http-services';
 
 export class SsmTunnelService
@@ -45,14 +44,15 @@ export class SsmTunnelService
     }
 
     public async setupWebsocketTunnel(
-        parsedTarget: ParsedTargetString,
+        targetId: string,
+        targetUser: string,
         port: number,
         identityFile: string
     ) : Promise<boolean> {
         try {
             // target is ssmtargetsummary
             const ssmTargetHttpService = new SsmTargetHttpService(this.configService, this.logger);
-            const target = await ssmTargetHttpService.GetSsmTarget(parsedTarget.id);
+            const target = await ssmTargetHttpService.GetSsmTarget(targetId);
 
             this.ssmTunnelWebsocketService = new SsmTunnelWebsocketService(
                 this.logger,
@@ -67,7 +67,7 @@ export class SsmTunnelService
             await this.setupEphemeralSshKey(identityFile);
             const pubKey = await this.extractPubKeyFromIdentityFile(identityFile);
 
-            await this.ssmTunnelWebsocketService.setupWebsocketTunnel(parsedTarget.user, port, pubKey, this.keysplittingEnabled);
+            await this.ssmTunnelWebsocketService.setupWebsocketTunnel(targetUser, port, pubKey, this.keysplittingEnabled);
 
             return true;
         } catch(err) {

@@ -12,9 +12,9 @@ import { TargetType } from '../../webshell-common-ts/http/v2/target/types/target
 
 import { copyExecutableToLocalDir, getBaseDaemonArgs } from '../utils/daemon-utils';
 import { LoggerConfigService } from '../services/logger/logger-config.service';
-import { BzeroAgentSummary } from '../../webshell-common-ts/http/v2/target/bzero/types/bzero-agent-summary.types';
 import { ShellConnectionAttachDetails } from '../../webshell-common-ts/http/v2/connection/types/shell-connection-attach-details.types';
 import { pushToStdOut, spawnDaemon } from './shell-util-wrappers';
+import { ShellConnectionAuthDetails } from '../../webshell-common-ts/http/v2/connection/types/shell-connection-auth-details.types';
 
 export async function createAndRunShell(
     configService: ConfigService,
@@ -167,17 +167,18 @@ export async function startShellDaemon(
     configService: ConfigService,
     logger: Logger,
     loggerConfigService: LoggerConfigService,
-    connectionSummary: ShellConnectionSummary,
-    bzeroTarget: BzeroAgentSummary,
+    connectionId: string,
+    targetUser: string,
+    agentPublicKey: string,
+    authDetails: ShellConnectionAuthDetails,
     attachDetails: ShellConnectionAttachDetails
 ) {
     return new Promise<number>(async (resolve, reject) => {
 
         // Build our args and cwd
-        const baseArgs = getBaseDaemonArgs(configService, loggerConfigService, bzeroTarget.agentPublicKey);
+        const baseArgs = getBaseDaemonArgs(configService, loggerConfigService, agentPublicKey, connectionId, authDetails);
         let pluginArgs = [
-            `-targetUser=${connectionSummary.targetUser}`,
-            `-connectionId=${connectionSummary.id}`,
+            `-targetUser=${targetUser}`,
             `-plugin=shell`
         ];
 
@@ -204,7 +205,6 @@ export async function startShellDaemon(
         }
 
         try {
-            logger.debug(`Starting daemon ${Date.now()}`);
             const daemonProcessExitCode = await spawnDaemon(finalDaemonPath, args, cwd);
             logger.debug(`Shell Daemon closed with exit code ${daemonProcessExitCode}`);
             resolve(daemonProcessExitCode);

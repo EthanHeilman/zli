@@ -1,5 +1,4 @@
 import {
-    disambiguateTarget,
     isGuid,
     makeCaseInsensitive,
     parsePolicyType,
@@ -27,15 +26,12 @@ import { PolicyType } from '../webshell-common-ts/http/v2/policy/types/policy-ty
 
 // Handlers
 import { initMiddleware, oAuthMiddleware, fetchDataMiddleware, GATrackingMiddleware, initLoggerMiddleware, mixpanelTrackingMiddleware } from './handlers/middleware.handler';
-import { bzeroSshProxyHandler, ssmSshProxyHandler, SshTunnelParameters } from './handlers/ssh-proxy/ssh-proxy.handler';
+import { sshProxyHandler } from './handlers/ssh-proxy/ssh-proxy.handler';
 import { loginHandler } from './handlers/login/login.handler';
-import { shellConnectHandler } from './handlers/connect/shell-connect.handler';
 import { listTargetsHandler } from './handlers/list-targets/list-targets.handler';
 import { configHandler } from './handlers/config.handler';
 import { logoutHandler } from './handlers/logout.handler';
-import { startKubeDaemonHandler } from './handlers/connect/kube-connect.handler';
-import { dbConnectHandler } from './handlers/connect/db-connect.handler';
-import { webConnectHandler } from './handlers/connect/web-connect.handler';
+import { connectHandler } from './handlers/connect/connect.handler';
 import { listConnectionsHandler } from './handlers/list-connections/list-connections.handler';
 import { attachHandler } from './handlers/attach/attach.handler';
 import { closeConnectionHandler } from './handlers/close-connection/close-connection.handler';
@@ -99,14 +95,12 @@ import { createApiKeyHandler } from './handlers/api-key/create-api-key.handler';
 
 export type EnvMap = Readonly<{
     configName: string;
-    enableKeysplitting: string;
     configDir: string;
 }>
 
 // Mapping from env vars to options if they exist
 export const envMap: EnvMap = {
     'configName'        : process.env.ZLI_CONFIG_NAME           || 'prod',
-    'enableKeysplitting': process.env.ZLI_ENABLE_KEYSPLITTING   || 'true',
     'configDir'         : process.env.ZLI_CONFIG_DIR            || undefined
 };
 
@@ -131,7 +125,6 @@ export class CliDriver
         'kube',
         'ssh-proxy-config',
         'connect',
-        'tunnel',
         'user',
         'targetuser',
         'targetgroup',
@@ -143,7 +136,6 @@ export class CliDriver
         'lt',
         'list-connections',
         'lc',
-        'copy',
         'ssh-proxy',
         'policy',
         'group',
@@ -157,7 +149,6 @@ export class CliDriver
         'kube',
         'ssh-proxy-config',
         'connect',
-        'tunnel',
         'user',
         'targetuser',
         'targetgroup',
@@ -169,7 +160,6 @@ export class CliDriver
         'lt',
         'list-connections',
         'lc',
-        'copy',
         'ssh-proxy',
         'generate',
         'policy',
@@ -178,19 +168,10 @@ export class CliDriver
     ]);
 
     private fetchCommands: Set<string> = new Set([
-        'connect',
-        'tunnel',
-        'db-connect',
-        'web-connect',
         'user',
         'targetuser',
         'targetgroup',
         'describe-cluster-policy',
-        'disconnect',
-        'attach',
-        'close',
-        'copy',
-        'ssh-proxy',
         'generate',
         'policy',
         'group',
@@ -316,22 +297,7 @@ export class CliDriver
                     return connectCmdBuilder(yargs, this.targetTypeChoices);
                 },
                 async (argv) => {
-                    const parsedTarget = await disambiguateTarget(argv.targetType, argv.targetString, this.logger, this.dynamicConfigs, this.ssmTargets, this.clusterTargets, this.bzeroTargets, this.envs, this.configService);
-
-                    if (parsedTarget == undefined) {
-                        this.logger.error(`No target was able to be parsed from the name ${argv.targetString}`);
-                        await cleanExit(1, this.logger);
-                    }
-                    let exitCode = 1;
-                    if (parsedTarget.type == TargetType.SsmTarget || parsedTarget.type == TargetType.DynamicAccessConfig || parsedTarget.type == TargetType.Bzero) {
-                        exitCode = await shellConnectHandler(this.configService, this.logger, this.loggerConfigService, this.mixpanelService, parsedTarget);
-                    } else if (parsedTarget.type == TargetType.Cluster) {
-                        exitCode = await startKubeDaemonHandler(argv, parsedTarget.user, argv.targetGroup, parsedTarget.name, this.clusterTargets, this.configService, this.logger, this.loggerConfigService);
-                    } else if (parsedTarget.type == TargetType.Db) {
-                        exitCode = await dbConnectHandler(argv, parsedTarget.name, this.configService, this.logger, this.loggerConfigService);
-                    } else if (parsedTarget.type == TargetType.Web) {
-                        exitCode = await webConnectHandler(argv, parsedTarget.name, this.configService, this.logger, this.loggerConfigService);
-                    }
+                    const exitCode = await connectHandler(argv, this.configService, this.logger, this.loggerConfigService, this.mixpanelService);
                     await cleanExit(exitCode, this.logger);
                 }
             )
@@ -599,51 +565,7 @@ export class CliDriver
                     return sshProxyCmdBuilder(yargs);
                 },
                 async (argv) => {
-                    let prefix = 'bzero-';
-                    const configName = this.configService.getConfigName();
-                    if(configName != 'prod') {
-                        prefix = `${configName}-${prefix}`;
-                    }
-
-                    if(! argv.host.startsWith(prefix)) {
-                        this.logger.error(`Invalid host provided must have form ${prefix}<target>. Target must be either target id or name`);
-                        await cleanExit(1, this.logger);
-                    }
-
-                    // modify argv to have the targetString and targetType params
-                    const targetString = argv.user + '@' + argv.host.substr(prefix.length);
-
-                    // have to game disambiguateTarget a bit by asking for no filter
-                    const parsedTarget = await disambiguateTarget(null, targetString, this.logger, this.dynamicConfigs, this.ssmTargets, this.clusterTargets, this.bzeroTargets, this.envs, this.configService);
-
-                    if (parsedTarget == undefined) {
-                        this.logger.error(`Unable to find target with given user/host values: ${argv.user}/${argv.host}`);
-                        await cleanExit(1, this.logger);
-                    }
-
-                    if (parsedTarget.type != TargetType.Bzero && parsedTarget.type != TargetType.SsmTarget && parsedTarget.type != TargetType.DynamicAccessConfig) {
-                        this.logger.warn(`ssh-proxy only available on Bzero, SSM, and dynamic targets`);
-                        await cleanExit(1, this.logger);
-                    }
-
-                    if(argv.port < 1 || argv.port > 65535)
-                    {
-                        this.logger.warn(`Port ${argv.port} outside of port range [1-65535]`);
-                        await cleanExit(1, this.logger);
-                    }
-
-                    const sshTunnelParameters: SshTunnelParameters = {
-                        parsedTarget: parsedTarget,
-                        port: argv.port,
-                        identityFile: argv.identityFile,
-                        targetUser: argv.user
-                    };
-
-                    if (parsedTarget.type == TargetType.Bzero) {
-                        await bzeroSshProxyHandler(this.configService, this.logger, sshTunnelParameters, this.keySplittingService, envMap, this.loggerConfigService,);
-                    } else {
-                        await ssmSshProxyHandler(this.configService, this.logger, sshTunnelParameters, this.keySplittingService, envMap);
-                    }
+                    await sshProxyHandler(argv, this.configService, this.logger, this.keySplittingService, this.loggerConfigService);
                 }
             )
             .command(

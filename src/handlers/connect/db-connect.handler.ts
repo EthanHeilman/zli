@@ -3,40 +3,24 @@ import { Logger } from '../../services/logger/logger.service';
 import { cleanExit } from '../clean-exit.handler';
 import { LoggerConfigService } from '../../services/logger/logger-config.service';
 import {  handleServerStart, startDaemonInDebugMode, copyExecutableToLocalDir, getBaseDaemonArgs, getOrDefaultLocalhost, getOrDefaultLocalport, killLocalPortAndPid } from '../../utils/daemon-utils';
-import { DbTargetSummary } from '../../../webshell-common-ts/http/v2/target/db/types/db-target-summary.types';
 import { connectArgs } from './connect.command-builder';
 import yargs from 'yargs';
-import { TargetType } from '../../../webshell-common-ts/http/v2/target/types/target.types';
-import { TargetStatus } from '../../../webshell-common-ts/http/v2/target/types/targetStatus.types';
-import { PolicyQueryHttpService } from '../../http-services/policy-query/policy-query.http-services';
-import { listDbTargets } from '../../utils/list-utils';
+import { DbTargetService } from '../../http-services/db-target/db-target.http-service';
+import { CreateUniversalConnectionResponse } from '../../../webshell-common-ts/http/v2/connection/responses/create-universal-connection.response';
 
 const { spawn } = require('child_process');
 
 
-export async function dbConnectHandler(argv: yargs.Arguments<connectArgs>, targetName: string,  configService: ConfigService, logger: Logger, loggerConfigService: LoggerConfigService): Promise<number> {
-    // First ensure the target is online
-    const dbTargets = await listDbTargets(logger, configService);
-    const dbTarget = await getDbTargetInfoFromName(dbTargets, targetName, logger);
-    if (dbTarget.status != TargetStatus.Online) {
-        logger.error('Target is offline!');
-        await cleanExit(1, logger);
-    }
-
-    // Make our API client
-    const policyService = new PolicyQueryHttpService(configService, logger);
-
-    // If the user is an admin make sure they have a policy that allows access
-    // to the target. If they are a non-admin then they must have a policy that
-    // allows access to even be able to list and parse the target
-    const me = configService.me();
-    if(me.isAdmin) {
-        const response = await policyService.ProxyPolicyQuery([dbTarget.id], TargetType.Db, me.email);
-        if (response[dbTarget.id].allowed != true) {
-            logger.error(`You do not have a Proxy policy setup to access ${dbTarget.name}!`);
-            await cleanExit(1, logger);
-        }
-    }
+export async function dbConnectHandler(
+    argv: yargs.Arguments<connectArgs>,
+    targetId: string,
+    createUniversalConnectionResponse: CreateUniversalConnectionResponse,
+    configService: ConfigService,
+    logger: Logger,
+    loggerConfigService: LoggerConfigService
+): Promise<number> {
+    const dbTargetService = new DbTargetService(configService, logger);
+    const dbTarget = await dbTargetService.GetDbTarget(targetId);
 
     // Open up our zli dbConfig
     const dbConfig = configService.getDbConfig();
@@ -58,7 +42,7 @@ export async function dbConnectHandler(argv: yargs.Arguments<connectArgs>, targe
     await killLocalPortAndPid(dbConfig.localPid, dbConfig.localPort, logger);
 
     // Build our args and cwd
-    const baseArgs = getBaseDaemonArgs(configService, loggerConfigService, dbTarget.agentPublicKey);
+    const baseArgs = getBaseDaemonArgs(configService, loggerConfigService, dbTarget.agentPublicKey, createUniversalConnectionResponse.connectionId, createUniversalConnectionResponse.connectionAuthDetails);
     const pluginArgs = [
         `-localPort=${localPort}`,
         `-localHost=${localHost}`,
@@ -101,11 +85,11 @@ export async function dbConnectHandler(argv: yargs.Arguments<connectArgs>, targe
             // Wait for daemon HTTP server to be bound and running
             await handleServerStart(loggerConfigService.daemonLogPath(), dbConfig.localPort, dbConfig.localHost);
 
-            logger.info(`Started db daemon at ${localHost}:${localPort} for ${targetName}`);
+            logger.info(`Started db daemon at ${localHost}:${localPort} for ${dbTarget.name}`);
 
             return 0;
         } else {
-            logger.warn(`Started db daemon in debug mode at ${localHost}:${localPort} for ${targetName}`);
+            logger.warn(`Started db daemon in debug mode at ${localHost}:${localPort} for ${dbTarget.name}`);
             await startDaemonInDebugMode(finalDaemonPath, cwd, args);
             await cleanExit(0, logger);
         }
@@ -114,14 +98,4 @@ export async function dbConnectHandler(argv: yargs.Arguments<connectArgs>, targe
         return 1;
     }
     return 0;
-}
-
-async function getDbTargetInfoFromName(dbTargets: DbTargetSummary[], targetName: string, logger: Logger): Promise<DbTargetSummary> {
-    for (const dbTarget of dbTargets) {
-        if (dbTarget.name == targetName) {
-            return dbTarget;
-        }
-    }
-    logger.error('Unable to find db target!');
-    await cleanExit(1, logger);
 }
