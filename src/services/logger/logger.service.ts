@@ -83,7 +83,7 @@ export class Logger implements ILogger {
                 levels: loggingLevels,
                 format: winston.format.combine(
                     winston.format.timestamp({
-                        format: 'YYYY-MM-DD HH:mm:ss'
+                        format: 'YYYY-MM-DD HH:mm:ss.SSS'
                     }),
                     winston.format.errors({ stack: true }),
                     winston.format.splat(),
@@ -135,10 +135,11 @@ export class Logger implements ILogger {
     public flushLogs(): Promise<void> {
         return new Promise((resolve, _) => {
             this.logger.on('finish', () => {
-                // This should work without a timeout but this is currently an open bug in winston
+                // Note there is still an open bug in winston where not all logs are
+                // guaranteed to be flushed for file transports
                 // https://github.com/winstonjs/winston#awaiting-logs-to-be-written-in-winston
                 // https://github.com/winstonjs/winston/issues/1504
-                setTimeout(() => resolve(), 1000);
+                resolve();
             });
             this.logger.end();
         });

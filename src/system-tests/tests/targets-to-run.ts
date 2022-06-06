@@ -2,6 +2,7 @@ import { DigitalOceanDistroImage } from '../digital-ocean/digital-ocean-ssm-targ
 import { convertAwsRegionToDigitalOceanRegion } from '../digital-ocean/digital-ocean.types';
 import { TestTarget } from './system-test.types';
 import { Logger } from '../../services/logger/logger.service';
+import { BzeroContainerTestTarget } from './suites/agent-container';
 
 const defaultAwsRegion = 'us-east-1';
 const defaultDigitalOceanRegion = convertAwsRegionToDigitalOceanRegion(defaultAwsRegion);
@@ -46,6 +47,20 @@ export const bzeroTestTargetsToRun: TestTarget[] = [
         groupConnectCaseId: '6561',
         sessionRecordingCaseId: '6572',
         attachCaseId: '6563',
+    }
+];
+
+// Container images to run
+export const agentContainersToRun : BzeroContainerTestTarget[] = [
+    {
+        type: 'al2',
+        installType: 'pm-pod',
+        shellAndRecordCaseID: '28268',
+    },
+    {
+        type: 'ubuntu',
+        installType: 'pm-pod',
+        shellAndRecordCaseID: '28269',
     }
 ];
 

@@ -90,7 +90,7 @@ export const connectSuite = () => {
             const runAttachTest = testTarget.installType !== 'pm-bzero';
             testIf(runAttachTest, `${testTarget.attachCaseId}: zli attach - ${testTarget.awsRegion} - ${testTarget.installType} - ${getDOImageName(testTarget.dropletImage)}`, async () => {
                 const doTarget = testTargets.get(testTarget);
-                const connectTarget = connectTestUtils.getConnectTarget(doTarget);
+                const connectTarget = connectTestUtils.getConnectTarget(doTarget, testTarget.awsRegion);
 
                 // Bzero targets will close the connection automatically when
                 // exiting. We do not yet support a way to exit the terminal and
@@ -103,7 +103,7 @@ export const connectSuite = () => {
 
                 // Get a new instance of the ConnectTarget which has a separate
                 // mockstdin/mock pty and captured output buffer
-                const attachTarget = connectTestUtils.getConnectTarget(doTarget);
+                const attachTarget = connectTestUtils.getConnectTarget(doTarget, testTarget.awsRegion);
 
                 // Call zli attach
                 const attachPromise = callZli(['attach', connectionId]);
@@ -145,7 +145,7 @@ export const connectSuite = () => {
 
             it(`${testTarget.closeCaseId}: zli close - ${testTarget.awsRegion} - ${testTarget.installType} - ${getDOImageName(testTarget.dropletImage)}`, async () => {
                 const doTarget = testTargets.get(testTarget);
-                const connectTarget = connectTestUtils.getConnectTarget(doTarget);
+                const connectTarget = connectTestUtils.getConnectTarget(doTarget, testTarget.awsRegion);
 
                 // Run normal connect test first but do not exit so the terminal and zli connect command remain running
                 const shouldExit = false;
@@ -174,7 +174,7 @@ export const connectSuite = () => {
         allTargets.forEach(async (testTarget: TestTarget) => {
             it(`${testTarget.badConnectCaseId}: zli connect bad user - ${testTarget.awsRegion} - ${testTarget.installType} - ${getDOImageName(testTarget.dropletImage)}`, async () => {
                 const doTarget = testTargets.get(testTarget);
-                const connectTarget = connectTestUtils.getConnectTarget(doTarget);
+                const connectTarget = connectTestUtils.getConnectTarget(doTarget, testTarget.awsRegion);
 
                 // Call "zli connect"
                 const connectPromise = callZli(['connect', `baduser@${connectTarget.name}`]);

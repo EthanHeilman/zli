@@ -9,55 +9,31 @@ import { cleanExit } from '../clean-exit.handler';
 import { LoggerConfigService } from '../../services/logger/logger-config.service';
 import { connectArgs } from './connect.command-builder';
 import { startDaemonInDebugMode, copyExecutableToLocalDir, handleServerStart, getBaseDaemonArgs, killLocalPortAndPid } from '../../utils/daemon-utils';
-import { KubeClusterSummary } from '../../../webshell-common-ts/http/v2/target/kube/types/kube-cluster-summary.types';
-import { PolicyQueryHttpService } from '../../../src/http-services/policy-query/policy-query.http-services';
-import { TargetStatus } from '../../../webshell-common-ts/http/v2/target/types/targetStatus.types';
-import { connectCheckAllowedTargetUsers } from '../../utils/utils';
+import { KubeHttpService } from '../../http-services/targets/kube/kube.http-services';
+import { CreateUniversalConnectionResponse } from '../../../webshell-common-ts/http/v2/connection/responses/create-universal-connection.response';
 
 
-export async function startKubeDaemonHandler(argv: yargs.Arguments<connectArgs>, targetUser: string, targetGroups: string[], targetCluster: string, clusterTargets: Promise<KubeClusterSummary[]>, configService: ConfigService, logger: Logger, loggerConfigService: LoggerConfigService): Promise<number> {
-    // First check that the cluster is online
-    const clusterTarget = await getClusterInfoFromName(await clusterTargets, targetCluster, logger);
-    if (clusterTarget.status != TargetStatus.Online) {
-        logger.error('Target cluster is offline!');
-        return 1;
-    }
+export async function startKubeDaemonHandler(
+    argv: yargs.Arguments<connectArgs>,
+    targetId: string,
+    targetUser: string,
+    createUniversalConnectionResponse: CreateUniversalConnectionResponse,
+    configService: ConfigService,
+    logger: Logger,
+    loggerConfigService: LoggerConfigService
+): Promise<number> {
+    const targetGroups = argv.targetGroup;
+    const kubeService = new KubeHttpService(configService, logger);
+    const clusterTarget = await kubeService.GetKubeCluster(targetId);
 
     // Open up our zli kubeConfig
     const kubeConfig = configService.getKubeConfig();
 
     // Make sure the user has created a kubeConfig before
     if (kubeConfig.keyPath == null) {
-        logger.error('Please make sure you have created your kubeconfig before running proxy. You can do this via "zli generate kubeConfig"');
+        logger.error('Please make sure you have created your kubeconfig before running connect. You can do this via "zli generate kubeConfig"');
         return 1;
     }
-
-    // If they have not passed targetGroups attempt to use the default ones stored
-    if (targetGroups.length == 0 && kubeConfig.defaultTargetGroups != null) {
-        targetGroups = kubeConfig.defaultTargetGroups;
-    }
-
-    // If the user is an admin make sure they have a policy that allows access
-    // to the cluster. If they are a non-admin then they must have a policy that
-    // allows access to even be able to list and parse the cluster
-    const me = configService.me();
-    if(me.isAdmin) {
-        const policyQueryHttpService = new PolicyQueryHttpService(configService, logger);
-        const response = await policyQueryHttpService.KubePolicyQuery([clusterTarget.id], me.email);
-        if (response[clusterTarget.id].allowed != true) {
-            logger.error(`You do not have a Kubernetes policy setup to access ${targetCluster}`);
-            await cleanExit(1, logger);
-        }
-    }
-
-    // Now check that the user has permission to impersonate the cluster user/group(s)
-    targetGroups.forEach(async clusterGroup => {
-        if(! clusterTarget.allowedClusterGroups.includes(clusterGroup)) {
-            logger.error(`You do not have a Kubernetes policy setup to access ${targetCluster} with group: ${clusterGroup}`);
-            await cleanExit(1, logger);
-        }
-    });
-    targetUser = await connectCheckAllowedTargetUsers(clusterTarget.name, targetUser, clusterTarget.allowedClusterUsers, logger);
 
     // Check if we've already started a process
     await killLocalPortAndPid(kubeConfig.localPid, kubeConfig.localPort, logger);
@@ -69,7 +45,7 @@ export async function startKubeDaemonHandler(argv: yargs.Arguments<connectArgs>,
     }
 
     // Build our args and cwd
-    const baseArgs = getBaseDaemonArgs(configService, loggerConfigService, clusterTarget.agentPublicKey);
+    const baseArgs = getBaseDaemonArgs(configService, loggerConfigService, clusterTarget.agentPublicKey, createUniversalConnectionResponse.connectionId, createUniversalConnectionResponse.connectionAuthDetails);
     const pluginArgs = [
         `-targetUser=${targetUser}`,
         `-targetGroups=${targetGroups}`,
@@ -114,7 +90,7 @@ export async function startKubeDaemonHandler(argv: yargs.Arguments<connectArgs>,
             // Save the info about target user and group
             kubeConfig.targetUser = targetUser;
             kubeConfig.targetGroups = targetGroups;
-            kubeConfig.targetCluster = targetCluster;
+            kubeConfig.targetCluster = clusterTarget.name;
             configService.setKubeConfig(kubeConfig);
 
             // Wait for daemon HTTP server to be bound and running
@@ -123,10 +99,10 @@ export async function startKubeDaemonHandler(argv: yargs.Arguments<connectArgs>,
             // Poll ready endpoint
             logger.info('Waiting for daemon to become ready...');
             await pollDaemonReady(kubeConfig.localPort);
-            logger.info(`Started kube daemon at ${kubeConfig.localHost}:${kubeConfig.localPort} for ${targetUser}@${targetCluster}`);
+            logger.info(`Started kube daemon at ${kubeConfig.localHost}:${kubeConfig.localPort} for ${targetUser}@${clusterTarget.name}`);
             return 0;
         } else {
-            logger.warn(`Started kube daemon in debug mode at ${kubeConfig.localHost}:${kubeConfig.localPort} for ${targetUser}@${targetCluster}`);
+            logger.warn(`Started kube daemon in debug mode at ${kubeConfig.localHost}:${kubeConfig.localPort} for ${targetUser}@${clusterTarget.name}`);
             await startDaemonInDebugMode(finalDaemonPath, cwd, args);
             await cleanExit(0, logger);
         }
@@ -134,16 +110,6 @@ export async function startKubeDaemonHandler(argv: yargs.Arguments<connectArgs>,
         logger.error(`Something went wrong starting the Kube Daemon: ${error}`);
         return 1;
     }
-}
-
-async function getClusterInfoFromName(clusterTargets: KubeClusterSummary[], clusterName: string, logger: Logger): Promise<KubeClusterSummary> {
-    for (const clusterTarget of clusterTargets) {
-        if (clusterTarget.name == clusterName) {
-            return clusterTarget;
-        }
-    }
-    logger.error('Unable to find cluster!');
-    await cleanExit(1, logger);
 }
 
 function pollDaemonReady(daemonPort: number) : Promise<void> {

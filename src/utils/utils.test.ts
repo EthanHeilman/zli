@@ -3,9 +3,9 @@ import { parseTargetString, parseTargetType } from './utils';
 describe('Utils suite', () => {
     test('2489: valid targetType strings', () => {
         const validSSMTargetTypeStrings = [
-            'ssmtarget',
-            'SSMtarget',
-            'sSMtarget'
+            'ssm',
+            'SSM',
+            'sSM'
         ];
         validSSMTargetTypeStrings.forEach(t => expect(parseTargetType(t)).toBeDefined());
     });

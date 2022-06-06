@@ -5,7 +5,7 @@ import { cleanExit } from '../clean-exit.handler';
 import { getCliSpace } from '../../utils/shell-utils';
 import { listConnectionsArgs } from './list-connections.command-builder';
 import { SpaceHttpService } from '../../http-services/space/space.http-services';
-import { ConnectionSummary } from '../../../webshell-common-ts/http/v2/connection/types/connection-summary.types';
+import { ShellConnectionSummary } from '../../../webshell-common-ts/http/v2/connection/types/shell-connection-summary.types';
 import { ConnectionState } from '../../../webshell-common-ts/http/v2/connection/types/connection-state.types';
 import yargs from 'yargs';
 import { SsmTargetHttpService } from '../../http-services/targets/ssm/ssm-target.http-services';
@@ -34,7 +34,7 @@ export async function listConnectionsHandler(
 
     const allTargets = [...ssmTargets.map(ssmTargetToTargetSummary), ...bzeroTargets.map(bzeroTargetToTargetSummary)];
 
-    const formattedConnections = openConnections.map<ConnectionSummary>((conn, _index, _array) => {
+    const formattedConnections = openConnections.map<ShellConnectionSummary>((conn, _index, _array) => {
         return {
             id: conn.id,
             timeCreated: conn.timeCreated,

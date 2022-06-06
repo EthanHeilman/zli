@@ -102,12 +102,12 @@ export class HttpService {
             if (error.response.body) {
                 try {
                     const parsedJSON = JSON.parse(error.response.body as string);
-                    errorMessage = JSON.stringify(parsedJSON, null, 2);
+                    errorMessage = parsedJSON['errorMsg'];
                 } catch (e) {
                     errorMessage = '';
                 }
             }
-            return `Server Error:\n${errorMessage}`;
+            return `Server Error: ${errorMessage}`;
         } else if (error.response.statusCode === 404) {
             return `Resource not found:\n Status code: 404 at ${error.request.requestUrl}`;
         } else {

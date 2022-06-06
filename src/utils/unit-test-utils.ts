@@ -21,11 +21,12 @@ import { ProxyPolicySummary } from '../../webshell-common-ts/http/v2/policy/prox
 import { SessionRecordingPolicySummary } from '../../webshell-common-ts/http/v2/policy/session-recording/types/session-recording-policy-summary.types';
 import { TargetConnectPolicySummary } from '../../webshell-common-ts/http/v2/policy/target-connect/types/target-connect-policy-summary.types';
 import { TargetUser } from '../../webshell-common-ts/http/v2/policy/types/target-user.types';
-import { ConnectionSummary } from '../../webshell-common-ts/http/v2/connection/types/connection-summary.types';
+import { ShellConnectionSummary } from '../../webshell-common-ts/http/v2/connection/types/shell-connection-summary.types';
 import { ConnectionState } from '../../webshell-common-ts/http/v2/connection/types/connection-state.types';
 import { SpaceSummary } from '../../webshell-common-ts/http/v2/space/types/space-summary.types';
 import { SpaceState } from '../../webshell-common-ts/http/v2/space/types/space-state.types';
 import { UserSummary } from '../../webshell-common-ts/http/v2/user/types/user-summary.types';
+import { DynamicAccessConfigStatus } from '../../webshell-common-ts/http/v2/target/dynamic/types/dynamic-access-config-status.types';
 import { TunnelsResponse } from '../../webshell-common-ts/http/v2/policy-query/responses/tunnels.response';
 import { GAService } from '../services/Tracking/google-analytics.service';
 import { EnvironmentHttpService } from '../http-services/environment/environment.http-services';
@@ -128,7 +129,8 @@ export const mockDatSummaryList: DynamicAccessConfigSummary[] = [{
     allowedTargetUsers: [mockTargetUser],
     allowedVerbs: [{
         type: VerbType.Shell
-    }]
+    }],
+    status: DynamicAccessConfigStatus.Online
 }];
 
 export const mockBzeroSummaryList: BzeroAgentSummary[] = [{
@@ -273,7 +275,7 @@ export const mockTargetConnectPolicySummaryList: TargetConnectPolicySummary[] = 
     }]
 }];
 
-export const mockConnectionSummary: ConnectionSummary = {
+export const mockConnectionSummary: ShellConnectionSummary = {
     id: 'cf8ce789-422b-4ace-8df5-d6c75b1fa1af',
     timeCreated : new Date(1998, 3, 5, 0, 0, 0, 0),
     spaceId : 'df262ee7-b749-4f08-ae61-3cd63a4fecd7', // This is the same as the mockSpaceSummary

@@ -179,7 +179,7 @@ export async function listTargets(
     }
 
     const allTargetSummaries = await Promise.all(targetSummaryWork);
-    const allTargetSummariesFlattened = allTargetSummaries.reduce((t1, t2) => t1.concat(t2));
+    const allTargetSummariesFlattened = allTargetSummaries.reduce((t1, t2) => t1.concat(t2), []);
 
     return allTargetSummariesFlattened;
 }

@@ -270,7 +270,7 @@ export const kubeSuite = () => {
             // Ensure that we see a log of this under the kube logs
             expect(await testUtils.EnsureKubeEvent(doCluster.bzeroClusterTargetSummary.name, KubeTestUserName, KubeTestTargetGroups, 'N/A', ['/api/v1/namespaces'], []));
             testPassed = true;
-        }, 60 * 1000);
+        }, 2 * 60 * 1000);
 
         test('2162: zli targetuser - add target user to policy', async () => {
             // Grab our cluster information and set up our spy

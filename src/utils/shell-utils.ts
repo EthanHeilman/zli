@@ -4,7 +4,7 @@ import readline from 'readline';
 import { ConfigService } from '../services/config/config.service';
 import { Logger } from '../services/logger/logger.service';
 import { SsmShellTerminal } from '../terminal/terminal';
-import { ConnectionSummary } from '../../webshell-common-ts/http/v2/connection/types/connection-summary.types';
+import { ShellConnectionSummary } from '../../webshell-common-ts/http/v2/connection/types/shell-connection-summary.types';
 import { SpaceHttpService } from '../http-services/space/space.http-services';
 import { SpaceState } from '../../webshell-common-ts/http/v2/space/types/space-state.types';
 import { SpaceSummary } from '../../webshell-common-ts/http/v2/space/types/space-summary.types';
@@ -12,14 +12,14 @@ import { TargetType } from '../../webshell-common-ts/http/v2/target/types/target
 
 import { copyExecutableToLocalDir, getBaseDaemonArgs } from '../utils/daemon-utils';
 import { LoggerConfigService } from '../services/logger/logger-config.service';
-import { BzeroAgentSummary } from '../../webshell-common-ts/http/v2/target/bzero/types/bzero-agent-summary.types';
 import { ShellConnectionAttachDetails } from '../../webshell-common-ts/http/v2/connection/types/shell-connection-attach-details.types';
 import { pushToStdOut, spawnDaemon } from './shell-util-wrappers';
+import { ShellConnectionAuthDetails } from '../../webshell-common-ts/http/v2/connection/types/shell-connection-auth-details.types';
 
 export async function createAndRunShell(
     configService: ConfigService,
     logger: Logger,
-    connectionSummary: ConnectionSummary
+    connectionSummary: ShellConnectionSummary
 ) {
     return new Promise<number>(async (resolve, _) => {
         if (connectionSummary.targetType === TargetType.Bzero)
@@ -167,17 +167,18 @@ export async function startShellDaemon(
     configService: ConfigService,
     logger: Logger,
     loggerConfigService: LoggerConfigService,
-    connectionSummary: ConnectionSummary,
-    bzeroTarget: BzeroAgentSummary,
+    connectionId: string,
+    targetUser: string,
+    agentPublicKey: string,
+    authDetails: ShellConnectionAuthDetails,
     attachDetails: ShellConnectionAttachDetails
 ) {
     return new Promise<number>(async (resolve, reject) => {
 
         // Build our args and cwd
-        const baseArgs = getBaseDaemonArgs(configService, loggerConfigService, bzeroTarget.agentPublicKey);
+        const baseArgs = getBaseDaemonArgs(configService, loggerConfigService, agentPublicKey, connectionId, authDetails);
         let pluginArgs = [
-            `-targetUser=${connectionSummary.targetUser}`,
-            `-connectionId=${connectionSummary.id}`,
+            `-targetUser=${targetUser}`,
             `-plugin=shell`
         ];
 

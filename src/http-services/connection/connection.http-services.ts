@@ -1,8 +1,12 @@
 import { CreateShellConnectionRequest} from '../../../webshell-common-ts/http/v2/connection/requests/create-connection.request';
 import { CreateConnectionResponse } from '../../../webshell-common-ts/http/v2/connection/responses/create-connection.responses';
-import { ConnectionSummary } from '../../../webshell-common-ts/http/v2/connection/types/connection-summary.types';
+import { ShellConnectionSummary } from '../../../webshell-common-ts/http/v2/connection/types/shell-connection-summary.types';
+import { DynamicAccessConnectionSummary } from '../../../webshell-common-ts/http/v2/connection/types/dynamic-access-connection-summary';
 import { ShellConnectionAuthDetails } from '../../../webshell-common-ts/http/v2/connection/types/shell-connection-auth-details.types';
 import { ShellConnectionAttachDetails } from '../../../webshell-common-ts/http/v2/connection/types/shell-connection-attach-details.types';
+import { CreateUniversalConnectionRequest } from '../../../webshell-common-ts/http/v2/connection/requests/create-universal-connection.request';
+import { CreateUniversalSshConnectionRequest } from '../../../webshell-common-ts/http/v2/connection/requests/create-universal-ssh-connection.request';
+import { CreateUniversalConnectionResponse } from '../../../webshell-common-ts/http/v2/connection/responses/create-universal-connection.response';
 import { TargetType } from '../../../webshell-common-ts/http/v2/target/types/target.types';
 import { ConfigService } from '../../services/config/config.service';
 import { HttpService } from '../../services/http/http.service';
@@ -15,9 +19,9 @@ export class ConnectionHttpService extends HttpService
         super(configService, 'api/v2/connections/', logger);
     }
 
-    public GetConnection(connectionId: string) : Promise<ConnectionSummary>
+    public GetShellConnection(connectionId: string) : Promise<ShellConnectionSummary>
     {
-        return this.Get(connectionId);
+        return this.Get(`shell/${connectionId}`);
     }
 
     public async CreateConnection(targetType: TargetType, targetId: string, sessionId: string, targetUser: string) : Promise<string>
@@ -39,13 +43,28 @@ export class ConnectionHttpService extends HttpService
         return this.Patch(`${connectionId}/close`);
     }
 
-    public async GetShellConnectionAuthDetails(connectionId: string) : Promise<ShellConnectionAuthDetails>
+    public GetShellConnectionAuthDetails(connectionId: string) : Promise<ShellConnectionAuthDetails>
     {
         return this.Get(`${connectionId}/shell/auth-details`);
     }
 
-    public async GetShellConnectionAttachDetails(connectionId: string) : Promise<ShellConnectionAttachDetails>
+    public GetShellConnectionAttachDetails(connectionId: string) : Promise<ShellConnectionAttachDetails>
     {
         return this.Get(`${connectionId}/shell/attach-details`);
+    }
+
+    public GetDATConnectionDetails(connectionId: string): Promise<DynamicAccessConnectionSummary>
+    {
+        return this.Get(`dynamic-access/${connectionId}`);
+    }
+
+    public CreateUniversalConnection(req: CreateUniversalConnectionRequest) : Promise<CreateUniversalConnectionResponse>
+    {
+        return this.Post('universal', req);
+    }
+
+    public CreateUniversalSshConnection(req: CreateUniversalSshConnectionRequest) : Promise<CreateUniversalConnectionResponse>
+    {
+        return this.Post('universal/ssh', req);
     }
 }

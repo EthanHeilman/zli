@@ -7,7 +7,7 @@ import { ConfigService } from '../services/config/config.service';
 import { ISsmShellWebsocketService, ShellEvent, ShellEventType, TerminalSize } from '../../webshell-common-ts/ssm-shell-websocket.service/ssm-shell-websocket.service.types';
 import { ZliAuthConfigService } from '../services/config/zli-auth-config.service';
 import { Logger } from '../services/logger/logger.service';
-import { ConnectionSummary } from '../../webshell-common-ts/http/v2/connection/types/connection-summary.types';
+import { ShellConnectionSummary } from '../../webshell-common-ts/http/v2/connection/types/shell-connection-summary.types';
 import { ConnectionHttpService } from '../http-services/connection/connection.http-services';
 import { SsmTargetHttpService } from '../http-services/targets/ssm/ssm-target.http-services';
 import { TargetType } from '../../webshell-common-ts/http/v2/target/types/target.types';
@@ -38,7 +38,7 @@ export class SsmShellTerminal implements IDisposable
     public outputObservable: Observable<Uint8Array> = this.outputSubject.asObservable();
 
 
-    constructor(private logger: Logger, private configService: ConfigService, private connectionSummary: ConnectionSummary)
+    constructor(private logger: Logger, private configService: ConfigService, private connectionSummary: ShellConnectionSummary)
     {
     }
 
