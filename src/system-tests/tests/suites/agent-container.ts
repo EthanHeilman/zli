@@ -175,14 +175,15 @@ export async function setupAgentContainer(targetsToRun: BzeroContainerTestTarget
         kc.loadFromString(kubeConfigFileContents);
         const k8sApi = kc.makeApiClient(k8s.CoreV1Api);
 
-        const targetName = `agent-container-${target.type}-${resourceNamePrefix}`;
+        const targetName = `${resourceNamePrefix}-agent-container-${target.type}`;
 
         // Create a pod
         const pod = {
             apiVersion: 'v1',
             kind: 'Pod',
             metadata: {
-                name: targetName
+                name: targetName,
+                labels: { systemTestId: systemTestUniqueId, isAgentContainerPod: 'true' }
             } as k8s.V1ObjectMeta,
             spec: {
                 containers: [
