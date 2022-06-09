@@ -50,13 +50,13 @@ export async function connectHandler(
         case TargetType.SsmTarget:
         case TargetType.Bzero:
         case TargetType.DynamicAccessConfig:
-            return shellConnectHandler(createUniversalConnectionResponse.targetType, targetUser, createUniversalConnectionResponse, configService, logger, loggerConfigService);
+            return shellConnectHandler(createUniversalConnectionResponse.targetType, createUniversalConnectionResponse.targetUser, createUniversalConnectionResponse, configService, logger, loggerConfigService);
         case TargetType.Db:
             return dbConnectHandler(argv, createUniversalConnectionResponse.targetId, createUniversalConnectionResponse, configService, logger, loggerConfigService);
         case TargetType.Web:
             return webConnectHandler(argv, createUniversalConnectionResponse.targetId, createUniversalConnectionResponse, configService, logger, loggerConfigService);
         case TargetType.Cluster:
-            return startKubeDaemonHandler(argv, createUniversalConnectionResponse.targetId, targetUser, createUniversalConnectionResponse, configService, logger, loggerConfigService);
+            return startKubeDaemonHandler(argv, createUniversalConnectionResponse.targetId, createUniversalConnectionResponse.targetUser, createUniversalConnectionResponse, configService, logger, loggerConfigService);
         default:
             logger.error(`Unhandled target type ${createUniversalConnectionResponse.targetType}`);
             return -1;
