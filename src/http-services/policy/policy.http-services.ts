@@ -146,7 +146,7 @@ export class PolicyHttpService extends HttpService
             environments: policy.environments,
             targets: policy.targets
         };
-        return this.Patch(`${TARGET}/${policy.id}`, request);
+        return this.Patch(`${PROXY}/${policy.id}`, request);
     }
 
     public UpdateProxyPolicy(policyId: string, request: ProxyPolicyUpdateRequest):
