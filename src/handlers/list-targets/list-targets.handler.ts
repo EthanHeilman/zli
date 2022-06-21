@@ -60,7 +60,7 @@ export async function listTargetsHandler(
         let targetStatusFilter: TargetStatus[] = map(statusArray, (s: string) => parseTargetStatus(s)).filter(s => s); // filters out undefined
         targetStatusFilter = uniq(targetStatusFilter);
 
-        allTargets = allTargets.filter(t => (t.type != TargetType.SsmTarget && t.type != TargetType.Cluster) || includes(targetStatusFilter, t.status));
+        allTargets = allTargets.filter(t => includes(targetStatusFilter, t.status));
     }
 
     if(!! argv.json) {
