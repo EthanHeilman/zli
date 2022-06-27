@@ -1,4 +1,4 @@
-import { DbTargetService } from '../../../../http-services/db-target/db-target.http-service';
+import { DbTargetHttpService } from '../../../../http-services/db-target/db-target.http-service';
 import { DigitalOceanBZeroTarget } from '../../../digital-ocean/digital-ocean-ssm-target.service.types';
 import { configService, logger, systemTestEnvId, systemTestUniqueId, testTargets } from '../../system-test';
 import { bzeroTestTargetsToRun } from '../../targets-to-run';
@@ -7,12 +7,12 @@ export const databaseTargetRestApiSuite = () => {
     describe('Database Target REST API Suite', () => {
         const targetName = `${systemTestUniqueId}-restapi-db-suite`;
         let databaseTargetId: string;
-        let databaseTargetService: DbTargetService;
+        let databaseTargetService: DbTargetHttpService;
         let databaseTargetCommonProperties: any;
         let doTarget: DigitalOceanBZeroTarget;
 
         beforeAll(() => {
-            databaseTargetService = new DbTargetService(configService, logger);
+            databaseTargetService = new DbTargetHttpService(configService, logger);
 
             doTarget = testTargets.get(bzeroTestTargetsToRun[0]) as DigitalOceanBZeroTarget;
 

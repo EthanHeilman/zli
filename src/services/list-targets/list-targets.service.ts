@@ -8,7 +8,7 @@ import { DynamicAccessConfigHttpService } from '../../http-services/targets/dyna
 import { TargetType } from '../../../webshell-common-ts/http/v2/target/types/target.types';
 import { KubeHttpService } from '../../http-services/targets/kube/kube.http-services';
 import { SsmTargetHttpService } from '../../http-services/targets/ssm/ssm-target.http-services';
-import { DbTargetService } from '../../http-services/db-target/db-target.http-service';
+import { DbTargetHttpService } from '../../http-services/db-target/db-target.http-service';
 import { PolicyQueryHttpService } from '../../http-services/policy-query/policy-query.http-services';
 
 export async function listTargets(
@@ -123,7 +123,7 @@ export async function listTargets(
     }
 
     if (targetTypes.includes(TargetType.Db)) {
-        const dbTargetService = new DbTargetService(configService, logger);
+        const dbTargetService = new DbTargetHttpService(configService, logger);
         const getDbTargetSummaries = async () => {
             let dbTargetSummaries = await dbTargetService.ListDbTargets();
             if (userEmail) {

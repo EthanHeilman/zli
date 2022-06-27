@@ -1,6 +1,6 @@
 import { systemTestEnvId, systemTestEnvName, systemTestPolicyTemplate, systemTestUniqueId, testTargets } from '../system-test';
 import { callZli } from '../utils/zli-utils';
-import { DbTargetService } from '..../../../http-services/db-target/db-target.http-service';
+import { DbTargetHttpService } from '..../../../http-services/db-target/db-target.http-service';
 import { promisify } from 'util';
 import { exec } from 'child_process';
 
@@ -116,7 +116,7 @@ export const iperfSuite = () => {
                 const doTarget = testTargets.get(testTarget) as DigitalOceanBZeroTarget;
 
                 // Create a new db virtual target
-                const dbTargetService: DbTargetService = new DbTargetService(configService, logger);
+                const dbTargetService: DbTargetHttpService = new DbTargetHttpService(configService, logger);
                 const dbIperfVtName = `${doTarget.bzeroTarget.name}-db-iperf-upload-vt`;
 
                 await dbTargetService.CreateDbTarget({
@@ -157,7 +157,7 @@ export const iperfSuite = () => {
                 const doTarget = testTargets.get(testTarget) as DigitalOceanBZeroTarget;
 
                 // Create a new db virtual target
-                const dbTargetService: DbTargetService = new DbTargetService(configService, logger);
+                const dbTargetService: DbTargetHttpService = new DbTargetHttpService(configService, logger);
                 const dbIperfVtName = `${doTarget.bzeroTarget.name}-db-iperf-download-vt`;
 
                 await dbTargetService.CreateDbTarget({

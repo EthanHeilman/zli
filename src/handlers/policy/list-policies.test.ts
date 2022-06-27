@@ -9,7 +9,7 @@ import { KubeHttpService } from '../../http-services/targets/kube/kube.http-serv
 import { SsmTargetHttpService } from '../../http-services/targets/ssm/ssm-target.http-services';
 import { DynamicAccessConfigHttpService } from '../../http-services/targets/dynamic-access/dynamic-access-config.http-services';
 import { BzeroTargetHttpService } from '../../http-services/targets/bzero/bzero.http-services';
-import { DbTargetService } from '../../http-services/db-target/db-target.http-service';
+import { DbTargetHttpService } from '../../http-services/db-target/db-target.http-service';
 import { WebTargetService } from '../../http-services/web-target/web-target.http-service';
 
 
@@ -68,7 +68,7 @@ describe('List Policies suite', () => {
         jest.spyOn(SsmTargetHttpService.prototype, 'ListSsmTargets').mockImplementation(async () => mockSsmSummaryList);
         jest.spyOn(DynamicAccessConfigHttpService.prototype, 'ListDynamicAccessConfigs').mockImplementation(async () => mockDatSummaryList);
         jest.spyOn(BzeroTargetHttpService.prototype, 'ListBzeroTargets').mockImplementation(async () => mockBzeroSummaryList);
-        jest.spyOn(DbTargetService.prototype, 'ListDbTargets').mockImplementation(async () => mockDbSummaryList);
+        jest.spyOn(DbTargetHttpService.prototype, 'ListDbTargets').mockImplementation(async () => mockDbSummaryList);
         jest.spyOn(WebTargetService.prototype, 'ListWebTargets').mockImplementation(async () => mockWebSummaryList);
     });
 

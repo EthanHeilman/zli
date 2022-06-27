@@ -1,5 +1,5 @@
 import { ConfigService } from '../services/config/config.service';
-import { DbTargetService } from '../http-services/db-target/db-target.http-service';
+import { DbTargetHttpService } from '../http-services/db-target/db-target.http-service';
 import { Logger } from '../services/logger/logger.service';
 import { DbTargetSummary } from '../../webshell-common-ts/http/v2/target/db/types/db-target-summary.types';
 import { TargetType } from '../../webshell-common-ts/http/v2/target/types/target.types';
@@ -7,7 +7,7 @@ import { WebTargetService } from '../http-services/web-target/web-target.http-se
 import { WebTargetSummary } from '../../webshell-common-ts/http/v2/target/web/types/web-target-summary.types';
 
 export async function listDbTargets(logger: Logger, configService: ConfigService): Promise<DbTargetSummary[]> {
-    const dbTargetService = new DbTargetService(configService, logger);
+    const dbTargetService = new DbTargetHttpService(configService, logger);
 
     const dbTargets = new Promise<DbTargetSummary[]>( async (res) => {
         try {

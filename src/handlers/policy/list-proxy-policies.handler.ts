@@ -11,7 +11,7 @@ import { UserSummary } from '../../../webshell-common-ts/http/v2/user/types/user
 import { ApiKeySummary } from '../../../webshell-common-ts/http/v2/api-key/types/api-key-summary.types';
 import { GroupSummary } from '../../../webshell-common-ts/http/v2/organization/types/group-summary.types';
 import { EnvironmentSummary } from '../../../webshell-common-ts/http/v2/environment/types/environment-summary.responses';
-import { DbTargetService } from '../../http-services/db-target/db-target.http-service';
+import { DbTargetHttpService } from '../../http-services/db-target/db-target.http-service';
 import { WebTargetService } from '../../http-services/web-target/web-target.http-service';
 
 export async function listProxyPoliciesHandler(
@@ -54,7 +54,7 @@ export async function listProxyPoliciesHandler(
     });
 
     // List our dbTargets
-    const dbTargetService = new DbTargetService(configService, logger);
+    const dbTargetService = new DbTargetHttpService(configService, logger);
     const dbTargets = await dbTargetService.ListDbTargets();
 
     // List our web targets

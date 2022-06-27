@@ -1,6 +1,6 @@
 import { systemTestEnvId, systemTestEnvName, systemTestPolicyTemplate, systemTestUniqueId, testTargets } from '../system-test';
 import { callZli } from '../utils/zli-utils';
-import { DbTargetService } from '..../../../http-services/db-target/db-target.http-service';
+import { DbTargetHttpService } from '..../../../http-services/db-target/db-target.http-service';
 import got from 'got/dist/source';
 import * as CleanExitHandler from '../../../handlers/clean-exit.handler';
 import FormData from 'form-data';
@@ -96,7 +96,7 @@ export const vtSuite = () => {
                 const doTarget = testTargets.get(testTarget) as DigitalOceanBZeroTarget;
 
                 // Create a new db virtual target
-                const dbTargetService: DbTargetService = new DbTargetService(configService, logger);
+                const dbTargetService: DbTargetHttpService = new DbTargetHttpService(configService, logger);
                 const dbVtName = `${doTarget.bzeroTarget.name}-db-vt`;
 
                 const createDbTargetResponse = await dbTargetService.CreateDbTarget({
@@ -167,7 +167,7 @@ export const vtSuite = () => {
                 const doTarget = testTargets.get(testTarget) as DigitalOceanBZeroTarget;
 
                 // Create a new db virtual target in the default env
-                const dbTargetService: DbTargetService = new DbTargetService(configService, logger);
+                const dbTargetService: DbTargetHttpService = new DbTargetHttpService(configService, logger);
                 const dbVtName = `${doTarget.bzeroTarget.name}-db-vt-no-policy`;
 
                 await dbTargetService.CreateDbTarget({
