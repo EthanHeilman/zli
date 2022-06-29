@@ -15,6 +15,8 @@ phases:
     commands:
       - echo Install started `date`
       - apt-get update -y && apt-get install build-essential cmake -y
+      # Update npm to v8
+      - npm install -g npm@8
       - npm ci
   pre_build:
     commands:
