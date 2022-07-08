@@ -225,6 +225,8 @@ export const kubeSuite = () => {
             testPassed = true;
         }, 30 * 1000);
 
+        // TODO: this needs to be fixed before it's ready to be added back in
+        // we believe there is a race condition with a previous test
         test.skip('2161: zli connect - Kube REST API plugin - multiple groups - %p', async () => {
             const doCluster = testCluster;
 
