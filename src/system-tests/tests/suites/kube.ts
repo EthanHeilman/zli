@@ -225,7 +225,7 @@ export const kubeSuite = () => {
             testPassed = true;
         }, 30 * 1000);
 
-        test('2161: zli connect - Kube REST API plugin - multiple groups - %p', async () => {
+        test.skip('2161: zli connect - Kube REST API plugin - multiple groups - %p', async () => {
             const doCluster = testCluster;
 
             // Init Kube client
