@@ -29,12 +29,33 @@ import { Group } from '../../webshell-common-ts/http/v2/policy/types/group.types
 import { BzeroAgentSummary } from '../../webshell-common-ts/http/v2/target/bzero/types/bzero-agent-summary.types';
 import { KubeConfig } from './kubernetes.utils';
 import { DynamicAccessConfigStatus } from '../../webshell-common-ts/http/v2/target/dynamic/types/dynamic-access-config-status.types';
+import { CaseInsensitiveArgv } from './types/case-insensitive-argv';
 
 
 // case insensitive substring search, 'find targetString in searchString'
-export function findSubstring(targetString: string, searchString: string) : boolean
+export function isSubstring(targetString: string, searchString: string) : boolean
 {
     return searchString.toLowerCase().indexOf(targetString.toLowerCase()) !== -1;
+}
+
+export function makeCaseInsensitive(zliCommands: Set<string>, argv: string[]) : CaseInsensitiveArgv
+{
+    const caseInsensitiveArgv: CaseInsensitiveArgv = {
+        baseCmd: '',
+        parsedArgv: []
+    };
+    caseInsensitiveArgv.parsedArgv = [];
+    argv.forEach(arg => {
+        // If the argument is a command and a command has not been specified already
+        if(zliCommands.has(arg.toLowerCase()) && caseInsensitiveArgv.baseCmd === '') {
+            const baseCmd = arg.toLowerCase();
+            caseInsensitiveArgv.baseCmd = baseCmd;
+            caseInsensitiveArgv.parsedArgv.push(baseCmd);
+        }
+        else
+            caseInsensitiveArgv.parsedArgv.push(arg);
+    });
+    return caseInsensitiveArgv;
 }
 
 export const targetStringExample : string = '[targetUser@]<targetId-or-targetName>';
@@ -908,18 +929,6 @@ export function removeIfExists(file: string): void {
             throw err;
         }
     }
-}
-
-export function makeCaseInsensitive(argv: string[]) {
-    // Converting commands to lowercase
-    if(argv[0]) {
-        argv[0] = argv[0].toLowerCase();
-    }
-
-    return {
-        baseCmd: argv[0],
-        parsedArgv: argv
-    };
 }
 
 export function isZliSilent(silent_flag: boolean, json_flag: boolean, verbose_flag: boolean) {

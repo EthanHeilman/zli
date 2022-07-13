@@ -134,7 +134,7 @@ describe('Generate kube config suite', () => {
         }
 
         expect(err).toBeDefined();
-        expect(cleanExitSpy).toHaveBeenCalledTimes(1);
+        expect(cleanExitSpy).toHaveBeenCalledTimes(2);
         expect(cleanExitSpy).toHaveBeenCalledWith(1, expect.anything());
     });
 
@@ -160,8 +160,8 @@ describe('Generate kube config suite', () => {
         }
 
         expect(err).toBeDefined();
-        expect(cleanExitSpy).toHaveBeenCalledTimes(2);
-        expect(cleanExitSpy).toHaveBeenNthCalledWith(2, 1, expect.anything());
+        expect(cleanExitSpy).toHaveBeenCalledTimes(3);
+        expect(cleanExitSpy).toHaveBeenNthCalledWith(3, 1, expect.anything());
         process.env.KUBECONFIG = originalKubeConfig;
     });
 });
