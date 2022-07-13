@@ -65,7 +65,9 @@ export const kubeSuite = () => {
             testPassed = true;
         });
 
-        test('2369: zli connect - Kube REST API plugin - Delete agent pod', async () => {
+        // TODO: this needs to be fixed before it's ready to be added back in
+        // we believe there is a race condition with a previous test
+        test.skip('2369: zli connect - Kube REST API plugin - Delete agent pod', async () => {
             const doCluster = testCluster;
 
             // Init Kube client using DigitalOcean kube-config. We fallback to
