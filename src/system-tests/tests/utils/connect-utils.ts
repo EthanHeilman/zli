@@ -45,7 +45,8 @@ export class ConnectTestUtils {
 
     private _connectTargets: ConnectTarget[] = [];
 
-    public constructor(private connectionService: ConnectionHttpService, private testUtils: TestUtils) {
+    public constructor(private connectionService: ConnectionHttpService, private testUtils: TestUtils)
+    {
     }
 
     /**
@@ -92,7 +93,7 @@ export class ConnectTestUtils {
         // Call "zli connect"
         const connectPromise = callZli(['connect', `${connectTarget.targetUser}@${connectTarget.name}`]);
 
-        if (connectTarget.type === 'dat-bzero') {
+        if(connectTarget.type === 'dat-bzero') {
             // For DATs we have to wait for the waitForDATConnection method to
             // return a connection summary which will have the targetId set.
             // Before this the connectTarget.id will be undefined and its used
@@ -117,7 +118,7 @@ export class ConnectTestUtils {
         const gotUniversalConnectionResponse = await getMockResultValue(createUniversalConnectionSpy.mock.results[0]);
 
         // Assert connection auth details returns expected aws region
-        if (connectTarget.type === 'dat-bzero') {
+        if(connectTarget.type === 'dat-bzero') {
             expect(getShellAuthDetailsSpy).toHaveBeenCalledOnce();
             const gotShellAuthDetails = await getMockResultValue(getShellAuthDetailsSpy.mock.results[0]);
             expect(gotShellAuthDetails.region).toBe<string>(connectTarget.awsRegion);
@@ -126,7 +127,7 @@ export class ConnectTestUtils {
         }
 
 
-        if (exit) {
+        if(exit) {
             await this.sendExitCommand(connectTarget);
 
             // Wait for connect shell to cleanup
@@ -198,12 +199,12 @@ export class ConnectTestUtils {
      * ssm target or a Bzero DAT target into a common interface ConnectTarget
      * that can be used in system-tests
      */
-    public getConnectTarget(target: DigitalOceanSSMTarget | DigitalOceanBZeroTarget | DATBzeroTarget | ContainerBzeroTarget, awsRegion: string): ConnectTarget {
-        if (target.type === 'bzero' || target.type === 'dat-bzero' || target.type == 'container-bzero') {
+    public getConnectTarget(target: DigitalOceanSSMTarget | DigitalOceanBZeroTarget | DATBzeroTarget | ContainerBzeroTarget, awsRegion: string) : ConnectTarget {
+        if(target.type === 'bzero' || target.type === 'dat-bzero' || target.type == 'container-bzero' ) {
             const bzeroConnectTarget = this.getBZeroConnectTarget(target, awsRegion);
             this._connectTargets.push(bzeroConnectTarget);
             return bzeroConnectTarget;
-        } else if (target.type === 'ssm') {
+        } else if(target.type === 'ssm') {
             const mockStdin = stdin();
             const capturedOutput: string[] = [];
             jest.spyOn(ShellUtilWrappers, 'pushToStdOut').mockImplementation((output) => {
@@ -218,7 +219,7 @@ export class ConnectTestUtils {
                 targetUser: ssmUser,
                 type: 'ssm',
                 writeToStdIn: async (data) => {
-                    if (!mockStdin) {
+                    if(! mockStdin) {
                         throw new Error('mockStdin is undefined');
                     }
                     await this.sendMockInput(data, (data) => mockStdin.send(data));
@@ -227,7 +228,7 @@ export class ConnectTestUtils {
                     return capturedOutput;
                 },
                 cleanup: () => {
-                    if (mockStdin) {
+                    if(mockStdin) {
                         mockStdin.restore();
                     }
                 }
@@ -254,7 +255,7 @@ export class ConnectTestUtils {
                     daemonPty = this.spawnDaemonPty(finalDaemonPath, args, cwd);
                     daemonPty.onData((data: string) => capturedOutput.push(data));
                     daemonPty.onExit((e: { exitCode: number | PromiseLike<number>; }) => resolve(e.exitCode));
-                } catch (err) {
+                } catch(err) {
                     reject(err);
                 }
             });
@@ -264,7 +265,7 @@ export class ConnectTestUtils {
         let targetName: string;
         let targetUser: string;
 
-        if (target.type === 'bzero' || target.type == 'container-bzero') {
+        if(target.type === 'bzero' || target.type == 'container-bzero') {
             targetId = target.bzeroTarget.id;
             targetName = target.bzeroTarget.name;
             if (target.type === 'bzero') {
@@ -272,7 +273,7 @@ export class ConnectTestUtils {
             } else if (target.type === 'container-bzero') {
                 targetUser = 'root';
             }
-        } else if (target.type === 'dat-bzero') {
+        } else if(target.type === 'dat-bzero') {
             // For DATs we do not know the target ID until after the DAT is
             // created and registers. So set the id as undefined and handle
             // updating this value during the connect test.
@@ -292,7 +293,7 @@ export class ConnectTestUtils {
             targetUser: targetUser,
             type: target.type,
             writeToStdIn: async (data) => {
-                if (!daemonPty) {
+                if(! daemonPty) {
                     throw new Error('daemonPty is undefined');
                 }
 
@@ -302,7 +303,7 @@ export class ConnectTestUtils {
                 return capturedOutput;
             },
             cleanup: () => {
-                if (daemonPty) daemonPty.kill();
+                if(daemonPty) daemonPty.kill();
             }
         };
 
@@ -313,11 +314,11 @@ export class ConnectTestUtils {
      * Gets list of TargetUsers needed in bzero TargetConnect policies to be
      * able to connect to bzero/ssm targets
      */
-    static getPolicyTargetUsers(): TargetUser[] {
+    static getPolicyTargetUsers() : TargetUser[] {
         return [
-            { userName: ssmUser }, // ssm targets
-            { userName: bzeroUser }, // bzero targets
-            { userName: 'root' } // dat targets
+            {userName: ssmUser}, // ssm targets
+            {userName: bzeroUser}, // bzero targets
+            {userName: 'root'} // dat targets
         ];
     }
 
@@ -331,7 +332,7 @@ export class ConnectTestUtils {
      */
     private async sendMockInput(commandToSend: string, writeFunc: (data: string) => void) {
         const commandSplit = commandToSend.split('');
-        for (let i: number = 0; i < commandSplit.length; i++) {
+        for (let i : number = 0; i < commandSplit.length; i++ ){
             const char = commandSplit[i];
 
             // Send our input char by char
