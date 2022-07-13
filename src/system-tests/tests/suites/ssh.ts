@@ -242,7 +242,7 @@ export const sshSuite = () => {
                 const { userName, targetName } = getTargetInfo(testTarget);
                 await callZli(['generate', 'sshConfig', '--mySshPath', userConfigFile, '--bzSshPath', bzSsmConfigFile]);
 
-                const command = `ssh -F ${userConfigFile} -o CheckHostIP=no -o StrictHostKeyChecking=no ${userName}@${targetName} sudo echo success`;
+                const command = `ssh -F ${userConfigFile} -o CheckHostIP=no -o StrictHostKeyChecking=no ${userName}@${targetName} "sudo echo success"`;
 
                 const pexec = promisify(exec);
                 const { stdout } = await pexec(command);
