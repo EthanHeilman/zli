@@ -5,7 +5,7 @@ import * as CleanExitHandler from '../../../handlers/clean-exit.handler';
 import * as ShellUtilWrappers from '../../../utils/shell-util-wrappers';
 
 import { sleepTimeout, TestUtils } from './test-utils';
-import { bzeroTargetCustomUser } from '../system-test-setup';
+import { ssmUser, bzeroUser } from '../system-test-setup';
 import { DigitalOceanSSMTarget, DigitalOceanBZeroTarget } from '../../digital-ocean/digital-ocean-ssm-target.service.types';
 import { callZli } from './zli-utils';
 import { ConnectionHttpService } from '../../../http-services/connection/connection.http-services';
@@ -108,7 +108,9 @@ export class ConnectTestUtils {
         expect(await this.testUtils.EnsureConnectionEventCreated(connectTarget.id, connectTarget.name, connectTarget.targetUser, connectTarget.eventTargetType, ConnectionEventType.ClientConnect));
         expect(await this.testUtils.EnsureConnectionEventCreated(connectTarget.id, connectTarget.name, connectTarget.targetUser, connectTarget.eventTargetType, ConnectionEventType.Created));
 
-        await this.testEchoCommand(connectTarget, stringToEcho);
+        // test echo without sudo, then with it
+        await this.testEchoCommand(connectTarget, stringToEcho, false);
+        await this.testEchoCommand(connectTarget, stringToEcho, true);
 
         expect(createUniversalConnectionSpy).toHaveBeenCalledOnce();
         const gotUniversalConnectionResponse = await getMockResultValue(createUniversalConnectionSpy.mock.results[0]);
@@ -150,7 +152,7 @@ export class ConnectTestUtils {
         await connectTarget.writeToStdIn('exit');
     }
 
-    public async testEchoCommand(connectTarget: ConnectTarget, stringToEcho: string) {
+    public async testEchoCommand(connectTarget: ConnectTarget, stringToEcho: string, useSudo: boolean) {
         await this.testUtils.waitForExpect(
             async () => {
                 // We should get some captured output (from the command
@@ -162,7 +164,7 @@ export class ConnectTestUtils {
                 // Keep sending input until the output spy says we've received what
                 // we sent (possibly sends command more than once).
 
-                const commandToSend = `echo ${stringToEcho}`;
+                const commandToSend = `${useSudo ? 'sudo ' : ''}echo ${stringToEcho}`;
                 await connectTarget.writeToStdIn(commandToSend);
 
                 // Check that the full "hello world" string exists as
@@ -210,7 +212,7 @@ export class ConnectTestUtils {
                 name: target.ssmTarget.name,
                 awsRegion: awsRegion,
                 eventTargetType: 'SSM',
-                targetUser: 'ssm-user',
+                targetUser: ssmUser,
                 type: 'ssm',
                 writeToStdIn: async (data) => {
                     if(! mockStdin) {
@@ -263,7 +265,7 @@ export class ConnectTestUtils {
             targetId = target.bzeroTarget.id;
             targetName = target.bzeroTarget.name;
             if (target.type === 'bzero') {
-                targetUser = bzeroTargetCustomUser;
+                targetUser = bzeroUser;
             } else if (target.type === 'container-bzero') {
                 targetUser = 'root';
             }
@@ -310,8 +312,8 @@ export class ConnectTestUtils {
      */
     static getPolicyTargetUsers() : TargetUser[] {
         return [
-            {userName: 'ssm-user' }, // ssm targets
-            {userName: bzeroTargetCustomUser }, // bzero targets
+            {userName: ssmUser}, // ssm targets
+            {userName: bzeroUser}, // bzero targets
             {userName: 'root'} // dat targets
         ];
     }

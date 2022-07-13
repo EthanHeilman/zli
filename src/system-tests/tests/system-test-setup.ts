@@ -17,8 +17,9 @@ import { DigitalOceanKubeService } from '../digital-ocean/digital-ocean-kube-ser
 import { DigitalOceanSSMTargetService } from '../digital-ocean/digital-ocean-ssm-target-service';
 import { cleanupHelmAgentInstallation } from './system-test-cleanup';
 
-// User to create for bzero targets to use for connect/ssh tests
-export const bzeroTargetCustomUser = 'bzuser';
+// Users to use for connect/ssh tests
+export const ssmUser = 'ssm-user';
+export const bzeroUser = 'bzero-user';
 
 // Droplet size to create
 const vtDropletSize = DigitalOceanDropletSize.CPU_1_MEM_1GB;
@@ -449,15 +450,8 @@ sudo yum install ${packageName} iperf3 -y
         const pythonWebServerCmd = 'nohup python3 -m http.server > python-server.out 2> python-server.err < /dev/null &';
         const iperfCmd = `nohup iperf3 -s > /var/log/iperf.log 2>&1 &`;
 
-
-        // Add a bzero custom user for connect/ssh tests
-        // --shell options sets default shell as bash
-        // -m option will create a home directory with proper permissions
-        const createBzeroCustomerUserCmd = `useradd ${bzeroTargetCustomUser} --shell /bin/bash -m`;
-
         initBlock = String.raw`${pythonWebServerCmd}
 ${iperfCmd}
-${createBzeroCustomerUserCmd}
 `;
 
         switch (packageManager) {

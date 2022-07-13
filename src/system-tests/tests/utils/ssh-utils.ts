@@ -3,9 +3,7 @@ import fs from 'fs';
 import { allTargets, testTargets } from '../system-test';
 import { DigitalOceanBZeroTarget, DigitalOceanSSMTarget } from '../../digital-ocean/digital-ocean-ssm-target.service.types';
 import { TestTarget } from '../system-test.types';
-import { bzeroTargetCustomUser } from '../system-test-setup';
-
-export const ssmUser = 'ssm-user';
+import { ssmUser, bzeroUser } from '../system-test-setup';
 
 // type-agnostic way to get information about a target
 export function getTargetInfo(testTarget: TestTarget): SshTargetInfo {
@@ -17,7 +15,7 @@ export function getTargetInfo(testTarget: TestTarget): SshTargetInfo {
         target = doTarget as DigitalOceanSSMTarget;
         targetName = target.ssmTarget.name;
     } else {
-        userName = bzeroTargetCustomUser;
+        userName = bzeroUser;
         target = doTarget as DigitalOceanBZeroTarget;
         targetName = target.bzeroTarget.name;
     }

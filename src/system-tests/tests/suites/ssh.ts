@@ -8,7 +8,7 @@ import { allTargets, configService, logger, systemTestEnvId, loggerConfigService
 import { callZli } from '../utils/zli-utils';
 import { removeIfExists } from '../../../utils/utils';
 import { TestUtils } from '../utils/test-utils';
-import { bzeroTargetCustomUser } from '../system-test-setup';
+import { ssmUser, bzeroUser } from '../system-test-setup';
 import { SubjectType } from '../../../../webshell-common-ts/http/v2/common.types/subject.types';
 import { Environment } from '../../../../webshell-common-ts/http/v2/policy/types/environment.types';
 import { TestTarget } from '../system-test.types';
@@ -16,7 +16,7 @@ import { cleanupTargetConnectPolicies } from '../system-test-cleanup';
 import { PolicyHttpService } from '../../../http-services/policy/policy.http-services';
 import { Subject } from '../../../../webshell-common-ts/http/v2/policy/types/subject.types';
 import { VerbType } from '../../../../webshell-common-ts/http/v2/policy/types/verb-type.types';
-import { ssmUser, getTargetInfo, expectIncludeStmtInConfig, expectTargetsInBzConfig } from '../utils/ssh-utils';
+import { getTargetInfo, expectIncludeStmtInConfig, expectTargetsInBzConfig } from '../utils/ssh-utils';
 
 export const sshSuite = () => {
     describe('ssh suite', () => {
@@ -116,7 +116,7 @@ export const sshSuite = () => {
                 description: `Target ssh policy created for system test: ${systemTestUniqueId}`,
                 environments: [environment],
                 targets: [],
-                targetUsers: [{ userName: bzeroTargetCustomUser }],
+                targetUsers: [{ userName: bzeroUser }],
                 verbs: [{ type: VerbType.Tunnel }]
             });
 
@@ -135,7 +135,7 @@ export const sshSuite = () => {
             testPassed = true;
 
             // expect the default username to appear in the bz-config
-            expect(bzConfigContents.includes(bzeroTargetCustomUser)).toBe(true);
+            expect(bzConfigContents.includes(bzeroUser)).toBe(true);
 
         }, 60 * 1000);
 
@@ -235,7 +235,7 @@ export const sshSuite = () => {
                     description: `Target ssh policy created for system test: ${systemTestUniqueId}`,
                     environments: [environment],
                     targets: [],
-                    targetUsers: [{ userName: bzeroTargetCustomUser }, { userName: ssmUser }],
+                    targetUsers: [{ userName: bzeroUser }, { userName: ssmUser }],
                     verbs: [{ type: VerbType.Tunnel }]
                 });
 
@@ -272,7 +272,7 @@ export const sshSuite = () => {
                     description: `Target ssh policy created for system test: ${systemTestUniqueId}`,
                     environments: [environment],
                     targets: [],
-                    targetUsers: [{ userName: bzeroTargetCustomUser }, { userName: ssmUser }],
+                    targetUsers: [{ userName: bzeroUser }, { userName: ssmUser }],
                     verbs: [{ type: VerbType.Tunnel }]
                 });
 
@@ -311,7 +311,7 @@ export const sshSuite = () => {
                     description: `Target ssh policy created for system test: ${systemTestUniqueId}`,
                     environments: [environment],
                     targets: [],
-                    targetUsers: [{ userName: bzeroTargetCustomUser }, { userName: ssmUser }],
+                    targetUsers: [{ userName: bzeroUser }, { userName: ssmUser }],
                     verbs: [{ type: VerbType.Tunnel }]
                 });
 
@@ -331,7 +331,7 @@ export const sshSuite = () => {
                 // Ensure we see the expected error message
                 expect(error).not.toEqual(undefined);
                 const stdError = error.stderr;
-                expect(stdError).toMatch(new RegExp(`You do not have permission to tunnel as targetUser: ${badTargetUser}.\nCurrent allowed users for you: ${bzeroTargetCustomUser},${ssmUser}`));
+                expect(stdError).toMatch(new RegExp(`You do not have permission to tunnel as targetUser: ${badTargetUser}.\nCurrent allowed users for you: ${bzeroUser},${ssmUser}`));
 
                 testPassed = true;
 
