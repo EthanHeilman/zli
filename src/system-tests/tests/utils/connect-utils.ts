@@ -110,9 +110,9 @@ export class ConnectTestUtils {
 
         // test echo without sudo, then with it
         await this.testEchoCommand(connectTarget, stringToEcho, false);
-        console.error("worked without sudo");
+        console.log("worked without sudo");
         await this.testEchoCommand(connectTarget, stringToEcho, true);
-        console.error("worked with sudo");
+        console.log("worked with sudo");
 
         expect(createUniversalConnectionSpy).toHaveBeenCalledOnce();
         const gotUniversalConnectionResponse = await getMockResultValue(createUniversalConnectionSpy.mock.results[0]);
@@ -167,9 +167,10 @@ export class ConnectTestUtils {
                 // we sent (possibly sends command more than once).
 
                 const commandToSend = `${useSudo ? 'sudo ' : ''}echo ${stringToEcho}`;
-                console.log("writing...");
                 await connectTarget.writeToStdIn(commandToSend);
-                console.log("wrote!");
+                if (useSudo) {
+                    console.log("Wrote with sudo...")
+                }
 
                 // Check that the full "hello world" string exists as
                 // one of the strings in the captured output. This
@@ -182,12 +183,19 @@ export class ConnectTestUtils {
                 const expectedRegex = [
                     expect.stringMatching(new RegExp(stringToEcho))
                 ];
+                if (useSudo) {
+                    console.log("Checking with sudo...")
+                }
                 expect(capturedOutput).toEqual(
                     expect.arrayContaining(expectedRegex),
                 );
 
                 // Check that command exists in our backend, its possible this will fail on first attempts if we go too fast
                 await this.testUtils.EnsureCommandLogExists(connectTarget.id, connectTarget.name, connectTarget.targetUser, connectTarget.eventTargetType, commandToSend);
+
+                if (useSudo) {
+                    console.log("checked with sudo")
+                }
             },
             1000 * 60,  // Timeout,
             1000 * 1    // Interval
