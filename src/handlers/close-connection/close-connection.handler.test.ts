@@ -66,7 +66,7 @@ describe('Close Connection suite', () => {
         jest.spyOn(SpaceHttpService.prototype, 'ListSpaces').mockImplementation(async () => []);
         const getConnectionSpy = jest.spyOn(ConnectionHttpService.prototype, 'GetShellConnection').mockImplementation(async () => mockConnectionSummary);
         const closeConnectionSpy = jest.spyOn(ConnectionHttpService.prototype, 'CloseConnection').mockImplementation(async () => Promise.resolve());
-        const cleanExitSpy = jest.spyOn(CleanExitHandler, 'cleanExit').mockImplementationOnce(async () => Promise.reject(Error('some-err')));
+        const cleanExitSpy = jest.spyOn(CleanExitHandler, 'cleanExit').mockImplementation(async () => Promise.reject(Error('some-err')));
 
 
         // Call the function
@@ -130,7 +130,7 @@ describe('Close Connection suite', () => {
         closedConnection.state = ConnectionState.Closed;
         const getConnectionSpy = jest.spyOn(ConnectionHttpService.prototype, 'GetShellConnection').mockImplementation(async () => closedConnection);
         const closeConnectionSpy = jest.spyOn(ConnectionHttpService.prototype, 'CloseConnection').mockImplementation(async () => Promise.resolve());
-        const cleanExitSpy = jest.spyOn(CleanExitHandler, 'cleanExit').mockImplementationOnce(async () => Promise.reject(Error('some-err')));
+        const cleanExitSpy = jest.spyOn(CleanExitHandler, 'cleanExit').mockImplementation(async () => Promise.reject(Error('some-err')));
 
 
         // Call the function

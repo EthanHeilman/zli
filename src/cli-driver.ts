@@ -120,6 +120,37 @@ export class CliDriver
     private bzeroTargets: Promise<BzeroAgentSummary[]>;
     private envs: Promise<EnvironmentSummary[]>;
 
+    private availableCommands: Set<string> = new Set([
+        'login',
+        'connect',
+        'status',
+        'disconnect',
+        'default-targetgroup',
+        'generate',
+        'policy',
+        'describe-cluster-policy',
+        'attach',
+        'close',
+        'list-targets',
+        'lt',
+        'list-connections',
+        'lc',
+        'user',
+        'group',
+        'targetuser',
+        'targetgroup',
+        'ssh-proxy-config',
+        'ssh-proxy',
+        'configure',
+        'generate-bash',
+        'quickstart',
+        'logout',
+        'kube',
+        'refresh',
+        'register',
+        'api-key',
+    ]);
+
     // use the following to shortcut middleware according to command
     private oauthCommands: Set<string> = new Set([
         'kube',
@@ -214,6 +245,14 @@ export class CliDriver
                 const initResponse = await initMiddleware(argv, this.logger, isSystemTest);
                 this.configService = initResponse.configService;
                 this.keySplittingService = initResponse.keySplittingService;
+            })
+            .middleware(async (argv) => {
+                if(argv['_'].length !== 0) {
+                    if(baseCmd != argv['_'][0]) {
+                        this.logger.error(`You have provided ${baseCmd} and ${argv['_'][0]}. You cannot specify more than one zli commands.`);
+                        await cleanExit(1, this.logger);
+                    }
+                }
             })
             .middleware(async (_) => {
                 if(!this.GACommands.has(baseCmd)) {
@@ -662,6 +701,7 @@ export class CliDriver
             .demandCommand(1, '') // if no command, raise failure
             .strict() // any command-line argument given that is not demanded, or does not have a corresponding description, will be reported as an error.
             .help() // auto gen help message
+            .version()
             .showHelpOnFail(false)
             .epilog(`Note:
  - <targetString> format: ${targetStringExample}
@@ -673,45 +713,36 @@ Command arguments key:
  - [arg] is optional or sometimes required
 
 Need help? https://cloud.bastionzero.com/support`)
-            .fail(isSystemTest ? false : (msg: string, err : string | Error, yargs) => {
-                if (this.logger) {
-                    if (msg) {
-                        this.logger.error(msg);
-                    }
-                    if (err) {
-                        if (typeof err === 'string') {
-                            this.logger.error(err);
-                        } else {
-                            this.logger.error(err.message);
-                            if (err.stack)
-                                this.logger.debug(err.stack);
-                        }
-                    }
-                } else {
-                    if (msg) {
-                        console.error(msg);
-                    }
-                    if (err) {
-                        if (typeof err === 'string') {
-                            console.error(err);
-                        } else {
-                            console.error(err.message);
-                        }
-                    }
-                }
-
-                // If there are no args passed, show help screen
-                if (process.argv.slice(2).length == 0){
-                    yargs.showHelp();
-                }
-
-                process.exit(1);
-            });
+            .fail(false);
     }
 
-    public run(argv: string[], isSystemTest?: boolean, callback?: (err: Error, argv: any, output: string) => void) {
+    public async run(argv: string[], isSystemTest?: boolean, callback?: (err: Error, argv: any, output: string) => void) {
         // @ts-ignore TS2589
-        const { baseCmd, parsedArgv } = makeCaseInsensitive(argv);
-        return this.getCliDriver(isSystemTest, baseCmd).parseAsync(parsedArgv, {}, callback);
+        try {
+            const { baseCmd, parsedArgv } = makeCaseInsensitive(this.availableCommands, argv);
+            await this.getCliDriver(isSystemTest, baseCmd).parseAsync(parsedArgv, {}, callback);
+        } catch (err) {
+            if (this.logger) {
+                if (err) {
+                    if (typeof err === 'string') {
+                        this.logger.error(err);
+                    } else {
+                        this.logger.error(err.message);
+                        if (err.stack)
+                            this.logger.debug(err.stack);
+                    }
+                }
+                await cleanExit(1, this.logger);
+            } else {
+                if (err) {
+                    if (typeof err === 'string') {
+                        console.error(err);
+                    } else {
+                        console.error(err.message);
+                    }
+                }
+                process.exit(1);
+            }
+        }
     }
 }

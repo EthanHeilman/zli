@@ -66,7 +66,7 @@ export class HttpService {
     }
 
     private getHttpErrorMessage(route: string, error: HTTPError): string {
-        this.logger.debug(`Error in ${this.baseUrl}/${route}`);
+        this.logger.debug(`Error in ${this.baseUrl}${route}`);
         if(error.response && error.response.body ) {
             // Log the error response body if it exists. This might contain
             // server validation errors in the case of 400 errors as well as
@@ -135,7 +135,8 @@ export class HttpService {
             ).json();
             return resp;
         } catch (error) {
-            throw new Error(this.getHttpErrorMessage(route, error));
+            error.message = this.getHttpErrorMessage(route, error);
+            throw error;
         }
     }
 
@@ -152,7 +153,8 @@ export class HttpService {
             ).text();
             return response;
         } catch (error) {
-            throw new Error(this.getHttpErrorMessage(route, error));
+            error.message = this.getHttpErrorMessage(route, error);
+            throw error;
         }
     }
 
@@ -168,7 +170,8 @@ export class HttpService {
             ).json();
             return resp;
         } catch (error) {
-            throw new Error(this.getHttpErrorMessage(route, error));
+            error.message = this.getHttpErrorMessage(route, error);
+            throw error;
         }
     }
 
@@ -185,7 +188,8 @@ export class HttpService {
             ).json();
             return resp;
         } catch (error) {
-            throw new Error(this.getHttpErrorMessage(route, error));
+            error.message = this.getHttpErrorMessage(route, error);
+            throw error;
         }
     }
 
@@ -202,7 +206,8 @@ export class HttpService {
             ).json();
             return resp;
         } catch (error) {
-            throw new Error(this.getHttpErrorMessage(route, error));
+            error.message = this.getHttpErrorMessage(route, error);
+            throw error;
         }
     }
 
@@ -234,7 +239,8 @@ export class HttpService {
             ).json();
             return resp;
         } catch (error) {
-            throw new Error(this.getHttpErrorMessage(route, error));
+            error.message = this.getHttpErrorMessage(route, error);
+            throw error;
         }
     }
 }

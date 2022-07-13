@@ -1,5 +1,5 @@
 import {
-    findSubstring,
+    isSubstring,
     getTableOfTargets,
     parseTargetType,
     parseTargetStatus
@@ -45,13 +45,13 @@ export async function listTargetsHandler(
     // filter targets down by envIds
     // ref for '!!': https://stackoverflow.com/a/29312197/14782428
     if(!! argv.env) {
-        const envIdFilter = envs.filter(e => findSubstring(argv.env, e.name)).map(e => e.id);
+        const envIdFilter = envs.filter(e => isSubstring(argv.env, e.name)).map(e => e.id);
         allTargets = allTargets.filter(t => envIdFilter.includes(t.environmentId));
     }
 
     // filter targets by name/alias
     if(!! argv.name) {
-        allTargets = allTargets.filter(t => findSubstring(argv.name, t.name));
+        allTargets = allTargets.filter(t => isSubstring(argv.name, t.name));
     }
 
     if(!! argv.status) {
