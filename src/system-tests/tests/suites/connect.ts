@@ -155,11 +155,11 @@ export const connectSuite = () => {
                 const cleanExitSpy = jest.spyOn(CleanExitHandler, 'cleanExit').mockImplementation(() => Promise.resolve());
                 await callZli(['close', connectionId]);
 
-                // cleanExit should be called twice. Once when the zli close
-                // command exits and once when the zli connect command
+                // cleanExit should be called three times. Once when the zli close
+                // command exits and twice for the two times the zli connect command
                 // exits.
                 await testUtils.waitForExpect(
-                    async () => expect(cleanExitSpy).toBeCalledTimes(2),
+                    async () => expect(cleanExitSpy).toBeCalledTimes(3),
                     30 * 1000,
                     1 * 1000
                 );
