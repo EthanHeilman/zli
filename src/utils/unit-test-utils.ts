@@ -27,7 +27,7 @@ import { SpaceSummary } from '../../webshell-common-ts/http/v2/space/types/space
 import { SpaceState } from '../../webshell-common-ts/http/v2/space/types/space-state.types';
 import { UserSummary } from '../../webshell-common-ts/http/v2/user/types/user-summary.types';
 import { DynamicAccessConfigStatus } from '../../webshell-common-ts/http/v2/target/dynamic/types/dynamic-access-config-status.types';
-import { TunnelsResponse } from '../../webshell-common-ts/http/v2/policy-query/responses/tunnels.response';
+import { SshTargetsResponse } from '../../webshell-common-ts/http/v2/policy-query/responses/tunnels.response';
 import { GAService } from '../services/Tracking/google-analytics.service';
 import { EnvironmentHttpService } from '../http-services/environment/environment.http-services';
 import { ConfigService } from '../services/config/config.service';
@@ -300,13 +300,13 @@ export const mockSpaceSummary: SpaceSummary = {
 
 export const mockScript: string = 'test-script';
 
-export const mockTunnelsResponse: TunnelsResponse = {
+export const mockTunnelsResponse: SshTargetsResponse = {
     guid: 'test-guid',
     targetName: 'test-target-name',
     targetUsers: mockTargetUserList
 };
 
-export const mockTunnelsResponseList: TunnelsResponse[] = [
+export const mockTunnelsResponseList: SshTargetsResponse[] = [
     mockTunnelsResponse
 ];
 

@@ -226,11 +226,18 @@ export class ConfigService implements ConfigInterface {
         this.config.set('whoami', me);
     }
 
-    public sshKeyPath() {
+    public sshKeyPath(): string {
         if(! this.config.get('sshKeyPath'))
             this.config.set('sshKeyPath', path.join(path.dirname(this.config.path), 'bzero-temp-key'));
 
         return this.config.get('sshKeyPath');
+    }
+
+    public sshKnownHostsPath(): string {
+        if (!this.config.get('sshKnownHostsPath'))
+            this.config.set('sshKnownHostsPath', path.join(path.dirname(this.config.path), 'bastionzero-known_hosts'));
+
+        return this.config.get('sshKnownHostsPath');
     }
 
     public logout(): void

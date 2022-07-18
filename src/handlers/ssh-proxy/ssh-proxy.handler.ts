@@ -1,4 +1,5 @@
 import { SemVer, lt, parse } from 'semver';
+import net from 'net';
 import { spawn, SpawnOptions } from 'child_process';
 
 import { KeySplittingService } from '../../../webshell-common-ts/keysplitting.service/keysplitting.service';
@@ -8,7 +9,7 @@ import { SsmTunnelService } from '../../services/ssm-tunnel/ssm-tunnel.service';
 import { cleanExit } from '../clean-exit.handler';
 import { parseTargetString } from '../../utils/utils';
 import { LoggerConfigService } from '../../services/logger/logger-config.service';
-import { copyExecutableToLocalDir, getBaseDaemonArgs } from '../../utils/daemon-utils';
+import { copyExecutableToLocalDir, getBaseDaemonArgs, getOrDefaultLocalport } from '../../utils/daemon-utils';
 import { sshProxyArg } from './ssh-proxy.command-builder';
 import yargs from 'yargs';
 import { ConnectionHttpService } from '../../http-services/connection/connection.http-services';
@@ -16,6 +17,7 @@ import { TargetType } from '../../../webshell-common-ts/http/v2/target/types/tar
 import { CreateUniversalConnectionResponse } from '../../../webshell-common-ts/http/v2/connection/responses/create-universal-connection.response';
 
 const minimumAgentVersion = '6.1.0';
+const readyMsg = 'BZERO-DAEMON READY-TO-CONNECT';
 
 
 export async function sshProxyHandler(
@@ -27,11 +29,11 @@ export async function sshProxyHandler(
 ) {
     let prefix = 'bzero-';
     const configName = configService.getConfigName();
-    if(configName != 'prod') {
+    if (configName != 'prod') {
         prefix = `${configName}-${prefix}`;
     }
 
-    if(! argv.host.startsWith(prefix)) {
+    if (!argv.host.startsWith(prefix)) {
         this.logger.error(`Invalid host provided: must have form ${prefix}<target>. Target must be either target id or name`);
         await cleanExit(1, this.logger);
     }
@@ -40,13 +42,12 @@ export async function sshProxyHandler(
     const targetString = argv.user + '@' + argv.host.substr(prefix.length);
     const parsedTarget = parseTargetString(targetString);
     const targetUser = parsedTarget.user;
-    if(! targetUser) {
+    if (!targetUser) {
         this.logger.error('No user provided for ssh proxy');
         await cleanExit(1, this.logger);
     }
 
-    if(argv.port < 1 || argv.port > 65535)
-    {
+    if (argv.port < 1 || argv.port > 65535) {
         this.logger.error(`Port ${argv.port} outside of port range [1-65535]`);
         await cleanExit(1, this.logger);
     }
@@ -63,15 +64,27 @@ export async function sshProxyHandler(
     const sshTunnelParameters: SshTunnelParameters = {
         port: argv.port,
         identityFile: argv.identityFile,
-        targetUser: argv.user
+        targetUser: argv.user,
+        hostNames: [parsedTarget.name, argv.host]
     };
 
-    switch(createUniversalConnectionResponse.targetType)
-    {
+    switch (createUniversalConnectionResponse.targetType) {
     case TargetType.SsmTarget:
         return await ssmSshProxyHandler(configService, logger, sshTunnelParameters, createUniversalConnectionResponse, keySplittingService);
     case TargetType.Bzero:
-        return await bzeroSshProxyHandler(configService, logger, sshTunnelParameters, createUniversalConnectionResponse, loggerConfigService);
+        // agentVersion will be null if this isn't a valid version (i.e if its "$AGENT_VERSION" string during development)
+        const agentVersion = parse(createUniversalConnectionResponse.agentVersion);
+        if (agentVersion && lt(agentVersion, new SemVer(minimumAgentVersion))) {
+            logger.error(`Tunneling to Bzero Target is only supported on agent versions >= ${minimumAgentVersion}. Agent version is ${agentVersion}`);
+            cleanExit(1, logger);
+        }
+
+        // if the user has file transfer access but not tunnel access, give them a transparent connection
+        if (createUniversalConnectionResponse.sshScpOnly) {
+            return await bzeroTransparentSshProxyHandler(configService, logger, sshTunnelParameters, createUniversalConnectionResponse, loggerConfigService);
+        } else {
+            return await bzeroOpaueSshProxyHandler(configService, logger, sshTunnelParameters, createUniversalConnectionResponse, loggerConfigService);
+        }
     default:
         logger.error(`Unhandled ssh target type ${createUniversalConnectionResponse.targetType}`);
         return -1;
@@ -110,16 +123,9 @@ async function ssmSshProxyHandler(configService: ConfigService, logger: Logger, 
 }
 
 /**
- * Launch an SSH tunnel session to a bzero target
+ * Launch an "opaque" SSH tunnel session to a bzero target
  */
-async function bzeroSshProxyHandler(configService: ConfigService, logger: Logger, sshTunnelParameters: SshTunnelParameters, createUniversalConnectionResponse: CreateUniversalConnectionResponse, loggerConfigService: LoggerConfigService) {
-    // agentVersion will be null if this isn't a valid version (i.e if its "$AGENT_VERSION" string during development)
-    const agentVersion = parse(createUniversalConnectionResponse.agentVersion);
-    if (agentVersion && lt(agentVersion, new SemVer(minimumAgentVersion))) {
-        logger.error(`Tunneling to Bzero Target is only supported on agent versions >= ${minimumAgentVersion}. Agent version is ${agentVersion}`);
-        return 1;
-    }
-
+async function bzeroOpaueSshProxyHandler(configService: ConfigService, logger: Logger, sshTunnelParameters: SshTunnelParameters, createUniversalConnectionResponse: CreateUniversalConnectionResponse, loggerConfigService: LoggerConfigService) {
     // Build our args and cwd
     const baseArgs = getBaseDaemonArgs(configService, loggerConfigService, createUniversalConnectionResponse.agentPublicKey, createUniversalConnectionResponse.connectionId, createUniversalConnectionResponse.connectionAuthDetails);
     const pluginArgs = [
@@ -128,8 +134,11 @@ async function bzeroSshProxyHandler(configService: ConfigService, logger: Logger
         `-remoteHost="localhost"`,
         `-remotePort="${sshTunnelParameters.port}"`,
         `-identityFile="${sshTunnelParameters.identityFile}"`,
+        `-knownHostsFile="${configService.sshKnownHostsPath()}"`,
+        `-hostNames="${sshTunnelParameters.hostNames.join(',')}"`,
         `-logPath="${loggerConfigService.daemonLogPath()}"`,
-        `-plugin="ssh"`
+        `-plugin="ssh"`,
+        `-sshAction="opaque"`
     ];
 
     let args = baseArgs.concat(pluginArgs);
@@ -164,21 +173,121 @@ async function bzeroSshProxyHandler(configService: ConfigService, logger: Logger
         });
 
         // pass stdio between SSH and the daemon
-        process.stdin.on('data', async (data) => {
+        process.stdin.on('data', (data) => {
             daemonProcess.stdin.write(data);
         });
-        daemonProcess.stdout.on('data', async (data) => {
+        daemonProcess.stdout.on('data', (data) => {
             process.stdout.write(data);
         });
 
         // let daemon know when the session has ended
-        process.stdin.on('close', async function () {
+        process.stdin.on('close', function () {
             daemonProcess.stdin.end();
         });
 
         daemonProcess.on('close', async (exitCode) => {
             if (exitCode !== 0) {
-                logger.error(`ssh daemon close event with nonzero exit code ${exitCode} -- for more details, see ${loggerConfigService.logPath()}`);
+                logger.error(`ssh daemon close event with nonzero exit code ${exitCode} -- for more details, see ${loggerConfigService.daemonLogPath()}`);
+            }
+            await cleanExit(exitCode, logger);
+        });
+
+    } catch (err) {
+        logger.error(`Error starting ssh daemon: ${err}`);
+        await cleanExit(1, logger);
+    }
+}
+
+/**
+ * Launch a "transparent" SSH tunnel session to a bzero target
+ *
+ * Note that we connect to the daemon differently here than above. In transparent mode, the daemon acts
+ *      as an SSH server, and the implementation of that behavior requires a TCP connection instead of stdio
+ *      Thus we use stdio as a way for the daemon to communicate with the ZLI directly, and the TCP connection
+ *      to carry messages between the daemon and the local SSH process
+ */
+async function bzeroTransparentSshProxyHandler(configService: ConfigService, logger: Logger, sshTunnelParameters: SshTunnelParameters, createUniversalConnectionResponse: CreateUniversalConnectionResponse, loggerConfigService: LoggerConfigService) {
+    // Build our args and cwd
+    const baseArgs = getBaseDaemonArgs(configService, loggerConfigService, createUniversalConnectionResponse.agentPublicKey, createUniversalConnectionResponse.connectionId, createUniversalConnectionResponse.connectionAuthDetails);
+
+    const localPort = await getOrDefaultLocalport(null);
+
+    const pluginArgs = [
+        `-targetId="${createUniversalConnectionResponse.targetId}"`,
+        `-targetUser="${sshTunnelParameters.targetUser}"`,
+        `-remoteHost="localhost"`,
+        `-remotePort="${sshTunnelParameters.port}"`,
+        `-identityFile="${sshTunnelParameters.identityFile}"`,
+        `-knownHostsFile="${configService.sshKnownHostsPath()}"`,
+        `-hostNames="${sshTunnelParameters.hostNames.join(',')}"`,
+        `-logPath="${loggerConfigService.daemonLogPath()}"`,
+        `-plugin="ssh"`,
+        `-sshAction="transparent"`,
+        `-localPort="${localPort}"`
+    ];
+
+    let args = baseArgs.concat(pluginArgs);
+
+    let cwd = process.cwd();
+
+    // Copy over our executable to a temp file
+    let finalDaemonPath = '';
+    if (process.env.ZLI_CUSTOM_DAEMON_PATH) {
+        // If we set a custom path, we will try to start the daemon from the source code
+        cwd = process.env.ZLI_CUSTOM_DAEMON_PATH;
+        finalDaemonPath = 'go';
+        args = ['run', 'daemon.go'].concat(args);
+    } else {
+        finalDaemonPath = await copyExecutableToLocalDir(logger, configService.configPath());
+    }
+
+    try {
+        const options: SpawnOptions = {
+            cwd: cwd,
+            detached: false,
+            shell: true,
+            stdio: 'pipe'
+        };
+
+        const daemonProcess = spawn(finalDaemonPath, args, options);
+
+        configService.logoutDetected.subscribe(() => {
+            logger.error(`\nLogged out by another zli instance. Terminating ssh tunnel\n`);
+            daemonProcess.stdin.end();
+            process.stdout.end();
+        });
+
+        // pass stdio between SSH and the daemon
+        const client = new net.Socket();
+
+        // wait for daemon to tell us it is listening
+        daemonProcess.stdout.on('data', (data) => {
+            if (data == readyMsg) {
+                client.connect(localPort, '127.0.0.1');
+
+                process.stdin.on('data', (data) => {
+                    client.write(data);
+                });
+
+                client.on('data', (data) => {
+                    process.stdout.write(data);
+                });
+            }
+        });
+
+        daemonProcess.stderr.on('data', (data) => {
+            logger.error(`daemon error: ${data}\r\n`);
+        });
+
+        // let daemon know when the session has ended
+        process.stdin.on('close', function () {
+            daemonProcess.stdin.end();
+        });
+
+        daemonProcess.on('close', async (exitCode) => {
+            process.stdout.end();
+            if (exitCode !== 0) {
+                logger.error(`ssh daemon close event with nonzero exit code ${exitCode} -- for more details, see ${loggerConfigService.daemonLogPath()}`);
             }
             await cleanExit(exitCode, logger);
         });
@@ -193,4 +302,5 @@ export interface SshTunnelParameters {
     port: number;
     identityFile: string;
     targetUser: string;
+    hostNames: string[];
 }

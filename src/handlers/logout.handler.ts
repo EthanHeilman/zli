@@ -11,8 +11,9 @@ export async function logoutHandler(configService: ConfigService, logger: Logger
     configService.logout();
     configService.deleteSessionId();
     logger.info('Closing any existing SSH Tunnel Connections');
-    logger.info('Clearing temporary SSH identity file');
+    logger.info('Clearing temporary SSH files');
     removeIfExists(configService.sshKeyPath());
+    removeIfExists(configService.sshKnownHostsPath());
 
     // Close any daemon connections, start with kube
     logger.info('Closing any existing Kube Connections');

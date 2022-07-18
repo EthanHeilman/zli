@@ -2,7 +2,7 @@ import { KubernetesPolicyQueryResponse } from '../../../webshell-common-ts/http/
 import { ProxyPolicyQueryResponse } from '../../../webshell-common-ts/http/v2/policy-query/responses/proxy-policy-query.response';
 import { TargetConnectPolicyQueryResponse } from '../../../webshell-common-ts/http/v2/policy-query/responses/target-connect-policy-query.responses';
 import { TargetType } from '../../../webshell-common-ts/http/v2/target/types/target.types';
-import { TunnelsResponse } from '../../../webshell-common-ts/http/v2/policy-query/responses/tunnels.response';
+import { SshTargetsResponse } from '../../../webshell-common-ts/http/v2/policy-query/responses/tunnels.response';
 import { ConfigService } from '../../services/config/config.service';
 import { HttpService } from '../../services/http/http.service';
 import { Logger } from '../../services/logger/logger.service';
@@ -66,7 +66,7 @@ export class PolicyQueryHttpService extends HttpService
 
     }
 
-    public GetTunnels(): Promise<TunnelsResponse[]> {
-        return this.Get('target-connect/tunnels');
+    public GetSshTargets(): Promise<SshTargetsResponse[]> {
+        return this.Get('target-connect/ssh');
     }
 }

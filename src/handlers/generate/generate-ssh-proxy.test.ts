@@ -33,6 +33,7 @@ Add the following lines to your ssh config (~/.ssh/config) file:
 
 Host test-config-bzero-*
   IdentityFile /test/sshKeyPath
+  UserKnownHostsFile /test/knownHosts
   ProxyCommand npm run start ssh-proxy --configName=test-config -s %n %r %p /test/sshKeyPath
 
 Then you can use native ssh to connect to any of your ssm targets using the following syntax:

@@ -4,7 +4,7 @@ import yargs from 'yargs';
 import { ConfigService } from '../../services/config/config.service';
 import { Logger } from '../../services/logger/logger.service';
 import { PolicyQueryHttpService } from '../../http-services/policy-query/policy-query.http-services';
-import { TunnelsResponse } from '../../../webshell-common-ts/http/v2/policy-query/responses/tunnels.response';
+import { SshTargetsResponse } from '../../../webshell-common-ts/http/v2/policy-query/responses/tunnels.response';
 import { buildSshConfigStrings } from './generate-ssh-proxy.handler';
 import { generateSshConfigArgs } from './generate-ssh-config.command-builder';
 
@@ -17,13 +17,13 @@ import { generateSshConfigArgs } from './generate-ssh-config.command-builder';
  */
 export async function generateSshConfigHandler(argv: yargs.Arguments<generateSshConfigArgs>, configService: ConfigService, logger: Logger, processName: string) {
     const policyQueryHttpService = new PolicyQueryHttpService(configService, logger);
-    const tunnels: TunnelsResponse[] = await policyQueryHttpService.GetTunnels();
+    const sshTargets: SshTargetsResponse[] = await policyQueryHttpService.GetSshTargets();
 
     // Build our ssh config file -- note that by using this function with 'true' we are chosing to add the prefix before our hostname token in the proxycommand
-    const { identityFile, proxyCommand, prefix } = await buildSshConfigStrings(configService, processName, logger, true);
+    const { identityFile, knownHostsFile, proxyCommand, prefix } = await buildSshConfigStrings(configService, processName, logger, true);
     // here we set it to false to get the special case of the wildcard proxyCommand, which shouldn't have a prefix
     const { proxyCommand: proxyWithoutPrefix } = await buildSshConfigStrings(configService, processName, logger, false);
-    const bzConfigContentsFormatted = formatBzConfigContents(tunnels, identityFile, proxyCommand, proxyWithoutPrefix, prefix);
+    const bzConfigContentsFormatted = formatBzConfigContents(sshTargets, identityFile, knownHostsFile, proxyCommand, proxyWithoutPrefix, prefix);
 
     // Determine and write to the user's ssh and bzero-ssh config path
     const { userConfigPath, bzConfigPath } = getFilePaths(argv.mySshPath, argv.bzSshPath, prefix);
@@ -51,23 +51,25 @@ function getFilePaths(userSshPath: string, bzSshPath: string, configPrefix: stri
 
 /**
  * given some config information, produces a valid SSH config string
- * @param tunnels {TunnelsResponse[]} A list of targets the user can access over SSH tunnel
+ * @param tunnels {SshTargetsResponse[]} A list of targets the user can access over SSH tunnel
  * @param identityFile {string} A path to the user's key file
+ * @param knownHostsFile {string} A path to the user's known_hosts file
  * @param proxyCommand {string} A proxy command routing SSH requests to the ZLI
  * @param proxyWildcard {string} A proxy command specific to the wildcard entry
  * @param configPrefix {string} assigns a prefix to the bz config filename based on runtime environment (e.g. dev, stage)
  * @returns {string} the bz config file contents
  */
-function formatBzConfigContents(tunnels: TunnelsResponse[], identityFile: string, proxyCommand: string, proxyWildcard: string, configPrefix: string): string {
+function formatBzConfigContents(sshTargets: SshTargetsResponse[], identityFile: string, knownHostsFile: string, proxyCommand: string, proxyWildcard: string, configPrefix: string): string {
     let contents = ``;
 
     // add per-target configs
-    for (const tunnel of tunnels) {
+    for (const target of sshTargets) {
         // only add username if there is exactly one -- otherwise, user must specify user@host
-        const user = tunnel.targetUsers.length === 1 ? `User ${tunnel.targetUsers[0].userName}` : ``;
+        const user = target.targetUsers.length === 1 ? `User ${target.targetUsers[0].userName}` : ``;
         contents += `
-Host ${tunnel.targetName}
+Host ${target.targetName}
     ${identityFile}
+    ${knownHostsFile}
     ${proxyCommand}
     ${user}
 `;
@@ -77,6 +79,7 @@ Host ${tunnel.targetName}
     contents += `
 Host ${configPrefix}*
     ${identityFile}
+    ${knownHostsFile}
     ${proxyWildcard}
 `;
 
