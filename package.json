@@ -1,7 +1,6 @@
 {
   "name": "@bastionzero/zli",
   "version": "6.7.2",
->>>>>>> 952b89f5a6b34a50aaf7beb362ff067560d2970d
   "description": "BastionZero cli",
   "repository": {
     "type": "git",
