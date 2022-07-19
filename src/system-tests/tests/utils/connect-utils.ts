@@ -26,6 +26,7 @@ interface ConnectTarget {
     // Connect tests only rely on fields that are common between both ssm/bzero targets (id/name)
     id: string;
     name: string;
+    environmentId: string;
     type: 'ssm' | 'bzero' | 'dat-bzero' | 'container-bzero';
     awsRegion: string;
 
@@ -91,7 +92,9 @@ export class ConnectTestUtils {
         const getShellAuthDetailsSpy = jest.spyOn(ConnectionHttpService.prototype, 'GetShellConnectionAuthDetails');
 
         // Call "zli connect"
-        const connectPromise = callZli(['connect', `${connectTarget.targetUser}@${connectTarget.name}`]);
+        // Additionally, calls uses environmentId in the connect string. expected flow is the same
+        // We should expect to see this environment variable in the connection event and command event logs
+        const connectPromise = callZli(['connect', `${connectTarget.targetUser}@${connectTarget.name}.${connectTarget.environmentId}`]);
 
         if(connectTarget.type === 'dat-bzero') {
             // For DATs we have to wait for the waitForDATConnection method to
@@ -105,8 +108,8 @@ export class ConnectTestUtils {
         }
 
         // Ensure that the created and connect event exists
-        expect(await this.testUtils.EnsureConnectionEventCreated(connectTarget.id, connectTarget.name, connectTarget.targetUser, connectTarget.eventTargetType, ConnectionEventType.ClientConnect));
-        expect(await this.testUtils.EnsureConnectionEventCreated(connectTarget.id, connectTarget.name, connectTarget.targetUser, connectTarget.eventTargetType, ConnectionEventType.Created));
+        expect(await this.testUtils.EnsureConnectionEventCreated(connectTarget.id, connectTarget.name, connectTarget.targetUser, connectTarget.eventTargetType, connectTarget.environmentId, ConnectionEventType.ClientConnect));
+        expect(await this.testUtils.EnsureConnectionEventCreated(connectTarget.id, connectTarget.name, connectTarget.targetUser, connectTarget.eventTargetType, connectTarget.environmentId, ConnectionEventType.Created));
 
         // test echo without sudo, then with it
         await this.testEchoCommand(connectTarget, stringToEcho, false);
@@ -134,7 +137,7 @@ export class ConnectTestUtils {
             await connectPromise;
 
             // Ensure that the client disconnect event is here
-            expect(await this.testUtils.EnsureConnectionEventCreated(connectTarget.id, connectTarget.name, connectTarget.targetUser, connectTarget.eventTargetType, ConnectionEventType.ClientDisconnect));
+            expect(await this.testUtils.EnsureConnectionEventCreated(connectTarget.id, connectTarget.name, connectTarget.targetUser, connectTarget.eventTargetType, connectTarget.environmentId, ConnectionEventType.ClientDisconnect));
         }
 
         return gotUniversalConnectionResponse.connectionId;
@@ -191,7 +194,7 @@ export class ConnectTestUtils {
                 );
 
                 // Check that command exists in our backend, its possible this will fail on first attempts if we go too fast
-                await this.testUtils.EnsureCommandLogExists(connectTarget.id, connectTarget.name, connectTarget.targetUser, connectTarget.eventTargetType, commandToSend);
+                await this.testUtils.EnsureCommandLogExists(connectTarget.id, connectTarget.name, connectTarget.targetUser, connectTarget.eventTargetType, connectTarget.environmentId, commandToSend);
 
                 if (useSudo) {
                     console.log("checked with sudo")
@@ -223,6 +226,8 @@ export class ConnectTestUtils {
                 id: target.ssmTarget.id,
                 name: target.ssmTarget.name,
                 awsRegion: awsRegion,
+                // no environmentId in ssm targets, so emulates Guid.Empty
+                environmentId: '00000000-0000-0000-0000-000000000000',
                 eventTargetType: 'SSM',
                 targetUser: ssmUser,
                 type: 'ssm',
@@ -272,10 +277,12 @@ export class ConnectTestUtils {
         let targetId: string;
         let targetName: string;
         let targetUser: string;
+        let targetEnvId: string;
 
         if(target.type === 'bzero' || target.type == 'container-bzero') {
             targetId = target.bzeroTarget.id;
             targetName = target.bzeroTarget.name;
+            targetEnvId = target.bzeroTarget.environmentId;
             if (target.type === 'bzero') {
                 targetUser = bzeroUser;
             } else if (target.type === 'container-bzero') {
@@ -287,6 +294,7 @@ export class ConnectTestUtils {
             // updating this value during the connect test.
             targetId = undefined;
             targetName = target.dynamicAccessConfiguration.name;
+            targetEnvId = target.dynamicAccessConfiguration.environmentId;
 
             // dat provisioner creates docker container targets that only have a
             // single root user
@@ -296,6 +304,7 @@ export class ConnectTestUtils {
         const bzeroConnectTarget: ConnectTarget = {
             id: targetId,
             name: targetName,
+            environmentId: targetEnvId,
             awsRegion: awsRegion,
             eventTargetType: 'SHELL',
             targetUser: targetUser,

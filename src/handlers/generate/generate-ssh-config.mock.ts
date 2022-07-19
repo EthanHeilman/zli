@@ -15,21 +15,24 @@ export function sshConfigMockSetup(): void {
         };
     });
     // Mock GetTunnels from PolicyQueryHttpService
-    jest.spyOn(PolicyQueryHttpService.prototype, 'GetTunnels').mockImplementation(async () => mockTunnelsResponseList);
+    jest.spyOn(PolicyQueryHttpService.prototype, 'GetSshTargets').mockImplementation(async () => mockTunnelsResponseList);
     // Mock Config methods used in building ssh config file
     jest.spyOn(ConfigService.prototype, 'getConfigName').mockImplementation(() => 'test-config');
     jest.spyOn(ConfigService.prototype, 'sshKeyPath').mockImplementation(() => '/test/sshKeyPath');
+    jest.spyOn(ConfigService.prototype, 'sshKnownHostsPath').mockImplementation(() => '/test/knownHosts');
 }
 
 // Expected BZ config file
 export const mockBzSshConfigContents: string = `
 Host test-target-name
     IdentityFile /test/sshKeyPath
+    UserKnownHostsFile /test/knownHosts
     ProxyCommand npm run start ssh-proxy --configName=test-config -s test-config-bzero-%n %r %p /test/sshKeyPath
     User test-user
 
 Host test-config-bzero-*
     IdentityFile /test/sshKeyPath
+    UserKnownHostsFile /test/knownHosts
     ProxyCommand npm run start ssh-proxy --configName=test-config -s %n %r %p /test/sshKeyPath
 `;
 

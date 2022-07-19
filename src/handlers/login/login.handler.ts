@@ -109,8 +109,9 @@ export async function login(keySplittingService: KeySplittingService, configServ
     const me = await userHttpService.Me();
     configService.setMe(me);
 
-    // clear temporary SSH identity file
+    // clear temporary SSH files
     removeIfExists(configService.sshKeyPath());
+    removeIfExists(configService.sshKnownHostsPath());
 
     return {
         userRegisterResponse: registerResponse,

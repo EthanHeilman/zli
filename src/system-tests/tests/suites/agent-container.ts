@@ -122,8 +122,7 @@ export const agentContainerSuite = () => {
 
         agentContainersToRun.forEach(async (targetInfo) => {
             // Get the associated targetInfo
-            // Skip agent-container tests until https://commonwealthcrypto.atlassian.net/browse/CWC-1921 is resolved
-            test.skip(`${targetInfo.shellAndRecordCaseID}: agent container - container connect - ${targetInfo.type}`, async () => {
+            test(`${targetInfo.shellAndRecordCaseID}: agent container - container connect - ${targetInfo.type}`, async () => {
                 const testTarget = testContainerAgents.get(targetInfo);
 
                 const sessionRecordingTestMessage = `session recording test - ${systemTestUniqueId}`;

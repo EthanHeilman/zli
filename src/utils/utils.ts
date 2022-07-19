@@ -139,6 +139,7 @@ export function parseTargetStatus(targetStatus: string) : TargetStatus {
 export function parseTargetString(targetString: string) : ParsedTargetString
 {
     // case sensitive check for [targetUser@]<targetId | targetName>[:targetPath]
+    // not sure if i need to modify this
     const pattern = /^([a-z_]([a-z0-9_-]{0,31}|[a-z0-9_-]{0,30}\$)@)?(([0-9A-Fa-f]{8}[-][0-9A-Fa-f]{4}[-][0-9A-Fa-f]{4}[-][0-9A-Fa-f]{4}[-][0-9A-Fa-f]{12})|([a-zA-Z0-9_.-]{1,255}))(:{1}|$)/;
 
     if(! pattern.test(targetString)) {
@@ -150,7 +151,6 @@ export function parseTargetString(targetString: string) : ParsedTargetString
         user: undefined,
         id: undefined,
         name: undefined,
-        path: undefined,
         envId: undefined,
         envName: undefined
     };
@@ -164,18 +164,30 @@ export function parseTargetString(targetString: string) : ParsedTargetString
         atSignSplit = atSignSplit.slice(1);
     }
 
-    // extract targetId and maybe targetPath
-    const colonSplit = atSignSplit[0].split(':', 2);
-    const targetSomething = colonSplit[0];
+    // extract the environment id or name
+    // split only on the first period
+    // everything before is the targetName and everything after is the environment
+    const firstSeparatorIndex = atSignSplit[0].indexOf('.');
+    let targetIdOrName = '';
+    let environmentIdOrName = '';
+    if(firstSeparatorIndex >= 0) {
+        targetIdOrName = atSignSplit[0].slice(0, firstSeparatorIndex);
+        environmentIdOrName = atSignSplit[0].slice(firstSeparatorIndex + 1);
+    } else {
+        targetIdOrName = atSignSplit[0];
+    }
 
     // test if targetSomething is GUID
-    if(isGuid(targetSomething))
-        result.id = targetSomething;
+    if(isGuid(targetIdOrName))
+        result.id = targetIdOrName;
     else
-        result.name = targetSomething;
+        result.name = targetIdOrName;
 
-    if(colonSplit[1] !== '')
-        result.path = colonSplit[1];
+    // test if environmenIdOrName is GUID
+    if(isGuid(environmentIdOrName))
+        result.envId = environmentIdOrName;
+    else if(environmentIdOrName !== '')
+        result.envName = environmentIdOrName;
 
     return result;
 }

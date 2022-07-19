@@ -8,18 +8,20 @@ import { ssmUser, bzeroUser } from '../system-test-setup';
 // type-agnostic way to get information about a target
 export function getTargetInfo(testTarget: TestTarget): SshTargetInfo {
     const doTarget = testTargets.get(testTarget);
-    let userName, targetName: string;
+    let userName, targetName, targetId: string;
     let target;
     if (doTarget.type === 'ssm') {
         userName = ssmUser;
         target = doTarget as DigitalOceanSSMTarget;
         targetName = target.ssmTarget.name;
+        targetId = target.ssmTarget.id;
     } else {
         userName = bzeroUser;
         target = doTarget as DigitalOceanBZeroTarget;
         targetName = target.bzeroTarget.name;
+        targetId = target.bzeroTarget.id;
     }
-    return { userName, targetName };
+    return { userName, targetName, targetId };
 }
 
 /**
@@ -41,4 +43,5 @@ export function expectTargetsInBzConfig(contents: string, toBe: boolean): void {
 export interface SshTargetInfo {
     userName: string
     targetName: string
+    targetId: string
 }

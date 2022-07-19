@@ -19,7 +19,8 @@ export const ssmTestTargetsToRun: TestTarget[] = [
         closeCaseId: '3655',
         badConnectCaseId: '2352',
         sshCaseId: '2150',
-        badSshCaseId: '2361',
+        sshBadUserCaseId: '2361',
+        sshConnectFailsCaseId: '84380',
         groupConnectCaseId: '3094',
         sessionRecordingCaseId: '3042',
         attachCaseId: '6495',
@@ -42,7 +43,13 @@ export const bzeroTestTargetsToRun: TestTarget[] = [
         connectCaseId: '6529',
         closeCaseId: '6565',
         sshCaseId: '46456',
-        badSshCaseId: '46459',
+        sshByUuidCaseId: '87909',
+        sshBadUserCaseId: '46459',
+        sshConnectFailsCaseId: '84381',
+        sshTunnelFailsCaseId: '84392',
+        sshScpCaseId: '84393',
+        sshSftpCaseId: '90259',
+        sshScpByUuidCaseId: '87908',
         badConnectCaseId: '6559',
         groupConnectCaseId: '6561',
         sessionRecordingCaseId: '6572',
@@ -77,7 +84,8 @@ export const extraSsmTestTargetsToRun: TestTarget[] = [
         closeCaseId: '3652',
         badConnectCaseId: '2347',
         sshCaseId: '2147',
-        badSshCaseId: '2358',
+        sshBadUserCaseId: '2358',
+        sshConnectFailsCaseId: '84382',
         groupConnectCaseId: '3091',
         sessionRecordingCaseId: '4974',
         attachCaseId: '6491',
@@ -91,7 +99,8 @@ export const extraSsmTestTargetsToRun: TestTarget[] = [
         closeCaseId: '3653',
         badConnectCaseId: '2350',
         sshCaseId: '2148',
-        badSshCaseId: '2359',
+        sshBadUserCaseId: '2359',
+        sshConnectFailsCaseId: '84383',
         groupConnectCaseId: '3092',
         sessionRecordingCaseId: '4970',
         attachCaseId: '6493',
@@ -105,7 +114,8 @@ export const extraSsmTestTargetsToRun: TestTarget[] = [
         closeCaseId: '3654',
         badConnectCaseId: '2351',
         sshCaseId: '2149',
-        badSshCaseId: '2360',
+        sshBadUserCaseId: '2360',
+        sshConnectFailsCaseId: '84384',
         groupConnectCaseId: '3093',
         sessionRecordingCaseId: '4971',
         attachCaseId: '6494',
@@ -120,7 +130,8 @@ export const extraSsmTestTargetsToRun: TestTarget[] = [
         closeCaseId: '3656',
         badConnectCaseId: '2353',
         sshCaseId: '2151',
-        badSshCaseId: '2362',
+        sshBadUserCaseId: '2362',
+        sshConnectFailsCaseId: '84386',
         groupConnectCaseId: '3095',
         sessionRecordingCaseId: '4969',
         attachCaseId: '6496',
@@ -135,7 +146,8 @@ export const extraSsmTestTargetsToRun: TestTarget[] = [
         closeCaseId: '3659',
         badConnectCaseId: '2354',
         sshCaseId: '2356',
-        badSshCaseId: '2365',
+        sshBadUserCaseId: '2365',
+        sshConnectFailsCaseId: '84387',
         groupConnectCaseId: '3098',
         sessionRecordingCaseId: '4972',
         attachCaseId: '6498',
@@ -149,7 +161,8 @@ export const extraSsmTestTargetsToRun: TestTarget[] = [
         closeCaseId: '3660',
         badConnectCaseId: '2355',
         sshCaseId: '2357',
-        badSshCaseId: '2366',
+        sshBadUserCaseId: '2366',
+        sshConnectFailsCaseId: '84388',
         groupConnectCaseId: '3099',
         sessionRecordingCaseId: '4973',
         attachCaseId: '6499',
@@ -169,7 +182,13 @@ export const extraBzeroTestTargetsToRun: TestTarget[] = [
         iperfDownload: '14971',
         badWebCaseId: '2373',
         sshCaseId: '46454',
-        badSshCaseId: '46458',
+        sshByUuidCaseId: '87910',
+        sshBadUserCaseId: '46458',
+        sshConnectFailsCaseId: '84389',
+        sshTunnelFailsCaseId: '84394',
+        sshScpCaseId: '84395',
+        sshSftpCaseId: '90260',
+        sshScpByUuidCaseId: '87911',
         connectCaseId: '6462',
         closeCaseId: '6564',
         badConnectCaseId: '6558',
@@ -203,9 +222,11 @@ export function initRegionalSSMTargetsTestConfig(logger: Logger): TestTarget[] {
         let pmConnectCaseId = null;
         let pmBadConnectBaseId = null;
         let adSshCaseId = null;
-        let adBadSshCaseId = null;
+        let adSshBadUserCaseId = null;
+        let adSshConnectFailsCaseId = null;
         let pmSshCaseId = null;
-        let pmBadSshCaseId = null;
+        let pmSshBadUserCaseId = null;
+        let pmSshConnectFailsCaseId = null;
         let adCloseCasedId = null;
         let pmCloseCasedId = null;
         let pmGroupConnectCaseId = null;
@@ -229,9 +250,12 @@ export function initRegionalSSMTargetsTestConfig(logger: Logger): TestTarget[] {
             adGroupConnectCaseId = '3096';
 
             adSshCaseId = '2178';
-            adBadSshCaseId = '2363';
+            adSshBadUserCaseId = '2363';
+            adSshConnectFailsCaseId = '84390';
+
             pmSshCaseId = '2179';
-            pmBadSshCaseId = '2364';
+            pmSshBadUserCaseId = '2364';
+            pmSshConnectFailsCaseId = '84391';
 
             adSessionRecordingCaseId = '5003';
             pmSessionRecordingCaseId = '5004';
@@ -252,7 +276,8 @@ export function initRegionalSSMTargetsTestConfig(logger: Logger): TestTarget[] {
                 connectCaseId: adConnectCaseId,
                 badConnectCaseId: adBadConnectCaseId,
                 sshCaseId: adSshCaseId,
-                badSshCaseId: adBadSshCaseId,
+                sshBadUserCaseId: adSshBadUserCaseId,
+                sshConnectFailsCaseId: adSshConnectFailsCaseId,
                 groupConnectCaseId: adGroupConnectCaseId,
                 closeCaseId: adCloseCasedId,
                 sessionRecordingCaseId: adSessionRecordingCaseId,
@@ -266,7 +291,8 @@ export function initRegionalSSMTargetsTestConfig(logger: Logger): TestTarget[] {
                 connectCaseId: pmConnectCaseId,
                 badConnectCaseId: pmBadConnectBaseId,
                 sshCaseId: pmSshCaseId,
-                badSshCaseId: pmBadSshCaseId,
+                sshBadUserCaseId: pmSshBadUserCaseId,
+                sshConnectFailsCaseId: pmSshConnectFailsCaseId,
                 groupConnectCaseId: pmGroupConnectCaseId,
                 closeCaseId: pmCloseCasedId,
                 sessionRecordingCaseId: pmSessionRecordingCaseId,
