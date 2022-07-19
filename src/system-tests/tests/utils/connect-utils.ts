@@ -113,9 +113,9 @@ export class ConnectTestUtils {
 
         // test echo without sudo, then with it
         await this.testEchoCommand(connectTarget, stringToEcho, false);
-        console.log("worked without sudo");
+        console.log('worked without sudo');
         await this.testEchoCommand(connectTarget, stringToEcho, true);
-        console.log("worked with sudo");
+        console.log('worked with sudo');
 
         expect(createUniversalConnectionSpy).toHaveBeenCalledOnce();
         const gotUniversalConnectionResponse = await getMockResultValue(createUniversalConnectionSpy.mock.results[0]);
@@ -172,7 +172,7 @@ export class ConnectTestUtils {
                 const commandToSend = `${useSudo ? 'sudo ' : ''}echo ${stringToEcho}`;
                 await connectTarget.writeToStdIn(commandToSend);
                 if (useSudo) {
-                    console.log("Wrote with sudo...")
+                    console.log('Wrote with sudo...');
                 }
 
                 // Check that the full "hello world" string exists as
@@ -187,7 +187,7 @@ export class ConnectTestUtils {
                     expect.stringMatching(new RegExp(stringToEcho))
                 ];
                 if (useSudo) {
-                    console.log("Checking with sudo...")
+                    console.log('Checking with sudo...');
                 }
                 expect(capturedOutput).toEqual(
                     expect.arrayContaining(expectedRegex),
@@ -197,7 +197,7 @@ export class ConnectTestUtils {
                 await this.testUtils.EnsureCommandLogExists(connectTarget.id, connectTarget.name, connectTarget.targetUser, connectTarget.eventTargetType, connectTarget.environmentId, commandToSend);
 
                 if (useSudo) {
-                    console.log("checked with sudo")
+                    console.log('checked with sudo');
                 }
             },
             1000 * 60,  // Timeout,
