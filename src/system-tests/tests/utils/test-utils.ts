@@ -2,11 +2,12 @@ import { ConfigService } from '../../../../src/services/config/config.service';
 import { Logger } from '../../../services/logger/logger.service';
 import { EventsHttpService } from '../../../../src/http-services/events/events.http-server';
 import { ConnectionEventType } from '../../../../webshell-common-ts/http/v2/event/types/connection-event.types';
-import { ConnectionEventResponse } from '../../../../webshell-common-ts/http/v2/event/response/connection-event-data-message';
 import { configService } from '../system-test';
 import { LoggerConfigService } from '../../../../src/services/logger/logger-config.service';
 import { SubjectType } from '../../../../webshell-common-ts/http/v2/common.types/subject.types';
-import { CommandEventResponse } from '../../../../webshell-common-ts/http/v2/event/response/command-event-data-message';
+import { CommandEventDataMessage } from '../../../../webshell-common-ts/http/v2/event/types/command-event-data-message';
+import { ConnectionEventDataMessage } from '../../../../webshell-common-ts/http/v2/event/types/connection-event-data-message';
+import { EnvironmentHttpService } from '../../../../src/http-services/environment/environment.http-services';
 
 import *  as fs from 'fs';
 
@@ -24,11 +25,13 @@ export class TestUtils {
     eventsService: EventsHttpService;
     loggerConfigService: LoggerConfigService;
     logger: Logger;
+    environmentService: EnvironmentHttpService;
 
     constructor(configService: ConfigService, logger: Logger, loggerConfigService: LoggerConfigService) {
         this.eventsService = new EventsHttpService(configService, logger);
         this.loggerConfigService = loggerConfigService;
         this.logger = logger;
+        this.environmentService = new EnvironmentHttpService(configService, logger);
     };
 
     /**
@@ -39,9 +42,9 @@ export class TestUtils {
      * @param {string} targetType Target type we are looking for (i.e. CLUSTER)
      * @param {string} command Command we are looking for
      */
-    private async BuildCommandEvent(targetId: string, targetName: string, targetUser: string, targetType: string, command: string): Promise<CommandEventResponse> {
+    private async BuildCommandEvent(targetId: string, targetName: string, targetUser: string, targetType: string, targetEnvId: string, targetEnvName: string, command: string): Promise<CommandEventDataMessage> {
         const me = configService.me();
-        const toReturn: CommandEventResponse = {
+        const toReturn: CommandEventDataMessage = {
             id: expect.anything(),
             connectionId: expect.anything(),
             subjectId: me.id,
@@ -53,6 +56,8 @@ export class TestUtils {
             targetName: targetName,
             targetUser: targetUser,
             timestamp: expect.anything(),
+            environmentId: targetEnvId,
+            environmentName: targetEnvName,
             command: command
         };
         return toReturn;
@@ -66,9 +71,9 @@ export class TestUtils {
      * @param {string} targetType Target type we are looking for (i.e. CLUSTER)
      * @param {ConnectionEventType} eventType Event we are looking for
      */
-    private async BuildConnectionEvent(targetId: string, targetName: string, targetUser: string, targetType: string, eventType: ConnectionEventType): Promise<ConnectionEventResponse> {
+    private async BuildConnectionEvent(targetId: string, targetName: string, targetUser: string, targetType: string, targetEnvId: string, targetEnvName: string, eventType: ConnectionEventType): Promise<ConnectionEventDataMessage> {
         const me = configService.me();
-        const toReturn: ConnectionEventResponse = {
+        const toReturn: ConnectionEventDataMessage = {
             id: expect.anything(),
             connectionId: expect.anything(),
             subjectId: me.id,
@@ -82,6 +87,8 @@ export class TestUtils {
             targetName: targetName,
             targetUser: targetUser,
             timestamp: expect.anything(),
+            environmentId: targetEnvId,
+            environmentName: targetEnvName,
             connectionEventType: eventType,
             reason: expect.anything()
         };
@@ -97,11 +104,11 @@ export class TestUtils {
      * @param {string} targetType Target type we are looking for (i.e. CLUSTER)
      * @param {ConnectionEventType} eventType Event we are checking for
      */
-    public async EnsureConnectionEventCreated(targetId: string, targetName: string, targetUser: string, targetType: string, eventType: ConnectionEventType) {
+    public async EnsureConnectionEventCreated(targetId: string, targetName: string, targetUser: string, targetType: string, targetEnvId: string, eventType: ConnectionEventType) {
         // Sometimes the system test goes too fast before the event
         // is propagated to our database, retry getting the event 3 times with some sleep in between
         let failures = 0;
-        let eventCreated: ConnectionEventResponse = undefined;
+        let eventCreated: ConnectionEventDataMessage = undefined;
 
         while (failures < 5) {
             // Query for our events
@@ -131,8 +138,14 @@ export class TestUtils {
             throw new Error(`Unable to find event for targetId ${targetId} for type ${eventType}`);
         }
 
+        // get the environment summary to assert on environment name as well
+        let environmentName = 'n/a';
+        if(targetEnvId !== '00000000-0000-0000-0000-000000000000') {
+            environmentName = (await this.environmentService.GetEnvironment(targetEnvId)).name;
+        }
+
         // Build our connection event
-        const connectionEvent = this.BuildConnectionEvent(targetId, targetName, targetUser, targetType, eventType);
+        const connectionEvent = this.BuildConnectionEvent(targetId, targetName, targetUser, targetType, targetEnvId, environmentName, eventType);
 
         // Ensure the values match
         expect(eventCreated).toMatchObject(connectionEvent);
@@ -146,7 +159,7 @@ export class TestUtils {
      * @param {string} targetType Target type we are looking for (i.e. CLUSTER)
      * @param {string} command Command we are looking for
      */
-    public async EnsureCommandLogExists(targetId: string, targetName: string, targetUser: string, targetType: string, command: string) {
+    public async EnsureCommandLogExists(targetId: string, targetName: string, targetUser: string, targetType: string, targetEnvId: string, command: string) {
 
         // Query for our events
         const startTimestamp = new Date();
@@ -165,8 +178,14 @@ export class TestUtils {
             throw new Error(`Unable to find command: ${command} for targetId ${targetId}`);
         }
 
+        // get the environment summary to assert on environment name as well
+        let environmentName = 'n/a';
+        if(targetEnvId !== '00000000-0000-0000-0000-000000000000') {
+            environmentName = (await this.environmentService.GetEnvironment(targetEnvId)).name;
+        }
+
         // Build our connection event
-        const commandEvent = this.BuildCommandEvent(targetId, targetName, targetUser, targetType, command);
+        const commandEvent = this.BuildCommandEvent(targetId, targetName, targetUser, targetType, targetEnvId, environmentName, command);
 
         // Ensure the values match
         expect(commandCreated).toMatchObject(commandEvent);

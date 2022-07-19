@@ -37,6 +37,8 @@ export async function connectHandler(
         const createUniversalConnectionResponse = await connectionHttpService.CreateUniversalConnection({
             targetId: parsedTarget.id,
             targetName: parsedTarget.name,
+            envId: parsedTarget.envId,
+            envName: parsedTarget.envName,
             targetUser: targetUser,
             targetGroups: argv.targetGroup,
             targetType: parseTargetType(argv.targetType)

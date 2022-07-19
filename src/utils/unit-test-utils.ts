@@ -1,4 +1,7 @@
 import fs from 'fs';
+import { CreateUniversalConnectionRequest } from '../../webshell-common-ts/http/v2/connection/requests/create-universal-connection.request';
+import { CreateUniversalConnectionResponse } from '../../webshell-common-ts/http/v2/connection/responses/create-universal-connection.response';
+import { ShellConnectionAuthDetails } from '../../webshell-common-ts/http/v2/connection/types/shell-connection-auth-details.types';
 import { EnvironmentSummary } from '../../webshell-common-ts/http/v2/environment/types/environment-summary.responses';
 import { KubeClusterSummary } from '../../webshell-common-ts/http/v2/target/kube/types/kube-cluster-summary.types';
 import { TargetStatus } from '../../webshell-common-ts/http/v2/target/types/targetStatus.types';
@@ -288,6 +291,34 @@ export const mockConnectionSummary: ShellConnectionSummary = {
     inputRecording : false,
     subjectId : 'some-subject-id'
 };
+
+export const mockShellAuthDetails: ShellConnectionAuthDetails = {
+    connectionNodeId: '998457d7-cce5-4fd2-98b9-7c550eb7ed5f',
+    authToken: 'test-token',
+    connectionServiceUrl: 'test-connection-url',
+    region: 'test-region'
+};
+
+export const mockUniversalConnectionRequest: CreateUniversalConnectionRequest = {
+    targetId: undefined,
+    targetName: 'bzero-ec2-test',
+    envId: '1e8e28fa-6e6b-4fc0-8994-38d69d987978',
+    envName: undefined,
+    targetUser: 'ec2-user',
+    targetGroups: [],
+    targetType: TargetType.Bzero
+};
+
+export const mockUniversalConnectionResponse: CreateUniversalConnectionResponse = {
+    connectionId: 'f11ae2c2-48a7-4a29-b306-8bc83da3c045',
+    targetId: '9f728982-3691-4e71-9533-1892d5c65eb9',
+    targetType: TargetType.Bzero,
+    targetUser: 'ec2-user',
+    agentPublicKey: 'test-public-key',
+    agentVersion: 'test-bzero-version',
+    connectionAuthDetails: mockShellAuthDetails
+};
+
 
 export const mockSpaceSummary: SpaceSummary = {
     id: 'df262ee7-b749-4f08-ae61-3cd63a4fecd7',
