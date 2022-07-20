@@ -1,9 +1,9 @@
 import { ConfigService } from '../../services/config/config.service';
 import { HttpService } from '../../services/http/http.service';
 import { Logger } from '../../services/logger/logger.service';
-import { ConnectionEventResponse } from '../../../webshell-common-ts/http/v2/event/response/connection-event-data-message';
-import { CommandEventResponse } from '../../../webshell-common-ts/http/v2/event/response/command-event-data-message';
-import { KubeEventDataResponse } from '../../../webshell-common-ts/http/v2/event/response/kube-event-data-message';
+import { ConnectionEventDataMessage } from '../../../webshell-common-ts/http/v2/event/types/connection-event-data-message';
+import { CommandEventDataMessage } from '../../../webshell-common-ts/http/v2/event/types/command-event-data-message';
+import { KubeEventDataMessage } from '../../../webshell-common-ts/http/v2/event/types/kube-event-data-message.types';
 import { UserEventDataMessage } from '../../../webshell-common-ts/http/v2/event/types/user-event-data-message.types';
 
 
@@ -14,7 +14,7 @@ export class EventsHttpService extends HttpService
         super(configService, 'api/v2/events/', logger);
     }
 
-    public GetConnectionEvents(startTime: Date, subjectIds: string[]) : Promise<ConnectionEventResponse[]>
+    public GetConnectionEvents(startTime: Date, subjectIds: string[]) : Promise<ConnectionEventDataMessage[]>
     {
         const params = {
             startTimestamp: startTime.toJSON(),
@@ -23,7 +23,7 @@ export class EventsHttpService extends HttpService
         return this.Get('connection', params);
     }
 
-    public GetCommandEvent(startTime: Date, subjectIds: string[]) : Promise<CommandEventResponse[]>
+    public GetCommandEvent(startTime: Date, subjectIds: string[]) : Promise<CommandEventDataMessage[]>
     {
         const params = {
             startTimestamp: startTime.toJSON(),
@@ -32,7 +32,7 @@ export class EventsHttpService extends HttpService
         return this.Get('command', params);
     }
 
-    public GetKubeEvents() : Promise<KubeEventDataResponse[]>
+    public GetKubeEvents() : Promise<KubeEventDataMessage[]>
     {
         return this.Get('kube');
     }

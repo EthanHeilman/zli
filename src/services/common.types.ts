@@ -16,7 +16,6 @@ export interface ParsedTargetString
     user: string;
     id: string;
     name: string;
-    path: string;
     envId: string;
     envName: string;
 }

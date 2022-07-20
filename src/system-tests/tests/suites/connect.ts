@@ -109,7 +109,7 @@ export const connectSuite = () => {
                 const attachPromise = callZli(['attach', connectionId]);
 
                 // After attaching we should see another client connection event
-                expect(await testUtils.EnsureConnectionEventCreated(attachTarget.id, attachTarget.name, attachTarget.targetUser, attachTarget.eventTargetType, ConnectionEventType.ClientConnect));
+                expect(await testUtils.EnsureConnectionEventCreated(attachTarget.id, attachTarget.name, attachTarget.targetUser, attachTarget.eventTargetType, attachTarget.environmentId, ConnectionEventType.ClientConnect));
                 const eventExists = await testUtils.EnsureUserEventExists('connectionservice:connect', true, attachTarget.id, new Date(userLogFilterStartTime));
                 expect(eventExists).toBeTrue();
 
@@ -138,7 +138,7 @@ export const connectSuite = () => {
                 await attachPromise;
 
                 // After exiting we should see a client disconnected event
-                expect(await testUtils.EnsureConnectionEventCreated(attachTarget.id, attachTarget.name, attachTarget.targetUser, attachTarget.eventTargetType, ConnectionEventType.ClientDisconnect));
+                expect(await testUtils.EnsureConnectionEventCreated(attachTarget.id, attachTarget.name, attachTarget.targetUser, attachTarget.eventTargetType, attachTarget.environmentId, ConnectionEventType.ClientDisconnect));
 
                 testPassed = true;
             }, 4 * 60 * 1000); // Use a longer timeout on attach tests because they essentially run 2 back-to-back connect tests
@@ -165,7 +165,7 @@ export const connectSuite = () => {
                 );
 
                 // Expect our close event now
-                expect(await testUtils.EnsureConnectionEventCreated(connectTarget.id, connectTarget.name, connectTarget.targetUser, connectTarget.eventTargetType, ConnectionEventType.Closed));
+                expect(await testUtils.EnsureConnectionEventCreated(connectTarget.id, connectTarget.name, connectTarget.targetUser, connectTarget.eventTargetType, connectTarget.environmentId, ConnectionEventType.Closed));
 
                 testPassed = true;
             }, 2 * 60 * 1000);
