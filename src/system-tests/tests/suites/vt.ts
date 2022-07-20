@@ -109,6 +109,8 @@ export const vtSuite = () => {
                     environmentName: systemTestEnvName
                 });
 
+                const dbTargetSummary = await dbTargetService.GetDbTarget(createDbTargetResponse.targetId);
+
                 logger.info('Creating db target connection');
 
                 // Start the connection to the db virtual target
@@ -116,8 +118,8 @@ export const vtSuite = () => {
                 await callZli(['connect', dbVtName]);
 
                 // Ensure the created and connected event exist
-                expect(await testUtils.EnsureConnectionEventCreated(createDbTargetResponse.targetId, dbVtName, 'n/a', 'DB', ConnectionEventType.Created));
-                expect(await testUtils.EnsureConnectionEventCreated(createDbTargetResponse.targetId, dbVtName, 'n/a', 'DB', ConnectionEventType.ClientConnect));
+                expect(await testUtils.EnsureConnectionEventCreated(createDbTargetResponse.targetId, dbVtName, 'n/a', 'DB', dbTargetSummary.environmentId, ConnectionEventType.Created));
+                expect(await testUtils.EnsureConnectionEventCreated(createDbTargetResponse.targetId, dbVtName, 'n/a', 'DB', dbTargetSummary.environmentId, ConnectionEventType.ClientConnect));
 
 
                 // Attempt to make our PSQL connection and create a database
@@ -156,8 +158,8 @@ export const vtSuite = () => {
                 await callZli(['disconnect', 'db']);
 
                 // Ensure the disconnect and close event exist
-                expect(await testUtils.EnsureConnectionEventCreated(createDbTargetResponse.targetId, dbVtName, 'n/a', 'DB', ConnectionEventType.ClientDisconnect));
-                expect(await testUtils.EnsureConnectionEventCreated(createDbTargetResponse.targetId, dbVtName, 'n/a', 'DB', ConnectionEventType.Closed));
+                expect(await testUtils.EnsureConnectionEventCreated(createDbTargetResponse.targetId, dbVtName, 'n/a', 'DB', dbTargetSummary.environmentId, ConnectionEventType.ClientDisconnect));
+                expect(await testUtils.EnsureConnectionEventCreated(createDbTargetResponse.targetId, dbVtName, 'n/a', 'DB', dbTargetSummary.environmentId, ConnectionEventType.Closed));
 
                 // Reset our testPassed flag
                 testPassed = true;
@@ -216,14 +218,16 @@ export const vtSuite = () => {
                     environmentName: systemTestEnvName
                 });
 
+                const webTargetSummary = await webTargetService.GetWebTarget(createWebTargetResponse.targetId);
+
                 logger.info('Creating web target connection');
 
                 // Start the connection to the db virtual target
                 await callZli(['connect', webVtName, '--openBrowser=false']);
 
                 // Ensure the created and connected event exist
-                expect(await testUtils.EnsureConnectionEventCreated(createWebTargetResponse.targetId, webVtName, 'n/a', 'WEB', ConnectionEventType.Created));
-                expect(await testUtils.EnsureConnectionEventCreated(createWebTargetResponse.targetId, webVtName, 'n/a', 'WEB', ConnectionEventType.ClientConnect));
+                expect(await testUtils.EnsureConnectionEventCreated(createWebTargetResponse.targetId, webVtName, 'n/a', 'WEB', webTargetSummary.environmentId, ConnectionEventType.Created));
+                expect(await testUtils.EnsureConnectionEventCreated(createWebTargetResponse.targetId, webVtName, 'n/a', 'WEB', webTargetSummary.environmentId, ConnectionEventType.ClientConnect));
 
                 logger.info('Sending http request to web connection');
                 const testConnectionRequest = await got.get(`http://localhost:${localWebPort}/`, { throwHttpErrors: false, https: { rejectUnauthorized: false } });
@@ -234,8 +238,8 @@ export const vtSuite = () => {
                 await callZli(['disconnect', 'web']);
 
                 // Ensure the disconnect and close event exist
-                expect(await testUtils.EnsureConnectionEventCreated(createWebTargetResponse.targetId, webVtName, 'n/a', 'WEB', ConnectionEventType.ClientDisconnect));
-                expect(await testUtils.EnsureConnectionEventCreated(createWebTargetResponse.targetId, webVtName, 'n/a', 'WEB', ConnectionEventType.Closed));
+                expect(await testUtils.EnsureConnectionEventCreated(createWebTargetResponse.targetId, webVtName, 'n/a', 'WEB', webTargetSummary.environmentId, ConnectionEventType.ClientDisconnect));
+                expect(await testUtils.EnsureConnectionEventCreated(createWebTargetResponse.targetId, webVtName, 'n/a', 'WEB', webTargetSummary.environmentId, ConnectionEventType.Closed));
 
                 testPassed = true;
             }, 60 * 1000);

@@ -5,13 +5,14 @@ import { Logger } from '../../services/logger/logger.service';
 
 export async function sshProxyConfigHandler(configService: ConfigService, processName: string, logger: Logger) {
 
-    const { identityFile, proxyCommand, prefix } = await buildSshConfigStrings(configService, processName, logger);
+    const { identityFile, knownHostsFile, proxyCommand, prefix } = await buildSshConfigStrings(configService, processName, logger);
 
     logger.info(`
 Add the following lines to your ssh config (~/.ssh/config) file:
 
 Host ${prefix}*
   ${identityFile}
+  ${knownHostsFile}
   ${proxyCommand}
 
 Then you can use native ssh to connect to any of your ssm targets using the following syntax:
@@ -23,6 +24,7 @@ ssh <user>@${prefix}<ssm-target-id-or-name>
 export async function buildSshConfigStrings(configService: ConfigService, processName: string, logger: Logger, addProxyPrefix: boolean = false) {
     const keyPath = configService.sshKeyPath();
     const identityFile = `IdentityFile ${keyPath}`;
+    const knownHostsFile = `UserKnownHostsFile ${configService.sshKnownHostsPath()}`;
 
     const configName = configService.getConfigName();
     let prefix = 'bzero-';
@@ -35,7 +37,7 @@ export async function buildSshConfigStrings(configService: ConfigService, proces
     const hostnameToken = await getHostnameToken(logger);
     const proxyCommand = `ProxyCommand ${processName} ssh-proxy ${configNameArg} -s ${addProxyPrefix ? prefix : ''}${hostnameToken} %r %p ${keyPath}`;
 
-    return { identityFile, proxyCommand, prefix };
+    return { identityFile, knownHostsFile, proxyCommand, prefix };
 }
 /**
  * Get either a "%n" or a "%h", depending on user's version of openSSH

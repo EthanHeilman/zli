@@ -49,8 +49,14 @@ export type BzeroTestTarget = BaseTarget & {
 
 // Hold our common TestRails caseIds
 interface BaseTarget {
-    sshCaseId?: string // For our ssh test suite
-    badSshCaseId?: string // For our ssh test negation test
+    sshCaseId?: string // Zli - Ssh - Successful remote command execution
+    sshByUuidCaseId?: string // Zli - Ssh - Ssh by id instead of name
+    sshBadUserCaseId?: string // Zli - Ssh - Cannot tunnel as invalid user
+    sshConnectFailsCaseId?: string // Zli - Ssh - Connect fails with only tunnel policy
+    sshTunnelFailsCaseId?: string // Zli - Ssh - Tunnel fails with only FUD policy
+    sshScpCaseId?: string // Zli - Ssh - Successful scp of ordinary file
+    sshSftpCaseId?: string // for Ssh SFTP tests
+    sshScpByUuidCaseId?: string // Zli - Ssh - Scp with id instead of name
     connectCaseId?: string; // For our connect test suite
     closeCaseId?: string; // For our close test suite
     attachCaseId?: string; //  For our attach test suite
