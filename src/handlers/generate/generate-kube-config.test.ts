@@ -19,6 +19,9 @@ describe('Generate kube config suite', () => {
         // Set up necessary mocks
         unitTestMockSetup(false);
         KubeConfigMocks.kubeConfigMockSetup();
+
+        // nullify setKubeConfig so we don't overwrite the user's config
+        jest.spyOn(ConfigService.prototype, 'setKubeConfig').mockImplementation(jest.fn());
     });
 
     afterEach(() => {
