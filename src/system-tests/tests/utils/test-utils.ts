@@ -106,7 +106,7 @@ export class TestUtils {
      */
     public async EnsureConnectionEventCreated(targetId: string, targetName: string, targetUser: string, targetType: string, targetEnvId: string, eventType: ConnectionEventType) {
         // Sometimes the system test goes too fast before the event
-        // is propagated to our database, retry getting the event 3 times with some sleep in between
+        // is propagated to our database, retry getting the event 5 times with some sleep in between
         let failures = 0;
         let eventCreated: ConnectionEventDataMessage = undefined;
 

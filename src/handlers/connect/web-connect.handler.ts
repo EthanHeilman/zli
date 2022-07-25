@@ -4,7 +4,7 @@ import { cleanExit } from '../clean-exit.handler';
 import { LoggerConfigService } from '../../services/logger/logger-config.service';
 import yargs from 'yargs';
 import open from 'open';
-import { handleServerStart, startDaemonInDebugMode, copyExecutableToLocalDir, getBaseDaemonArgs, getOrDefaultLocalhost, getOrDefaultLocalport, killLocalPortAndPid } from '../../utils/daemon-utils';
+import { handleServerStart, startDaemonInDebugMode, copyExecutableToLocalDir, getBaseDaemonEnv, getOrDefaultLocalhost, getOrDefaultLocalport, killLocalPortAndPid } from '../../utils/daemon-utils';
 import { connectArgs } from './connect.command-builder';
 import { WebTargetService } from '../../http-services/web-target/web-target.http-service';
 import { CreateUniversalConnectionResponse } from '../../../webshell-common-ts/http/v2/connection/responses/create-universal-connection.response';
@@ -42,27 +42,28 @@ export async function webConnectHandler(
 
     await killLocalPortAndPid(webConfig.localPid, webConfig.localPort, logger);
 
-    // Build our args and cwd
-    const baseArgs = getBaseDaemonArgs(configService, loggerConfigService, webTarget.agentPublicKey, createUniversalConnectionResponse.connectionId, createUniversalConnectionResponse.connectionAuthDetails);
-    const pluginArgs = [
-        `-localPort=${localPort}`,
-        `-localHost=${localHost}`,
-        `-targetId=${webTarget.id}`,
-        `-remotePort=${webTarget.remotePort.value}`,
-        `-remoteHost=${webTarget.remoteHost}`,
-        `-plugin="web"`
-    ];
-    let args = baseArgs.concat(pluginArgs);
+    // Build our runtime config and cwd
+    const baseEnv = getBaseDaemonEnv(configService, loggerConfigService, webTarget.agentPublicKey, createUniversalConnectionResponse.connectionId, createUniversalConnectionResponse.connectionAuthDetails);
+    const pluginEnv = {
+        'LOCAL_PORT': localPort,
+        'LOCAL_HOST': localHost,
+        'TARGET_ID': webTarget.id,
+        'REMOTE_PORT': webTarget.remotePort.value,
+        'REMOTE_HOST': webTarget.remoteHost,
+        'PLUGIN': 'web'
+    };
+    const runtimeConfig = { ...baseEnv, ...pluginEnv };
 
     let cwd = process.cwd();
 
     // Copy over our executable to a temp file
     let finalDaemonPath = '';
+    let args: string[] = [];
     if (process.env.ZLI_CUSTOM_DAEMON_PATH) {
         // If we set a custom path, we will try to start the daemon from the source code
         cwd = process.env.ZLI_CUSTOM_DAEMON_PATH;
         finalDaemonPath = 'go';
-        args = ['run', 'daemon.go'].concat(args);
+        args = ['run', 'daemon.go', 'config.go'];
     } else {
         finalDaemonPath = await copyExecutableToLocalDir(logger, configService.configPath());
     }
@@ -72,6 +73,7 @@ export async function webConnectHandler(
             // If we are not debugging, start the go subprocess in the background
             const options = {
                 cwd: cwd,
+                env: { ...runtimeConfig, ...process.env },
                 detached: true,
                 shell: true,
                 stdio: ['ignore', 'ignore', 'ignore']
@@ -101,7 +103,7 @@ export async function webConnectHandler(
             return 0;
         } else {
             logger.warn(`Started web daemon in debug mode at ${localHost}:${localPort} for ${webTarget.name}`);
-            await startDaemonInDebugMode(finalDaemonPath, cwd, args);
+            await startDaemonInDebugMode(finalDaemonPath, cwd, runtimeConfig, args);
             await cleanExit(0, logger);
         }
     } catch (error) {

@@ -10,7 +10,7 @@ import { SpaceState } from '../../webshell-common-ts/http/v2/space/types/space-s
 import { SpaceSummary } from '../../webshell-common-ts/http/v2/space/types/space-summary.types';
 import { TargetType } from '../../webshell-common-ts/http/v2/target/types/target.types';
 
-import { copyExecutableToLocalDir, getBaseDaemonArgs } from '../utils/daemon-utils';
+import { copyExecutableToLocalDir, getBaseDaemonEnv } from '../utils/daemon-utils';
 import { LoggerConfigService } from '../services/logger/logger-config.service';
 import { ShellConnectionAttachDetails } from '../../webshell-common-ts/http/v2/connection/types/shell-connection-attach-details.types';
 import { pushToStdOut, spawnDaemon } from './shell-util-wrappers';
@@ -175,37 +175,36 @@ export async function startShellDaemon(
 ) {
     return new Promise<number>(async (resolve, reject) => {
 
-        // Build our args and cwd
-        const baseArgs = getBaseDaemonArgs(configService, loggerConfigService, agentPublicKey, connectionId, authDetails);
-        let pluginArgs = [
-            `-targetUser=${targetUser}`,
-            `-plugin=shell`
-        ];
+        // Build our runtime config and cwd
+        const baseEnv = getBaseDaemonEnv(configService, loggerConfigService, agentPublicKey, connectionId, authDetails);
+        let pluginEnv = {
+            'TARGET_USER': targetUser,
+            'PLUGIN': 'shell'
+        };
 
-        // If we are attaching then add attach plugin args
-        if(attachDetails) {
-            pluginArgs = pluginArgs.concat([
-                `-dataChannelId=${attachDetails.dataChannelId}`
-            ]);
+        // If we are attaching then add attach plugin vars
+        if (attachDetails) {
+            pluginEnv = { ...pluginEnv, ...{ 'DATACHANNEL_ID': attachDetails.dataChannelId } };
         }
 
-        let args = baseArgs.concat(pluginArgs);
+        const runtimeConfig = { ...baseEnv, ...pluginEnv };
 
         let cwd = process.cwd();
 
         // Copy over our executable to a temp file
         let finalDaemonPath = '';
+        let args: string[] = [];
         if (process.env.ZLI_CUSTOM_DAEMON_PATH) {
             // If we set a custom path, we will try to start the daemon from the source code
             cwd = process.env.ZLI_CUSTOM_DAEMON_PATH;
             finalDaemonPath = 'go';
-            args = ['run', 'daemon.go'].concat(args);
+            args = ['run', 'daemon.go', 'config.go'];
         } else {
             finalDaemonPath = await copyExecutableToLocalDir(logger, configService.configPath());
         }
 
         try {
-            const daemonProcessExitCode = await spawnDaemon(finalDaemonPath, args, cwd);
+            const daemonProcessExitCode = await spawnDaemon(finalDaemonPath, args, runtimeConfig, cwd);
             logger.debug(`Shell Daemon closed with exit code ${daemonProcessExitCode}`);
             resolve(daemonProcessExitCode);
         } catch(err) {

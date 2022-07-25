@@ -123,12 +123,13 @@ export function isPkgProcess() {
     return process1.pkg;
 }
 
-export async function startDaemonInDebugMode(finalDaemonPath: string, cwd: string, args: string[]) {
+export async function startDaemonInDebugMode(finalDaemonPath: string, cwd: string, env: object, args: string[]) {
     const startDaemonPromise = new Promise<void>(async (resolve) => {
         // Start our daemon process in its own process group, but stream our stdio to the user (pipe)
         const daemonProcess = await spawn(finalDaemonPath, args,
             {
                 cwd: cwd,
+                env: {...env, ...process.env},
                 shell: true,
                 detached: true,
                 stdio: 'inherit'
@@ -297,9 +298,9 @@ function killPid(pid: string) {
 }
 
 /**
- * Helper function to get common args to pass to the daemon
+ * Helper function to get common environment variables to set for the daemon process
  */
-export function getBaseDaemonArgs(configService: ConfigService, loggerConfigService: LoggerConfigService, agentPubKey: string, connectionId: string, authDetails: ShellConnectionAuthDetails): string[] {
+export function getBaseDaemonEnv(configService: ConfigService, loggerConfigService: LoggerConfigService, agentPubKey: string, connectionId: string, authDetails: ShellConnectionAuthDetails) {
     // Build the refresh command so it works in the case of the pkg'd app which
     // is expecting a second argument set to internal main script
     // This is a work-around for pkg recursive binary issue see https://github.com/vercel/pkg/issues/897
@@ -307,19 +308,19 @@ export function getBaseDaemonArgs(configService: ConfigService, loggerConfigServ
     const execPath = getAppExecPath();
     const entryPoint = getAppEntrypoint();
 
-    return [
-        `-sessionId=${configService.getSessionId()}`,
-        `-sessionToken=${configService.getSessionToken()}`,
-        `-serviceURL=${configService.serviceUrl().slice(0, -1).replace('https://', '')}`,
-        `-authHeader="${configService.getAuthHeader()}"`,
-        `-configPath=${configService.configPath()}`,
-        `-refreshTokenCommand="${execPath} ${entryPoint} refresh"`,
-        `-logPath=${loggerConfigService.daemonLogPath()}`,
-        `-agentPubKey=${agentPubKey}`,
-        `-connectionId=${connectionId}`,
-        `-connectionServiceUrl=${authDetails.connectionServiceUrl}`,
-        `-connectionServiceAuthToken=${authDetails.authToken}`,
-    ];
+    return {
+        'SESSION_ID': configService.getSessionId(),
+        'SESSION_TOKEN': configService.getSessionToken(),
+        'SERVICE_URL': configService.serviceUrl().slice(0, -1).replace('https://', ''),
+        'AUTH_HEADER': configService.getAuthHeader(),
+        'CONFIG_PATH': configService.configPath(),
+        'REFRESH_TOKEN_COMMAND': `${execPath} ${entryPoint} refresh`,
+        'LOG_PATH': loggerConfigService.daemonLogPath(),
+        'AGENT_PUB_KEY': agentPubKey,
+        'CONNECTION_ID': connectionId,
+        'CONNECTION_SERVICE_URL': authDetails.connectionServiceUrl,
+        'CONNECTION_SERVICE_AUTH_TOKEN': authDetails.authToken,
+    };
 }
 
 /**

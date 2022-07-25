@@ -248,10 +248,10 @@ export class ConnectTestUtils {
         let daemonPty: pty.IPty;
         const capturedOutput: string[] = [];
 
-        jest.spyOn(ShellUtilWrappers, 'spawnDaemon').mockImplementation((finalDaemonPath, args, cwd) => {
+        jest.spyOn(ShellUtilWrappers, 'spawnDaemon').mockImplementation((finalDaemonPath, args, env, cwd) => {
             return new Promise((resolve, reject) => {
                 try {
-                    daemonPty = this.spawnDaemonPty(finalDaemonPath, args, cwd);
+                    daemonPty = this.spawnDaemonPty(finalDaemonPath, args, env, cwd);
                     daemonPty.onData((data: string) => capturedOutput.push(data));
                     daemonPty.onExit((e: { exitCode: number | PromiseLike<number>; }) => resolve(e.exitCode));
                 } catch(err) {
@@ -364,7 +364,7 @@ export class ConnectTestUtils {
      * @param cwd current working directory to use for the pty process
      * @returns A promise that resolves with the daemon process exit code
      */
-    private spawnDaemonPty(path: string, args: string[], cwd: string) {
+    private spawnDaemonPty(path: string, args: string[], env: object, cwd: string) {
         // Transform args to be suitable for starting as a forked process
         args = args.map(arg => {
             // Remove any nested quotes from the arguments when using fork (not
@@ -379,6 +379,7 @@ export class ConnectTestUtils {
             cols: 80,
             rows: 30,
             cwd: cwd,
+            env: {...env, ...process.env}
         });
 
         return ptyProcess;

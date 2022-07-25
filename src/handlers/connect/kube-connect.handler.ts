@@ -8,7 +8,7 @@ import { Logger } from '../../services/logger/logger.service';
 import { cleanExit } from '../clean-exit.handler';
 import { LoggerConfigService } from '../../services/logger/logger-config.service';
 import { connectArgs } from './connect.command-builder';
-import { startDaemonInDebugMode, copyExecutableToLocalDir, handleServerStart, getBaseDaemonArgs, killLocalPortAndPid } from '../../utils/daemon-utils';
+import { startDaemonInDebugMode, copyExecutableToLocalDir, handleServerStart, getBaseDaemonEnv, killLocalPortAndPid } from '../../utils/daemon-utils';
 import { KubeHttpService } from '../../http-services/targets/kube/kube.http-services';
 import { CreateUniversalConnectionResponse } from '../../../webshell-common-ts/http/v2/connection/responses/create-universal-connection.response';
 
@@ -44,30 +44,31 @@ export async function startKubeDaemonHandler(
         daemonPort = argv.customPort.toString();
     }
 
-    // Build our args and cwd
-    const baseArgs = getBaseDaemonArgs(configService, loggerConfigService, clusterTarget.agentPublicKey, createUniversalConnectionResponse.connectionId, createUniversalConnectionResponse.connectionAuthDetails);
-    const pluginArgs = [
-        `-targetUser=${targetUser}`,
-        `-targetGroups=${targetGroups}`,
-        `-targetId=${clusterTarget.id}`,
-        `-localPort=${daemonPort}`,
-        `-localHost=localhost`, // Currently kube does not support editing localhost
-        `-localhostToken="${kubeConfig.token}"`,
-        `-certPath="${kubeConfig.certPath}"`,
-        `-keyPath="${kubeConfig.keyPath}"`,
-        `-plugin="kube"`
-    ];
-    let args = baseArgs.concat(pluginArgs);
+    // Build our runtime config and cwd
+    const baseEnv = getBaseDaemonEnv(configService, loggerConfigService, clusterTarget.agentPublicKey, createUniversalConnectionResponse.connectionId, createUniversalConnectionResponse.connectionAuthDetails);
+    const pluginEnv = {
+        'TARGET_USER': targetUser,
+        'TARGET_GROUPS': targetGroups.join(','),
+        'TARGET_ID': clusterTarget.id,
+        'LOCAL_PORT': daemonPort,
+        'LOCAL_HOST': 'localhost', // Currently kube does not support editing localhost
+        'LOCALHOST_TOKEN': kubeConfig.token,
+        'CERT_PATH': kubeConfig.certPath,
+        'KEY_PATH': kubeConfig.keyPath,
+        'PLUGIN': 'kube',
+    };
+    const runtimeConfig = { ...baseEnv, ...pluginEnv };
 
     let cwd = process.cwd();
 
     // Copy over our executable to a temp file
     let finalDaemonPath = '';
+    let args: string[] = [];
     if (process.env.ZLI_CUSTOM_DAEMON_PATH) {
         // If we set a custom path, we will try to start the daemon from the source code
         cwd = process.env.ZLI_CUSTOM_DAEMON_PATH;
         finalDaemonPath = 'go';
-        args = ['run', 'daemon.go'].concat(args);
+        args = ['run', 'daemon.go', 'config.go'];
     } else {
         finalDaemonPath = await copyExecutableToLocalDir(logger, configService.configPath());
     }
@@ -77,6 +78,7 @@ export async function startKubeDaemonHandler(
             // If we are not debugging, start the go subprocess in the background
             const options = {
                 cwd: cwd,
+                env: { ...runtimeConfig, ...process.env },
                 detached: true,
                 shell: true,
                 stdio: ['ignore', 'ignore', 'ignore']
@@ -103,7 +105,7 @@ export async function startKubeDaemonHandler(
             return 0;
         } else {
             logger.warn(`Started kube daemon in debug mode at ${kubeConfig.localHost}:${kubeConfig.localPort} for ${targetUser}@${clusterTarget.name}`);
-            await startDaemonInDebugMode(finalDaemonPath, cwd, args);
+            await startDaemonInDebugMode(finalDaemonPath, cwd, runtimeConfig, args);
             await cleanExit(0, logger);
         }
     } catch (error) {

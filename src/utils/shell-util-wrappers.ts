@@ -17,15 +17,17 @@ export function pushToStdErr(output: Uint8Array) {
  * spawns daemon as a subprocess with inherited stdio and returns a promise that
  * resolves when the daemon process exits with an exit code
  * @param path path to the daemon process
+ * @param env environment key-value pairs
  * @param args args to pass to the daemon
  * @param cwd current working directory to use for the spawned subprocess
  * @returns A promise that resolves with the daemon process exit code
  */
-export function spawnDaemon(path: string, args: string[], cwd: string): Promise<number> {
+export function spawnDaemon(path: string, args: string[], env: object, cwd: string): Promise<number> {
     return new Promise((resolve, reject) => {
         try {
             const options: cp.SpawnOptions = {
                 cwd: cwd,
+                env: { ...env, ...process.env },
                 detached: true,
                 shell: true,
                 stdio: ['inherit', 'inherit', 'inherit'],
@@ -37,7 +39,7 @@ export function spawnDaemon(path: string, args: string[], cwd: string): Promise<
                 resolve(exitCode);
             });
         }
-        catch(err) {
+        catch (err) {
             reject(err);
         }
     });
