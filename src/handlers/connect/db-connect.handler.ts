@@ -2,13 +2,11 @@ import { ConfigService } from '../../services/config/config.service';
 import { Logger } from '../../services/logger/logger.service';
 import { cleanExit } from '../clean-exit.handler';
 import { LoggerConfigService } from '../../services/logger/logger-config.service';
-import { handleServerStart, startDaemonInDebugMode, copyExecutableToLocalDir, getBaseDaemonEnv, getOrDefaultLocalhost, getOrDefaultLocalport, killLocalPortAndPid } from '../../utils/daemon-utils';
+import {  handleServerStart, startDaemonInDebugMode, copyExecutableToLocalDir, getBaseDaemonEnv, getOrDefaultLocalhost, getOrDefaultLocalport, killLocalPortAndPid, spawnDaemonInBackground } from '../../utils/daemon-utils';
 import { connectArgs } from './connect.command-builder';
 import yargs from 'yargs';
 import { DbTargetService } from '../../http-services/db-target/db-target.http-service';
 import { CreateUniversalConnectionResponse } from '../../../webshell-common-ts/http/v2/connection/responses/create-universal-connection.response';
-
-const { spawn } = require('child_process');
 
 
 export async function dbConnectHandler(
@@ -71,15 +69,7 @@ export async function dbConnectHandler(
     try {
         if (!argv.debug) {
             // If we are not debugging, start the go subprocess in the background
-            const options = {
-                cwd: cwd,
-                env: {...runtimeConfig, ...process.env},
-                detached: true,
-                shell: true,
-                stdio: ['ignore', 'ignore', 'ignore']
-            };
-
-            const daemonProcess = await spawn(finalDaemonPath, args, options);
+            const daemonProcess = await spawnDaemonInBackground(logger, loggerConfigService, cwd, finalDaemonPath, args, runtimeConfig);
 
             // Now save the Pid so we can kill the process next time we start it
             dbConfig.localPid = daemonProcess.pid;

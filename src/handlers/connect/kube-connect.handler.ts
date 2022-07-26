@@ -1,14 +1,13 @@
 import yargs from 'yargs';
 import got from 'got/dist/source';
 import { Retrier } from '@jsier/retrier';
-const { spawn } = require('child_process');
 
 import { ConfigService } from '../../services/config/config.service';
 import { Logger } from '../../services/logger/logger.service';
 import { cleanExit } from '../clean-exit.handler';
 import { LoggerConfigService } from '../../services/logger/logger-config.service';
 import { connectArgs } from './connect.command-builder';
-import { startDaemonInDebugMode, copyExecutableToLocalDir, handleServerStart, getBaseDaemonEnv, killLocalPortAndPid } from '../../utils/daemon-utils';
+import { startDaemonInDebugMode, copyExecutableToLocalDir, handleServerStart, getBaseDaemonEnv, killLocalPortAndPid, spawnDaemonInBackground } from '../../utils/daemon-utils';
 import { KubeHttpService } from '../../http-services/targets/kube/kube.http-services';
 import { CreateUniversalConnectionResponse } from '../../../webshell-common-ts/http/v2/connection/responses/create-universal-connection.response';
 
@@ -76,16 +75,7 @@ export async function startKubeDaemonHandler(
     try {
         if (!argv.debug) {
             // If we are not debugging, start the go subprocess in the background
-            const options = {
-                cwd: cwd,
-                env: { ...runtimeConfig, ...process.env },
-                detached: true,
-                shell: true,
-                stdio: ['ignore', 'ignore', 'ignore']
-            };
-
-            const daemonProcess = await spawn(finalDaemonPath, args, options);
-
+            const daemonProcess = await spawnDaemonInBackground(logger, loggerConfigService, cwd, finalDaemonPath, args, runtimeConfig);
             // Now save the Pid so we can kill the process next time we start it
             kubeConfig.localPid = daemonProcess.pid;
 

@@ -1,8 +1,10 @@
 import * as pty from 'node-pty';
 import { stdin } from 'mock-stdin';
+import * as cp from 'child_process';
 
 import * as CleanExitHandler from '../../../handlers/clean-exit.handler';
 import * as ShellUtilWrappers from '../../../utils/shell-util-wrappers';
+import * as DaemonUtils from '../../../utils/daemon-utils';
 
 import { sleepTimeout, TestUtils } from './test-utils';
 import { bzeroTargetCustomUser } from '../system-test-setup';
@@ -248,10 +250,10 @@ export class ConnectTestUtils {
         let daemonPty: pty.IPty;
         const capturedOutput: string[] = [];
 
-        jest.spyOn(ShellUtilWrappers, 'spawnDaemon').mockImplementation((finalDaemonPath, args, env, cwd) => {
+        jest.spyOn(DaemonUtils, 'spawnDaemon').mockImplementation((logger, loggerConfigService, finalDaemonPath, args, customEnv, cwd) => {
             return new Promise((resolve, reject) => {
                 try {
-                    daemonPty = this.spawnDaemonPty(finalDaemonPath, args, env, cwd);
+                    daemonPty = this.spawnDaemonPty(finalDaemonPath, args, customEnv, cwd);
                     daemonPty.onData((data: string) => capturedOutput.push(data));
                     daemonPty.onExit((e: { exitCode: number | PromiseLike<number>; }) => resolve(e.exitCode));
                 } catch(err) {
@@ -384,4 +386,23 @@ export class ConnectTestUtils {
 
         return ptyProcess;
     }
+}
+
+export function setupBackgroundDaemonMocks() {
+    // Mocks spawnDaemon DaemonUtils.spawnDaemonInBackground so it doesnt call
+    // reportDaemonExitErrors which will cause cleanExit to be called when the
+    // daemon exits. This is expected in system tests because we kill the daemon (with zli disconnect) after every test
+    jest.spyOn(DaemonUtils, 'spawnDaemonInBackground').mockImplementation(async (logger, loggerConfigService, cwd, daemonPath, args, customEnv) => {
+        const options: cp.SpawnOptions = {
+            cwd: cwd,
+            env: { ...customEnv, ...process.env },
+            detached: true,
+            shell: true,
+            stdio: ['ignore', 'ignore', 'ignore']
+        };
+
+        const daemonProcess = await cp.spawn(daemonPath, args, options);
+
+        return daemonProcess;
+    });
 }

@@ -10,10 +10,10 @@ import { SpaceState } from '../../webshell-common-ts/http/v2/space/types/space-s
 import { SpaceSummary } from '../../webshell-common-ts/http/v2/space/types/space-summary.types';
 import { TargetType } from '../../webshell-common-ts/http/v2/target/types/target.types';
 
-import { copyExecutableToLocalDir, getBaseDaemonEnv } from '../utils/daemon-utils';
+import { copyExecutableToLocalDir, getBaseDaemonEnv, spawnDaemon } from '../utils/daemon-utils';
 import { LoggerConfigService } from '../services/logger/logger-config.service';
 import { ShellConnectionAttachDetails } from '../../webshell-common-ts/http/v2/connection/types/shell-connection-attach-details.types';
-import { pushToStdOut, spawnDaemon } from './shell-util-wrappers';
+import { pushToStdOut } from './shell-util-wrappers';
 import { ShellConnectionAuthDetails } from '../../webshell-common-ts/http/v2/connection/types/shell-connection-auth-details.types';
 
 export async function createAndRunShell(
@@ -204,7 +204,7 @@ export async function startShellDaemon(
         }
 
         try {
-            const daemonProcessExitCode = await spawnDaemon(finalDaemonPath, args, runtimeConfig, cwd);
+            const daemonProcessExitCode = await spawnDaemon(logger, loggerConfigService, finalDaemonPath, args, runtimeConfig, cwd);
             logger.debug(`Shell Daemon closed with exit code ${daemonProcessExitCode}`);
             resolve(daemonProcessExitCode);
         } catch(err) {

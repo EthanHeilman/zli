@@ -1,10 +1,7 @@
 import { CliDriver } from '../../cli-driver';
-import { GAService } from '../../services/Tracking/google-analytics.service';
-import { ConfigService } from '../../services/config/config.service';
-import { mockUniversalConnectionRequest, mockUniversalConnectionResponse, mockShellAuthDetails, mockUserSummary } from '../../utils/unit-test-utils';
+import { mockUniversalConnectionRequest, mockUniversalConnectionResponse, mockShellAuthDetails, unitTestMockSetup } from '../../utils/unit-test-utils';
 import { ConnectionHttpService } from '../../../src/http-services/connection/connection.http-services';
 
-import * as middlewareHandler from '../middleware.handler';
 import * as shellConnectHandler from './shell-connect.handler';
 import * as ShellUtils from '../../../src/utils/shell-utils';
 import * as CleanExitHandler from '../clean-exit.handler';
@@ -17,19 +14,9 @@ export const connectEnvironmentSuite = () => {
         beforeEach(() => {
             jest.resetModules();
             jest.clearAllMocks();
-            // Always mock out the following services
-            jest.spyOn(middlewareHandler, 'oAuthMiddleware').mockImplementationOnce(async (_configService, _logger) => Promise.resolve());
-            jest.spyOn(middlewareHandler, 'fetchDataMiddleware').mockImplementationOnce(() => {
-                return {
-                    dynamicConfigs: Promise.resolve([]),
-                    ssmTargets: Promise.resolve([]),
-                    clusterTargets: Promise.resolve([]),
-                    bzeroTargets:  Promise.resolve([]),
-                    envs: Promise.resolve([]),
-                };
-            });
-            jest.spyOn(GAService.prototype, 'TrackCliCommand').mockImplementationOnce(() => Promise.resolve());
-            jest.spyOn(ConfigService.prototype, 'me').mockImplementation(() => mockUserSummary);
+
+            // Mock out necessary services
+            unitTestMockSetup(false);
         });
 
         afterEach(() => {

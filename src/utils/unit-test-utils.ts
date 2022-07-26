@@ -43,6 +43,7 @@ export function unitTestMockSetup(withCleanExit: boolean): void {
         jest.spyOn(CleanExitHandler, 'cleanExit').mockImplementationOnce(() => Promise.resolve());
     }
     jest.spyOn(middlewareHandler, 'oAuthMiddleware').mockImplementationOnce(async (_configService, _logger) => Promise.resolve());
+    jest.spyOn(middlewareHandler, 'bzCertValidationInfoMiddleware').mockImplementationOnce(async (_configService, _logger) => Promise.resolve());
     jest.spyOn(GAService.prototype, 'TrackCliCommand').mockImplementationOnce(() => Promise.resolve());
     jest.spyOn(EnvironmentHttpService.prototype, 'ListEnvironments').mockImplementation(async () => mockEnvList);
     jest.spyOn(ConfigService.prototype, 'me').mockImplementation(() => mockUserSummary);

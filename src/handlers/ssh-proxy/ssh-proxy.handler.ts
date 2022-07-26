@@ -9,7 +9,7 @@ import { SsmTunnelService } from '../../services/ssm-tunnel/ssm-tunnel.service';
 import { cleanExit } from '../clean-exit.handler';
 import { parseTargetString } from '../../utils/utils';
 import { LoggerConfigService } from '../../services/logger/logger-config.service';
-import { copyExecutableToLocalDir, getBaseDaemonEnv, getOrDefaultLocalport } from '../../utils/daemon-utils';
+import { copyExecutableToLocalDir, getBaseDaemonEnv, waitForDaemonProcessExit, getOrDefaultLocalport} from '../../utils/daemon-utils';
 import { sshProxyArg } from './ssh-proxy.command-builder';
 import yargs from 'yargs';
 import { ConnectionHttpService } from '../../http-services/connection/connection.http-services';
@@ -179,13 +179,8 @@ async function bzeroOpaueSshProxyHandler(configService: ConfigService, logger: L
             daemonProcess.stdin.end();
         });
 
-        daemonProcess.on('close', async (exitCode: number) => {
-            if (exitCode !== 0) {
-                logger.error(`ssh daemon close event with nonzero exit code ${exitCode} -- for more details, see ${loggerConfigService.daemonLogPath()}`);
-            }
-            await cleanExit(exitCode, logger);
-        });
-
+        const exitCode = await waitForDaemonProcessExit(logger, loggerConfigService, daemonProcess);
+        await cleanExit(exitCode, logger);
     } catch (err) {
         logger.error(`Error starting ssh daemon: ${err}`);
         await cleanExit(1, logger);
@@ -271,14 +266,13 @@ async function bzeroTransparentSshProxyHandler(configService: ConfigService, log
             daemonProcess.stdin.end();
         });
 
-        daemonProcess.on('close', async (exitCode: number) => {
+        daemonProcess.on('close', async () => {
             process.stdout.end();
-            if (exitCode !== 0) {
-                logger.error(`ssh daemon close event with nonzero exit code ${exitCode} -- for more details, see ${loggerConfigService.daemonLogPath()}`);
-            }
-            await cleanExit(exitCode, logger);
         });
 
+        const exitCode = await waitForDaemonProcessExit(logger, loggerConfigService, daemonProcess);
+
+        await cleanExit(exitCode, logger);
     } catch (err) {
         logger.error(`Error starting ssh daemon: ${err}`);
         await cleanExit(1, logger);

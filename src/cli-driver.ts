@@ -25,7 +25,7 @@ import { BzeroAgentSummary } from '../webshell-common-ts/http/v2/target/bzero/ty
 import { PolicyType } from '../webshell-common-ts/http/v2/policy/types/policy-type.types';
 
 // Handlers
-import { initMiddleware, oAuthMiddleware, fetchDataMiddleware, GATrackingMiddleware, initLoggerMiddleware, mixpanelTrackingMiddleware } from './handlers/middleware.handler';
+import { initMiddleware, oAuthMiddleware, fetchDataMiddleware, GATrackingMiddleware, initLoggerMiddleware, mixpanelTrackingMiddleware, bzCertValidationInfoMiddleware } from './handlers/middleware.handler';
 import { sshProxyHandler } from './handlers/ssh-proxy/ssh-proxy.handler';
 import { loginHandler } from './handlers/login/login.handler';
 import { listTargetsHandler } from './handlers/list-targets/list-targets.handler';
@@ -300,6 +300,14 @@ export class CliDriver
                     this.logger.error(`This is an admin restricted command. Please login as an admin to perform it.`);
                     await cleanExit(1, this.logger);
                 }
+            })
+            // Middleware to ensure that BZCertValidation Info is set in the keysplitting config
+            .middleware(async () => {
+                // Makes a Bastion API call so oauth middleware must have run
+                // first to ensure session token is set
+                if(!this.oauthCommands.has(baseCmd) || baseCmd === 'register')
+                    return;
+                await bzCertValidationInfoMiddleware(this.keySplittingService, this.configService, this.logger);
             })
             .middleware(() => {
                 if(!this.fetchCommands.has(baseCmd))

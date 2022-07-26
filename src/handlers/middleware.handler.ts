@@ -17,6 +17,7 @@ import { SsmTargetHttpService } from '../http-services/targets/ssm/ssm-target.ht
 import { BzeroTargetHttpService } from '../http-services/targets/bzero/bzero.http-services';
 import { BzeroAgentSummary } from '../../webshell-common-ts/http/v2/target/bzero/types/bzero-agent-summary.types';
 import { isZliSilent } from '../utils/utils';
+import { OrganizationHttpService } from '.../../../http-services/organization/organization.http-services';
 
 
 export function fetchDataMiddleware(configService: ConfigService, logger: Logger) {
@@ -161,4 +162,14 @@ export async function initMiddleware(argv: any, logger : Logger, isSystemTest : 
         configService: configService,
         keySplittingService: keySplittingService
     };
+}
+
+export async function bzCertValidationInfoMiddleware(keySplittingService: KeySplittingService, configService: ConfigService, logger: Logger) {
+    const ksConfig = configService.loadKeySplitting();
+    if( ! ksConfig.orgProvider) {
+        // Update the Org BZCert Validation parameters
+        const orgHttpService = new OrganizationHttpService(configService, logger);
+        const orgBZCertValidationInfo = await orgHttpService.GetUserOrganizationBZCertValidationInfo();
+        keySplittingService.setOrgBZCertValidationInfo(orgBZCertValidationInfo);
+    }
 }

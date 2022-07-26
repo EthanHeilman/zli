@@ -7,6 +7,7 @@ import { configService, logger } from '../system-test';
 import { TestUtils } from '../utils/test-utils';
 import { ConnectionEventType } from '../../../../webshell-common-ts/http/v2/event/types/connection-event.types';
 import { PolicyHttpService } from '../../../http-services/policy/policy.http-services';
+import { setupBackgroundDaemonMocks } from '../utils/connect-utils';
 
 const fs = require('fs');
 
@@ -28,6 +29,10 @@ export const kubeSuite = () => {
             // Construct all http services needed to run tests
             policyService = new PolicyHttpService(configService, logger);
             testUtils = new TestUtils(configService, logger, loggerConfigService);
+        });
+
+        beforeEach(() => {
+            setupBackgroundDaemonMocks();
         });
 
         afterAll(async () => {
