@@ -1,6 +1,6 @@
 import { SemVer, lt, parse } from 'semver';
 import net from 'net';
-const { spawn } = require('child_process');
+import { spawn, SpawnOptions, SpawnOptionsWithStdioTuple, StdioPipe } from 'child_process';
 
 import { KeySplittingService } from '../../../webshell-common-ts/keysplitting.service/keysplitting.service';
 import { ConfigService } from '../../services/config/config.service';
@@ -133,7 +133,7 @@ async function bzeroOpaueSshProxyHandler(configService: ConfigService, logger: L
         'SSH_ACTION': 'opaque'
     };
 
-    const runtimeConfig = { ...baseEnv, ...pluginEnv, ...actionEnv };
+    const runtimeConfig: NodeJS.ProcessEnv = { ...baseEnv, ...pluginEnv, ...actionEnv };
 
     let cwd = process.cwd();
 
@@ -150,12 +150,12 @@ async function bzeroOpaueSshProxyHandler(configService: ConfigService, logger: L
     }
 
     try {
-        const options = {
+        const options: SpawnOptionsWithStdioTuple<StdioPipe, StdioPipe, StdioPipe> = {
             cwd: cwd,
             env: { ...runtimeConfig, ...process.env },
             detached: false,
             shell: true,
-            stdio: 'pipe'
+            stdio: ['pipe', 'pipe', 'pipe']
         };
 
         const daemonProcess = spawn(finalDaemonPath, args, options);
@@ -208,10 +208,10 @@ async function bzeroTransparentSshProxyHandler(configService: ConfigService, log
     const pluginEnv = getBaseSshArgs(configService, sshTunnelParameters, createUniversalConnectionResponse);
     const actionEnv = {
         'SSH_ACTION': 'transparent',
-        'LOCAL_PORT': localPort
+        'LOCAL_PORT': localPort.toString()
     };
 
-    const runtimeConfig = { ...baseEnv, ...pluginEnv, ...actionEnv };
+    const runtimeConfig: NodeJS.ProcessEnv = { ...baseEnv, ...pluginEnv, ...actionEnv };
 
     let cwd = process.cwd();
 
@@ -228,12 +228,13 @@ async function bzeroTransparentSshProxyHandler(configService: ConfigService, log
     }
 
     try {
-        const options = {
+        const env: NodeJS.ProcessEnv = { ...runtimeConfig, ...process.env };
+        const options: SpawnOptionsWithStdioTuple<StdioPipe, StdioPipe, StdioPipe> = {
             cwd: cwd,
-            env: { ...runtimeConfig, ...process.env },
+            env: env,
             detached: false,
             shell: true,
-            stdio: 'pipe'
+            stdio: ['pipe', 'pipe', 'pipe']
         };
 
         const daemonProcess = spawn(finalDaemonPath, args, options);
@@ -290,7 +291,7 @@ function getBaseSshArgs(configService: ConfigService, sshTunnelParameters: SshTu
         'TARGET_ID': createUniversalConnectionResponse.targetId,
         'TARGET_USER': sshTunnelParameters.targetUser,
         'REMOTE_HOST': 'localhost',
-        'REMOTE_PORT': sshTunnelParameters.port,
+        'REMOTE_PORT': sshTunnelParameters.port.toString(),
         'IDENTITY_FILE': sshTunnelParameters.identityFile,
         'KNOWN_HOSTS_FILE': configService.sshKnownHostsPath(),
         'HOSTNAMES': sshTunnelParameters.hostNames.join(','),

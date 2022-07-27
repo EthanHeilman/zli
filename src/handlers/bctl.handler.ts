@@ -3,10 +3,10 @@ import { Logger } from '../services/logger/logger.service';
 import { cleanExit } from './clean-exit.handler';
 import util from 'util';
 import { spawn, exec } from 'child_process';
+import isRunning from 'is-running';
 
-const { v4: uuidv4 } = require('uuid');
+import { v4 as uuidv4 } from 'uuid';
 const execPromise = util.promisify(exec);
-const isRunning = require('is-running');
 
 
 export async function bctlHandler(configService: ConfigService, logger: Logger, listOfCommands: string[]) {

@@ -1,7 +1,7 @@
 import yargs from 'yargs';
 import got from 'got/dist/source';
 import { Retrier } from '@jsier/retrier';
-const { spawn } = require('child_process');
+import { spawn, SpawnOptionsWithStdioTuple, StdioNull } from 'child_process';
 
 import { ConfigService } from '../../services/config/config.service';
 import { Logger } from '../../services/logger/logger.service';
@@ -76,7 +76,7 @@ export async function startKubeDaemonHandler(
     try {
         if (!argv.debug) {
             // If we are not debugging, start the go subprocess in the background
-            const options = {
+            const options: SpawnOptionsWithStdioTuple<StdioNull, StdioNull, StdioNull> = {
                 cwd: cwd,
                 env: { ...runtimeConfig, ...process.env },
                 detached: true,

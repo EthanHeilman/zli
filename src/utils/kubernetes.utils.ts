@@ -2,7 +2,7 @@ import { exec } from 'child_process';
 import { ConfigService } from '../services/config/config.service';
 import { Logger } from 'winston';
 
-const pids = require('port-pid');
+import {portToPid} from 'pid-port';
 
 export interface KubeConfig {
     keyPath: string,
@@ -77,7 +77,7 @@ export async function killPortProcess(port: number) {
 async function getPidForPort(port: number): Promise<number[]> {
     // Helper function to get a pids from a port number
     const getPidPromise = new Promise<number[]>(async (resolve, _) => {
-        pids(port).then((pids: any) => {
+        portToPid(port).then((pids: any) => {
             resolve(pids.tcp);
         });
     });

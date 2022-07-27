@@ -4,6 +4,8 @@ import { KubeConfig } from '../../utils/kubernetes.utils';
 import * as middlewareHandler from '../middleware.handler';
 import * as DaemonUtils from '../../utils/daemon-utils';
 import * as KubeConfigHandler from './generate-kube-config.handler';
+import randToken from 'rand-token';
+import * as getPort from 'get-port';
 
 export function kubeConfigMockSetup() {
     jest.spyOn(middlewareHandler, 'fetchDataMiddleware').mockImplementationOnce(() => {
@@ -22,8 +24,8 @@ export function kubeConfigMockSetup() {
 
     // Mocks to be called within generateKubeConfigHandler
     jest.spyOn(DaemonUtils, 'generateNewCert').mockImplementation(async () => Promise.resolve(['pathToKey', 'pathToCert', 'pathToCsr']));
-    jest.spyOn(KubeConfigHandler, 'findPort').mockImplementation(() => 1);
-    jest.spyOn(KubeConfigHandler.randtoken, 'generate').mockImplementation(() => '1');
+    jest.spyOn(getPort, 'default').mockImplementation(() => Promise.resolve(1));
+    jest.spyOn(randToken, 'generate').mockImplementation(() => '1');
 }
 
 export const mockKubeConfig: KubeConfig = {

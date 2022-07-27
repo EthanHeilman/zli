@@ -1,6 +1,6 @@
 import { ConfigService } from '../config/config.service';
 import { Logger } from '../logger/logger.service';
-const ua = require('universal-analytics');
+import ua from 'universal-analytics';
 
 export class GAService
 {

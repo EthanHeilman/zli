@@ -28,6 +28,8 @@ import { TargetStatus } from '../../../webshell-common-ts/http/v2/target/types/t
 import { Subject } from '../../../webshell-common-ts/http/v2/policy/types/subject.types';
 import { SubjectType } from '../../../webshell-common-ts/http/v2/common.types/subject.types';
 
+import SSHConfig, { Line } from 'ssh-config';
+
 export class QuickstartSsmService {
     constructor(
         private logger: Logger,
@@ -647,9 +649,8 @@ export class QuickstartSsmService {
      */
     public parseSSHHosts(sshConfig: string): [hosts: Map<string, ValidSSHHost>, invalidSSHHosts: InvalidSSHHost[]] {
         // Parse sshConfig content to usable HostBlock types
-        const SSHConfig = require('ssh-config');
-        const config: [] = SSHConfig.parse(sshConfig);
-        const hostBlocks: SSHConfigHostBlock[] = config.filter((elem: any) => elem.param && elem.param.toLowerCase() === 'host');
+        const config: SSHConfig = SSHConfig.parse(sshConfig);
+        const hostBlocks = config.filter((elem: any) => elem.param && elem.param.toLowerCase() === 'host') as SSHConfigHostBlock[];
 
         const seen: Map<string, boolean> = new Map();
         const validHosts: Map<string, ValidSSHHost> = new Map();

@@ -7,13 +7,13 @@ import { generateKubeConfigArgs } from './generate-kube.command-builder';
 import { cleanExit } from '../clean-exit.handler';
 import { generateNewCert } from '../../utils/daemon-utils';
 
-const path = require('path');
-const fs = require('fs');
-const tmp = require('tmp');
+import path from 'path';
+import fs from 'fs';
+import tmp from 'tmp';
 const execPromise = util.promisify(exec);
 // Exporting for use during testing
-export const randtoken = require('rand-token');
-export const findPort = require('find-open-port');
+import randToken from 'rand-token';
+import * as getPort from 'get-port';
 
 export async function generateKubeConfigHandler(
     argv: yargs.Arguments<generateKubeConfigArgs>,
@@ -35,10 +35,10 @@ export async function generateKubeConfigHandler(
             const [pathToKey, pathToCert, pathToCsr] = await generateNewCert(pathToConfig, 'kube', configName);
 
             // Generate a token that can be used for auth
-            const token = randtoken.generate(128);
+            const token = randToken.generate(128);
 
             // Find a local port to use for our daemon
-            const localPort = await findPort();
+            const localPort = await getPort.default();
 
             // Now save the path in the configService
             kubeConfig = {

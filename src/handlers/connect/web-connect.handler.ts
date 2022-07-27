@@ -9,7 +9,7 @@ import { connectArgs } from './connect.command-builder';
 import { WebTargetService } from '../../http-services/web-target/web-target.http-service';
 import { CreateUniversalConnectionResponse } from '../../../webshell-common-ts/http/v2/connection/responses/create-universal-connection.response';
 
-const { spawn } = require('child_process');
+import { spawn, SpawnOptions, SpawnOptionsWithStdioTuple, StdioNull } from 'child_process';
 
 
 export async function webConnectHandler(
@@ -45,14 +45,14 @@ export async function webConnectHandler(
     // Build our runtime config and cwd
     const baseEnv = getBaseDaemonEnv(configService, loggerConfigService, webTarget.agentPublicKey, createUniversalConnectionResponse.connectionId, createUniversalConnectionResponse.connectionAuthDetails);
     const pluginEnv = {
-        'LOCAL_PORT': localPort,
+        'LOCAL_PORT': localPort.toString(),
         'LOCAL_HOST': localHost,
         'TARGET_ID': webTarget.id,
-        'REMOTE_PORT': webTarget.remotePort.value,
+        'REMOTE_PORT': webTarget.remotePort.value.toString(),
         'REMOTE_HOST': webTarget.remoteHost,
         'PLUGIN': 'web'
     };
-    const runtimeConfig = { ...baseEnv, ...pluginEnv };
+    const runtimeConfig: NodeJS.ProcessEnv = { ...baseEnv, ...pluginEnv };
 
     let cwd = process.cwd();
 
@@ -71,7 +71,7 @@ export async function webConnectHandler(
     try {
         if (!argv.debug) {
             // If we are not debugging, start the go subprocess in the background
-            const options = {
+            const options: SpawnOptionsWithStdioTuple<StdioNull, StdioNull, StdioNull> = {
                 cwd: cwd,
                 env: { ...runtimeConfig, ...process.env },
                 detached: true,
@@ -79,10 +79,10 @@ export async function webConnectHandler(
                 stdio: ['ignore', 'ignore', 'ignore']
             };
 
-            const daemonProcess = await spawn(finalDaemonPath, args, options);
+            const daemonProcess = spawn(finalDaemonPath, args, options);
 
             // Now save the Pid so we can kill the process next time we start it
-            webConfig.localPid = daemonProcess.pid;
+            webConfig.localPid = daemonProcess?.pid;
             webConfig.localPort = localPort;
             webConfig.localHost = localHost;
 

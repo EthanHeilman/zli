@@ -10,8 +10,23 @@ import { ConnectionEventDataMessage } from '../../../../webshell-common-ts/http/
 import { EnvironmentHttpService } from '../../../../src/http-services/environment/environment.http-services';
 
 import *  as fs from 'fs';
+import {portToPid} from 'pid-port';
 
-const pids = require('port-pid');
+try {
+	console.log(await portToPid(8080));
+	//=> 1337
+
+	const pids = await portToPid([8080, 22]);
+
+	console.log(pids.get(8080));
+	//=> 1337
+
+	console.log(pids.get(22));
+	//=> 12345
+} catch (error) {
+	console.log(error);
+	//=> 'Could not find a process that uses port `8080`'
+}
 
 const EVENT_QUERY_TIME = 2;
 const SLEEP_TIME = 5;
@@ -307,7 +322,7 @@ export class TestUtils {
      */
     public async CheckPort(port: number) {
         const ports = new Promise<number[]>(async (resolve, _) => {
-            pids(port).then((pids: any) => {
+            portToPid(port).then((pids: any) => {
                 resolve(pids.tcp);
             });
         });

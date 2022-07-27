@@ -8,7 +8,7 @@ import yargs from 'yargs';
 import { DbTargetService } from '../../http-services/db-target/db-target.http-service';
 import { CreateUniversalConnectionResponse } from '../../../webshell-common-ts/http/v2/connection/responses/create-universal-connection.response';
 
-const { spawn } = require('child_process');
+import { spawn, SpawnOptionsWithStdioTuple, StdioNull } from 'child_process';
 
 
 export async function dbConnectHandler(
@@ -44,15 +44,15 @@ export async function dbConnectHandler(
     // Build our runtime config and cwd
     const baseEnv = getBaseDaemonEnv(configService, loggerConfigService, dbTarget.agentPublicKey, createUniversalConnectionResponse.connectionId, createUniversalConnectionResponse.connectionAuthDetails);
     const pluginEnv = {
-        'LOCAL_PORT': localPort,
+        'LOCAL_PORT': localPort.toString(),
         'LOCAL_HOST': localHost,
         'TARGET_ID': dbTarget.id,
-        'REMOTE_PORT': dbTarget.remotePort.value,
+        'REMOTE_PORT': dbTarget.remotePort.value.toString(),
         'REMOTE_HOST': dbTarget.remoteHost,
         'PLUGIN': 'db'
     };
 
-    const runtimeConfig = { ...baseEnv, ...pluginEnv };
+    const runtimeConfig: NodeJS.ProcessEnv = { ...baseEnv, ...pluginEnv };
 
     let cwd = process.cwd();
 
@@ -71,7 +71,7 @@ export async function dbConnectHandler(
     try {
         if (!argv.debug) {
             // If we are not debugging, start the go subprocess in the background
-            const options = {
+            const options: SpawnOptionsWithStdioTuple<StdioNull, StdioNull, StdioNull> = {
                 cwd: cwd,
                 env: {...runtimeConfig, ...process.env},
                 detached: true,
@@ -79,7 +79,7 @@ export async function dbConnectHandler(
                 stdio: ['ignore', 'ignore', 'ignore']
             };
 
-            const daemonProcess = await spawn(finalDaemonPath, args, options);
+            const daemonProcess = spawn(finalDaemonPath, args, options);
 
             // Now save the Pid so we can kill the process next time we start it
             dbConfig.localPid = daemonProcess.pid;

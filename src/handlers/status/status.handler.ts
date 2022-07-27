@@ -6,6 +6,7 @@ import { getTableOfDbStatus, getTableOfKubeStatus, getTableOfWebStatus } from '.
 import { statusArgs } from './status.command-builder';
 import yargs from 'yargs';
 import { killPortProcess } from '../../utils/daemon-utils';
+import isRunning from 'is-running';
 
 export async function statusHandler(
     argv: yargs.Arguments<statusArgs>,
@@ -40,7 +41,7 @@ async function webStatusHandler(
         logger.warn('No web daemon running');
     } else {
         // Check if the pid is still alive
-        if (!require('is-running')(webConfig['localPid'])) {
+        if (!isRunning(webConfig['localPid'])) {
             logger.error('The web daemon has quit unexpectedly.');
             webConfig['localPid'] = null;
 
@@ -71,7 +72,7 @@ async function dbStatusHandler(
         logger.warn('No db daemon running');
     } else {
         // Check if the pid is still alive
-        if (!require('is-running')(dbConfig['localPid'])) {
+        if (!isRunning(dbConfig['localPid'])) {
             logger.error('The db daemon has quit unexpectedly.');
             dbConfig['localPid'] = null;
 
@@ -102,7 +103,7 @@ async function kubeStatusHandler(
         logger.warn('No kube daemon running');
     } else {
         // Check if the pid is still alive
-        if (!require('is-running')(kubeConfig['localPid'])) {
+        if (!isRunning(kubeConfig['localPid'])) {
             logger.error('The kube daemon has quit unexpectedly.');
             kubeConfig['localPid'] = null;
 

@@ -8,7 +8,7 @@ import { TestUtils } from '../utils/test-utils';
 import { ConnectionEventType } from '../../../../webshell-common-ts/http/v2/event/types/connection-event.types';
 import { PolicyHttpService } from '../../../http-services/policy/policy.http-services';
 
-const fs = require('fs');
+import fs from 'fs';
 
 export const KubeTestUserName = 'foo';
 const BadKubeTestUserName = 'baduser';

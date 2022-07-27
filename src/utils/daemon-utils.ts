@@ -8,12 +8,11 @@ import { ConfigService } from '../services/config/config.service';
 import { LoggerConfigService } from '../services/logger/logger-config.service';
 import { ShellConnectionAuthDetails } from '../../webshell-common-ts/http/v2/connection/types/shell-connection-auth-details.types';
 
-const { spawn } = require('child_process');
-const exec = require('child_process').execSync;
-const pids = require('port-pid');
-const readLastLines = require('read-last-lines');
-const randtoken = require('rand-token');
-const findPort = require('find-open-port');
+import { spawn, SpawnOptionsWithStdioTuple, StdioNull } from 'child_process';
+import {portToPid} from 'pid-port';
+import readLastLines from 'read-last-lines';
+import randtoken from 'rand-token';
+import getPort from 'get-port';
 
 export const DAEMON_PATH : string = 'bzero/bctl/daemon/daemon';
 
@@ -73,7 +72,7 @@ export function getAppExecPath() {
  * @returns Path to the key, path to the cert, path to the certificate signing request.
  */
 export async function generateNewCert(pathToConfig: string, name: string, configName: string ): Promise<string[]> {
-    const options = { stdio: ['ignore', 'ignore', 'ignore'] };
+    const options: SpawnOptionsWithStdioTuple<StdioNull, StdioNull, StdioNull> = { stdio: ['ignore', 'ignore', 'ignore'] };
 
     // Create and save key/cert
     const createCertPromise = new Promise<string[]>(async (resolve, reject) => {
@@ -89,7 +88,7 @@ export async function generateNewCert(pathToConfig: string, name: string, config
 
         // Generate a new key
         try {
-            await exec(`openssl genrsa -out ${pathToKey}`, options);
+            spawn(`openssl genrsa -out ${pathToKey}`, options);
         } catch (e: any) {
             reject(e);
         }
@@ -98,7 +97,7 @@ export async function generateNewCert(pathToConfig: string, name: string, config
         // Ref: https://www.openssl.org/docs/man1.0.2/man1/openssl-req.html
         try {
             const pass = randtoken.generate(128);
-            await exec(`openssl req -sha256 -passin pass:${pass} -new -key ${pathToKey} -subj "/C=US/ST=Bastionzero/L=Boston/O=Dis/CN=bastionzero.com" -out ${pathToCsr}`, options);
+            spawn(`openssl req -sha256 -passin pass:${pass} -new -key ${pathToKey} -subj "/C=US/ST=Bastionzero/L=Boston/O=Dis/CN=bastionzero.com" -out ${pathToCsr}`, options);
         } catch (e: any) {
             reject(e);
         }
@@ -106,7 +105,7 @@ export async function generateNewCert(pathToConfig: string, name: string, config
         // Now generate the certificate
         // https://www.openssl.org/docs/man1.1.1/man1/x509.html
         try {
-            await exec(`openssl x509 -req -days 999 -in ${pathToCsr} -signkey ${pathToKey} -out ${pathToCert}`, options);
+            spawn(`openssl x509 -req -days 999 -in ${pathToCsr} -signkey ${pathToKey} -out ${pathToCert}`, options);
         } catch (e: any) {
             reject(e);
         }
@@ -126,7 +125,7 @@ export function isPkgProcess() {
 export async function startDaemonInDebugMode(finalDaemonPath: string, cwd: string, env: object, args: string[]) {
     const startDaemonPromise = new Promise<void>(async (resolve) => {
         // Start our daemon process in its own process group, but stream our stdio to the user (pipe)
-        const daemonProcess = await spawn(finalDaemonPath, args,
+        const daemonProcess = spawn(finalDaemonPath, args,
             {
                 cwd: cwd,
                 env: {...env, ...process.env},
@@ -138,7 +137,7 @@ export async function startDaemonInDebugMode(finalDaemonPath: string, cwd: strin
 
         process.on('SIGINT', () => {
             // CNT+C Sent from the user, kill the daemon process, which will trigger an exit
-            killPid(daemonProcess.pid);
+            killPid(daemonProcess?.pid.toString());
         });
 
         daemonProcess.on('exit', function () {
@@ -280,7 +279,7 @@ export async function killPortProcess(port: number, logger: Logger) {
  */
 async function getPidForPort(port: number): Promise<number[]> {
     const ports = new Promise<number[]>(async (resolve, _) => {
-        pids(port).then((pids: any) => {
+        portToPid(port).then((pids: any) => {
             resolve(pids.tcp);
         });
     });
@@ -293,8 +292,8 @@ function killPid(pid: string) {
     // Ignore output and do not show that to the user
     // For unix based os we kill all processes based on group id by using kill -{signal} -{pid}
     // https://stackoverflow.com/a/49842576/9186330
-    const options = { stdio: ['ignore', 'ignore', 'ignore'] };
-    exec(`kill -9 -${pid}`, options);
+    const options: SpawnOptionsWithStdioTuple<StdioNull, StdioNull, StdioNull> = { stdio: ['ignore', 'ignore', 'ignore'] };
+    spawn(`kill -9 -${pid}`, options);
 }
 
 /**
@@ -344,7 +343,7 @@ export function getOrDefaultLocalhost(passedLocalhost: string): string {
  */
 export async function getOrDefaultLocalport(passedLocalport: number): Promise<number> {
     if (passedLocalport == null) {
-        const availablePort = await findPort();
+        const availablePort = await getPort();
         return availablePort;
     };
     return passedLocalport;

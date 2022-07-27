@@ -17,8 +17,8 @@ import { TestTarget } from '../system-test.types';
 import { PolicyHttpService } from '../../../http-services/policy/policy.http-services';
 import { Subject } from '../../../../webshell-common-ts/http/v2/policy/types/subject.types';
 
-const { Client } = require('pg');
-const fs = require('fs');
+import { Client } from 'pg';
+import fs from 'fs';
 
 export const vtSuite = () => {
     describe('vt suite', () => {
