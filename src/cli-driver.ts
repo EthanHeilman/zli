@@ -96,7 +96,7 @@ import { createApiKeyHandler } from './handlers/api-key/create-api-key.handler';
 export type EnvMap = Readonly<{
     configName: string;
     configDir: string;
-}>
+}>;
 
 // Mapping from env vars to options if they exist
 export const envMap: EnvMap = {
@@ -107,7 +107,7 @@ export const envMap: EnvMap = {
 export class CliDriver
 {
     private configService: ConfigService;
-    private keySplittingService: KeySplittingService
+    private keySplittingService: KeySplittingService;
     private loggerConfigService: LoggerConfigService;
     private logger: Logger;
 

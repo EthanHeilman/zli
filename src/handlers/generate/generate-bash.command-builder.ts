@@ -6,7 +6,7 @@ export type TargetNameScheme = typeof targetNameSchemes[number];
 export type generateBashArgs = { environment: string } &
 { targetNameScheme: TargetNameScheme } &
 { agentVersion: string } &
-{ outputFile: string }
+{ outputFile: string };
 
 export function generateBashCmdBuilder(yargs: yargs.Argv<{}>): yargs.Argv<generateBashArgs> {
     return yargs

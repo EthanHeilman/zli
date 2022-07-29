@@ -3,7 +3,7 @@ import yargs from 'yargs';
 export type sshProxyArg = {host: string} &
 {user: string} &
 {port: number} &
-{identityFile: string}
+{identityFile: string};
 
 export function sshProxyCmdBuilder(yargs: yargs.Argv<{}>) : yargs.Argv<sshProxyArg> {
     return yargs

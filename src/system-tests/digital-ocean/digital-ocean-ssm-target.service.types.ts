@@ -97,7 +97,7 @@ export type DigitalOceanBZeroTarget = {
 export type DigitalOceanSsmTargetParameters = {
     targetName: string;
     dropletParameters: CreateNewDropletParameters;
-}
+};
 
 /**
  * Parameters to create a new DigitalOcean droplet
@@ -109,7 +109,7 @@ export type CreateNewDropletParameters = {
     dropletImage: DigitalOceanDistroImage;
     dropletTags?: string[];
     userDataScript?: string;
-}
+};
 
 /**
  * This error is thrown when the SSM target status poller sees that the watched

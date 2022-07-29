@@ -31,7 +31,7 @@ type BastionZeroConfigSchema = {
     kubeConfig: KubeConfig
     dbConfig: DbConfig,
     webConfig: WebConfig
-}
+};
 
 export class ConfigService implements ConfigInterface {
     private config: Conf<BastionZeroConfigSchema>;

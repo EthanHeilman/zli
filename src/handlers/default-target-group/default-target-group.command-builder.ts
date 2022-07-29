@@ -1,6 +1,6 @@
 import yargs from 'yargs';
 
-export type defaultTargetGroupArgs = { set: string[] }
+export type defaultTargetGroupArgs = { set: string[] };
 
 export function defaultTargetGroupCmdBuilder(yargs: yargs.Argv<{}>) :
 yargs.Argv<defaultTargetGroupArgs> {

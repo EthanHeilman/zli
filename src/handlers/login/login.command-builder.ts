@@ -1,6 +1,6 @@
 import yargs from 'yargs';
 
-export type loginArgs = {mfa: string}
+export type loginArgs = {mfa: string};
 
 export function loginCmdBuilder (yargs : yargs.Argv<{}>) : yargs.Argv<loginArgs>
 {

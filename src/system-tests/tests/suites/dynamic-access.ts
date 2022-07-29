@@ -16,7 +16,7 @@ export type DATBzeroTarget = {
     type: 'dat-bzero',
     awsRegion: string,
     dynamicAccessConfiguration: DynamicAccessConfigSummary
-}
+};
 
 export const dynamicAccessSuite = () => {
     describe('dynamic access suite', () => {

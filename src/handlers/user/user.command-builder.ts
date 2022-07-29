@@ -4,7 +4,7 @@ export type userArgs = {add: boolean} &
 {delete: boolean} &
 {idpEmail: string} &
 {policyName: string} &
-{json: boolean}
+{json: boolean};
 
 export function userCmdBuilder(yargs: yargs.Argv<{}>) : yargs.Argv<userArgs> {
     return yargs

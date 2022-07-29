@@ -1,6 +1,6 @@
 import yargs from 'yargs';
 
-export type connectArgs = {targetString: string} & {targetType: string} & {customPort: number} & {targetGroup: string[]}
+export type connectArgs = {targetString: string} & {targetType: string} & {customPort: number} & {targetGroup: string[]};
 
 export function connectCmdBuilder (yargs : yargs.Argv<{}>,targetTypeChoices : string[]) : yargs.Argv<connectArgs>
 {

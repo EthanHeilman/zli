@@ -1,6 +1,6 @@
 import yargs from 'yargs';
 
-export type statusArgs = {targetType: string}
+export type statusArgs = {targetType: string};
 
 export function statusCmdBuilder (yargs : yargs.Argv<{}>) : yargs.Argv<statusArgs> {
     return yargs

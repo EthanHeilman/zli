@@ -4,7 +4,7 @@ export type groupArgs = {add: boolean} &
 {delete: boolean} &
 {groupName: string} &
 {policyName: string} &
-{json: boolean}
+{json: boolean};
 
 export function groupCmdBuilder(yargs: yargs.Argv<{}>) : yargs.Argv<groupArgs> {
     return yargs

@@ -31,7 +31,7 @@ const loggingDebugFormat = printf(info => {
 
 export class Logger implements ILogger {
     private logger: WinstonLogger;
-    private gaService: GAService
+    private gaService: GAService;
 
     constructor(private config: LoggerConfigService, private debugFlag: boolean, private silentFlag: boolean, isStdEnabled: boolean) {
         // Build our logger

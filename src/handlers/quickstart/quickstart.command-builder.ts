@@ -1,7 +1,7 @@
 import yargs from 'yargs';
 import os from 'os';
 
-export type quickstartArgs = { sshConfigFile: string }
+export type quickstartArgs = { sshConfigFile: string };
 
 export const defaultSshConfigFilePath = `${os.homedir()}/.ssh/config`;
 
