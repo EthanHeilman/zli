@@ -142,7 +142,6 @@ export class CliDriver
         'ssh-proxy-config',
         'ssh-proxy',
         'configure',
-        'generate-bash',
         'quickstart',
         'logout',
         'kube',
@@ -170,7 +169,6 @@ export class CliDriver
         'ssh-proxy',
         'policy',
         'group',
-        'generate-bash',
         'register',
         'generate',
         'api-key'
@@ -195,7 +193,6 @@ export class CliDriver
         'generate',
         'policy',
         'group',
-        'generate-bash'
     ]);
 
     private fetchCommands: Set<string> = new Set([
@@ -206,7 +203,6 @@ export class CliDriver
         'generate',
         'policy',
         'group',
-        'generate-bash'
     ]);
 
     private adminOnlyCommands: Set<string> = new Set([
@@ -216,7 +212,6 @@ export class CliDriver
         'targetgroup',
         'policy',
         'describe-cluster-policy',
-        'generate-bash',
         'api-key'
     ]);
 
@@ -622,19 +617,6 @@ export class CliDriver
                 async () => {
                     await configHandler(this.logger, this.configService, this.loggerConfigService);
                 }
-            )
-            .command(
-                'generate-bash',
-                'Returns a bash script to autodiscover a target.',
-                (yargs) => {
-                    return generateBashCmdBuilder(yargs) ;
-                },
-                async (argv) => {
-                    await generateBashHandler(argv, this.logger, this.configService, this.envs);
-                    this.logger.warn('The generate-bash command is deprecated and will be removed soon, please use its equivalent \'zli generate bash\'');
-                },
-                [],
-                true // deprecated = true
             )
             .command(
                 'quickstart',
