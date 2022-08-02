@@ -1,13 +1,13 @@
-import { ConfigService } from '../../services/config/config.service';
-import { Logger } from '../../services/logger/logger.service';
-import { cleanExit } from '../clean-exit.handler';
-import { getTableOfGroups } from '../../utils/utils';
+import { ConfigService } from '../../../services/config/config.service';
+import { Logger } from '../../../services/logger/logger.service';
+import { cleanExit } from '../../clean-exit.handler';
+import { getTableOfGroups } from '../../../utils/utils';
 import yargs from 'yargs';
-import { groupArgs } from './group.command-builder';
-import { OrganizationHttpService } from '../../../src/http-services/organization/organization.http-services';
+import { listGroupArgs } from './list-groups.command-builder';
+import { OrganizationHttpService } from '../../../http-services/organization/organization.http-services';
 
-export async function fetchGroupsHandler(
-    argv: yargs.Arguments<groupArgs>,
+export async function listGroupsHandler(
+    argv: yargs.Arguments<listGroupArgs>,
     configService: ConfigService,
     logger: Logger,
 ){

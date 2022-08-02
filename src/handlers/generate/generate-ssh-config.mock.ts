@@ -2,18 +2,8 @@ import path from 'path';
 import { PolicyQueryHttpService } from '../../http-services/policy-query/policy-query.http-services';
 import { ConfigService } from '../../services/config/config.service';
 import { mockTunnelsResponseList } from '../../utils/unit-test-utils';
-import * as middlewareHandler from '../middleware.handler';
 
 export function sshConfigMockSetup(): void {
-    jest.spyOn(middlewareHandler, 'fetchDataMiddleware').mockImplementationOnce(() => {
-        return {
-            dynamicConfigs: Promise.resolve([]),
-            ssmTargets: Promise.resolve([]),
-            clusterTargets: Promise.resolve([]),
-            bzeroTargets: Promise.resolve([]),
-            envs: Promise.resolve([]),
-        };
-    });
     // Mock GetTunnels from PolicyQueryHttpService
     jest.spyOn(PolicyQueryHttpService.prototype, 'GetSshTargets').mockImplementation(async () => mockTunnelsResponseList);
     // Mock Config methods used in building ssh config file

@@ -1,12 +1,12 @@
-import { ConfigService } from '../../services/config/config.service';
-import { Logger } from '../../services/logger/logger.service';
-import { cleanExit } from '../clean-exit.handler';
-import { OrganizationHttpService } from '../../http-services/organization/organization.http-services';
-import { PolicyHttpService } from '../../../src/http-services/policy/policy.http-services';
-import { KubernetesPolicySummary } from '../../../webshell-common-ts/http/v2/policy/kubernetes/types/kubernetes-policy-summary.types';
-import { TargetConnectPolicySummary } from '../../../webshell-common-ts/http/v2/policy/target-connect/types/target-connect-policy-summary.types';
-import { PolicyType } from '../../../webshell-common-ts/http/v2/policy/types/policy-type.types';
-import { ProxyPolicySummary } from '../../../webshell-common-ts/http/v2/policy/proxy/types/proxy-policy-summary.types';
+import { ConfigService } from '../../../services/config/config.service';
+import { Logger } from '../../../services/logger/logger.service';
+import { cleanExit } from '../../clean-exit.handler';
+import { OrganizationHttpService } from '../../../http-services/organization/organization.http-services';
+import { PolicyHttpService } from '../../../http-services/policy/policy.http-services';
+import { KubernetesPolicySummary } from '../../../../webshell-common-ts/http/v2/policy/kubernetes/types/kubernetes-policy-summary.types';
+import { TargetConnectPolicySummary } from '../../../../webshell-common-ts/http/v2/policy/target-connect/types/target-connect-policy-summary.types';
+import { PolicyType } from '../../../../webshell-common-ts/http/v2/policy/types/policy-type.types';
+import { ProxyPolicySummary } from '../../../../webshell-common-ts/http/v2/policy/proxy/types/proxy-policy-summary.types';
 
 export async function deleteGroupFromPolicyHandler(groupName: string, policyName: string, configService: ConfigService, logger: Logger) {
     // First ensure we can lookup the group

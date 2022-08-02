@@ -1,11 +1,11 @@
-import { ConfigService } from '../../services/config/config.service';
-import { Logger } from '../../services/logger/logger.service';
-import { cleanExit } from '../clean-exit.handler';
-import { PolicyHttpService } from '../../http-services/policy/policy.http-services';
-import { ClusterUser } from '../../../webshell-common-ts/http/v2/policy/types/cluster-user.types';
-import { TargetUser } from '../../../webshell-common-ts/http/v2/policy/types/target-user.types';
+import { ConfigService } from '../../../services/config/config.service';
+import { Logger } from '../../../services/logger/logger.service';
+import { cleanExit } from '../../clean-exit.handler';
+import { PolicyHttpService } from '../../../http-services/policy/policy.http-services';
+import { ClusterUser } from '../../../../webshell-common-ts/http/v2/policy/types/cluster-user.types';
+import { TargetUser } from '../../../../webshell-common-ts/http/v2/policy/types/target-user.types';
 
-export async function addTargetUserHandler(targetUserName: string, policyName: string, configService: ConfigService, logger: Logger) {
+export async function addTargetUserToPolicyHandler(targetUserName: string, policyName: string, configService: ConfigService, logger: Logger) {
     // First get the existing policy
     const policyHttpService = new PolicyHttpService(configService, logger);
     const kubePolicies = await policyHttpService.ListKubernetesPolicies();

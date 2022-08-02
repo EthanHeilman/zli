@@ -1,7 +1,6 @@
 import {
     isGuid,
     makeCaseInsensitive,
-    parsePolicyType,
     targetStringExample,
     getZliRunCommand,
     targetTypeDisplay
@@ -17,15 +16,11 @@ import { GAService } from './services/Tracking/google-analytics.service';
 import { MixpanelService } from './services/Tracking/mixpanel.service';
 import { TargetType } from '../webshell-common-ts/http/v2/target/types/target.types';
 import { TargetStatus } from '../webshell-common-ts/http/v2/target/types/targetStatus.types';
-import { TargetSummary } from '../webshell-common-ts/http/v2/target/targetSummary.types';
-import { KubeClusterSummary } from '../webshell-common-ts/http/v2/target/kube/types/kube-cluster-summary.types';
-import { EnvironmentSummary } from '../webshell-common-ts/http/v2/environment/types/environment-summary.responses';
 import { version } from '../package.json';
-import { BzeroAgentSummary } from '../webshell-common-ts/http/v2/target/bzero/types/bzero-agent-summary.types';
 import { PolicyType } from '../webshell-common-ts/http/v2/policy/types/policy-type.types';
 
 // Handlers
-import { initMiddleware, oAuthMiddleware, fetchDataMiddleware, GATrackingMiddleware, initLoggerMiddleware, mixpanelTrackingMiddleware, bzCertValidationInfoMiddleware } from './handlers/middleware.handler';
+import { initMiddleware, oAuthMiddleware, GATrackingMiddleware, initLoggerMiddleware, mixpanelTrackingMiddleware, bzCertValidationInfoMiddleware } from './handlers/middleware.handler';
 import { sshProxyHandler } from './handlers/ssh-proxy/ssh-proxy.handler';
 import { loginHandler } from './handlers/login/login.handler';
 import { listTargetsHandler } from './handlers/list-targets/list-targets.handler';
@@ -39,30 +34,27 @@ import { generateKubeYamlHandler } from './handlers/generate/generate-kube-yaml.
 import { disconnectHandler } from './handlers/disconnect/disconnect.handler';
 import { statusHandler } from './handlers/status/status.handler';
 import { bctlHandler } from './handlers/bctl.handler';
-import { fetchGroupsHandler } from './handlers/group/fetch-groups.handler';
 import { generateBashHandler } from './handlers/generate/generate-bash.handler';
 import { quickstartHandler } from './handlers/quickstart/quickstart-handler';
-import { describeClusterPolicyHandler } from './handlers/describe-cluster-policy/describe-cluster-policy.handler';
+import { describeClusterPolicyHandler } from './handlers/policy/policy-describe-cluster/describe-cluster-policy.handler';
 import { quickstartCmdBuilder } from './handlers/quickstart/quickstart.command-builder';
 import { defaultTargetGroupHandler } from './handlers/default-target-group/default-target-group.handler';
-import { addUserToPolicyHandler } from './handlers/user/add-user-policy.handler';
-import { deleteUserFromPolicyHandler } from './handlers/user/delete-user-policy.handler';
-import { addGroupToPolicyHandler } from './handlers/group/add-group-policy.handler';
-import { deleteGroupFromPolicyHandler } from './handlers/group/delete-group-policy-handler';
-import { addTargetUserHandler } from './handlers/target-user/add-target-user.handler';
-import { deleteTargetUserHandler } from './handlers/target-user/delete-target-user.handler';
-import { listTargetUsersHandler } from './handlers/target-user/list-target-users.handler';
-import { addTargetGroupHandler } from './handlers/target-group/add-target-group.handler';
-import { deleteTargetGroupHandler } from './handlers/target-group/delete-target-group.handler';
-import { listTargetGroupHandler } from './handlers/target-group/list-target-group.handler';
-import { listKubernetesPoliciesHandler } from './handlers/policy/list-kubernetes-policies.handler';
-import { listTargetConnectPoliciesHandler } from './handlers/policy/list-target-connect-policies.handler';
-import { listSessionRecordingPoliciesHandler } from './handlers/policy/list-session-recording-policies.handler';
-import { listOrganizationControlsPoliciesHandler } from './handlers/policy/list-organization-controls-policies.handler';
+import { listUsersHandler } from './handlers/policy/policy-user/list-users.handler';
+import { addUserToPolicyHandler } from './handlers/policy/policy-user/add-user-policy.handler';
+import { deleteUserFromPolicyHandler } from './handlers/policy/policy-user/delete-user-policy.handler';
+import { listGroupsHandler } from './handlers/policy/policy-group/list-groups.handler';
+import { addGroupToPolicyHandler } from './handlers/policy/policy-group/add-group-policy.handler';
+import { deleteGroupFromPolicyHandler } from './handlers/policy/policy-group/delete-group-policy-handler';
+import { listTargetUsersHandler } from './handlers/policy/policy-targetuser/list-targetusers.handler';
+import { addTargetUserToPolicyHandler } from './handlers/policy/policy-targetuser/add-targetuser-policy.handler';
+import { deleteTargetUserFromPolicyHandler } from './handlers/policy/policy-targetuser/delete-targetuser-policy.handler';
+import { listTargetGroupsHandler } from './handlers/policy/policy-targetgroup/list-targetgroups.handler';
+import { addTargetGroupToPolicyHandler } from './handlers/policy/policy-targetgroup/add-targetgroup-policy.handler';
+import { deleteTargetGroupFromPolicyHandler } from './handlers/policy/policy-targetgroup/delete-targetgroup-policy.handler';
+import { listPoliciesHandler } from './handlers/policy/policy-list/list-policies.handler';
 import { generateKubeConfigHandler } from './handlers/generate/generate-kube-config.handler';
 import { generateSshConfigHandler } from './handlers/generate/generate-ssh-config.handler';
 import { sshProxyConfigHandler } from './handlers/generate/generate-ssh-proxy.handler';
-import { listUsersHandler } from './handlers/user/list-users.handler';
 
 
 // 3rd Party Modules
@@ -72,22 +64,29 @@ import yargs from 'yargs/yargs';
 import { loginCmdBuilder } from './handlers/login/login.command-builder';
 import { connectCmdBuilder } from './handlers/connect/connect.command-builder';
 import { statusCmdBuilder } from './handlers/status/status.command-builder';
-import { policyCmdBuilder } from './handlers/policy/policy.command-builder';
-import { describeClusterPolicyCmdBuilder } from './handlers/describe-cluster-policy/describe-cluster-policy.command-builder';
+import { listPoliciesCmdBuilder } from './handlers/policy/policy-list/policy-list.command-builder';
+import { describeClusterPolicyCmdBuilder } from './handlers/policy/policy-describe-cluster/describe-cluster-policy.command-builder';
 import { disconnectCmdBuilder } from './handlers/disconnect/disconnect.command-builder';
 import { attachCmdBuilder } from './handlers/attach/attach.command-builder';
 import { closeConnectionCmdBuilder } from './handlers/close-connection/close-connection.command-builder';
 import { listTargetsCmdBuilder } from './handlers/list-targets/list-targets.command-builder';
 import { listConnectionsCmdBuilder } from './handlers/list-connections/list-connections.command-builder';
-import { userCmdBuilder } from './handlers/user/user.command-builder';
-import { groupCmdBuilder } from './handlers/group/group.command-builder';
-import { targetUserCmdBuilder } from './handlers/target-user/target-user.command-builder';
-import { targetGroupCmdBuilder } from './handlers/target-group/target-group.command-builder';
+import { listUsersCmdBuilder } from './handlers/policy/policy-user/list-users.command-builder';
+import { addUserToPolicyCmdBuilder } from './handlers/policy/policy-user/add-user-policy.command-builder';
+import { deleteUserFromPolicyCmdBuilder } from './handlers/policy/policy-user/delete-user-policy.command-builder';
+import { listGroupsCmdBuilder } from './handlers/policy/policy-group/list-groups.command-builder';
+import { addGroupToPolicyCmdBuilder } from './handlers/policy/policy-group/add-group-policy.command-builder';
+import { deleteGroupFromPolicyCmdBuilder } from './handlers/policy/policy-group/delete-group-policy.command-builder';
+import { listTargetUserCmdBuilder } from './handlers/policy/policy-targetuser/list-targetusers.command-builder';
+import { addTargetUserToPolicyCmdBuilder } from './handlers/policy/policy-targetuser/add-targetuser-policy.command-builder';
+import { deleteTargetUserFromPolicyCmdBuilder } from './handlers/policy/policy-targetuser/delete-targetuser-policy.command-builder';
+import { listTargetGroupsCmdBuilder } from './handlers/policy/policy-targetgroup/list-targetgroups.command-builder';
+import { addTargetGroupToPolicyCmdBuilder } from './handlers/policy/policy-targetgroup/add-targetgroup-policy.command-builder';
+import { deleteTargetGroupFromPolicyCmdBuilder } from './handlers/policy/policy-targetgroup/delete-targetgroup-policy.command-builder';
 import { sshProxyCmdBuilder } from './handlers/ssh-proxy/ssh-proxy.command-builder';
 import { generateKubeConfigCmdBuilder, generateKubeYamlCmdBuilder } from './handlers/generate/generate-kube.command-builder';
 import { generateBashCmdBuilder } from './handlers/generate/generate-bash.command-builder';
 import { defaultTargetGroupCmdBuilder } from './handlers/default-target-group/default-target-group.command-builder';
-import { listProxyPoliciesHandler } from './handlers/policy/list-proxy-policies.handler';
 import { UserHttpService } from './http-services/user/user.http-services';
 import { generateSshConfigCmdBuilder } from './handlers/generate/generate-ssh-config.command-builder';
 import { createApiKeyCmdBuilder } from './handlers/api-key/create-api-key.command-builder';
@@ -114,12 +113,6 @@ export class CliDriver
     private GAService: GAService;
     private mixpanelService: MixpanelService;
 
-    private ssmTargets: Promise<TargetSummary[]>;
-    private dynamicConfigs: Promise<TargetSummary[]>;
-    private clusterTargets: Promise<KubeClusterSummary[]>;
-    private bzeroTargets: Promise<BzeroAgentSummary[]>;
-    private envs: Promise<EnvironmentSummary[]>;
-
     private availableCommands: Set<string> = new Set([
         'login',
         'connect',
@@ -128,17 +121,12 @@ export class CliDriver
         'default-targetgroup',
         'generate',
         'policy',
-        'describe-cluster-policy',
         'attach',
         'close',
         'list-targets',
         'lt',
         'list-connections',
         'lc',
-        'user',
-        'group',
-        'targetuser',
-        'targetgroup',
         'ssh-proxy-config',
         'ssh-proxy',
         'configure',
@@ -155,10 +143,6 @@ export class CliDriver
         'kube',
         'ssh-proxy-config',
         'connect',
-        'user',
-        'targetuser',
-        'targetgroup',
-        'describe-cluster-policy',
         'disconnect',
         'attach',
         'close',
@@ -178,10 +162,6 @@ export class CliDriver
         'kube',
         'ssh-proxy-config',
         'connect',
-        'user',
-        'targetuser',
-        'targetgroup',
-        'describe-cluster-policy',
         'disconnect',
         'attach',
         'close',
@@ -304,16 +284,6 @@ export class CliDriver
                     return;
                 await bzCertValidationInfoMiddleware(this.keySplittingService, this.configService, this.logger);
             })
-            .middleware(() => {
-                if(!this.fetchCommands.has(baseCmd))
-                    return;
-                const fetchDataResponse = fetchDataMiddleware(this.configService, this.logger);
-                this.dynamicConfigs = fetchDataResponse.dynamicConfigs;
-                this.clusterTargets = fetchDataResponse.clusterTargets;
-                this.ssmTargets = fetchDataResponse.ssmTargets;
-                this.bzeroTargets = fetchDataResponse.bzeroTargets;
-                this.envs = fetchDataResponse.envs;
-            })
             .command(
                 'login',
                 'Login through your identity provider',
@@ -382,7 +352,7 @@ export class CliDriver
                             'bash',
                             'Print a bash script to autodiscover a target',
                             (yargs) => generateBashCmdBuilder(yargs),
-                            async (argv) => await generateBashHandler(argv, this.logger, this.configService, this.envs),
+                            async (argv) => await generateBashHandler(argv, this.configService, this.logger),
                         )
                         .command(
                             'sshConfig',
@@ -406,61 +376,160 @@ export class CliDriver
                             'kubeYaml [clusterName]',
                             'Generate a yaml file for Kubernetes.',
                             (yargs) => generateKubeYamlCmdBuilder(yargs),
-                            async (argv) => await generateKubeYamlHandler(argv, this.envs, this.configService, this.logger)
+                            async (argv) => await generateKubeYamlHandler(argv, this.configService, this.logger)
                         )
                         .demandCommand(1, '')
                         .strict();
                 },
             )
             .command(
-                ['policy [type]'],
-                'List the available policies',
+                ['policy'],
+                'List, add, and delete functionality for policies',
                 (yargs) => {
-                    return policyCmdBuilder(yargs, this.policyTypeChoices);
+                    return yargs
+                        .command(
+                            'list [type]',
+                            'List all policies',
+                            (yargs) => {
+                                return listPoliciesCmdBuilder(yargs, this.policyTypeChoices);
+                            },
+                            async (argv) => {
+                                await listPoliciesHandler(argv, this.configService, this.logger);
+                            }
+                        )
+                        .command(
+                            'describe-cluster-policy <clusterName>',
+                            'Get detailed information about what policies apply to a given cluster',
+                            (yargs) => {
+                                return describeClusterPolicyCmdBuilder(yargs);
+                            },
+                            async (argv) => {
+                                await describeClusterPolicyHandler(argv.clusterName, this.configService, this.logger);
+                            }
+                        )
+                        .command(
+                            'users',
+                            'List the BastionZero users in the organization',
+                            (yargs) => {
+                                return listUsersCmdBuilder(yargs);
+                            },
+                            async (argv) => {
+                                await listUsersHandler(argv, this.configService, this.logger);
+                            }
+                        )
+                        .command(
+                            'add-user <policyName> <idpEmail>',
+                            'Add a user to an existing policy',
+                            (yargs) => {
+                                return addUserToPolicyCmdBuilder(yargs);
+                            },
+                            async (argv) => {
+                                await addUserToPolicyHandler(argv.idpEmail, argv.policyName, this.configService, this.logger);
+                            }
+                        )
+                        .command(
+                            'delete-user <policyName> <idpEmail>',
+                            'Delete a user from an existing policy',
+                            (yargs) => {
+                                return deleteUserFromPolicyCmdBuilder(yargs);
+                            },
+                            async (argv) => {
+                                await deleteUserFromPolicyHandler(argv.idpEmail, argv.policyName, this.configService, this.logger);
+                            }
+                        )
+                        .command(
+                            'groups',
+                            'List the organization\'s SSO groups',
+                            (yargs) => {
+                                return listGroupsCmdBuilder(yargs);
+                            },
+                            async (argv) => {
+                                await listGroupsHandler(argv, this.configService, this.logger);
+                            }
+                        )
+                        .command(
+                            'add-group <policyName> <groupName>',
+                            'Add a group to an existing policy',
+                            (yargs) => {
+                                return addGroupToPolicyCmdBuilder(yargs);
+                            },
+                            async (argv) => {
+                                await addGroupToPolicyHandler(argv.groupName, argv.policyName, this.configService, this.logger);
+                            }
+                        )
+                        .command(
+                            'delete-group <policyName> <groupName>',
+                            'Delete a group from an existing policy',
+                            (yargs) => {
+                                return deleteGroupFromPolicyCmdBuilder(yargs);
+                            },
+                            async (argv) => {
+                                await deleteGroupFromPolicyHandler(argv.groupName, argv.policyName, this.configService, this.logger);
+                            }
+                        )
+                        .command(
+                            'targetusers <policyName>',
+                            'List the given policy\'s target users',
+                            (yargs) => {
+                                return listTargetUserCmdBuilder(yargs);
+                            },
+                            async (argv) => {
+                                await listTargetUsersHandler(this.configService, this.logger, argv, argv.policyName);
+                            }
+                        )
+                        .command(
+                            'add-targetuser <policyName> <targetUser>',
+                            'Add a target user to an existing policy',
+                            (yargs) => {
+                                return addTargetUserToPolicyCmdBuilder(yargs);
+                            },
+                            async (argv) => {
+                                await addTargetUserToPolicyHandler(argv.targetUser, argv.policyName, this.configService, this.logger);
+                            }
+                        )
+                        .command(
+                            'delete-targetuser <policyName> <targetUser>',
+                            'Delete a target user from an existing policy',
+                            (yargs) => {
+                                return deleteTargetUserFromPolicyCmdBuilder(yargs);
+                            },
+                            async (argv) => {
+                                await deleteTargetUserFromPolicyHandler(argv.targetUser, argv.policyName, this.configService, this.logger);
+                            }
+                        )
+                        .command(
+                            'targetgroups <policyName>',
+                            'List the given policy\'s target groups',
+                            (yargs) => {
+                                return listTargetGroupsCmdBuilder(yargs);
+                            },
+                            async (argv) => {
+                                await listTargetGroupsHandler(this.configService, this.logger, argv, argv.policyName);
+                            }
+                        )
+                        .command(
+                            'add-targetgroup <policyName> <targetGroup>',
+                            'Add a target group to an existing policy',
+                            (yargs) => {
+                                return addTargetGroupToPolicyCmdBuilder(yargs);
+                            },
+                            async (argv) => {
+                                await addTargetGroupToPolicyHandler(argv.targetGroup, argv.policyName, this.configService, this.logger);
+                            }
+                        )
+                        .command(
+                            'delete-targetgroup <policyName> <targetGroup>',
+                            'Delete a target group from an existing policy',
+                            (yargs) => {
+                                return deleteTargetGroupFromPolicyCmdBuilder(yargs);
+                            },
+                            async (argv) => {
+                                await deleteTargetGroupFromPolicyHandler(argv.targetGroup, argv.policyName, this.configService, this.logger);
+                            }
+                        )
+                        .demandCommand(1, '')
+                        .strict();
                 },
-                async (argv) => {
-                    // If provided type filter, apply it
-                    let policyType: PolicyType = undefined;
-                    if(!! argv.type) {
-                        policyType = parsePolicyType(argv.type);
-                    }
-
-                    switch (policyType) {
-                    case PolicyType.TargetConnect:
-                        await listTargetConnectPoliciesHandler(argv, this.configService, this.logger, this.ssmTargets, this.dynamicConfigs, this.envs);
-                        break;
-                    case PolicyType.Kubernetes:
-                        await listKubernetesPoliciesHandler(argv, this.configService, this.logger, this.clusterTargets, this.envs);
-                        break;
-                    case PolicyType.SessionRecording:
-                        await listSessionRecordingPoliciesHandler(argv, this.configService, this.logger);
-                        break;
-                    case PolicyType.Proxy:
-                        await listProxyPoliciesHandler(argv, this.configService, this.logger, this.envs);
-                        break;
-                    case PolicyType.OrganizationControls:
-                        await listOrganizationControlsPoliciesHandler(argv, this.configService, this.logger);
-                        break;
-                    default:
-                        await listTargetConnectPoliciesHandler(argv, this.configService, this.logger, this.ssmTargets, this.dynamicConfigs, this.envs);
-                        await listKubernetesPoliciesHandler(argv, this.configService, this.logger, this.clusterTargets, this.envs);
-                        await listSessionRecordingPoliciesHandler(argv, this.configService, this.logger);
-                        await listProxyPoliciesHandler(argv, this.configService, this.logger, this.envs);
-                        await listOrganizationControlsPoliciesHandler(argv, this.configService, this.logger);
-                        break;
-                    }
-                    await cleanExit(0, this.logger);
-                }
-            )
-            .command(
-                'describe-cluster-policy <clusterName>',
-                'Get detailed information about what policies apply to a certain cluster',
-                (yargs) => {
-                    return describeClusterPolicyCmdBuilder(yargs);
-                },
-                async (argv) => {
-                    await describeClusterPolicyHandler(argv.clusterName, this.configService, this.logger, this.clusterTargets);
-                }
             )
             .command(
                 'attach <connectionId>',
@@ -510,83 +579,6 @@ export class CliDriver
                 },
                 async (argv) => {
                     await listConnectionsHandler(argv, this.configService, this.logger);
-                }
-            )
-            .command(
-                ['user [policyName] [idpEmail]'],
-                'List the available users, add them, or remove them from policies',
-                (yargs) => {
-                    return userCmdBuilder(yargs);
-                },
-                async (argv) => {
-                    if (!! argv.add) {
-                        await addUserToPolicyHandler(argv.idpEmail, argv.policyName, this.configService, this.logger);
-                    } else if (!! argv.delete) {
-                        await deleteUserFromPolicyHandler(argv.idpEmail, argv.policyName, this.configService, this.logger);
-                    } else if (!(!!argv.add && !!argv.delete)) {
-                        await listUsersHandler(argv, this.configService, this.logger);
-                    } else {
-                        this.logger.error(`Invalid flags combination. Please see help.`);
-                        await cleanExit(1, this.logger);
-                    }
-                }
-            )
-            .command(
-                ['group [policyName] [groupName]'],
-                'List the available identity provider groups, add them, or remove them from policies',
-                (yargs) => {
-                    return groupCmdBuilder(yargs);
-                },
-                async (argv) => {
-                    if (!! argv.add) {
-                        await addGroupToPolicyHandler(argv.groupName, argv.policyName, this.configService, this.logger);
-                    } else if (!! argv.delete) {
-                        await deleteGroupFromPolicyHandler(argv.groupName, argv.policyName, this.configService, this.logger);
-                    } else if (!(!!argv.add && !!argv.delete)) {
-                        await fetchGroupsHandler(argv, this.configService, this.logger);
-                    } else {
-                        this.logger.error(`Invalid flags combination. Please see help.`);
-                        await cleanExit(1, this.logger);
-                    }
-                }
-            )
-            .command(
-                ['targetuser <policyName> [user]'],
-                'List the available targetUsers, add them, or remove them from policies',
-                (yargs) => {
-                    return targetUserCmdBuilder(yargs);
-                },
-                async (argv) => {
-                    if (!! argv.add) {
-                        await addTargetUserHandler(argv.user, argv.policyName, this.configService, this.logger);
-                    } else if (!! argv.delete) {
-                        await deleteTargetUserHandler(argv.user, argv.policyName, this.configService, this.logger);
-                    } else if (!(!!argv.add && !!argv.delete)) {
-                        await listTargetUsersHandler(this.configService, this.logger, argv, argv.policyName);
-                    } else {
-                        this.logger.error(`Invalid flags combination. Please see help.`);
-                        await cleanExit(1, this.logger);
-                    }
-                }
-            )
-            .command(
-                ['targetgroup <policyName> [group]'],
-                'List the available targetGroups, add them, or remove them from policies',
-                (yargs) => {
-                    return targetGroupCmdBuilder(yargs);
-                },
-                async (argv) => {
-                    if (!! argv.add) {
-                        await addTargetGroupHandler(argv.group, argv.policyName, this.configService, this.logger);
-                    }
-                    else if (!!argv.delete) {
-                        await deleteTargetGroupHandler(argv.group, argv.policyName, this.configService, this.logger);
-                    } else if (!(!!argv.add && !!argv.delete)) {
-                        await listTargetGroupHandler(this.configService, this.logger, argv, argv.policyName);
-                    } else {
-                        this.logger.error(`Invalid flags combination. Please see help.`);
-                        await cleanExit(1, this.logger);
-                    }
                 }
             )
             .command(

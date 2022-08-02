@@ -1,15 +1,15 @@
-import { ConfigService } from '../../services/config/config.service';
-import { Logger } from '../../services/logger/logger.service';
+import { ConfigService } from '../../../services/config/config.service';
+import { Logger } from '../../../services/logger/logger.service';
 import yargs from 'yargs';
-import { policyArgs } from './policy.command-builder';
-import { ApiKeyHttpService } from '../../http-services/api-key/api-key.http-services';
-import { OrganizationHttpService } from '../../http-services/organization/organization.http-services';
-import { UserHttpService } from '../../http-services/user/user.http-services';
-import { PolicyHttpService } from '../../http-services/policy/policy.http-services';
-import { getTableOfOrganizationControlPolicies } from '../../utils/utils';
-import { UserSummary } from '../../../webshell-common-ts/http/v2/user/types/user-summary.types';
-import { ApiKeySummary } from '../../../webshell-common-ts/http/v2/api-key/types/api-key-summary.types';
-import { GroupSummary } from '../../../webshell-common-ts/http/v2/organization/types/group-summary.types';
+import { policyArgs } from './policy-list.command-builder';
+import { ApiKeyHttpService } from '../../../http-services/api-key/api-key.http-services';
+import { OrganizationHttpService } from '../../../http-services/organization/organization.http-services';
+import { UserHttpService } from '../../../http-services/user/user.http-services';
+import { PolicyHttpService } from '../../../http-services/policy/policy.http-services';
+import { getTableOfOrganizationControlPolicies } from '../../../utils/utils';
+import { UserSummary } from '../../../../webshell-common-ts/http/v2/user/types/user-summary.types';
+import { ApiKeySummary } from '../../../../webshell-common-ts/http/v2/api-key/types/api-key-summary.types';
+import { GroupSummary } from '../../../../webshell-common-ts/http/v2/organization/types/group-summary.types';
 
 export async function listOrganizationControlsPoliciesHandler(
     argv: yargs.Arguments<policyArgs>,
@@ -46,16 +46,13 @@ export async function listOrganizationControlsPoliciesHandler(
 
     if(!! argv.json) {
         // json output
-        console.log(JSON.stringify(organizationControlPolicies));
+        return JSON.stringify(organizationControlPolicies);
     } else {
         if (organizationControlPolicies.length === 0){
             logger.info('There are no available Organization Controls policies');
         } else {
             // regular table output
-            const tableString = getTableOfOrganizationControlPolicies(organizationControlPolicies, userMap, apiKeyMap, groupMap);
-            logger.warn('Organization Controls Policies:\n');
-            console.log(tableString);
-            console.log('\n\n');
+            return getTableOfOrganizationControlPolicies(organizationControlPolicies, userMap, apiKeyMap, groupMap);
         }
     }
 }

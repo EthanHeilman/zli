@@ -1,15 +1,15 @@
-import { ConfigService } from '../../services/config/config.service';
-import { Logger } from '../../services/logger/logger.service';
+import { ConfigService } from '../../../services/config/config.service';
+import { Logger } from '../../../services/logger/logger.service';
 import yargs from 'yargs';
-import { policyArgs } from './policy.command-builder';
-import { ApiKeyHttpService } from '../../http-services/api-key/api-key.http-services';
-import { OrganizationHttpService } from '../../http-services/organization/organization.http-services';
-import { UserHttpService } from '../../http-services/user/user.http-services';
-import { PolicyHttpService } from '../../../src/http-services/policy/policy.http-services';
-import { getTableOfSessionRecordingPolicies } from '../../../src/utils/utils';
-import { ApiKeySummary } from '../../../webshell-common-ts/http/v2/api-key/types/api-key-summary.types';
-import { UserSummary } from '../../../webshell-common-ts/http/v2/user/types/user-summary.types';
-import { GroupSummary } from '../../../webshell-common-ts/http/v2/organization/types/group-summary.types';
+import { policyArgs } from './policy-list.command-builder';
+import { ApiKeyHttpService } from '../../../http-services/api-key/api-key.http-services';
+import { OrganizationHttpService } from '../../../http-services/organization/organization.http-services';
+import { UserHttpService } from '../../../http-services/user/user.http-services';
+import { PolicyHttpService } from '../../../http-services/policy/policy.http-services';
+import { getTableOfSessionRecordingPolicies } from '../../../utils/utils';
+import { ApiKeySummary } from '../../../../webshell-common-ts/http/v2/api-key/types/api-key-summary.types';
+import { UserSummary } from '../../../../webshell-common-ts/http/v2/user/types/user-summary.types';
+import { GroupSummary } from '../../../../webshell-common-ts/http/v2/organization/types/group-summary.types';
 
 export async function listSessionRecordingPoliciesHandler(
     argv: yargs.Arguments<policyArgs>,
@@ -46,16 +46,13 @@ export async function listSessionRecordingPoliciesHandler(
 
     if(!! argv.json) {
         // json output
-        console.log(JSON.stringify(sessionRecordingPolicies));
+        return JSON.stringify(sessionRecordingPolicies);
     } else {
         if (sessionRecordingPolicies.length === 0){
             logger.info('There are no available Session Recording policies');
         } else {
             // regular table output
-            const tableString = getTableOfSessionRecordingPolicies(sessionRecordingPolicies, userMap, apiKeyMap, groupMap);
-            logger.warn('Session Recording Policies:\n');
-            console.log(tableString);
-            console.log('\n\n');
+            return getTableOfSessionRecordingPolicies(sessionRecordingPolicies, userMap, apiKeyMap, groupMap);
         }
     }
 }

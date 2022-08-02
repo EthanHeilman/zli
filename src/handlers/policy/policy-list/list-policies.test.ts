@@ -1,16 +1,16 @@
 import mockArgv from 'mock-argv';
-import { CliDriver } from '../../cli-driver';
-import { cleanConsoleLog, mockApiKeySummaryList, mockBzeroSummaryList, mockDatSummaryList, mockDbSummaryList, mockGroupsSummaryList, mockKubernetesPolicySummaryList, mockKubeSummaryList, mockOrganizationControlsPolicySummaryList, mockProxyPolicySummaryList, mockSessionRecordingPolicySummaryList, unitTestMockSetup, mockSsmSummaryList, mockTargetConnectPolicySummaryList, mockUserSummaryList, mockWebSummaryList } from '../../utils/unit-test-utils';
-import { OrganizationHttpService } from '../../http-services/organization/organization.http-services';
-import { ApiKeyHttpService } from '../../http-services/api-key/api-key.http-services';
-import { UserHttpService } from '../../http-services/user/user.http-services';
-import { PolicyHttpService } from '../../http-services/policy/policy.http-services';
-import { KubeHttpService } from '../../http-services/targets/kube/kube.http-services';
-import { SsmTargetHttpService } from '../../http-services/targets/ssm/ssm-target.http-services';
-import { DynamicAccessConfigHttpService } from '../../http-services/targets/dynamic-access/dynamic-access-config.http-services';
-import { BzeroTargetHttpService } from '../../http-services/targets/bzero/bzero.http-services';
-import { DbTargetService } from '../../http-services/db-target/db-target.http-service';
-import { WebTargetService } from '../../http-services/web-target/web-target.http-service';
+import { CliDriver } from '../../../cli-driver';
+import { cleanConsoleLog, mockApiKeySummaryList, mockBzeroSummaryList, mockDatSummaryList, mockDbSummaryList, mockGroupsSummaryList, mockKubernetesPolicySummaryList, mockKubeSummaryList, mockOrganizationControlsPolicySummaryList, mockProxyPolicySummaryList, mockSessionRecordingPolicySummaryList, unitTestMockSetup, mockSsmSummaryList, mockTargetConnectPolicySummaryList, mockUserSummaryList, mockWebSummaryList } from '../../../utils/unit-test-utils';
+import { OrganizationHttpService } from '../../../http-services/organization/organization.http-services';
+import { ApiKeyHttpService } from '../../../http-services/api-key/api-key.http-services';
+import { UserHttpService } from '../../../http-services/user/user.http-services';
+import { PolicyHttpService } from '../../../http-services/policy/policy.http-services';
+import { KubeHttpService } from '../../../http-services/targets/kube/kube.http-services';
+import { SsmTargetHttpService } from '../../../http-services/targets/ssm/ssm-target.http-services';
+import { DynamicAccessConfigHttpService } from '../../../http-services/targets/dynamic-access/dynamic-access-config.http-services';
+import { BzeroTargetHttpService } from '../../../http-services/targets/bzero/bzero.http-services';
+import { DbTargetService } from '../../../http-services/db-target/db-target.http-service';
+import { WebTargetService } from '../../../http-services/web-target/web-target.http-service';
 
 
 describe('List Policies suite', () => {
@@ -88,7 +88,7 @@ describe('List Policies suite', () => {
         const logSpy = jest.spyOn(console, 'log');
 
         // Call the function
-        await mockArgv(['policy'], async () => {
+        await mockArgv(['policy', 'list'], async () => {
             const driver = new CliDriver();
             await driver.run(process.argv.slice(2), true);
         });
@@ -117,7 +117,7 @@ describe('List Policies suite', () => {
         const logSpy = jest.spyOn(console, 'log');
 
         // Call the function
-        await mockArgv(['policy', '--type=kubernetes'], async () => {
+        await mockArgv(['policy', 'list', '--type=kubernetes'], async () => {
             const driver = new CliDriver();
             await driver.run(process.argv.slice(2), true);
         });
@@ -135,7 +135,7 @@ describe('List Policies suite', () => {
         const logSpy = jest.spyOn(console, 'log');
 
         // Call the function
-        await mockArgv(['policy', '--type=organizationcontrols'], async () => {
+        await mockArgv(['policy', 'list', '--type=organizationcontrols'], async () => {
             const driver = new CliDriver();
             await driver.run(process.argv.slice(2), true);
         });
@@ -153,7 +153,7 @@ describe('List Policies suite', () => {
         const logSpy = jest.spyOn(console, 'log');
 
         // Call the function
-        await mockArgv(['policy', '--type=proxy'], async () => {
+        await mockArgv(['policy', 'list', '--type=proxy'], async () => {
             const driver = new CliDriver();
             await driver.run(process.argv.slice(2), true);
         });
@@ -171,7 +171,7 @@ describe('List Policies suite', () => {
         const logSpy = jest.spyOn(console, 'log');
 
         // Call the function
-        await mockArgv(['policy', '--type=sessionrecording'], async () => {
+        await mockArgv(['policy', 'list', '--type=sessionrecording'], async () => {
             const driver = new CliDriver();
             await driver.run(process.argv.slice(2), true);
         });
@@ -189,7 +189,7 @@ describe('List Policies suite', () => {
         const logSpy = jest.spyOn(console, 'log');
 
         // Call the function
-        await mockArgv(['policy', '--type=targetconnect'], async () => {
+        await mockArgv(['policy', 'list', '--type=targetconnect'], async () => {
             const driver = new CliDriver();
             await driver.run(process.argv.slice(2), true);
         });

@@ -7,5 +7,5 @@ export function describeClusterPolicyCmdBuilder(yargs: yargs.Argv<{}>) : yargs.A
         .positional('clusterName', {
             type: 'string',
         })
-        .example('$0 describe-cluster test-cluster', '');
+        .example('$0 policy describe-cluster-policy test-cluster', 'List all existing policies for test-cluster, as regular table output');
 }

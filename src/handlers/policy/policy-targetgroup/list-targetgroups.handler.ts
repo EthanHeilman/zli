@@ -1,12 +1,12 @@
-import { Logger } from '../../services/logger/logger.service';
-import { ConfigService } from '../../services/config/config.service';
-import { cleanExit } from '../clean-exit.handler';
-import { getTableOfTargetGroups } from '../../utils/utils';
+import { Logger } from '../../../services/logger/logger.service';
+import { ConfigService } from '../../../services/config/config.service';
+import { cleanExit } from '../../clean-exit.handler';
+import { getTableOfTargetGroups } from '../../../utils/utils';
 import yargs from 'yargs';
-import { targetGroupArgs } from './target-group.command-builder';
-import { PolicyHttpService } from '../../http-services/policy/policy.http-services';
+import { listTargetGroupArgs } from './list-targetgroups.command-builder';
+import { PolicyHttpService } from '../../../http-services/policy/policy.http-services';
 
-export async function listTargetGroupHandler(configService: ConfigService, logger: Logger, argv : yargs.Arguments<targetGroupArgs>, policyName: string) {
+export async function listTargetGroupsHandler(configService: ConfigService, logger: Logger, argv : yargs.Arguments<listTargetGroupArgs>, policyName: string) {
 
     const policyHttpService = new PolicyHttpService(configService, logger);
     const kubePolicies = await policyHttpService.ListKubernetesPolicies();

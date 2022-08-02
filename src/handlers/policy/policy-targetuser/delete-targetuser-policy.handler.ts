@@ -1,9 +1,9 @@
-import { ConfigService } from '../../services/config/config.service';
-import { Logger } from '../../services/logger/logger.service';
-import { cleanExit } from '../clean-exit.handler';
-import { PolicyHttpService } from '../../http-services/policy/policy.http-services';
+import { ConfigService } from '../../../services/config/config.service';
+import { Logger } from '../../../services/logger/logger.service';
+import { cleanExit } from '../../clean-exit.handler';
+import { PolicyHttpService } from '../../../http-services/policy/policy.http-services';
 
-export async function deleteTargetUserHandler(targetUserName: string, policyName: string, configService: ConfigService, logger: Logger) {
+export async function deleteTargetUserFromPolicyHandler(targetUserName: string, policyName: string, configService: ConfigService, logger: Logger) {
     // First get the existing policy
     const policyHttpService = new PolicyHttpService(configService, logger);
     const kubePolicies = await policyHttpService.ListKubernetesPolicies();
