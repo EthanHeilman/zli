@@ -298,7 +298,7 @@ export async function killDaemon(localPid: number, logger: Logger) {
             killPid(localPid.toString());
         } catch (err: any) {
             // If the daemon pid was killed, or doesn't exist, just continue
-            logger.warn(`Attempt to kill existing daemon failed. This is expected if the daemon has been killed already. Make sure no program is using pid: ${localPid}. Try running \`kill -9 ${localPid}\``);
+            logger.warn(`Attempt to kill existing daemon failed. This is expected if the daemon has been killed already. Make sure no program is using pid: ${localPid}. Try running \`kill -2 ${localPid}\``);
             logger.debug(`Error: ${err}`);
         }
     }
@@ -363,7 +363,7 @@ function killPid(pid: string) {
     // For unix based os we kill all processes based on group id by using kill -{signal} -{pid}
     // https://stackoverflow.com/a/49842576/9186330
     const options = { stdio: ['ignore', 'ignore', 'ignore'] };
-    exec(`kill -9 -${pid}`, options);
+    exec(`kill -2 -${pid}`, options);
 }
 
 /**
@@ -437,10 +437,21 @@ export function waitForDaemonProcessExit(logger: Logger, loggerConfigService: Lo
                 // which will only return error codes from the `go run` program and
                 // not any of our custom daemon exit codes
                 // https://stackoverflow.com/questions/55731760/go-os-exit2-show-a-bash-value-of-1
-                if(exitCode === DAEMON_EXIT_CODES.BZCERT_ID_TOKEN_ERROR) {
+                switch (exitCode) {
+                case DAEMON_EXIT_CODES.BZCERT_ID_TOKEN_ERROR: {
                     logger.error('Error constructing BastionZero certificate: IdP tokens are invalid/expired. Please try logging in again with \'zli login\' to resolve this issue.');
-                } else {
+                    break;
+                }
+                case DAEMON_EXIT_CODES.CANCELLED_BY_USER: {
+                    logger.info('Cancelled!');
+                    // don't report an error in this case
+                    exitCode = 0;
+                    break;
+                }
+                default: {
                     logger.error(`daemon process closed with nonzero exit code ${exitCode} -- for more details, see ${loggerConfigService.daemonLogPath()}`);
+                    break;
+                }
                 }
             }
 
