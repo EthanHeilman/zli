@@ -18,6 +18,7 @@ import { OrganizationControlsPolicySummary } from '../../webshell-common-ts/http
 import { SessionRecordingPolicySummary } from '../../webshell-common-ts/http/v2/policy/session-recording/types/session-recording-policy-summary.types';
 import { PolicyType } from '../../webshell-common-ts/http/v2/policy/types/policy-type.types';
 import { SubjectType } from '../../webshell-common-ts/http/v2/common.types/subject.types';
+import { VerbType } from '../../webshell-common-ts/http/v2/policy/types/verb-type.types';
 import { GroupSummary } from '../../webshell-common-ts/http/v2/organization/types/group-summary.types';
 import { SsmTargetSummary } from '../../webshell-common-ts/http/v2/target/ssm/types/ssm-target-summary.types';
 import { DynamicAccessConfigSummary } from '../../webshell-common-ts/http/v2/target/dynamic/types/dynamic-access-config-summary.types';
@@ -77,6 +78,23 @@ export function parseTargetType(targetType: string) : TargetType
         return TargetType.Db;
     case targetTypeDisplay(TargetType.Web).toLowerCase():
         return TargetType.Web;
+    default:
+        return undefined;
+    }
+}
+
+export function parseVerbType(verb: string) : VerbType
+{
+    if(!verb) return undefined;
+
+    // Verbs are checked to be these three cases by yargs
+    switch(verb.toLowerCase()){
+    case verbTypeDisplay(VerbType.Shell).toLowerCase():
+        return VerbType.Shell;
+    case verbTypeDisplay(VerbType.FileTransfer).toLowerCase():
+        return VerbType.FileTransfer;
+    case verbTypeDisplay(VerbType.Tunnel).toLowerCase():
+        return VerbType.Tunnel;
     default:
         return undefined;
     }
@@ -212,6 +230,20 @@ export function targetTypeDisplay(type: TargetType) : string {
         return 'Web';
     case TargetType.Db:
         return 'Db';
+    default:
+        const _exhaustiveCheck: never = type;
+        return _exhaustiveCheck;
+    }
+}
+
+export function verbTypeDisplay(type: VerbType) : string {
+    switch(type) {
+    case VerbType.Shell:
+        return 'Shell';
+    case VerbType.FileTransfer:
+        return 'FileTransfer';
+    case VerbType.Tunnel:
+        return 'Tunnel';
     default:
         const _exhaustiveCheck: never = type;
         return _exhaustiveCheck;

@@ -5,6 +5,7 @@ import { Subject } from '../../../../../../webshell-common-ts/http/v2/policy/typ
 import { PolicyHttpService } from '../../../../../http-services/policy/policy.http-services';
 import { configService, logger, systemTestPolicyTemplate } from '../../../system-test';
 import { restApiPolicyDescriptionTemplate } from './policies';
+import { callZli } from '../../../utils/zli-utils';
 
 export const sessionRecordingPolicySuite = () => {
     describe('Session Recording Policies Suite', () => {
@@ -38,18 +39,21 @@ export const sessionRecordingPolicySuite = () => {
         }, 15 * 1000);
 
         test('2281: Create and get session recording policy', async () => {
-            sessionRecordingPolicy = await policyService.AddSessionRecordingPolicy({
-                groups: expectedPolicySummary.groups,
-                name: expectedPolicySummary.name,
-                subjects: expectedPolicySummary.subjects,
-                description: expectedPolicySummary.description,
-                recordInput: expectedPolicySummary.recordInput
-            });
+            const zliArgs = [
+                'policy', 'create-recording',
+                '-n', expectedPolicySummary.name,
+                '-u', configService.me().email,
+                '-r', 'false',
+                '-d', expectedPolicySummary.description
+            ];
+            await callZli(zliArgs);
 
+            const allPolicies = await policyService.ListSessionRecordingPolicies();
+            sessionRecordingPolicy = allPolicies.find(p => p.name === expectedPolicySummary.name);
             expectedPolicySummary.id = sessionRecordingPolicy.id;
-            const retrievedPolicy = await policyService.GetSessionRecordingPolicy(sessionRecordingPolicy.id);
+
             // verify the policy that is retrieved from the back end matches the requested policy
-            expect(retrievedPolicy).toMatchObject(expectedPolicySummary);
+            expect(sessionRecordingPolicy).toMatchObject(expectedPolicySummary);
         }, 15 * 1000);
 
         test('2282: Edit session recording policy', async () => {

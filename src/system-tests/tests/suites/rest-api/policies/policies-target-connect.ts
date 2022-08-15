@@ -5,8 +5,10 @@ import { Subject } from '../../../../../../webshell-common-ts/http/v2/policy/typ
 import { VerbType } from '../../../../../../webshell-common-ts/http/v2/policy/types/verb-type.types';
 import { TargetType } from '../../../../../../webshell-common-ts/http/v2/target/types/target.types';
 import { PolicyHttpService } from '../../../../../http-services/policy/policy.http-services';
+import { EnvironmentHttpService } from '../../../../../http-services/environment/environment.http-services';
 import { configService, logger, systemTestEnvId, systemTestPolicyTemplate } from '../../../system-test';
 import { restApiPolicyDescriptionTemplate } from './policies';
+import { callZli } from '../../../utils/zli-utils';
 
 export const targetConnectPolicySuite = () => {
     describe('Target Connect Policies Suite', () => {
@@ -16,11 +18,13 @@ export const targetConnectPolicySuite = () => {
             type: SubjectType.User
         };
         let policyService: PolicyHttpService;
+        let envHttpService: EnvironmentHttpService;
         let targetConnectPolicy: TargetConnectPolicySummary;
         let expectedPolicySummary: TargetConnectPolicySummary;
 
         beforeAll(() => {
             policyService = new PolicyHttpService(configService, logger);
+            envHttpService = new EnvironmentHttpService(configService, logger);
             expectedPolicySummary = {
                 id: expect.any('string'),
                 type: PolicyType.TargetConnect,
@@ -56,20 +60,25 @@ export const targetConnectPolicySuite = () => {
         }, 15 * 1000);
 
         test('2285: Create and get target connect policy', async () => {
-            targetConnectPolicy = await policyService.AddTargetConnectPolicy({
-                name: expectedPolicySummary.name,
-                groups: expectedPolicySummary.groups,
-                subjects: expectedPolicySummary.subjects,
-                environments: expectedPolicySummary.environments,
-                targetUsers: expectedPolicySummary.targetUsers,
-                verbs: expectedPolicySummary.verbs,
-                description: expectedPolicySummary.description
-            });
+            // Need to get environment name for the zli call
+            const environment = await envHttpService.GetEnvironment(systemTestEnvId);
+            const zliArgs = [
+                'policy', 'create-tconnect',
+                '-n', expectedPolicySummary.name,
+                '-u', configService.me().email,
+                '-e', environment.name,
+                '--targetUsers', 'test-user',
+                '-v', 'shell',
+                '-d', expectedPolicySummary.description
+            ];
+            await callZli(zliArgs);
 
+            const allPolicies = await policyService.ListTargetConnectPolicies();
+            targetConnectPolicy = allPolicies.find(p => p.name === expectedPolicySummary.name);
             expectedPolicySummary.id = targetConnectPolicy.id;
-            const retrievedPolicy = await policyService.GetTargetConnectPolicy(targetConnectPolicy.id);
+
             // verify the policy that is retrieved from the back end matches the requested policy
-            expect(retrievedPolicy).toMatchObject(expectedPolicySummary);
+            expect(targetConnectPolicy).toMatchObject(expectedPolicySummary);
         }, 15 * 1000);
 
         test('2286: Edit target connect policy', async () => {

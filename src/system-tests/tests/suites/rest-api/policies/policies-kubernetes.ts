@@ -3,8 +3,10 @@ import { KubernetesPolicySummary } from '../../../../../../webshell-common-ts/ht
 import { PolicyType } from '../../../../../../webshell-common-ts/http/v2/policy/types/policy-type.types';
 import { Subject } from '../../../../../../webshell-common-ts/http/v2/policy/types/subject.types';
 import { PolicyHttpService } from '../../../../../http-services/policy/policy.http-services';
+import { EnvironmentHttpService } from '../../../../../http-services/environment/environment.http-services';
 import { configService, logger, systemTestEnvId, systemTestPolicyTemplate } from '../../../system-test';
 import { restApiPolicyDescriptionTemplate } from './policies';
+import { callZli } from '../../../utils/zli-utils';
 
 export const kubernetesPolicySuite = () => {
     describe('Kubernetes Policies Suite', () => {
@@ -14,11 +16,13 @@ export const kubernetesPolicySuite = () => {
             type: SubjectType.User
         };
         let policyService: PolicyHttpService;
+        let envHttpService: EnvironmentHttpService;
         let kubernetesPolicy: KubernetesPolicySummary;
         let expectedPolicySummary: KubernetesPolicySummary;
 
         beforeAll(() => {
             policyService = new PolicyHttpService(configService, logger);
+            envHttpService = new EnvironmentHttpService(configService, logger);
             expectedPolicySummary = {
                 id: expect.any('string'),
                 type: PolicyType.Kubernetes,
@@ -33,7 +37,11 @@ export const kubernetesPolicySuite = () => {
                     }
                 ],
                 clusters: null,
-                clusterGroups: [],
+                clusterGroups: [
+                    {
+                        name: 'test-group'
+                    }
+                ],
                 clusterUsers: [
                     {
                         name: 'test-user'
@@ -50,21 +58,25 @@ export const kubernetesPolicySuite = () => {
         }, 15 * 1000);
 
         test('2267: Create and get Kubernetes policy', async () => {
-            kubernetesPolicy = await policyService.AddKubernetesPolicy({
-                name: expectedPolicySummary.name,
-                groups: expectedPolicySummary.groups,
-                subjects: expectedPolicySummary.subjects,
-                environments: expectedPolicySummary.environments,
-                clusters: expectedPolicySummary.clusters,
-                clusterGroups: expectedPolicySummary.clusterGroups,
-                clusterUsers: expectedPolicySummary.clusterUsers,
-                description: expectedPolicySummary.description
-            });
+            // Need to get environment name for the zli call
+            const environment = await envHttpService.GetEnvironment(systemTestEnvId);
+            const zliArgs = [
+                'policy', 'create-cluster',
+                '-n', expectedPolicySummary.name,
+                '-u', configService.me().email,
+                '-e', environment.name,
+                '--targetUsers', 'test-user',
+                '--targetGroups', 'test-group',
+                '-d', expectedPolicySummary.description
+            ];
+            await callZli(zliArgs);
 
+            const allPolicies = await policyService.ListKubernetesPolicies();
+            kubernetesPolicy = allPolicies.find(p => p.name === expectedPolicySummary.name);
             expectedPolicySummary.id = kubernetesPolicy.id;
-            const retrievedPolicy = await policyService.GetKubernetesPolicy(kubernetesPolicy.id);
+
             // verify the policy that is retrieved from the back end matches the requested policy
-            expect(retrievedPolicy).toMatchObject(expectedPolicySummary);
+            expect(kubernetesPolicy).toMatchObject(expectedPolicySummary);
         }, 15 * 1000);
 
         test('2268: Edit Kubernetes policy', async () => {

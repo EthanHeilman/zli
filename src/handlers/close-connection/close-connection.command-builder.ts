@@ -17,5 +17,5 @@ export function closeConnectionCmdBuilder(yargs : yargs.Argv<{}>) : yargs.Argv<c
             }
         )
         .example('$0 close d5b264c7-534c-4184-a4e4-3703489cb917', 'close example, unique connection id')
-        .example('$0 close all', 'close all connections in cli-space');
+        .example('$0 close --all', 'close all shell connections');
 }
