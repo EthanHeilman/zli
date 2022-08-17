@@ -123,7 +123,7 @@ export class QuickstartSsmService {
                 resolve({ targetSummary: ssmTarget, sshHost: registrableHost.host.sshHost});
             } catch (error) {
                 // Add fail message to current prefixText of the spinner and push to transcript
-                const errMsg = chalk.red(`✖ Failed to add SSH host: ${registrableHost.host.sshHost.name} to BastionZero. ${error}`);
+                const errMsg = chalk.red(`BastionZero is already installed on SSH host: ${registrableHost.host.sshHost.name}. This target will be skipped.`);
                 this.consoleAndTranscript.pushToTranscript(errMsg);
                 spinner.prefixText = spinner.prefixText + errMsg + '\n';
 

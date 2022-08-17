@@ -1,6 +1,6 @@
 import yargs from 'yargs';
 
-export type generateKubeArgs = {outputFile: string}
+export type generateKubeArgs = {outputFile: string};
 
 function generateKubeCmdBuilder(yargs: yargs.Argv<{}>) : yargs.Argv<generateKubeArgs> {
     return yargs
@@ -16,7 +16,7 @@ export type generateKubeYamlArgs = generateKubeArgs
 & {labels: string[]}
 & {namespace: string}
 & {environmentName: string }
-& {clusterName: string}
+& {clusterName: string};
 
 export function generateKubeYamlCmdBuilder(yargs: yargs.Argv<{}>) : yargs.Argv<generateKubeYamlArgs> {
     return generateKubeCmdBuilder(yargs)
@@ -44,7 +44,7 @@ export function generateKubeYamlCmdBuilder(yargs: yargs.Argv<{}>) : yargs.Argv<g
 
 export type generateKubeConfigArgs = generateKubeArgs
 & {customPort: number}
-& {update: boolean}
+& {update: boolean};
 
 export function generateKubeConfigCmdBuilder(yargs: yargs.Argv<{}>) : yargs.Argv<generateKubeConfigArgs> {
     return generateKubeCmdBuilder(yargs)

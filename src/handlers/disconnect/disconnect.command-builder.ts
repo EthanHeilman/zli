@@ -1,6 +1,6 @@
 import yargs from 'yargs';
 
-export type disconnectArgs = {targetType: string}
+export type disconnectArgs = {targetType: string};
 
 export function disconnectCmdBuilder(yargs : yargs.Argv<{}>) : yargs.Argv<disconnectArgs> {
     return yargs

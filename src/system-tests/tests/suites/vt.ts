@@ -16,6 +16,7 @@ import { bzeroTestTargetsToRun } from '../targets-to-run';
 import { TestTarget } from '../system-test.types';
 import { PolicyHttpService } from '../../../http-services/policy/policy.http-services';
 import { Subject } from '../../../../webshell-common-ts/http/v2/policy/types/subject.types';
+import { setupBackgroundDaemonMocks } from '../utils/connect-utils';
 
 const { Client } = require('pg');
 const fs = require('fs');
@@ -55,6 +56,10 @@ export const vtSuite = () => {
                 targets: []
             });
         }, 60 * 1000);
+
+        beforeEach(() => {
+            setupBackgroundDaemonMocks();
+        });
 
         // Cleanup all policy after the tests
         afterAll(async () => {

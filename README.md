@@ -8,10 +8,55 @@ The zli is a cli client for interacting with the Bastionzero SaaS
 
 ## Install
 
+BastionZero's command-line interface, the `zli`, is available through package managers (`brew`, `yum`, and `apt`).
+
+The `zli` is compatible with both `x86` and `amd64` platforms.
+### Brew
 ```
-brew tap bastionzero/tap
 brew install bastionzero/tap/zli
 ```
+
+### Yum
+
+*   Use the `yum-config-manager` to add the BastionZero repo.
+    ```
+    sudo yum-config-manager --add-repo \
+    https://download-yum.bastionzero.com/bastionzero.repo
+    ```
+    
+*   Install the `zli`.
+    ```
+    sudo yum install -y zli
+    ```
+
+### Apt
+*   Install the BastionZero public key from the Ubuntu key-server.
+    ```
+    sudo apt-key adv --keyserver keyserver.ubuntu.com\
+     --recv-keys E5C358E613982017
+    ```
+
+*   For `http` (i.e., on an Ubuntu 14.x machine), add the BastionZero repo with:
+    ```
+    sudo add-apt-repository \
+    'deb http://download-apt.bastionzero.com/production/apt-repo stable main'
+    ```
+
+*   For `https`, add the BastionZero repo with:
+    ```
+    sudo add-apt-repository \
+    'deb https://download-apt.bastionzero.com/production/apt-repo stable main'
+    ```
+
+*   Update the `apt` cache.
+    ```
+    sudo apt update
+    ```
+
+*   Install the `zli`.
+    ```
+    sudo apt install -y zli
+    ```
 
 ## Developer processes
 

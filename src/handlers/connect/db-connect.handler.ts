@@ -2,13 +2,11 @@ import { ConfigService } from '../../services/config/config.service';
 import { Logger } from '../../services/logger/logger.service';
 import { cleanExit } from '../clean-exit.handler';
 import { LoggerConfigService } from '../../services/logger/logger-config.service';
-import {  handleServerStart, startDaemonInDebugMode, copyExecutableToLocalDir, getBaseDaemonArgs, getOrDefaultLocalhost, getOrDefaultLocalport, killLocalPortAndPid } from '../../utils/daemon-utils';
+import {  handleServerStart, startDaemonInDebugMode, copyExecutableToLocalDir, getBaseDaemonEnv, getOrDefaultLocalhost, getOrDefaultLocalport, killLocalPortAndPid, spawnDaemonInBackground } from '../../utils/daemon-utils';
 import { connectArgs } from './connect.command-builder';
 import yargs from 'yargs';
 import { DbTargetService } from '../../http-services/db-target/db-target.http-service';
 import { CreateUniversalConnectionResponse } from '../../../webshell-common-ts/http/v2/connection/responses/create-universal-connection.response';
-
-const { spawn } = require('child_process');
 
 
 export async function dbConnectHandler(
@@ -41,27 +39,29 @@ export async function dbConnectHandler(
 
     await killLocalPortAndPid(dbConfig.localPid, dbConfig.localPort, logger);
 
-    // Build our args and cwd
-    const baseArgs = getBaseDaemonArgs(configService, loggerConfigService, dbTarget.agentPublicKey, createUniversalConnectionResponse.connectionId, createUniversalConnectionResponse.connectionAuthDetails);
-    const pluginArgs = [
-        `-localPort=${localPort}`,
-        `-localHost=${localHost}`,
-        `-targetId=${dbTarget.id}`,
-        `-remotePort=${dbTarget.remotePort.value}`,
-        `-remoteHost=${dbTarget.remoteHost}`,
-        `-plugin="db"`
-    ];
-    let args = baseArgs.concat(pluginArgs);
+    // Build our runtime config and cwd
+    const baseEnv = getBaseDaemonEnv(configService, loggerConfigService, dbTarget.agentPublicKey, createUniversalConnectionResponse.connectionId, createUniversalConnectionResponse.connectionAuthDetails);
+    const pluginEnv = {
+        'LOCAL_PORT': localPort,
+        'LOCAL_HOST': localHost,
+        'TARGET_ID': dbTarget.id,
+        'REMOTE_PORT': dbTarget.remotePort.value,
+        'REMOTE_HOST': dbTarget.remoteHost,
+        'PLUGIN': 'db'
+    };
+
+    const runtimeConfig = { ...baseEnv, ...pluginEnv };
 
     let cwd = process.cwd();
 
     // Copy over our executable to a temp file
     let finalDaemonPath = '';
+    let args: string[] = [];
     if (process.env.ZLI_CUSTOM_DAEMON_PATH) {
         // If we set a custom path, we will try to start the daemon from the source code
         cwd = process.env.ZLI_CUSTOM_DAEMON_PATH;
         finalDaemonPath = 'go';
-        args = ['run', 'daemon.go'].concat(args);
+        args = ['run', 'daemon.go', 'config.go'];
     } else {
         finalDaemonPath = await copyExecutableToLocalDir(logger, configService.configPath());
     }
@@ -69,14 +69,7 @@ export async function dbConnectHandler(
     try {
         if (!argv.debug) {
             // If we are not debugging, start the go subprocess in the background
-            const options = {
-                cwd: cwd,
-                detached: true,
-                shell: true,
-                stdio: ['ignore', 'ignore', 'ignore']
-            };
-
-            const daemonProcess = await spawn(finalDaemonPath, args, options);
+            const daemonProcess = await spawnDaemonInBackground(logger, loggerConfigService, cwd, finalDaemonPath, args, runtimeConfig);
 
             // Now save the Pid so we can kill the process next time we start it
             dbConfig.localPid = daemonProcess.pid;
@@ -90,7 +83,7 @@ export async function dbConnectHandler(
             return 0;
         } else {
             logger.warn(`Started db daemon in debug mode at ${localHost}:${localPort} for ${dbTarget.name}`);
-            await startDaemonInDebugMode(finalDaemonPath, cwd, args);
+            await startDaemonInDebugMode(finalDaemonPath, cwd, runtimeConfig, args);
             await cleanExit(0, logger);
         }
     } catch (error) {

@@ -20,7 +20,8 @@ export const organizationControlsPolicySuite = () => {
                 name: originalPolicyName,
                 subjects: [],
                 description: restApiPolicyDescriptionTemplate.replace('$POLICY_TYPE', 'organization controls'),
-                mfaEnabled: false
+                mfaEnabled: false,
+                timeExpires: null
             };
         });
 
@@ -47,17 +48,16 @@ export const organizationControlsPolicySuite = () => {
         }, 15 * 1000);
 
         test('2273: Edit organization controls policy', async () => {
-            const expectedPolicySummaryAfterEdit: OrganizationControlsPolicySummary = Object.create(expectedPolicySummary);
-            expectedPolicySummaryAfterEdit.description = 'modified description';
-            expectedPolicySummaryAfterEdit.name = orgControlsPolicy.name += '-modified';
+            expectedPolicySummary.description = 'modified description';
+            expectedPolicySummary.name = orgControlsPolicy.name += '-modified';
 
             const editedPolicy = await policyService.UpdateOrganizationControlsPolicy(orgControlsPolicy.id, {
-                name: expectedPolicySummaryAfterEdit.name,
-                description: expectedPolicySummaryAfterEdit.description
+                name: expectedPolicySummary.name,
+                description: expectedPolicySummary.description
             });
 
             // verify the policy that is retrieved from the back end matches the modified policy
-            expect(expectedPolicySummaryAfterEdit).toMatchObject(editedPolicy);
+            expect(editedPolicy).toMatchObject(expectedPolicySummary);
         }, 15 * 1000);
 
         test('2274: Get all organization controls policies', async () => {

@@ -6,16 +6,21 @@ import { ConfigService } from '../../services/config/config.service';
 import { getAutodiscoveryScript } from '../..//http-services/auto-discovery-script/auto-discovery-script.http-services';
 import { generateBashArgs } from './generate-bash.command-builder';
 import { getEnvironmentFromName } from '../../../src/utils/utils';
-import { EnvironmentSummary } from '../../../webshell-common-ts/http/v2/environment/types/environment-summary.responses';
 import { ScriptTargetNameOption } from '../../../webshell-common-ts/http/v2/autodiscovery-script/types/script-target-name-option.types';
+import { EnvironmentHttpService } from '../../http-services/environment/environment.http-services';
 
 export async function generateBashHandler(
     argv: yargs.Arguments<generateBashArgs>,
-    logger: Logger,
     configService: ConfigService,
-    environments: Promise<EnvironmentSummary[]>
+    logger: Logger
 ) {
     let scriptTargetNameOption: ScriptTargetNameOption;
+
+    // Construct EnvironmentHttpService
+    const envHttpService = new EnvironmentHttpService(configService, logger);
+
+    // Retrieve all environments
+    const environments = await envHttpService.ListEnvironments();
 
     switch (argv.targetNameScheme) {
     case 'do':
@@ -38,8 +43,7 @@ export async function generateBashHandler(
     }
 
     // Ensure that environment name argument is valid
-    const envs = await environments;
-    const environment = await getEnvironmentFromName(argv.environment, envs, logger);
+    const environment = await getEnvironmentFromName(argv.environment, environments, logger);
 
     const script = await getAutodiscoveryScript(logger, configService, environment.id, scriptTargetNameOption, argv.agentVersion);
 

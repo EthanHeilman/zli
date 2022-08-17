@@ -7,7 +7,7 @@ import { error } from 'console';
 export type LoggerConfigSchema = {
     logPath: string
     daemonLogPath: string
-}
+};
 
 export class LoggerConfigService {
     private config: Conf<LoggerConfigSchema>;

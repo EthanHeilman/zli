@@ -22,7 +22,7 @@ export async function closeConnectionHandler(
 
     if(closeAll)
     {
-        logger.info('Closing all connections open in cli-space');
+        logger.info('Closing all shell connections');
         await spaceHttpService.CloseSpace(cliSpace.id);
         await spaceHttpService.CreateSpace('cli-space');
     } else {

@@ -6,12 +6,11 @@ import { Logger } from '../../services/logger/logger.service';
 import { cleanExit } from '../clean-exit.handler';
 import { generateKubeYamlArgs } from './generate-kube.command-builder';
 import { getEnvironmentFromName } from '../../utils/utils';
-import { EnvironmentSummary } from '../../../webshell-common-ts/http/v2/environment/types/environment-summary.responses';
 import { KubeHttpService } from '../../http-services/targets/kube/kube.http-services';
+import { EnvironmentHttpService } from '../../http-services/environment/environment.http-services';
 
 export async function generateKubeYamlHandler(
     argv: yargs.Arguments<generateKubeYamlArgs>,
-    envs: Promise<EnvironmentSummary[]>,
     configService: ConfigService,
     logger: Logger
 ) {
@@ -23,8 +22,12 @@ export async function generateKubeYamlHandler(
 
     const outputFileArg = argv.outputFile;
 
-    // Make our API client
+    // Construct KubeHttpService and EnvironmentHttpService
     const kubeHttpService = new KubeHttpService(configService, logger);
+    const envHttpService = new EnvironmentHttpService(configService, logger);
+
+    // Retrieve all environments
+    const environments = await envHttpService.ListEnvironments();
 
     // Format our labels if they exist
     const labels: { [index: string]: string } = {};
@@ -39,7 +42,7 @@ export async function generateKubeYamlHandler(
     // If environment has been passed, ensure it's a valid envId
     let environmentId = null;
     if (argv.environmentName != null) {
-        const environment = await getEnvironmentFromName(argv.environmentName, await envs, logger);
+        const environment = await getEnvironmentFromName(argv.environmentName, environments, logger);
         environmentId = environment.id;
     }
 

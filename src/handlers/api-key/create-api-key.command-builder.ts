@@ -2,7 +2,7 @@ import yargs from 'yargs';
 
 export type createApiKeyArgs = { name: string } &
 { registrationKey: boolean } &
-{ json: boolean }
+{ json: boolean };
 
 export function createApiKeyCmdBuilder(yargs: yargs.Argv<{}>): yargs.Argv<createApiKeyArgs> {
     return yargs

@@ -39,7 +39,7 @@ export type CreateNewKubeClusterParameters = {
     clusterVersion: DigitalOceanKubernetesClusterVersion;
     clusterNodePools: WorkerNodePool[];
     clusterTags?: string[];
-}
+};
 
 /**
  * Parameters to create a node pool. A node pool is a group of 1 or more
@@ -51,7 +51,7 @@ export type WorkerNodePool = {
     dropletInstancesCount: number;
     workerNodeTags?: string[];
     autoScaleParameters?: AutoScaleParameters
-}
+};
 
 /**
  * Parameters to configure autoscaling for a node pool
@@ -59,7 +59,7 @@ export type WorkerNodePool = {
 export type AutoScaleParameters = {
     minNodes?: number,
     maxNodes: number
-}
+};
 
 /**
  * This error is thrown when the cluster target status poller sees that the
@@ -79,4 +79,4 @@ export class ClusterTargetStatusPollError extends Error {
  * Represents a JSON dictionary that can be used to configure a Kubernetes
  * secret used for pulling images from a DigitalOcean container registry
  */
-export type DigitalOceanRegistryCredentials = { [key: string]: any }
+export type DigitalOceanRegistryCredentials = { [key: string]: any };

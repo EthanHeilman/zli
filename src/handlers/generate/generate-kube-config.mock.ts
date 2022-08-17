@@ -1,20 +1,12 @@
 import { ConfigService } from '../../services/config/config.service';
 import { mockEnvList } from '../../utils/unit-test-utils';
 import { KubeConfig } from '../../utils/kubernetes.utils';
-import * as middlewareHandler from '../middleware.handler';
 import * as DaemonUtils from '../../utils/daemon-utils';
 import * as KubeConfigHandler from './generate-kube-config.handler';
+import { EnvironmentHttpService } from '../../http-services/environment/environment.http-services';
 
 export function kubeConfigMockSetup() {
-    jest.spyOn(middlewareHandler, 'fetchDataMiddleware').mockImplementationOnce(() => {
-        return {
-            dynamicConfigs: Promise.resolve([]),
-            ssmTargets: Promise.resolve([]),
-            clusterTargets: Promise.resolve([]),
-            bzeroTargets:  Promise.resolve([]),
-            envs: Promise.resolve(mockEnvList),
-        };
-    });
+    jest.spyOn(EnvironmentHttpService.prototype, 'ListEnvironments').mockImplementation(async () => mockEnvList);
 
     // Mock Config methods used in building kube config file
     jest.spyOn(ConfigService.prototype, 'getConfigName').mockImplementation(() => 'test-config');

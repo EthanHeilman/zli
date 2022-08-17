@@ -7,6 +7,7 @@ import { configService, logger } from '../system-test';
 import { TestUtils } from '../utils/test-utils';
 import { ConnectionEventType } from '../../../../webshell-common-ts/http/v2/event/types/connection-event.types';
 import { PolicyHttpService } from '../../../http-services/policy/policy.http-services';
+import { setupBackgroundDaemonMocks } from '../utils/connect-utils';
 
 const fs = require('fs');
 
@@ -28,6 +29,10 @@ export const kubeSuite = () => {
             // Construct all http services needed to run tests
             policyService = new PolicyHttpService(configService, logger);
             testUtils = new TestUtils(configService, logger, loggerConfigService);
+        });
+
+        beforeEach(() => {
+            setupBackgroundDaemonMocks();
         });
 
         afterAll(async () => {
@@ -274,12 +279,12 @@ export const kubeSuite = () => {
             testPassed = true;
         }, 2 * 60 * 1000);
 
-        test('2162: zli targetuser - add target user to policy', async () => {
+        test('2162: zli policy targetuser - add target user to policy', async () => {
             // Grab our cluster information and set up our spy
             const doCluster = testCluster;
 
             // Call the target group function
-            await callZli(['targetuser', `${doCluster.bzeroClusterTargetSummary.name}-policy`, 'someuser', '-a']);
+            await callZli(['policy', 'add-targetuser', `${doCluster.bzeroClusterTargetSummary.name}-policy`, 'someuser']);
 
             // Ensure we see the targetUser in the backend
             const policies = await policyService.ListKubernetesPolicies();
@@ -293,12 +298,12 @@ export const kubeSuite = () => {
             testPassed = true;
         }, 30 * 1000);
 
-        test('2163: zli targetuser - delete target user from policy %p', async () => {
+        test('2163: zli policy targetuser - delete target user from policy %p', async () => {
             // Grab our cluster information and set up our spy
             const doCluster = testCluster;
 
             // Call the target group function
-            await callZli(['targetuser', `${doCluster.bzeroClusterTargetSummary.name}-policy`, 'someuser', '-d']);
+            await callZli(['policy', 'delete-targetuser', `${doCluster.bzeroClusterTargetSummary.name}-policy`, 'someuser']);
 
             // Ensure we see the targetUser in the backend
             const policies = await policyService.ListKubernetesPolicies();
@@ -312,12 +317,12 @@ export const kubeSuite = () => {
             testPassed = true;
         }, 30 * 1000);
 
-        test('2164: zli targetgroup - add target group to policy', async () => {
+        test('2164: zli policy targetgroup - add target group to policy', async () => {
             // Grab our cluster information and set up our spy
             const doCluster = testCluster;
 
             // Call the target group function
-            await callZli(['targetgroup', `${doCluster.bzeroClusterTargetSummary.name}-policy`, 'somegroup', '-a']);
+            await callZli(['policy', 'add-targetgroup', `${doCluster.bzeroClusterTargetSummary.name}-policy`, 'somegroup']);
 
             // Ensure we see the targetUser in the backend
             const policies = await policyService.ListKubernetesPolicies();
@@ -331,12 +336,12 @@ export const kubeSuite = () => {
             testPassed = true;
         }, 30 * 1000);
 
-        test('2165: zli targetgroup - delete target group from policy', async () => {
+        test('2165: zli policy targetgroup - delete target group from policy', async () => {
             // Grab our cluster information and set up our spy
             const doCluster = testCluster;
 
             // Call the target group function
-            await callZli(['targetgroup', `${doCluster.bzeroClusterTargetSummary.name}-policy`, 'somegroup', '-d']);
+            await callZli(['policy', 'delete-targetgroup', `${doCluster.bzeroClusterTargetSummary.name}-policy`, 'somegroup']);
 
             // Ensure we see the targetUser in the backend
             const policies = await policyService.ListKubernetesPolicies();

@@ -64,7 +64,7 @@ export type MissingHostNameParseError = {
  */
 export type MissingUserParseError = {
     error: 'missing_user';
-}
+};
 
 /**
  * MissingIdentityFileParseError represents a failure to include the
@@ -72,7 +72,7 @@ export type MissingUserParseError = {
  */
 export type MissingIdentityFileParseError = {
     error: 'missing_identity_file';
-}
+};
 
 /**
  * SSHConfigParseError is a sum type of all possible parse errors when reading
@@ -81,7 +81,7 @@ export type MissingIdentityFileParseError = {
 export type SSHConfigParseError =
     | MissingHostNameParseError
     | MissingUserParseError
-    | MissingIdentityFileParseError
+    | MissingIdentityFileParseError;
 
 /**
  * InvalidSSHHost represents an SSH host which does not have all the parameters

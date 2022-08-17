@@ -1,4 +1,5 @@
 import { systemTestUniqueId } from '../../../system-test';
+import { justInTimePolicySuite } from './policies-just-in-time';
 import { kubernetesPolicySuite } from './policies-kubernetes';
 import { organizationControlsPolicySuite } from './policies-organization-controls';
 import { proxyPolicySuite } from './policies-proxy';
@@ -14,4 +15,5 @@ export const policySuite = () => describe('Policies Suite', () => {
     proxyPolicySuite();
     kubernetesPolicySuite();
     organizationControlsPolicySuite();
+    justInTimePolicySuite();
 });

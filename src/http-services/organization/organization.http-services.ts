@@ -2,6 +2,7 @@ import { IdentityProviderGroupsMetadataResponse } from '../../../webshell-common
 import { OrganizationGlobalRegistrationKeyResponse } from '../../../webshell-common-ts/http/v2/organization/responses/organization-global-registration-key.response';
 import { GroupSummary } from '../../../webshell-common-ts/http/v2/organization/types/group-summary.types';
 import { OrganizationSummary } from '../../../webshell-common-ts/http/v2/organization/types/organization-summary.types';
+import { OrgBZCertValidationInfo } from '../../../webshell-common-ts/http/v2/organization/types/organization-bzcert-validation-info.types';
 import { OrganizationRegistrationKeySettingSummary } from '../../../webshell-common-ts/http/v2/organization/types/organization-registration-key-setting-summary.types';
 import { ConfigService } from '../../services/config/config.service';
 import { HttpService } from '../../services/http/http.service';
@@ -37,6 +38,11 @@ export class OrganizationHttpService extends HttpService
     public GetUserOrganization(): Promise<OrganizationSummary>
     {
         return this.Get();
+    }
+
+    public GetUserOrganizationBZCertValidationInfo(): Promise<OrgBZCertValidationInfo>
+    {
+        return this.Get(`bzcert-validation-info`);
     }
 
     public GetRegistrationKeySettings(): Promise<OrganizationRegistrationKeySettingSummary>

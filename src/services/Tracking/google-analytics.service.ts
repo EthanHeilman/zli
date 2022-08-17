@@ -13,7 +13,7 @@ export class GAService
         'zli-version': 'cd3',
         'service-url': 'cd4',
         'zli-args': 'cd5'
-    }
+    };
 
     constructor(private configService: ConfigService, private logger: Logger, private baseCommand: string, args: string[], version: string)
     {

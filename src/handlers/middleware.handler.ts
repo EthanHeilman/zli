@@ -6,98 +6,8 @@ import { LoggerConfigService } from '../services/logger/logger-config.service';
 import { KeySplittingService } from '../../webshell-common-ts/keysplitting.service/keysplitting.service';
 import { GAService } from '../services/Tracking/google-analytics.service';
 import { MixpanelService } from '../services/Tracking/mixpanel.service';
-import { TargetSummary } from '../../webshell-common-ts/http/v2/target/targetSummary.types';
-import { TargetType } from '../../webshell-common-ts/http/v2/target/types/target.types';
-import { DynamicAccessConfigHttpService } from '../http-services/targets/dynamic-access/dynamic-access-config.http-services';
-import { EnvironmentHttpService } from '../http-services/environment/environment.http-services';
-import { EnvironmentSummary } from '../../webshell-common-ts/http/v2/environment/types/environment-summary.responses';
-import { KubeHttpService } from '../http-services/targets/kube/kube.http-services';
-import { KubeClusterSummary } from '../../webshell-common-ts/http/v2/target/kube/types/kube-cluster-summary.types';
-import { SsmTargetHttpService } from '../http-services/targets/ssm/ssm-target.http-services';
-import { BzeroTargetHttpService } from '../http-services/targets/bzero/bzero.http-services';
-import { BzeroAgentSummary } from '../../webshell-common-ts/http/v2/target/bzero/types/bzero-agent-summary.types';
 import { isZliSilent } from '../utils/utils';
-
-
-export function fetchDataMiddleware(configService: ConfigService, logger: Logger) {
-    // Greedy fetch of some data that we use frequently
-    const ssmTargetHttpService = new SsmTargetHttpService(configService, logger);
-    const kubeHttpService = new KubeHttpService(configService, logger);
-    const dynamicConfigHttpService = new DynamicAccessConfigHttpService(configService, logger);
-    const envHttpService = new EnvironmentHttpService(configService, logger);
-    const bzeroHttpService = new BzeroTargetHttpService(configService, logger);
-
-    const dynamicConfigs = new Promise<TargetSummary[]>( async (res) => {
-        try
-        {
-            const response = await dynamicConfigHttpService.ListDynamicAccessConfigs();
-            const results = response.map<TargetSummary>((config, _index, _array) => {
-                return {type: TargetType.DynamicAccessConfig, id: config.id, name: config.name, environmentId: config.environmentId, agentVersion: 'N/A', status: config.status, targetUsers: config.allowedTargetUsers.map(tu => tu.userName), region: 'N/A', agentPublicKey: 'N/A'};
-            });
-
-            res(results);
-        } catch (e: any) {
-            logger.error(`Failed to fetch dynamic access configs: ${e}`);
-            res([]);
-        }
-    });
-
-    // We will to show existing dynamic access targets for file transfer
-    // UX to be more pleasant as people cannot file transfer to configs
-    // only the DATs they produce from the config
-    const ssmTargets = new Promise<TargetSummary[]>( async (res) => {
-        try
-        {
-            const response = await ssmTargetHttpService.ListSsmTargets(true);
-            const results = response.map<TargetSummary>((ssm, _index, _array) => {
-                return {type: TargetType.SsmTarget, agentPublicKey: ssm.agentPublicKey, id: ssm.id, name: ssm.name, environmentId: ssm.environmentId, agentVersion: ssm.agentVersion, status: ssm.status, targetUsers: undefined, region: ssm.region};
-            });
-
-            res(results);
-        } catch (e: any) {
-            logger.error(`Failed to fetch ssm targets: ${e}`);
-            res([]);
-        }
-    });
-
-
-    const clusterTargets = new Promise<KubeClusterSummary[]>( async (res) => {
-        try {
-            const response = await kubeHttpService.ListKubeClusters();
-            res(response);
-        } catch (e: any) {
-            logger.error(`Failed to fetch cluster targets: ${e}`);
-            res([]);
-        }
-    });
-
-    const bzeroTargets = new Promise<BzeroAgentSummary[]>( async (res) => {
-        try {
-            const response = await bzeroHttpService.ListBzeroTargets();
-            res(response);
-        } catch (e: any) {
-            logger.error(`Failed to fetch bzero targets: ${e}`);
-            res([]);
-        }
-    });
-
-    const envs = new Promise<EnvironmentSummary[]>( async (res) => {
-        try {
-            const response = await envHttpService.ListEnvironments();
-            res(response);
-        } catch (e: any) {
-            logger.error(`Failed to fetch environments: ${e}`);
-            res([]);
-        }
-    });
-    return {
-        dynamicConfigs: dynamicConfigs,
-        ssmTargets: ssmTargets,
-        clusterTargets: clusterTargets,
-        bzeroTargets: bzeroTargets,
-        envs: envs
-    };
-}
+import { OrganizationHttpService } from '.../../../http-services/organization/organization.http-services';
 
 /*
  * Helper function to get our GA tracking middleware and track our cli command
@@ -161,4 +71,14 @@ export async function initMiddleware(argv: any, logger : Logger, isSystemTest : 
         configService: configService,
         keySplittingService: keySplittingService
     };
+}
+
+export async function bzCertValidationInfoMiddleware(keySplittingService: KeySplittingService, configService: ConfigService, logger: Logger) {
+    const ksConfig = configService.loadKeySplitting();
+    if( ! ksConfig.orgProvider) {
+        // Update the Org BZCert Validation parameters
+        const orgHttpService = new OrganizationHttpService(configService, logger);
+        const orgBZCertValidationInfo = await orgHttpService.GetUserOrganizationBZCertValidationInfo();
+        keySplittingService.setOrgBZCertValidationInfo(orgBZCertValidationInfo);
+    }
 }

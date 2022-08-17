@@ -4,6 +4,7 @@ import { configService, GROUP_ID, GROUP_NAME, IN_CI, logger, SERVICE_URL, system
 import { ApiKeyHttpService } from '../../../../http-services/api-key/api-key.http-services';
 import 'jest-extended';
 import { GroupSummary } from '../../../../../webshell-common-ts/http/v2/organization/types/group-summary.types';
+import { OrgBZCertValidationInfo } from '../../../../../webshell-common-ts/http/v2/organization/types/organization-bzcert-validation-info.types';
 
 export const organizationSuite = () => {
     describe('Organization Suite', () => {
@@ -11,18 +12,29 @@ export const organizationSuite = () => {
         let apiKeyService : ApiKeyHttpService;
         let getGroupsCaseId: string;
         let fetchGroupsCaseId: string;
+        let orgProvider: string;
+        let orgIssuerId: string;
 
         // Set our test caseIds based on the IDP we are configured against
         switch (configService.idp()) {
         case 'google':
+            orgProvider = 'google';
+            // thoum.org google organization
+            orgIssuerId = 'thoum.org';
             getGroupsCaseId = '3103';
             fetchGroupsCaseId = '3100';
             break;
         case 'okta':
+            orgProvider = 'okta';
+            // https://bastionzero.okta.com/
+            orgIssuerId = 'bastionzero';
             getGroupsCaseId = '3105';
             fetchGroupsCaseId = '3102';
             break;
         case 'microsoft':
+            orgProvider = 'microsoft';
+            // Tenant ID for b0demo.onmicrosoft.com
+            orgIssuerId = 'd30ebcf9-4155-4870-aac0-ba63310ec216';
             getGroupsCaseId = '3104';
             fetchGroupsCaseId = '3101';
             break;
@@ -69,6 +81,16 @@ export const organizationSuite = () => {
                 defaultGlobalRegistrationKey: defaultRegKey.id
             };
             expect(enableGlobalRegKeyResponse).toMatchObject(toExpect);
+        }, 15 * 1000);
+
+        test('110600: Get Organization BZCert Validation Info', async () => {
+            const bzCertValidationInfo = await organizationService.GetUserOrganizationBZCertValidationInfo();
+
+            const toExpect: OrgBZCertValidationInfo = {
+                orgIdpIssuerId: orgIssuerId,
+                orgIdpProvider: orgProvider
+            };
+            expect(bzCertValidationInfo).toMatchObject(toExpect);
         }, 15 * 1000);
 
         test('2266: Disable global registration key enforcement', async () => {

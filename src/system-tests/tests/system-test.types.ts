@@ -11,7 +11,7 @@ export type SSMTestTargetAutoDiscovery = BaseTarget & {
     dropletImage: DigitalOceanDistroImage;
     doRegion: DigitalOceanRegion;
     awsRegion: string;
-}
+};
 
 /**
  * SSMTestTargetAutoDiscovery represents an SSM test target that should be
@@ -22,7 +22,7 @@ export type SSMTestTargetAnsibleAutoDiscovery = BaseTarget & {
     dropletImage: DigitalOceanDistroImage;
     doRegion: DigitalOceanRegion;
     awsRegion: string;
-}
+};
 
 /**
  * SSMTestTargetSelfRegistrationAutoDiscovery represents an SSM test target that
@@ -34,7 +34,7 @@ export type SSMTestTargetSelfRegistrationAutoDiscovery = BaseTarget &{
     dropletImage: DigitalOceanDistroImage;
     doRegion: DigitalOceanRegion;
     awsRegion: string;
-}
+};
 
 /**
  * BzeroTestTarget represents a bzero test target using an agent installed via
@@ -45,7 +45,7 @@ export type BzeroTestTarget = BaseTarget & {
     dropletImage: DigitalOceanDistroImage;
     doRegion: DigitalOceanRegion;
     awsRegion: string;
-}
+};
 
 // Hold our common TestRails caseIds
 interface BaseTarget {
@@ -71,4 +71,4 @@ interface BaseTarget {
     sessionRecordingCaseId?: string;
 }
 
-export type TestTarget = SSMTestTargetAutoDiscovery | SSMTestTargetSelfRegistrationAutoDiscovery | SSMTestTargetAnsibleAutoDiscovery | BzeroTestTarget
+export type TestTarget = SSMTestTargetAutoDiscovery | SSMTestTargetSelfRegistrationAutoDiscovery | SSMTestTargetAnsibleAutoDiscovery | BzeroTestTarget;

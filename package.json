@@ -1,6 +1,6 @@
 {
   "name": "@bastionzero/zli",
-  "version": "6.7.3",
+  "version": "6.7.15",
   "description": "BastionZero cli",
   "repository": {
     "type": "git",
@@ -37,6 +37,7 @@
   "license": "Apache-2.0",
   "devDependencies": {
     "@kubernetes/client-node": "^0.16.1",
+    "@types/humanize-duration": "^3.27.1",
     "@types/jest": "^27.5.0",
     "@types/uuid": "^8.3.4",
     "@typescript-eslint/eslint-plugin": "^4.17.0",
@@ -89,6 +90,7 @@
     "find-open-port": "^2.0.3",
     "form-data": "^3.0.0",
     "got": "^11.8.0",
+    "humanize-duration": "^3.27.2",
     "is-running": "^2.1.0",
     "jest-extended": "^1.2.0",
     "libp2p-spdy": "^0.13.3",

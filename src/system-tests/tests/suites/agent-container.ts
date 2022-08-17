@@ -38,7 +38,7 @@ export type BzeroContainerTestTarget = {
     type: string;
 
     shellAndRecordCaseID?: string;
-}
+};
 
 export const agentContainerSuite = () => {
     describe('Agent Container suite', () => {

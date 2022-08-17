@@ -1,17 +1,9 @@
-import * as middlewareHandler from '../middleware.handler';
 import { mockEnvList } from '../../utils/unit-test-utils';
+import { EnvironmentHttpService } from '../../http-services/environment/environment.http-services';
 import { KubeGetAgentYamlResponse } from '../../../webshell-common-ts/http/v2/target/kube/responses/kube-get-agent-yaml.response';
 
 export function kubeYamlMockSetup(): void {
-    jest.spyOn(middlewareHandler, 'fetchDataMiddleware').mockImplementationOnce(() => {
-        return {
-            dynamicConfigs: Promise.resolve([]),
-            ssmTargets: Promise.resolve([]),
-            clusterTargets: Promise.resolve([]),
-            bzeroTargets:  Promise.resolve([]),
-            envs: Promise.resolve(mockEnvList),
-        };
-    });
+    jest.spyOn(EnvironmentHttpService.prototype, 'ListEnvironments').mockImplementation(async () => mockEnvList);
 }
 
 export const mockKubeYaml: KubeGetAgentYamlResponse = {

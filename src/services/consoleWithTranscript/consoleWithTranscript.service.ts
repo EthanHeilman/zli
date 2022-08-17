@@ -3,7 +3,7 @@ import { TranscriptMessage } from './consoleWithTranscript.types';
 import { Chalk } from 'chalk';
 
 export class ConsoleWithTranscriptService {
-    private transcript: TranscriptMessage[]
+    private transcript: TranscriptMessage[];
 
     constructor(
         private defaultColor? : Chalk,

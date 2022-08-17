@@ -1,7 +1,7 @@
 import yargs from 'yargs';
 
 export type generateSshConfigArgs = { mySshPath: string } &
-{ bzSshPath: string }
+{ bzSshPath: string };
 
 export function generateSshConfigCmdBuilder(yargs: yargs.Argv<{}>) : yargs.Argv<generateSshConfigArgs> {
     return yargs

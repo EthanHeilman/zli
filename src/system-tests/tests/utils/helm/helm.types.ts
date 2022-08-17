@@ -15,9 +15,9 @@ export type Release = {
         'pending-rollback'
     chart: string,
     app_version: string
-}
+};
 
 export type Repo = {
     name: string,
     url: string,
-}
+};

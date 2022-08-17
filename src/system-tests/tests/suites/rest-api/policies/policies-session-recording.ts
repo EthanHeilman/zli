@@ -5,6 +5,7 @@ import { Subject } from '../../../../../../webshell-common-ts/http/v2/policy/typ
 import { PolicyHttpService } from '../../../../../http-services/policy/policy.http-services';
 import { configService, logger, systemTestPolicyTemplate } from '../../../system-test';
 import { restApiPolicyDescriptionTemplate } from './policies';
+import { callZli } from '../../../utils/zli-utils';
 
 export const sessionRecordingPolicySuite = () => {
     describe('Session Recording Policies Suite', () => {
@@ -22,7 +23,8 @@ export const sessionRecordingPolicySuite = () => {
                 currentUser
             ],
             description: restApiPolicyDescriptionTemplate.replace('$POLICY_TYPE', 'session recording'),
-            recordInput: false
+            recordInput: false,
+            timeExpires: null
         };
         let policyService: PolicyHttpService;
         let sessionRecordingPolicy: SessionRecordingPolicySummary;
@@ -38,34 +40,36 @@ export const sessionRecordingPolicySuite = () => {
         }, 15 * 1000);
 
         test('2281: Create and get session recording policy', async () => {
-            sessionRecordingPolicy = await policyService.AddSessionRecordingPolicy({
-                groups: expectedPolicySummary.groups,
+            const zliArgs = [
+                'policy', 'create-recording',
+                '-n', expectedPolicySummary.name,
+                '-u', configService.me().email,
+                '-r', 'false',
+                '-d', expectedPolicySummary.description
+            ];
+            await callZli(zliArgs);
+
+            const allPolicies = await policyService.ListSessionRecordingPolicies();
+            sessionRecordingPolicy = allPolicies.find(p => p.name === expectedPolicySummary.name);
+            expectedPolicySummary.id = sessionRecordingPolicy.id;
+
+            // verify the policy that is retrieved from the back end matches the requested policy
+            expect(sessionRecordingPolicy).toMatchObject(expectedPolicySummary);
+        }, 15 * 1000);
+
+        test('2282: Edit session recording policy', async () => {
+            expectedPolicySummary.description = 'modified description';
+            expectedPolicySummary.recordInput = true;
+            expectedPolicySummary.name = sessionRecordingPolicy.name += '-modified';
+
+            const editedSessionRecordingPolicy = await policyService.UpdateSessionRecordingPolicy(sessionRecordingPolicy.id, {
                 name: expectedPolicySummary.name,
-                subjects: expectedPolicySummary.subjects,
                 description: expectedPolicySummary.description,
                 recordInput: expectedPolicySummary.recordInput
             });
 
-            expectedPolicySummary.id = sessionRecordingPolicy.id;
-            const retrievedPolicy = await policyService.GetSessionRecordingPolicy(sessionRecordingPolicy.id);
-            // verify the policy that is retrieved from the back end matches the requested policy
-            expect(retrievedPolicy).toMatchObject(expectedPolicySummary);
-        }, 15 * 1000);
-
-        test('2282: Edit session recording policy', async () => {
-            const expectedPolicySummaryAfterEdit: SessionRecordingPolicySummary = Object.create(expectedPolicySummary);
-            expectedPolicySummaryAfterEdit.description = 'modified description';
-            expectedPolicySummaryAfterEdit.recordInput = true;
-            expectedPolicySummaryAfterEdit.name = sessionRecordingPolicy.name += '-modified';
-
-            const editedSessionRecordingPolicy = await policyService.UpdateSessionRecordingPolicy(sessionRecordingPolicy.id, {
-                name: expectedPolicySummaryAfterEdit.name,
-                description: expectedPolicySummaryAfterEdit.description,
-                recordInput: expectedPolicySummaryAfterEdit.recordInput
-            });
-
             // verify the policy that is retrieved from the back end matches the modified policy
-            expect(expectedPolicySummaryAfterEdit).toMatchObject(editedSessionRecordingPolicy);
+            expect(editedSessionRecordingPolicy).toMatchObject(expectedPolicySummary);
         }, 15 * 1000);
 
         test('2283: Get all session recording policies', async () => {
