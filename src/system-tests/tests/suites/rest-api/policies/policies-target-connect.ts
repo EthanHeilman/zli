@@ -49,7 +49,8 @@ export const targetConnectPolicySuite = () => {
                         type: VerbType.Shell
                     }
                 ],
-                description: restApiPolicyDescriptionTemplate.replace('$POLICY_TYPE', 'target connect')
+                description: restApiPolicyDescriptionTemplate.replace('$POLICY_TYPE', 'target connect'),
+                timeExpires: null
             };
         });
 
@@ -82,21 +83,20 @@ export const targetConnectPolicySuite = () => {
         }, 15 * 1000);
 
         test('2286: Edit target connect policy', async () => {
-            const expectedPolicySummaryAfterEdit: TargetConnectPolicySummary = Object.create(expectedPolicySummary);
-            expectedPolicySummaryAfterEdit.description = 'modified description';
-            expectedPolicySummaryAfterEdit.name = targetConnectPolicy.name += '-modified';
-            expectedPolicySummaryAfterEdit.verbs.push({
+            expectedPolicySummary.description = 'modified description';
+            expectedPolicySummary.name = targetConnectPolicy.name += '-modified';
+            expectedPolicySummary.verbs.push({
                 type: VerbType.FileTransfer
             });
 
             const editedPolicy = await policyService.UpdateTargetConnectPolicy(targetConnectPolicy.id, {
-                name: expectedPolicySummaryAfterEdit.name,
-                description: expectedPolicySummaryAfterEdit.description,
-                verbs: expectedPolicySummaryAfterEdit.verbs
+                name: expectedPolicySummary.name,
+                description: expectedPolicySummary.description,
+                verbs: expectedPolicySummary.verbs
             });
 
             // verify the policy that is retrieved from the back end matches the modified policy
-            expect(expectedPolicySummaryAfterEdit).toMatchObject(editedPolicy);
+            expect(editedPolicy).toMatchObject(expectedPolicySummary);
         }, 15 * 1000);
 
         test('2287: Edit target connect policy - should disallow adding target with an environment is already configured', async () => {

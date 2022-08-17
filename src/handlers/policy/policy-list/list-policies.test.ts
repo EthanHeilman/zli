@@ -1,6 +1,6 @@
 import mockArgv from 'mock-argv';
 import { CliDriver } from '../../../cli-driver';
-import { cleanConsoleLog, mockApiKeySummaryList, mockBzeroSummaryList, mockDatSummaryList, mockDbSummaryList, mockGroupsSummaryList, mockKubernetesPolicySummaryList, mockKubeSummaryList, mockOrganizationControlsPolicySummaryList, mockProxyPolicySummaryList, mockSessionRecordingPolicySummaryList, unitTestMockSetup, mockSsmSummaryList, mockTargetConnectPolicySummaryList, mockUserSummaryList, mockWebSummaryList } from '../../../utils/unit-test-utils';
+import { cleanConsoleLog, mockApiKeySummaryList, mockBzeroSummaryList, mockDatSummaryList, mockDbSummaryList, mockGroupsSummaryList, mockKubernetesPolicySummaryList, mockKubeSummaryList, mockOrganizationControlsPolicySummaryList, mockProxyPolicySummaryList, mockSessionRecordingPolicySummaryList, unitTestMockSetup, mockSsmSummaryList, mockTargetConnectPolicySummaryList, mockUserSummaryList, mockWebSummaryList, mockJustInTimePolicySummaryList } from '../../../utils/unit-test-utils';
 import { OrganizationHttpService } from '../../../http-services/organization/organization.http-services';
 import { ApiKeyHttpService } from '../../../http-services/api-key/api-key.http-services';
 import { UserHttpService } from '../../../http-services/user/user.http-services';
@@ -35,7 +35,7 @@ describe('List Policies suite', () => {
 │                        │                   │ Groups: some-group-name  │                            │
 └────────────────────────┴───────────────────┴──────────────────────────┴────────────────────────────┘`;
 
-    const kuberentesPolicyOutput = String.raw`┌────────────────────────┬───────────────────┬──────────────────────────┬────────────────────────────┬─────────────────────────────┬────────────────────────────────────┐
+    const kubernetesPolicyOutput = String.raw`┌────────────────────────┬───────────────────┬──────────────────────────┬────────────────────────────┬─────────────────────────────┬────────────────────────────────────┐
 │ Name                   │ Type              │ Subject                  │ Resource                   │ Target Users                │ Target Group                       │
 ├────────────────────────┼───────────────────┼──────────────────────────┼────────────────────────────┼─────────────────────────────┼────────────────────────────────────┤
 │ some-kube-policy-name  │ Kubernetes        │ test-full-name           │ Environments: test-env-na… │ Cluster Users: some-cluste… │ Cluster Groups: some-cluster-group │
@@ -49,6 +49,12 @@ describe('List Policies suite', () => {
 │                        │                   │ Groups: some-group-name  │                            │                             │              │
 └────────────────────────┴───────────────────┴──────────────────────────┴────────────────────────────┴─────────────────────────────┴──────────────┘`;
 
+    const justInTimePolicyOutput = String.raw`┌────────────────────────┬───────────────────┬──────────────────────────┬────────────────────────────────────┬─────────────────────────┬─────────────────────────┐
+│ Name                   │ Type              │ Subject                  │ Resource                           │ Automatically Approved  │ Duration                │
+├────────────────────────┼───────────────────┼──────────────────────────┼────────────────────────────────────┼─────────────────────────┼─────────────────────────┤
+│ some-jit-policy-name   │ JustInTime        │ test-full-name           │ Child Policies:                    │ false                   │ 1 hour                  │
+│                        │                   │ Groups: some-group-name  │ some-child-policy-name             │                         │                         │
+└────────────────────────┴───────────────────┴──────────────────────────┴────────────────────────────────────┴─────────────────────────┴─────────────────────────┘`;
 
     beforeEach(() => {
         jest.resetModules();
@@ -83,6 +89,7 @@ describe('List Policies suite', () => {
         jest.spyOn(PolicyHttpService.prototype, 'ListProxyPolicies').mockImplementation(async () => mockProxyPolicySummaryList);
         jest.spyOn(PolicyHttpService.prototype, 'ListSessionRecordingPolicies').mockImplementation(async () => mockSessionRecordingPolicySummaryList);
         jest.spyOn(PolicyHttpService.prototype, 'ListTargetConnectPolicies').mockImplementation(async () => mockTargetConnectPolicySummaryList);
+        jest.spyOn(PolicyHttpService.prototype, 'ListJustInTimePolicies').mockImplementation(async () => mockJustInTimePolicySummaryList);
 
         // Listen to our list target response
         const logSpy = jest.spyOn(console, 'log');
@@ -99,13 +106,15 @@ describe('List Policies suite', () => {
         const kubernetesPolicyConsoleOutput = cleanConsoleLog(logSpy.mock.calls[2][0]);
         const sessionRecordingPolicyConsoleOutput = cleanConsoleLog(logSpy.mock.calls[4][0]);
         const proxyPolicyConsoleOutput = cleanConsoleLog(logSpy.mock.calls[6][0]);
-        const organizationPolicyConsoleOutput = cleanConsoleLog(logSpy.mock.calls[8][0]);
+        const justInTimePolicyConsoleOutput = cleanConsoleLog(logSpy.mock.calls[8][0]);
+        const organizationPolicyConsoleOutput = cleanConsoleLog(logSpy.mock.calls[10][0]);
 
         expect(targetConnectPolicyConsoleOutput).toEqual(targetConnectPolicyOutput);
-        expect(kubernetesPolicyConsoleOutput).toEqual(kuberentesPolicyOutput);
+        expect(kubernetesPolicyConsoleOutput).toEqual(kubernetesPolicyOutput);
         expect(sessionRecordingPolicyConsoleOutput).toEqual(sessionRecordingPolicyOutput);
         expect(proxyPolicyConsoleOutput).toEqual(proxyPolicyOuput);
         expect(organizationPolicyConsoleOutput).toEqual(organizationControlsPolicyOutput);
+        expect(justInTimePolicyOutput).toEqual(justInTimePolicyConsoleOutput);
     });
 
 
@@ -124,7 +133,7 @@ describe('List Policies suite', () => {
 
         const output = logSpy.mock.calls[0][0];
         const cleanOutput = cleanConsoleLog(output);
-        expect(cleanOutput).toEqual(kuberentesPolicyOutput);
+        expect(cleanOutput).toEqual(kubernetesPolicyOutput);
     });
 
     test('2502: Filter Org Control Policies', async () => {

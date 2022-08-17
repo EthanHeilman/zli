@@ -6,10 +6,7 @@ import { PolicyHttpService } from '../../../http-services/policy/policy.http-ser
 import { UserSummary } from '../../../../webshell-common-ts/http/v2/user/types/user-summary.types';
 import { SubjectType } from '../../../../webshell-common-ts/http/v2/common.types/subject.types';
 import { Subject } from '../../../../webshell-common-ts/http/v2/policy/types/subject.types';
-import { PolicyType } from '../../../../webshell-common-ts/http/v2/policy/types/policy-type.types';
-import { TargetConnectPolicySummary } from '../../../../webshell-common-ts/http/v2/policy/target-connect/types/target-connect-policy-summary.types';
-import { KubernetesPolicySummary } from '../../../../webshell-common-ts/http/v2/policy/kubernetes/types/kubernetes-policy-summary.types';
-import { ProxyPolicySummary } from '../../../../webshell-common-ts/http/v2/policy/proxy/types/proxy-policy-summary.types';
+import { editPolicy, getPolicyFromName } from '../../../services/policy/policy.services';
 
 export async function addUserToPolicyHandler(userEmail: string, policyName: string, configService: ConfigService, logger: Logger) {
     // First ensure we can lookup the user
@@ -24,28 +21,14 @@ export async function addUserToPolicyHandler(userEmail: string, policyName: stri
 
     }
 
-    // Get the existing policy
     const policyHttpService = new PolicyHttpService(configService, logger);
-    const kubePolicies = await policyHttpService.ListKubernetesPolicies();
-    const targetPolicies = await policyHttpService.ListTargetConnectPolicies();
-    const proxyPolicies = await policyHttpService.ListProxyPolicies();
+    const policy = await getPolicyFromName(policyName, policyHttpService);
 
-    // Loop till we find the one we are looking for
-    const kubePolicy = kubePolicies.find(p => p.name == policyName);
-    const targetPolicy = targetPolicies.find(p => p.name == policyName);
-    const proxyPolicy = proxyPolicies.find(p => p.name == policyName);
-
-    if (!kubePolicy &&
-        !targetPolicy &&
-        !proxyPolicy) {
+    if (policy === null) {
         // Log an error
         logger.error(`Unable to find policy with name: ${policyName}`);
         await cleanExit(1, logger);
     }
-
-    // Assign to policy whichever of the three policies is not null
-    const policy = proxyPolicy ? proxyPolicy :
-        kubePolicy ? kubePolicy : targetPolicy;
 
     // If this user exists already
     if (policy.subjects.find(s => s.type === SubjectType.User && s.id === userSummary.id)) {
@@ -61,21 +44,8 @@ export async function addUserToPolicyHandler(userEmail: string, policyName: stri
 
     policy.subjects.push(subjectToAdd);
 
-    switch (policy.type) {
-    case PolicyType.TargetConnect:
-        await policyHttpService.EditTargetConnectPolicy(policy as TargetConnectPolicySummary);
-        break;
-    case PolicyType.Kubernetes:
-        await policyHttpService.EditKubernetesPolicy(policy as KubernetesPolicySummary);
-        break;
-    case PolicyType.Proxy:
-        await policyHttpService.EditProxyPolicy(policy as ProxyPolicySummary);
-        break;
-    default:
-        const exhaustiveCheck: never = policy;
-        return exhaustiveCheck;
-        break;
-    }
+    // And finally update the policy
+    await editPolicy(policy, policyHttpService);
 
     logger.info(`Added ${userEmail} to ${policyName} policy!`);
     await cleanExit(0, logger);

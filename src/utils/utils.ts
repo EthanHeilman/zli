@@ -1,6 +1,7 @@
 import Table from 'cli-table3';
 import fs from 'fs';
 import util from 'util';
+import humanizeDuration from 'humanize-duration';
 import { includes, map, max } from 'lodash';
 import { IdentityProvider } from '../../webshell-common-ts/auth-service/auth.types';
 import { cleanExit } from '../handlers/clean-exit.handler';
@@ -22,7 +23,6 @@ import { VerbType } from '../../webshell-common-ts/http/v2/policy/types/verb-typ
 import { GroupSummary } from '../../webshell-common-ts/http/v2/organization/types/group-summary.types';
 import { SsmTargetSummary } from '../../webshell-common-ts/http/v2/target/ssm/types/ssm-target-summary.types';
 import { DynamicAccessConfigSummary } from '../../webshell-common-ts/http/v2/target/dynamic/types/dynamic-access-config-summary.types';
-import { ApiKeySummary } from '../../webshell-common-ts/http/v2/api-key/types/api-key-summary.types';
 import { WebConfig } from '../services/web/web.service';
 import { DbConfig } from '../services/database/database.service';
 import { ProxyPolicySummary } from '../../webshell-common-ts/http/v2/policy/proxy/types/proxy-policy-summary.types';
@@ -31,6 +31,7 @@ import { BzeroAgentSummary } from '../../webshell-common-ts/http/v2/target/bzero
 import { KubeConfig } from './kubernetes.utils';
 import { DynamicAccessConfigStatus } from '../../webshell-common-ts/http/v2/target/dynamic/types/dynamic-access-config-status.types';
 import { CaseInsensitiveArgv } from './types/case-insensitive-argv';
+import { JustInTimePolicySummary } from '../../webshell-common-ts/http/v2/policy/just-in-time/types/just-in-time-policy-summary.types';
 
 
 // case insensitive substring search, 'find targetString in searchString'
@@ -102,7 +103,7 @@ export function parseVerbType(verb: string) : VerbType
 
 export function parsePolicyType(policyType: string) : PolicyType
 {
-    const policyTypePattern = /^(targetconnect|organizationcontrols|sessionrecording|kubernetes|proxy)$/i; // case insensitive check for policyType
+    const policyTypePattern = /^(targetconnect|organizationcontrols|sessionrecording|kubernetes|proxy|justintime)$/i; // case insensitive check for policyType
 
     if(! policyTypePattern.test(policyType))
         return undefined;
@@ -118,6 +119,8 @@ export function parsePolicyType(policyType: string) : PolicyType
         return PolicyType.TargetConnect;
     case PolicyType.Proxy.toLowerCase():
         return PolicyType.Proxy;
+    case PolicyType.JustInTime.toLowerCase():
+        return PolicyType.JustInTime;
     default:
         return undefined;
     }
@@ -467,7 +470,6 @@ export function getTableOfDescribeCluster(kubernetesPolicies: KubernetesPolicySu
 export function getTableOfKubernetesPolicies(
     kubernetesPolicies: KubernetesPolicySummary[],
     userMap: {[id: string]: UserSummary},
-    apiKeyMap: {[id: string]: ApiKeySummary},
     environmentMap: {[id: string]: EnvironmentSummary},
     targetMap : {[id: string]: string},
     groupMap : {[id: string]: GroupSummary}
@@ -489,9 +491,6 @@ export function getTableOfKubernetesPolicies(
         const subjectNames : string [] = [];
         p.subjects.forEach((subject: any) => {
             switch (subject.type) {
-            case SubjectType.ApiKey:
-                subjectNames.push('ApiKey:' + getApiKeyName(subject.id, apiKeyMap));
-                break;
             case SubjectType.User:
                 subjectNames.push(getUserName(subject.id, userMap));
                 break;
@@ -559,7 +558,6 @@ export function getTableOfKubernetesPolicies(
 export function getTableOfTargetConnectPolicies(
     targetConnectPolicies: TargetConnectPolicySummary[],
     userMap: {[id: string]: UserSummary},
-    apiKeyMap: {[id: string]: ApiKeySummary},
     environmentMap: {[id: string]: EnvironmentSummary},
     targetMap : {[id: string]: string},
     groupMap : {[id: string]: GroupSummary}
@@ -581,9 +579,6 @@ export function getTableOfTargetConnectPolicies(
         const subjectNames : string [] = [];
         p.subjects.forEach(subject => {
             switch (subject.type) {
-            case SubjectType.ApiKey:
-                subjectNames.push('ApiKey:' + getApiKeyName(subject.id, apiKeyMap));
-                break;
             case SubjectType.User:
                 subjectNames.push(getUserName(subject.id, userMap));
                 break;
@@ -639,10 +634,68 @@ export function getTableOfTargetConnectPolicies(
     return table.toString();
 }
 
+export function getTableOfJustInTimePolicies(
+    justInTimePolicies: JustInTimePolicySummary[],
+    userMap: {[id: string]: UserSummary},
+    groupMap : {[id: string]: GroupSummary}
+) : string
+{
+    const header: string[] = ['Name', 'Type', 'Subject', 'Resource', 'Automatically Approved', 'Duration'];
+    const columnWidths = [24, 19, 26, 36, 25, 25];
+
+    const table = new Table({ head: header, colWidths: columnWidths });
+    justInTimePolicies.forEach(p => {
+
+        // Translate the policy subject ids to human readable subjects
+        const groupNames : string [] = [];
+        p.groups.forEach(group => {
+            groupNames.push(getGroupName(group.id, groupMap));
+        });
+        const formattedGroups = !! groupNames.length ? 'Groups: ' + groupNames.join( ', \n') : '';
+
+        const subjectNames : string [] = [];
+        p.subjects.forEach(subject => {
+            switch (subject.type) {
+            case SubjectType.User:
+                subjectNames.push(getUserName(subject.id, userMap));
+                break;
+            default:
+                break;
+            }
+        });
+        let formattedSubjects = subjectNames.join( ', \n');
+        if (subjectNames.length > 0 && !!formattedGroups) {
+            formattedSubjects += '\n';
+        }
+        formattedSubjects += formattedGroups;
+
+        // Translate the resource ids to human readable resources
+        let formattedResource = '';
+        if (p.childPolicies && p.childPolicies.length != 0) {
+            const childPoliciesNames : string [] = [];
+            p.childPolicies.forEach(
+                cp => childPoliciesNames.push(cp.name)
+            );
+            formattedResource = 'Child Policies:\n' + childPoliciesNames.join( ', \n');
+        }
+
+        const row = [
+            p.name,
+            p.type,
+            formattedSubjects || 'N/A',
+            formattedResource || 'N/A',
+            p.automaticallyApproved,
+            humanizeDuration(p.duration * 60 * 1000)
+        ];
+        table.push(row);
+    });
+
+    return table.toString();
+}
+
 export function getTableOfOrganizationControlPolicies(
     organizationControlsPolicies: OrganizationControlsPolicySummary[],
     userMap: {[id: string]: UserSummary},
-    apiKeyMap: {[id: string]: ApiKeySummary},
     groupMap : {[id: string]: GroupSummary}
 ) : string
 {
@@ -662,9 +715,6 @@ export function getTableOfOrganizationControlPolicies(
         const subjectNames : string [] = [];
         p.subjects.forEach(subject => {
             switch (subject.type) {
-            case SubjectType.ApiKey:
-                subjectNames.push('ApiKey:' + getApiKeyName(subject.id, apiKeyMap));
-                break;
             case SubjectType.User:
                 subjectNames.push(getUserName(subject.id, userMap));
                 break;
@@ -697,7 +747,6 @@ export function getTableOfProxyPolicies(
     userMap: {[id: string]: UserSummary},
     environmentMap: {[id: string]: EnvironmentSummary},
     targetMap : {[id: string]: string},
-    apiKeyMap: {[id: string]: ApiKeySummary},
     groupMap : {[id: string]: GroupSummary},
 ) : string
 {
@@ -717,9 +766,6 @@ export function getTableOfProxyPolicies(
         const subjectNames : string [] = [];
         p.subjects.forEach(subject => {
             switch (subject.type) {
-            case SubjectType.ApiKey:
-                subjectNames.push('ApiKey:' + getApiKeyName(subject.id, apiKeyMap));
-                break;
             case SubjectType.User:
                 subjectNames.push(getUserName(subject.id, userMap));
                 break;
@@ -767,7 +813,6 @@ export function getTableOfProxyPolicies(
 export function getTableOfSessionRecordingPolicies(
     sessionRecordingPolicies: SessionRecordingPolicySummary[],
     userMap: {[id: string]: UserSummary},
-    apiKeyMap: {[id: string]: ApiKeySummary},
     groupMap : {[id: string]: GroupSummary}
 ) : string
 {
@@ -787,9 +832,6 @@ export function getTableOfSessionRecordingPolicies(
         const subjectNames : string [] = [];
         p.subjects.forEach(subject => {
             switch (subject.type) {
-            case SubjectType.ApiKey:
-                subjectNames.push('ApiKey:' + getApiKeyName(subject.id, apiKeyMap));
-                break;
             case SubjectType.User:
                 subjectNames.push(getUserName(subject.id, userMap));
                 break;
@@ -815,12 +857,6 @@ export function getTableOfSessionRecordingPolicies(
     });
 
     return table.toString();
-}
-
-function getApiKeyName(apiKeyId: string, apiKeyMap: {[id: string]: ApiKeySummary}) : string {
-    return apiKeyMap[apiKeyId]
-        ? apiKeyMap[apiKeyId].name
-        : 'API KEY DELETED';
 }
 
 function getUserName(userId: string, userMap: {[id: string]: UserSummary}) : string {

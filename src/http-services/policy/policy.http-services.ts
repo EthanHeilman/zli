@@ -13,6 +13,9 @@ import { SessionRecordingPolicySummary } from '../../../webshell-common-ts/http/
 import { TargetConnectPolicyCreateRequest } from '../../../webshell-common-ts/http/v2/policy/target-connect/requests/target-connect-policy-create.requests';
 import { TargetConnectPolicyUpdateRequest } from '../../../webshell-common-ts/http/v2/policy/target-connect/requests/target-connect-policy-update.requests';
 import { TargetConnectPolicySummary } from '../../../webshell-common-ts/http/v2/policy/target-connect/types/target-connect-policy-summary.types';
+import { JustInTimePolicySummary } from '/../../webshell-common-ts/http/v2/policy/just-in-time/types/just-in-time-policy-summary.types';
+import { JustInTimePolicyCreateRequest } from '/../../webshell-common-ts/http/v2/policy/just-in-time/requests/just-in-time-policy-create.requests';
+import { JustInTimePolicyUpdateRequest } from '/../../webshell-common-ts/http/v2/policy/just-in-time/requests/just-in-time-policy-update.requests';
 
 import { ConfigService } from '../../services/config/config.service';
 import { HttpService } from '../../services/http/http.service';
@@ -23,6 +26,7 @@ const ORG: string = 'organization-controls';
 const SESSION: string = 'session-recording';
 const TARGET: string = 'target-connect';
 const PROXY: string = 'proxy';
+const JIT: string = 'just-in-time';
 
 export class PolicyHttpService extends HttpService
 {
@@ -54,6 +58,11 @@ export class PolicyHttpService extends HttpService
     public ListTargetConnectPolicies(): Promise<TargetConnectPolicySummary[]>
     {
         return this.Get(TARGET);
+    }
+
+    public ListJustInTimePolicies(): Promise<JustInTimePolicySummary[]>
+    {
+        return this.Get(JIT);
     }
 
 
@@ -154,6 +163,26 @@ export class PolicyHttpService extends HttpService
         return this.Patch(`${PROXY}/${policyId}`, request);
     }
 
+    public UpdateJustInTimePolicy(policyId: string, request: JustInTimePolicyUpdateRequest):
+            Promise<JustInTimePolicySummary> {
+        return this.Patch(`${JIT}/${policyId}`, request);
+    }
+
+    public EditJustInTimePolicy(
+        policy: JustInTimePolicySummary
+    ): Promise<JustInTimePolicySummary> {
+        const request: JustInTimePolicyUpdateRequest = {
+            name: policy.name,
+            subjects: policy.subjects,
+            groups: policy.groups,
+            description: policy.description,
+            childPolicies: policy.childPolicies.map(p => p.id),
+            automaticallyApproved: policy.automaticallyApproved,
+            duration: policy.duration
+        };
+        return this.Patch(`${JIT}/${policy.id}`, request);
+    }
+
     public AddKubernetesPolicy(request: KubernetesPolicyCreateRequest): Promise<KubernetesPolicySummary> {
         return this.Post(KUBE, request);
     }
@@ -172,6 +201,10 @@ export class PolicyHttpService extends HttpService
 
     public AddProxyPolicy(request: ProxyPolicyCreateRequest): Promise<ProxyPolicySummary> {
         return this.Post(PROXY, request);
+    }
+
+    public AddJustInTimePolicy(request: JustInTimePolicyCreateRequest): Promise<JustInTimePolicySummary> {
+        return this.Post(JIT, request);
     }
 
     public DeleteKubernetesPolicy(policyId: string): Promise<void> {
@@ -194,6 +227,10 @@ export class PolicyHttpService extends HttpService
         return this.Delete(`${PROXY}/${policyId}`);
     }
 
+    public DeleteJustInTimePolicy(policyId: string): Promise<void> {
+        return this.Delete(`${JIT}/${policyId}`);
+    }
+
     public GetKubernetesPolicy(policyId: string): Promise<KubernetesPolicySummary> {
         return this.Get(`${KUBE}/${policyId}`);
     }
@@ -212,5 +249,9 @@ export class PolicyHttpService extends HttpService
 
     public GetProxyPolicy(policyId: string): Promise<ProxyPolicySummary> {
         return this.Get(`${PROXY}/${policyId}`);
+    }
+
+    public GetJustInTimePolicy(policyId: string): Promise<JustInTimePolicySummary> {
+        return this.Get(`${JIT}/${policyId}`);
     }
 }

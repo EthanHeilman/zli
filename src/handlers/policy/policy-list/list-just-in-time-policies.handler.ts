@@ -1,32 +1,32 @@
 import { ConfigService } from '../../../services/config/config.service';
 import { Logger } from '../../../services/logger/logger.service';
 import yargs from 'yargs';
-import { policyArgs } from './policy-list.command-builder';
 import { PolicyHttpService } from '../../../http-services/policy/policy.http-services';
-import { getTableOfOrganizationControlPolicies } from '../../../utils/utils';
+import { getTableOfJustInTimePolicies } from '../../../utils/utils';
+import { policyArgs } from './policy-list.command-builder';
 import { getPolicySubjectDisplayInfo } from '../../../services/policy/policy.services';
 
-export async function listOrganizationControlsPoliciesHandler(
+export async function listJustInTimePoliciesHandler(
     argv: yargs.Arguments<policyArgs>,
     configService: ConfigService,
     logger: Logger
 ){
     const policyHttpService = new PolicyHttpService(configService, logger);
 
-    const [organizationControlPolicies, policySubjectDisplayInfo] = await Promise.all([
-        policyHttpService.ListOrganizationControlPolicies(),
+    const [justInTimePolicies, policySubjectDisplayInfo] = await Promise.all([
+        policyHttpService.ListJustInTimePolicies(),
         getPolicySubjectDisplayInfo(configService, logger)
     ]);
 
     if(!! argv.json) {
         // json output
-        return JSON.stringify(organizationControlPolicies);
+        return JSON.stringify(justInTimePolicies);
     } else {
-        if (organizationControlPolicies.length === 0){
-            logger.info('There are no available Organization Controls policies');
+        if (justInTimePolicies.length === 0){
+            logger.info('There are no available Just In Time policies');
         } else {
             // regular table output
-            return getTableOfOrganizationControlPolicies(organizationControlPolicies, policySubjectDisplayInfo.userMap, policySubjectDisplayInfo.groupMap);
+            return getTableOfJustInTimePolicies(justInTimePolicies, policySubjectDisplayInfo.userMap, policySubjectDisplayInfo.groupMap);
         }
     }
 }

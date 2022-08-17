@@ -38,7 +38,8 @@ export const proxyPolicySuite = () => {
                     }
                 ],
                 targets: null,
-                description: restApiPolicyDescriptionTemplate.replace('$POLICY_TYPE', 'proxy')
+                description: restApiPolicyDescriptionTemplate.replace('$POLICY_TYPE', 'proxy'),
+                timeExpires: null
             };
         });
 
@@ -69,17 +70,16 @@ export const proxyPolicySuite = () => {
         }, 15 * 1000);
 
         test('2277: Edit proxy policy', async () => {
-            const expectedPolicySummaryAfterEdit: ProxyPolicySummary = Object.create(expectedPolicySummary);
-            expectedPolicySummaryAfterEdit.description = 'modified description';
-            expectedPolicySummaryAfterEdit.name = proxyPolicy.name += '-modified';
+            expectedPolicySummary.description = 'modified description';
+            expectedPolicySummary.name = proxyPolicy.name += '-modified';
 
             const editedPolicy = await policyService.UpdateProxyPolicy(proxyPolicy.id, {
-                name: expectedPolicySummaryAfterEdit.name,
-                description: expectedPolicySummaryAfterEdit.description
+                name: expectedPolicySummary.name,
+                description: expectedPolicySummary.description
             });
 
             // verify the policy that is retrieved from the back end matches the modified policy
-            expect(expectedPolicySummaryAfterEdit).toMatchObject(editedPolicy);
+            expect(editedPolicy).toMatchObject(expectedPolicySummary);
         }, 15 * 1000);
 
         test('2278: Edit proxy policy - should disallow adding target with an environment is already configured', async () => {

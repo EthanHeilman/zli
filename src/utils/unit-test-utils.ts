@@ -36,6 +36,7 @@ import { EnvironmentHttpService } from '../http-services/environment/environment
 import { ConfigService } from '../services/config/config.service';
 import * as middlewareHandler from '../handlers/middleware.handler';
 import * as CleanExitHandler from '../handlers/clean-exit.handler';
+import { JustInTimePolicySummary } from '../../webshell-common-ts/http/v2/policy/just-in-time/types/just-in-time-policy-summary.types';
 
 export function unitTestMockSetup(withCleanExit: boolean): void {
     // Always mock out the following services
@@ -277,6 +278,22 @@ export const mockTargetConnectPolicySummaryList: TargetConnectPolicySummary[] = 
     verbs: [{
         type: VerbType.Shell
     }]
+}];
+
+export const mockJustInTimePolicySummaryList: JustInTimePolicySummary[] = [{
+    type: PolicyType.JustInTime,
+    id: 'some-jit-policy-id',
+    name: 'some-jit-policy-name',
+    description: 'some-jit-policy-description',
+    subjects: [mockSubject],
+    groups: [mockGroup],
+    childPolicies: [{
+        id: 'some-child-policy-id',
+        name: 'some-child-policy-name',
+        type: PolicyType.TargetConnect
+    }],
+    automaticallyApproved: false,
+    duration: 60,
 }];
 
 export const mockConnectionSummary: ShellConnectionSummary = {

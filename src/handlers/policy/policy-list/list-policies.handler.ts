@@ -11,6 +11,7 @@ import { cleanExit } from '../../clean-exit.handler';
 import { parsePolicyType } from '../../../utils/utils';
 
 import yargs from 'yargs';
+import { listJustInTimePoliciesHandler } from './list-just-in-time-policies.handler';
 
 export async function listPoliciesHandler(
     argv: yargs.Arguments<policyArgs>,
@@ -28,6 +29,7 @@ export async function listPoliciesHandler(
     let sessRecordingPolicies = null;
     let proxyPolicies = null;
     let orgControlPolicies = null;
+    let jitPolicies = null;
 
     switch (policyType) {
     case PolicyType.TargetConnect:
@@ -46,17 +48,22 @@ export async function listPoliciesHandler(
         proxyPolicies = await listProxyPoliciesHandler(argv, configService, logger);
         printPolicyHelper(argv, proxyPolicies, policyType, logger);
         break;
+    case PolicyType.JustInTime:
+        jitPolicies = await listJustInTimePoliciesHandler(argv, configService, logger);
+        printPolicyHelper(argv, jitPolicies, policyType, logger);
+        break;
     case PolicyType.OrganizationControls:
         orgControlPolicies = await listOrganizationControlsPoliciesHandler(argv, configService, logger);
         printPolicyHelper(argv, orgControlPolicies, policyType, logger);
         break;
     default:
-        [ targetConnectPolicies, kubePolicies, sessRecordingPolicies, proxyPolicies, orgControlPolicies ] = await Promise.all([
+        [ targetConnectPolicies, kubePolicies, sessRecordingPolicies, proxyPolicies, orgControlPolicies, jitPolicies ] = await Promise.all([
             listTargetConnectPoliciesHandler(argv, configService, logger),
             listKubernetesPoliciesHandler(argv, configService, logger),
             listSessionRecordingPoliciesHandler(argv, configService, logger),
             listProxyPoliciesHandler(argv, configService, logger),
-            listOrganizationControlsPoliciesHandler(argv, configService, logger)
+            listOrganizationControlsPoliciesHandler(argv, configService, logger),
+            listJustInTimePoliciesHandler(argv, configService, logger)
         ]);
 
         // The order here decides in which order the policies are displayed
@@ -65,6 +72,7 @@ export async function listPoliciesHandler(
         printPolicyHelper(argv, kubePolicies, PolicyType.Kubernetes, logger);
         printPolicyHelper(argv, sessRecordingPolicies, PolicyType.SessionRecording, logger);
         printPolicyHelper(argv, proxyPolicies, PolicyType.Proxy, logger);
+        printPolicyHelper(argv, jitPolicies, PolicyType.JustInTime, logger);
         printPolicyHelper(argv, orgControlPolicies, PolicyType.OrganizationControls, logger);
         break;
     }
@@ -91,6 +99,9 @@ function printPolicyHelper(argv: yargs.Arguments<policyArgs>, results: string, p
             break;
         case PolicyType.Proxy:
             logger.warn('Proxy Policies:\n');
+            break;
+        case PolicyType.JustInTime:
+            logger.warn('Just In Time Policies:\n');
             break;
         case PolicyType.OrganizationControls:
             logger.warn('Organization Controls Policies:\n');

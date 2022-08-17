@@ -47,7 +47,8 @@ export const kubernetesPolicySuite = () => {
                         name: 'test-user'
                     }
                 ],
-                description: restApiPolicyDescriptionTemplate.replace('$POLICY_TYPE', 'kubernetes')
+                description: restApiPolicyDescriptionTemplate.replace('$POLICY_TYPE', 'kubernetes'),
+                timeExpires: null
             };
         });
 
@@ -80,17 +81,16 @@ export const kubernetesPolicySuite = () => {
         }, 15 * 1000);
 
         test('2268: Edit Kubernetes policy', async () => {
-            const expectedPolicySummaryAfterEdit: KubernetesPolicySummary = Object.create(expectedPolicySummary);
-            expectedPolicySummaryAfterEdit.description = 'modified description';
-            expectedPolicySummaryAfterEdit.name = kubernetesPolicy.name += '-modified';
+            expectedPolicySummary.description = 'modified description';
+            expectedPolicySummary.name = kubernetesPolicy.name += '-modified';
 
             const editedPolicy = await policyService.UpdateKubernetesPolicy(kubernetesPolicy.id, {
-                name: expectedPolicySummaryAfterEdit.name,
-                description: expectedPolicySummaryAfterEdit.description
+                name: expectedPolicySummary.name,
+                description: expectedPolicySummary.description
             });
 
             // verify the policy that is retrieved from the back end matches the modified policy
-            expect(expectedPolicySummaryAfterEdit).toMatchObject(editedPolicy);
+            expect(editedPolicy).toMatchObject(expectedPolicySummary);
         }, 15 * 1000);
 
         test('2269: Edit Kubernetes policy - should disallow adding cluster with an environment is already configured', async () => {
