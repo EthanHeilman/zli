@@ -24,4 +24,8 @@ export class BzeroTargetHttpService extends HttpService {
     public EditBzeroTarget(targetId: string, request: EditBzeroAgentTargetRequest): Promise<BzeroAgentSummary> {
         return this.Patch(targetId, request);
     }
+
+    public RestartBzeroTarget(targetId: string): Promise<void> {
+        return this.Post(`${targetId}/restart`, {});
+    }
 }
