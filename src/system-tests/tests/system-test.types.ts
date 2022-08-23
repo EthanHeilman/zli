@@ -51,6 +51,7 @@ export type BzeroTestTarget = BaseTarget & {
 interface BaseTarget {
     sshCaseId?: string // Zli - Ssh - Successful remote command execution
     sshConcurrentCaseId?: string // Zli Bzero - Ssh - Concurrent connections all succeed
+    sshWithEnvCaseId?: string // Zli - Ssh - Successful remote command execution with environment
     sshByUuidCaseId?: string // Zli - Ssh - Ssh by id instead of name
     sshBadUserCaseId?: string // Zli - Ssh - Cannot tunnel as invalid user
     sshConnectFailsCaseId?: string // Zli - Ssh - Connect fails with only tunnel policy

@@ -107,7 +107,7 @@ export const sshSuite = () => {
 
             const bzConfigContents = fs.readFileSync(bzSsmConfigFile).toString();
             // expect all of the targets to appear in the bz-config
-            expectTargetsInBzConfig(bzConfigContents, true);
+            await expectTargetsInBzConfig(bzConfigContents, true);
 
             testPassed = true;
 
@@ -146,7 +146,7 @@ export const sshSuite = () => {
 
             const bzConfigContents = fs.readFileSync(bzBzeroConfigFile).toString();
             // expect all of the targets to appear in the bz-config
-            expectTargetsInBzConfig(bzConfigContents, true);
+            await expectTargetsInBzConfig(bzConfigContents, true);
 
             testPassed = true;
 
@@ -186,7 +186,7 @@ export const sshSuite = () => {
 
             const bzConfigContents = fs.readFileSync(bzSsmConfigFile).toString();
             // expect all of the targets to appear in the bz-config
-            expectTargetsInBzConfig(bzConfigContents, true);
+            await expectTargetsInBzConfig(bzConfigContents, true);
 
             // expect the unique username not to appear in the bz-config
             expect(bzConfigContents.includes(uniqueUser)).toBe(false);
@@ -223,7 +223,7 @@ export const sshSuite = () => {
 
             const bzConfigContents = fs.readFileSync(bzSsmConfigFile).toString();
             // expect none of the targets to appear in the bz-config
-            expectTargetsInBzConfig(bzConfigContents, false);
+            await expectTargetsInBzConfig(bzConfigContents, false);
 
             // expect the unique username not to appear in the bz-config
             expect(bzConfigContents.includes(uniqueUser)).toBe(false);
@@ -254,10 +254,47 @@ export const sshSuite = () => {
                     verbs: [{ type: VerbType.Tunnel }]
                 });
 
-                const { userName, targetName } = getTargetInfo(testTarget);
+                const { userName, targetName } = await getTargetInfo(testTarget);
                 await callZli(['generate', 'sshConfig', '--mySshPath', userConfigFile, '--bzSshPath', bzSsmConfigFile]);
 
                 const command = `ssh -F ${userConfigFile} -o CheckHostIP=no -o StrictHostKeyChecking=no ${userName}@${targetName} echo success`;
+
+                const pexec = promisify(exec);
+                const { stdout } = await pexec(command);
+                expect(stdout.trim()).toEqual('success');
+
+                testPassed = true;
+
+            }, 60 * 1000);
+        });
+
+        // adding a success case for connecting to bzero targets via ssh using .environment
+        bzeroTestTargetsToRun.forEach(async (testTarget: TestTarget) => {
+            it(`${testTarget.sshWithEnvCaseId}: ssh tunnel with env - ${testTarget.awsRegion} - ${testTarget.installType} - ${testTarget.dropletImage}`, async () => {
+                const currentUser: Subject = {
+                    id: configService.me().id,
+                    type: SubjectType.User
+                };
+                const environment: Environment = {
+                    id: systemTestEnvId
+                };
+
+                // create our policy
+                await policyService.AddTargetConnectPolicy({
+                    name: systemTestPolicyTemplate.replace('$POLICY_TYPE', 'target-connect'),
+                    subjects: [currentUser],
+                    groups: [],
+                    description: `Target ssh policy created for system test: ${systemTestUniqueId}`,
+                    environments: [environment],
+                    targets: [],
+                    targetUsers: [{ userName: bzeroTargetCustomUser }],
+                    verbs: [{ type: VerbType.Tunnel }]
+                });
+
+                const { userName, targetName, environmentName } = await getTargetInfo(testTarget);
+                await callZli(['generate', 'sshConfig', '--mySshPath', userConfigFile, '--bzSshPath', bzSsmConfigFile]);
+
+                const command = `ssh -F ${userConfigFile} -o CheckHostIP=no -o StrictHostKeyChecking=no ${userName}@${targetName}.${environmentName} echo success`;
 
                 const pexec = promisify(exec);
                 const { stdout } = await pexec(command);
@@ -333,7 +370,7 @@ export const sshSuite = () => {
                     verbs: [{ type: VerbType.Tunnel }]
                 });
 
-                const { targetName, userName } = getTargetInfo(testTarget);
+                const { targetName, userName } = await getTargetInfo(testTarget);
 
                 const expectedErrorMessage = 'Expected error';
                 jest.spyOn(CleanExitHandler, 'cleanExit').mockImplementationOnce(() => {
@@ -373,7 +410,7 @@ export const sshSuite = () => {
                 });
 
                 // Try to ssh connect with a bad user
-                const { targetName } = getTargetInfo(testTarget);
+                const { targetName } = await getTargetInfo(testTarget);
                 const command = `ssh -F ${userConfigFile} -o CheckHostIP=no -o StrictHostKeyChecking=no ${badTargetUser}@${targetName} echo success`;
 
                 const pexec = promisify(exec);
@@ -417,7 +454,7 @@ export const sshSuite = () => {
                     verbs: [{ type: VerbType.FileTransfer }]
                 });
 
-                const { targetName } = getTargetInfo(testTarget);
+                const { targetName } = await getTargetInfo(testTarget);
                 await callZli(['generate', 'sshConfig', '--mySshPath', userConfigFile, '--bzSshPath', bzSsmConfigFile]);
 
                 // make file
@@ -464,7 +501,7 @@ export const sshSuite = () => {
                     verbs: [{ type: VerbType.FileTransfer }]
                 });
 
-                const { targetName } = getTargetInfo(testTarget);
+                const { targetName } = await getTargetInfo(testTarget);
                 await callZli(['generate', 'sshConfig', '--mySshPath', userConfigFile, '--bzSshPath', bzSsmConfigFile]);
 
                 // make data file
@@ -517,7 +554,7 @@ export const sshSuite = () => {
                     verbs: [{ type: VerbType.FileTransfer }]
                 });
 
-                const { targetName } = getTargetInfo(testTarget);
+                const { targetName } = await getTargetInfo(testTarget);
                 await callZli(['generate', 'sshConfig', '--mySshPath', userConfigFile, '--bzSshPath', bzSsmConfigFile]);
 
                 const command = `ssh -F ${userConfigFile} -o CheckHostIP=no -o StrictHostKeyChecking=no ${targetName} echo success`;
@@ -560,7 +597,7 @@ export const sshSuite = () => {
 
                 await callZli(['generate', 'sshConfig', '--mySshPath', userConfigFile, '--bzSshPath', bzSsmConfigFile]);
 
-                const { userName, targetId } = getTargetInfo(testTarget);
+                const { userName, targetId } = await getTargetInfo(testTarget);
                 const configName = configService.getConfigName();
                 let prefix = 'bzero-';
                 if (configName != 'prod') {
@@ -601,7 +638,7 @@ export const sshSuite = () => {
 
                 await callZli(['generate', 'sshConfig', '--mySshPath', userConfigFile, '--bzSshPath', bzSsmConfigFile]);
 
-                const { userName, targetId } = getTargetInfo(testTarget);
+                const { userName, targetId } = await getTargetInfo(testTarget);
                 const configName = configService.getConfigName();
                 let prefix = 'bzero-';
                 if (configName != 'prod') {
