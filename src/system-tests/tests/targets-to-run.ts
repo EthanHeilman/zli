@@ -43,6 +43,7 @@ export const bzeroTestTargetsToRun: TestTarget[] = [
         connectCaseId: '6529',
         closeCaseId: '6565',
         sshCaseId: '46456',
+        sshWithEnvCaseId: '46457',
         sshByUuidCaseId: '87909',
         sshBadUserCaseId: '46459',
         sshConnectFailsCaseId: '84381',

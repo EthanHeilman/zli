@@ -66,8 +66,15 @@ function formatBzConfigContents(sshTargets: SshTargetsResponse[], identityFile: 
     for (const target of sshTargets) {
         // only add username if there is exactly one -- otherwise, user must specify user@host
         const user = target.targetUsers.length === 1 ? `User ${target.targetUsers[0].userName}` : ``;
+        if(target.environmentName) {
+            contents += `
+Host ${target.targetName} ${target.targetName}.${target.environmentName}`;
+        } else {
+            contents += `
+Host ${target.targetName}`;
+        }
+
         contents += `
-Host ${target.targetName}
     ${identityFile}
     ${knownHostsFile}
     ${proxyCommand}
