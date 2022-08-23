@@ -240,34 +240,34 @@ export function initRegionalSSMTargetsTestConfig(logger: Logger): TestTarget[] {
         let pmAttachCaseId = null;
 
         switch (awsRegion) {
-            case 'ap-northeast-1':
-                adConnectCaseId = '2176';
-                adBadConnectCaseId = '2367';
-                pmConnectCaseId = '2177';
-                pmBadConnectBaseId = '2368';
+        case 'ap-northeast-1':
+            adConnectCaseId = '2176';
+            adBadConnectCaseId = '2367';
+            pmConnectCaseId = '2177';
+            pmBadConnectBaseId = '2368';
 
-                pmCloseCasedId = '3658';
-                adCloseCasedId = '3657';
+            pmCloseCasedId = '3658';
+            adCloseCasedId = '3657';
 
-                pmGroupConnectCaseId = '3097';
-                adGroupConnectCaseId = '3096';
+            pmGroupConnectCaseId = '3097';
+            adGroupConnectCaseId = '3096';
 
-                adSshCaseId = '2178';
-                adSshBadUserCaseId = '2363';
-                adSshConnectFailsCaseId = '84390';
+            adSshCaseId = '2178';
+            adSshBadUserCaseId = '2363';
+            adSshConnectFailsCaseId = '84390';
 
-                pmSshCaseId = '2179';
-                pmSshBadUserCaseId = '2364';
-                pmSshConnectFailsCaseId = '84391';
+            pmSshCaseId = '2179';
+            pmSshBadUserCaseId = '2364';
+            pmSshConnectFailsCaseId = '84391';
 
-                adSessionRecordingCaseId = '5003';
-                pmSessionRecordingCaseId = '5004';
+            adSessionRecordingCaseId = '5003';
+            pmSessionRecordingCaseId = '5004';
 
-                adAttachCaseId = '6492';
-                pmAttachCaseId = '6497';
-                break;
-            default:
-                logger.warn(`Unhandled TestRail awsRegion passed: ${awsRegion}`);
+            adAttachCaseId = '6492';
+            pmAttachCaseId = '6497';
+            break;
+        default:
+            logger.warn(`Unhandled TestRail awsRegion passed: ${awsRegion}`);
         }
 
         toReturn.push(

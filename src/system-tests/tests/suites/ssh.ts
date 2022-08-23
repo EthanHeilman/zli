@@ -327,7 +327,7 @@ export const sshSuite = () => {
                     verbs: [{ type: VerbType.Tunnel }]
                 });
 
-                const { userName, targetName } = getTargetInfo(testTarget);
+                const { userName, targetName } = await getTargetInfo(testTarget);
                 await callZli(['generate', 'sshConfig', '--mySshPath', userConfigFile, '--bzSshPath', bzSsmConfigFile]);
 
 
@@ -336,11 +336,11 @@ export const sshSuite = () => {
                 const command = `ssh -F ${userConfigFile} -o CheckHostIP=no -o StrictHostKeyChecking=no ${userName}@${targetName} echo success`;
 
                 for (let i = 0; i < 10; i++) {
-                    (async function (i) {
+                    (async function () {
                         const pexec = promisify(exec);
                         const { stdout } = await pexec(command);
                         expect(stdout.trim()).toEqual('success');
-                    })(i)
+                    })();
                 }
                 testPassed = true;
 
