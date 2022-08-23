@@ -203,7 +203,7 @@ export async function setupAgentContainer(targetsToRun: BzeroContainerTestTarget
                     } as k8s.V1Container
                 ],
                 imagePullSecrets: [ {
-                    name: 'do-registry'
+                    name: 'bastionzero-do'
                 } as k8s.V1LocalObjectReference ]
             } as k8s.V1PodSpec
         } as k8s.V1Pod;
