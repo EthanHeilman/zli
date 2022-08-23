@@ -11,6 +11,10 @@ import { TargetStatus } from '../../../webshell-common-ts/http/v2/target/types/t
 import { createApiClient } from 'dots-wrapper';
 import { ICreateKubernetesClusterNodePoolApiRequest, IKubernetesCluster } from 'dots-wrapper/dist/kubernetes';
 
+// Default expiration for Kubernetes and Docker credentials retrieved from
+// DigitalOcean
+const DO_CLUSTER_EXPIRY_SECONDS: number = 3600 * 2; // 2 hours
+
 export class DigitalOceanKubeService {
     private doClient;
     private kubeHttpService: KubeHttpService;
@@ -50,9 +54,10 @@ export class DigitalOceanKubeService {
     /**
      * Get the kubeconfig file for a DigitalOcean Kubernetes cluster
      * @param cluster The DigitalOcean cluster
+     * @param expirySeconds Optional. Number of seconds until the credentials expire.
      * @returns String that should be stored in a kubeconfig file
      */
-    public async getClusterKubeConfig(cluster: IKubernetesCluster): Promise<string> {
+    public async getClusterKubeConfig(cluster: IKubernetesCluster, expirySeconds: number = DO_CLUSTER_EXPIRY_SECONDS): Promise<string> {
         // Try 3 times with a delay of 10 seconds between each attempt.
         const retrier = new Retrier({
             limit: 3,
@@ -61,15 +66,20 @@ export class DigitalOceanKubeService {
 
         const kubeConfig: string = await retrier.resolve(async (attempt) => {
             this.logger.info(`Attempt ${attempt} getting kube config for cluster ${cluster.name}`);
-            const kubeConfigDataResp = await this.doClient.kubernetes.getKubernetesClusterKubeconfig({kubernetes_cluster_id: cluster.id});
+            const kubeConfigDataResp = await this.doClient.kubernetes.getKubernetesClusterKubeconfig({ kubernetes_cluster_id: cluster.id, expiration_in_seconds: expirySeconds });
             return kubeConfigDataResp.data;
         });
 
         return kubeConfig;
     }
 
-    public async getDigitalOceanContainerRegistryCredentials(): Promise<DigitalOceanRegistryCredentials> {
-        const getDockerCredentialsResp = await this.doClient.containerRegistry.getDockerCredentials({ can_write: false });
+    /**
+     * Get registry credentials for our DigitalOcean Docker registry
+     * @param expirySeconds Optional. Number of seconds until the credentials expire.
+     * @returns
+     */
+    public async getDigitalOceanContainerRegistryCredentials(expirySeconds: number = DO_CLUSTER_EXPIRY_SECONDS): Promise<DigitalOceanRegistryCredentials> {
+        const getDockerCredentialsResp = await this.doClient.containerRegistry.getDockerCredentials({ can_write: false, expiry_seconds: expirySeconds });
         return getDockerCredentialsResp.data;
     }
 

@@ -1,6 +1,6 @@
 {
   "name": "@bastionzero/zli",
-  "version": "6.7.17",
+  "version": "6.7.18",
   "description": "BastionZero cli",
   "repository": {
     "type": "git",
@@ -44,7 +44,7 @@
     "@typescript-eslint/parser": "^4.17.0",
     "axios": "^0.26.0",
     "copyfiles": "^2.4.1",
-    "dots-wrapper": "^3.7.0",
+    "dots-wrapper": "^3.7.13",
     "eslint": "^7.21.0",
     "eslint-config-standard": "^16.0.2",
     "eslint-plugin-import": "^2.22.1",
