@@ -337,9 +337,11 @@ export const sshSuite = () => {
 
                 for (let i = 0; i < 10; i++) {
                     (async function () {
+                        console.log(`process # ${i} beginning`);
                         const pexec = promisify(exec);
                         const { stdout } = await pexec(command);
                         expect(stdout.trim()).toEqual('success');
+                        console.log(`process # ${i} ending`);
                     })();
                 }
                 testPassed = true;
