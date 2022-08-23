@@ -269,6 +269,48 @@ export const sshSuite = () => {
         });
 
         allTargets.forEach(async (testTarget: TestTarget) => {
+            it(`${testTarget.sshConcurrentCaseId}: concurrent ssh tunnels - ${testTarget.awsRegion} - ${testTarget.installType} - ${testTarget.dropletImage}`, async () => {
+                const currentUser: Subject = {
+                    id: configService.me().id,
+                    type: SubjectType.User
+                };
+                const environment: Environment = {
+                    id: systemTestEnvId
+                };
+
+                // create our policy
+                await policyService.AddTargetConnectPolicy({
+                    name: systemTestPolicyTemplate.replace('$POLICY_TYPE', 'target-connect'),
+                    subjects: [currentUser],
+                    groups: [],
+                    description: `Target ssh policy created for system test: ${systemTestUniqueId}`,
+                    environments: [environment],
+                    targets: [],
+                    targetUsers: [{ userName: bzeroTargetCustomUser }, { userName: ssmUser }],
+                    verbs: [{ type: VerbType.Tunnel }]
+                });
+
+                const { userName, targetName } = getTargetInfo(testTarget);
+                await callZli(['generate', 'sshConfig', '--mySshPath', userConfigFile, '--bzSshPath', bzSsmConfigFile]);
+
+
+                // remove the key file to create the conditions for a race
+                removeIfExists(configService.sshKeyPath());
+                const command = `ssh -F ${userConfigFile} -o CheckHostIP=no -o StrictHostKeyChecking=no ${userName}@${targetName} echo success`;
+
+                for (let i = 0; i < 10; i++) {
+                    (async function (i) {
+                        const pexec = promisify(exec);
+                        const { stdout } = await pexec(command);
+                        expect(stdout.trim()).toEqual('success');
+                    })(i)
+                }
+                testPassed = true;
+
+            }, 60 * 1000);
+        });
+
+        allTargets.forEach(async (testTarget: TestTarget) => {
             it(`${testTarget.sshConnectFailsCaseId}: connect fails with only tunnel policy - ${testTarget.awsRegion} - ${testTarget.installType} - ${testTarget.dropletImage}`, async () => {
 
                 const currentUser: Subject = {

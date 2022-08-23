@@ -43,6 +43,7 @@ export const bzeroTestTargetsToRun: TestTarget[] = [
         connectCaseId: '6529',
         closeCaseId: '6565',
         sshCaseId: '46456',
+        sshConcurrentCaseId: '209755',
         sshByUuidCaseId: '87909',
         sshBadUserCaseId: '46459',
         sshConnectFailsCaseId: '84381',
@@ -58,7 +59,7 @@ export const bzeroTestTargetsToRun: TestTarget[] = [
 ];
 
 // Container images to run
-export const agentContainersToRun : BzeroContainerTestTarget[] = [
+export const agentContainersToRun: BzeroContainerTestTarget[] = [
     {
         type: 'al2',
         installType: 'pm-pod',
@@ -182,6 +183,7 @@ export const extraBzeroTestTargetsToRun: TestTarget[] = [
         iperfDownload: '14971',
         badWebCaseId: '2373',
         sshCaseId: '46454',
+        sshConcurrentCaseId: '209756',
         sshByUuidCaseId: '87910',
         sshBadUserCaseId: '46458',
         sshConnectFailsCaseId: '84389',
@@ -237,34 +239,34 @@ export function initRegionalSSMTargetsTestConfig(logger: Logger): TestTarget[] {
         let pmAttachCaseId = null;
 
         switch (awsRegion) {
-        case 'ap-northeast-1':
-            adConnectCaseId = '2176';
-            adBadConnectCaseId = '2367';
-            pmConnectCaseId = '2177';
-            pmBadConnectBaseId = '2368';
+            case 'ap-northeast-1':
+                adConnectCaseId = '2176';
+                adBadConnectCaseId = '2367';
+                pmConnectCaseId = '2177';
+                pmBadConnectBaseId = '2368';
 
-            pmCloseCasedId = '3658';
-            adCloseCasedId = '3657';
+                pmCloseCasedId = '3658';
+                adCloseCasedId = '3657';
 
-            pmGroupConnectCaseId = '3097';
-            adGroupConnectCaseId = '3096';
+                pmGroupConnectCaseId = '3097';
+                adGroupConnectCaseId = '3096';
 
-            adSshCaseId = '2178';
-            adSshBadUserCaseId = '2363';
-            adSshConnectFailsCaseId = '84390';
+                adSshCaseId = '2178';
+                adSshBadUserCaseId = '2363';
+                adSshConnectFailsCaseId = '84390';
 
-            pmSshCaseId = '2179';
-            pmSshBadUserCaseId = '2364';
-            pmSshConnectFailsCaseId = '84391';
+                pmSshCaseId = '2179';
+                pmSshBadUserCaseId = '2364';
+                pmSshConnectFailsCaseId = '84391';
 
-            adSessionRecordingCaseId = '5003';
-            pmSessionRecordingCaseId = '5004';
+                adSessionRecordingCaseId = '5003';
+                pmSessionRecordingCaseId = '5004';
 
-            adAttachCaseId = '6492';
-            pmAttachCaseId = '6497';
-            break;
-        default:
-            logger.warn(`Unhandled TestRail awsRegion passed: ${awsRegion}`);
+                adAttachCaseId = '6492';
+                pmAttachCaseId = '6497';
+                break;
+            default:
+                logger.warn(`Unhandled TestRail awsRegion passed: ${awsRegion}`);
         }
 
         toReturn.push(

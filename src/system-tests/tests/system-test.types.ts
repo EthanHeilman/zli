@@ -29,7 +29,7 @@ export type SSMTestTargetAnsibleAutoDiscovery = BaseTarget & {
  * should be registered using the new, self-registration flow built into the
  * agent itself.
  */
-export type SSMTestTargetSelfRegistrationAutoDiscovery = BaseTarget &{
+export type SSMTestTargetSelfRegistrationAutoDiscovery = BaseTarget & {
     installType: 'pm';
     dropletImage: DigitalOceanDistroImage;
     doRegion: DigitalOceanRegion;
@@ -50,6 +50,7 @@ export type BzeroTestTarget = BaseTarget & {
 // Hold our common TestRails caseIds
 interface BaseTarget {
     sshCaseId?: string // Zli - Ssh - Successful remote command execution
+    sshConcurrentCaseId?: string // Zli Bzero - Ssh - Concurrent connections all succeed
     sshByUuidCaseId?: string // Zli - Ssh - Ssh by id instead of name
     sshBadUserCaseId?: string // Zli - Ssh - Cannot tunnel as invalid user
     sshConnectFailsCaseId?: string // Zli - Ssh - Connect fails with only tunnel policy
