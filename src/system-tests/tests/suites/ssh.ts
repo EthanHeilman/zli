@@ -343,10 +343,10 @@ export const sshSuite = () => {
                             if (stdout) {
                                 resolve(stdout);
                             } else if (stderr) {
-                                console.error(stderr);
+                                console.error(`# ${1} -- ${stderr}`);
                                 reject(stderr);
                             } else {
-                                console.error(err);
+                                console.error(`# ${1} -- ${err}`);
                                 reject(err);
                             }
                         })
