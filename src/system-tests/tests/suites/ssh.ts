@@ -2,7 +2,7 @@ import path from 'path';
 import fs from 'fs';
 import * as CleanExitHandler from '../../../handlers/clean-exit.handler';
 import { promisify } from 'util';
-import { exec, ExecException } from 'child_process';
+import { exec, ExecException, spawn } from 'child_process';
 import { PolicyQueryHttpService } from '../../../http-services/policy-query/policy-query.http-services';
 import { allTargets, configService, logger, systemTestEnvId, loggerConfigService, systemTestPolicyTemplate, systemTestUniqueId } from '../system-test';
 import { callZli } from '../utils/zli-utils';
@@ -333,24 +333,29 @@ export const sshSuite = () => {
 
                 // remove the key file to create the conditions for a race
                 removeIfExists(configService.sshKeyPath());
-                const command = `ssh -F ${userConfigFile} -o CheckHostIP=no -o StrictHostKeyChecking=no ${userName}@${targetName} echo success`;
+                const command = 'ssh';
+                const args = `-F ${userConfigFile} -o CheckHostIP=no -o StrictHostKeyChecking=no ${userName}@${targetName} echo success`.split(' ');
+                const promises: Promise<string>[] = [];
 
                 for (let i = 0; i < 10; i++) {
-                    console.log(`process # ${i} beginning`);
-                    exec(command, (error, stdout) => {
-                        if (error) {
-                            throw new Error(error.message);
-                        } else {
-                            expect(stdout.trim()).toEqual('success');
-                            console.log(`process # ${i} ending`);
+                    promises.push(new Promise((resolve, reject) => {
+                        try {
+                            console.log(`process # ${i} beginning`);
+                            const runCommand = spawn(command, args);
+                            runCommand.stdout.on('data', data => resolve(data.toString().trim()));
+                            runCommand.on('error', err => {
+                                throw new Error(err.message);
+                            });
+                        } catch (e) {
+                            reject(e);
                         }
-                    })
+                    }));
+
                 }
                 console.log("kicked off commands. Waiting...")
 
                 // let the above commands finish
-                await new Promise(r => setTimeout(r, 30000));
-                console.log("commands finished")
+                await Promise.all(promises);
 
                 testPassed = true;
 
