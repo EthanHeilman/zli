@@ -333,29 +333,33 @@ export const sshSuite = () => {
 
                 // remove the key file to create the conditions for a race
                 removeIfExists(configService.sshKeyPath());
-                const command = 'ssh';
-                const args = `-F ${userConfigFile} -o CheckHostIP=no -o StrictHostKeyChecking=no ${userName}@${targetName} echo success`.split(' ');
+                const command = `ssh -F ${userConfigFile} -o CheckHostIP=no -o StrictHostKeyChecking=no ${userName}@${targetName} echo success`;
                 const promises: Promise<string>[] = [];
 
                 for (let i = 0; i < 10; i++) {
                     promises.push(new Promise((resolve, reject) => {
-                        try {
-                            console.log(`process # ${i} beginning`);
-                            const runCommand = spawn(command, args);
-                            runCommand.stdout.on('data', data => resolve(data.toString().trim()));
-                            runCommand.on('error', err => {
-                                throw new Error(err.message);
-                            });
-                        } catch (e) {
-                            reject(e);
-                        }
+                        console.log(`process # ${i} beginning`);
+                        exec(command, (err, stdout, stderr) => {
+                            if (stdout) {
+                                resolve(stdout);
+                            } else if (stderr) {
+                                console.error(stderr);
+                                reject(stderr);
+                            } else {
+                                console.error(err);
+                                reject(err);
+                            }
+                        })
                     }));
 
                 }
                 console.log("kicked off commands. Waiting...")
 
                 // let the above commands finish
-                await Promise.all(promises);
+                const data = await Promise.all(promises);
+                for (let output in data) {
+                    expect(output).toBe('success');
+                }
 
                 testPassed = true;
 
