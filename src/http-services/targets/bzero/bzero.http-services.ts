@@ -27,8 +27,6 @@ export class BzeroTargetHttpService extends HttpService {
     }
 
     public RestartBzeroTarget(request: RestartBzeroAgentTargetRequest): Promise<void> {
-        console.log(`back at it -- ${JSON.stringify(request)}`);
-        console.log(`@ ${this.baseUrl}`)
         return this.Post(`restart`, request);
     }
 }
