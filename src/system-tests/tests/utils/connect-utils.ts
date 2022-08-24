@@ -95,8 +95,12 @@ export class ConnectTestUtils {
 
         // Call "zli connect"
         // Additionally, calls uses environmentId in the connect string. expected flow is the same
-        // We should expect to see this environment variable in the connection event and command event logs
-        const connectPromise = callZli(['connect', `${connectTarget.targetUser}@${connectTarget.name}.${connectTarget.environmentId}`]);
+        // We should expect to see this environment variable in the connection event and command event logs for non-ssm targets
+        let targetString = `${connectTarget.targetUser}@${connectTarget.name}`;
+        if(connectTarget.type !== 'ssm') {
+            targetString += `.${connectTarget.environmentId}`;
+        }
+        const connectPromise = callZli(['connect', targetString]);
 
         if(connectTarget.type === 'dat-bzero') {
             // For DATs we have to wait for the waitForDATConnection method to
