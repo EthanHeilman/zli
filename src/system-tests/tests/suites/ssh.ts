@@ -346,9 +346,11 @@ export const sshSuite = () => {
                         }
                     })
                 }
+                console.log("kicked off commands. Waiting...")
 
                 // let the above commands finish
-                await new Promise(r => setTimeout(r, 15000));
+                await new Promise(r => setTimeout(r, 30000));
+                console.log("commands finished")
 
                 testPassed = true;
 
