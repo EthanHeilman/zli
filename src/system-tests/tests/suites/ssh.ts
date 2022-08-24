@@ -2,7 +2,7 @@ import path from 'path';
 import fs from 'fs';
 import * as CleanExitHandler from '../../../handlers/clean-exit.handler';
 import { promisify } from 'util';
-import { exec } from 'child_process';
+import { exec, ExecException } from 'child_process';
 import { PolicyQueryHttpService } from '../../../http-services/policy-query/policy-query.http-services';
 import { allTargets, configService, logger, systemTestEnvId, loggerConfigService, systemTestPolicyTemplate, systemTestUniqueId } from '../system-test';
 import { callZli } from '../utils/zli-utils';
@@ -336,17 +336,23 @@ export const sshSuite = () => {
                 const command = `ssh -F ${userConfigFile} -o CheckHostIP=no -o StrictHostKeyChecking=no ${userName}@${targetName} echo success`;
 
                 for (let i = 0; i < 10; i++) {
-                    (async function () {
-                        console.log(`process # ${i} beginning`);
-                        const pexec = promisify(exec);
-                        const { stdout } = await pexec(command);
-                        expect(stdout.trim()).toEqual('success');
-                        console.log(`process # ${i} ending`);
-                    })();
+                    console.log(`process # ${i} beginning`);
+                    exec(command, (error, stdout) => {
+                        if (error) {
+                            fail(error);
+                        } else {
+                            expect(stdout.trim()).toEqual('success');
+                            console.log(`process # ${i} ending`);
+                        }
+                    })
                 }
+
+                // let the above commands finish
+                await new Promise(r => setTimeout(r, 15000));
+
                 testPassed = true;
 
-            }, 60 * 1000);
+            }, 90 * 1000);
         });
 
         allTargets.forEach(async (testTarget: TestTarget) => {
