@@ -339,7 +339,7 @@ export const sshSuite = () => {
                     console.log(`process # ${i} beginning`);
                     exec(command, (error, stdout) => {
                         if (error) {
-                            fail(error);
+                            throw new Error(error.message);
                         } else {
                             expect(stdout.trim()).toEqual('success');
                             console.log(`process # ${i} ending`);
