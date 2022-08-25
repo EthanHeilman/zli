@@ -14,12 +14,17 @@ export class EventsHttpService extends HttpService
         super(configService, 'api/v2/events/', logger);
     }
 
-    public GetConnectionEvents(startTime: Date, subjectIds: string[]) : Promise<ConnectionEventDataMessage[]>
+    public GetConnectionEvents(startTime: Date, subjectIds?: string[], targetIds?: string[]) : Promise<ConnectionEventDataMessage[]>
     {
-        const params = {
-            startTimestamp: startTime.toJSON(),
-            subjectIds: subjectIds.toString()
-        };
+        const params: Record<string, string> = {};
+        params['startTimestamp'] = startTime.toJSON();
+        if(subjectIds) {
+            params['subjectIds'] = subjectIds.toString();
+        }
+        if (targetIds) {
+            params['targetIds'] = targetIds.toString();
+        }
+
         return this.Get('connection', params);
     }
 

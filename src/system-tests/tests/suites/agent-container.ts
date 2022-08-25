@@ -1,4 +1,4 @@
-import { configService, doApiKey, logger, loggerConfigService, resourceNamePrefix, systemTestEnvId, systemTestEnvName, systemTestPolicyTemplate, systemTestRegistrationApiKey, systemTestUniqueId } from '../system-test';
+import { configService, doApiKey, logger, loggerConfigService, resourceNamePrefix, systemTestEnvId, systemTestEnvName, systemTestPolicyTemplate, systemTestRegistrationApiKey, systemTestUniqueId, testCluster } from '../system-test';
 import { ConnectionHttpService } from '../../../http-services/connection/connection.http-services';
 import { TestUtils } from '../utils/test-utils';
 import { SubjectType } from '../../../../webshell-common-ts/http/v2/common.types/subject.types';
@@ -14,9 +14,7 @@ import { BzeroAgentSummary } from '../../../../webshell-common-ts/http/v2/target
 import * as k8s from '@kubernetes/client-node';
 import { agentContainersToRun } from '../../tests/targets-to-run';
 import { checkAllSettledPromise } from '../utils/utils';
-import { systemTestDigitalOceanClusterId } from '../system-test-setup';
 import { DigitalOceanSSMTargetService } from '../../digital-ocean/digital-ocean-ssm-target-service';
-import { DigitalOceanKubeService } from '../../digital-ocean/digital-ocean-kube-service';
 import { BzeroTargetStatusPollError } from '../../digital-ocean/digital-ocean-ssm-target.service.types';
 
 /**
@@ -144,13 +142,10 @@ export const agentContainerSuite = () => {
  * @returns List of agent container targets
  */
 export async function setupAgentContainer(targetsToRun: BzeroContainerTestTarget[]): Promise<Map<BzeroContainerTestTarget, ContainerBzeroTarget >> {
-    // Gets cluster information for our static DO cluster
-    const doKubeService = new DigitalOceanKubeService(doApiKey, configService, logger);
-
     // To poll to ensure the agent is online
     const doService = new DigitalOceanSSMTargetService(doApiKey, configService, logger);
 
-    const toReturn = new Map<BzeroContainerTestTarget, ContainerBzeroTarget >();
+    const toReturn = new Map<BzeroContainerTestTarget, ContainerBzeroTarget>();
 
     const createContainer = async (target: BzeroContainerTestTarget) => {
         // First get the image URL that we have built
@@ -166,13 +161,9 @@ export async function setupAgentContainer(targetsToRun: BzeroContainerTestTarget
             throw new Error(`Unhandled type passed: ${target.type}`);
         }
 
-        // Get the config file
-        const cluster = await doKubeService.getDigitalOceanClusterById(systemTestDigitalOceanClusterId);
-        const kubeConfigFileContents = await doKubeService.getClusterKubeConfig(cluster);
-
         // Init Kube client
         const kc = new k8s.KubeConfig();
-        kc.loadFromString(kubeConfigFileContents);
+        kc.loadFromString(testCluster.kubeConfigFileContents);
         const k8sApi = kc.makeApiClient(k8s.CoreV1Api);
 
         const targetName = `${resourceNamePrefix}-agent-container-${target.type}`;
@@ -212,7 +203,7 @@ export async function setupAgentContainer(targetsToRun: BzeroContainerTestTarget
                     } as k8s.V1Container
                 ],
                 imagePullSecrets: [ {
-                    name: 'do-registry'
+                    name: 'bastionzero-do'
                 } as k8s.V1LocalObjectReference ]
             } as k8s.V1PodSpec
         } as k8s.V1Pod;
@@ -276,18 +267,13 @@ export async function setupAgentContainer(targetsToRun: BzeroContainerTestTarget
  */
 async function cleanupAgentContainer(testContainerAgents: Map<BzeroContainerTestTarget, ContainerBzeroTarget >) {
     // Loop over each test container agent
-    const doKubeService = new DigitalOceanKubeService(doApiKey, configService, logger);
     const doService = new DigitalOceanSSMTargetService(doApiKey, configService, logger);
     testContainerAgents.forEach(async (targetInfo, _) => {
         await doService.deleteBzeroTarget(targetInfo.bzeroTarget.id);
 
-        // Get the config file
-        const cluster = await doKubeService.getDigitalOceanClusterById(systemTestDigitalOceanClusterId);
-        const kubeConfigFileContents = await doKubeService.getClusterKubeConfig(cluster);
-
         // Init Kube client
         const kc = new k8s.KubeConfig();
-        kc.loadFromString(kubeConfigFileContents);
+        kc.loadFromString(testCluster.kubeConfigFileContents);
         const k8sApi = kc.makeApiClient(k8s.CoreV1Api);
 
         // Delete the pod

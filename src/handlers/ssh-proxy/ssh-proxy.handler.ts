@@ -57,6 +57,7 @@ export async function sshProxyHandler(
         targetId: parsedTarget.id,
         targetName: parsedTarget.name,
         targetUser: targetUser,
+        environmentName: parsedTarget.envName,
         remoteHost: 'localhost',
         remotePort: argv.port
     });

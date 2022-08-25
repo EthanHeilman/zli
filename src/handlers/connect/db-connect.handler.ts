@@ -2,11 +2,13 @@ import { ConfigService } from '../../services/config/config.service';
 import { Logger } from '../../services/logger/logger.service';
 import { cleanExit } from '../clean-exit.handler';
 import { LoggerConfigService } from '../../services/logger/logger-config.service';
-import {  handleServerStart, startDaemonInDebugMode, copyExecutableToLocalDir, getBaseDaemonEnv, getOrDefaultLocalhost, getOrDefaultLocalport, killLocalPortAndPid, spawnDaemonInBackground } from '../../utils/daemon-utils';
+import { handleServerStart, startDaemonInDebugMode, copyExecutableToLocalDir, getOrDefaultLocalhost, getOrDefaultLocalport, checkIfPortAvailable, spawnDaemonInBackground, getBaseDaemonEnv } from '../../utils/daemon-utils';
 import { connectArgs } from './connect.command-builder';
 import yargs from 'yargs';
 import { DbTargetService } from '../../http-services/db-target/db-target.http-service';
 import { CreateUniversalConnectionResponse } from '../../../webshell-common-ts/http/v2/connection/responses/create-universal-connection.response';
+import { DbConfig } from '../../services/config/config.service.types';
+import { newDbDaemonManagementService } from '../../services/daemon-management/daemon-management.service';
 
 
 export async function dbConnectHandler(
@@ -20,9 +22,6 @@ export async function dbConnectHandler(
     const dbTargetService = new DbTargetService(configService, logger);
     const dbTarget = await dbTargetService.GetDbTarget(targetId);
 
-    // Open up our zli dbConfig
-    const dbConfig = configService.getDbConfig();
-
     // Set our local host
     const localHost = getOrDefaultLocalhost(dbTarget.localHost);
 
@@ -32,12 +31,8 @@ export async function dbConnectHandler(
         localPort = argv.customPort;
     }
 
-    // Note: These values will only be saved if we are not running in debug mode
-    dbConfig.localPort = localPort;
-    dbConfig.localHost = localHost;
-    dbConfig.name = dbTarget.name;
-
-    await killLocalPortAndPid(dbConfig.localPid, dbConfig.localPort, logger);
+    // Check if port is available otherwise exit
+    await checkIfPortAvailable(localPort, logger);
 
     // Build our runtime config and cwd
     const baseEnv = getBaseDaemonEnv(configService, loggerConfigService, dbTarget.agentPublicKey, createUniversalConnectionResponse.connectionId, createUniversalConnectionResponse.connectionAuthDetails);
@@ -71,9 +66,16 @@ export async function dbConnectHandler(
             // If we are not debugging, start the go subprocess in the background
             const daemonProcess = await spawnDaemonInBackground(logger, loggerConfigService, cwd, finalDaemonPath, args, runtimeConfig);
 
-            // Now save the Pid so we can kill the process next time we start it
-            dbConfig.localPid = daemonProcess.pid;
-            configService.setDbConfig(dbConfig);
+            // Add to dictionary of db daemons
+            const dbConfig: DbConfig = {
+                type: 'db',
+                name: dbTarget.name,
+                localHost: localHost,
+                localPort: localPort,
+                localPid: daemonProcess.pid
+            };
+            const dbDaemonManagementService = newDbDaemonManagementService(configService);
+            dbDaemonManagementService.addDaemon(createUniversalConnectionResponse.connectionId, dbConfig);
 
             // Wait for daemon HTTP server to be bound and running
             await handleServerStart(loggerConfigService.daemonLogPath(), dbConfig.localPort, dbConfig.localHost);

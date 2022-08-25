@@ -4,8 +4,7 @@ import {
     targetStringExample,
     getZliRunCommand,
     targetTypeDisplay,
-    verbTypeDisplay
-} from './utils/utils';
+    verbTypeDisplay} from './utils/utils';
 import { ConfigService } from './services/config/config.service';
 import { checkVersionMiddleware } from './middlewares/check-version-middleware';
 import { Logger } from './services/logger/logger.service';
@@ -27,14 +26,14 @@ import { sshProxyHandler } from './handlers/ssh-proxy/ssh-proxy.handler';
 import { loginHandler } from './handlers/login/login.handler';
 import { listTargetsHandler } from './handlers/list-targets/list-targets.handler';
 import { configHandler } from './handlers/config.handler';
-import { logoutHandler } from './handlers/logout.handler';
+import { logoutHandler } from './handlers/logout/logout.handler';
 import { connectHandler } from './handlers/connect/connect.handler';
 import { listConnectionsHandler } from './handlers/list-connections/list-connections.handler';
 import { attachHandler } from './handlers/attach/attach.handler';
 import { closeConnectionHandler } from './handlers/close-connection/close-connection.handler';
 import { generateKubeYamlHandler } from './handlers/generate/generate-kube-yaml.handler';
 import { disconnectHandler } from './handlers/disconnect/disconnect.handler';
-import { statusHandler } from './handlers/status/status.handler';
+import { listDaemonsHandler } from './handlers/list-daemons/list-daemons.handler';
 import { bctlHandler } from './handlers/bctl.handler';
 import { generateBashHandler } from './handlers/generate/generate-bash.handler';
 import { quickstartHandler } from './handlers/quickstart/quickstart-handler';
@@ -69,7 +68,6 @@ import yargs from 'yargs/yargs';
 // Cmd builders
 import { loginCmdBuilder } from './handlers/login/login.command-builder';
 import { connectCmdBuilder } from './handlers/connect/connect.command-builder';
-import { statusCmdBuilder } from './handlers/status/status.command-builder';
 import { listPoliciesCmdBuilder } from './handlers/policy/policy-list/policy-list.command-builder';
 import { describeClusterPolicyCmdBuilder } from './handlers/policy/policy-describe-cluster/describe-cluster-policy.command-builder';
 import { disconnectCmdBuilder } from './handlers/disconnect/disconnect.command-builder';
@@ -98,6 +96,7 @@ import { UserHttpService } from './http-services/user/user.http-services';
 import { generateSshConfigCmdBuilder } from './handlers/generate/generate-ssh-config.command-builder';
 import { createApiKeyCmdBuilder } from './handlers/api-key/create-api-key.command-builder';
 import { createApiKeyHandler } from './handlers/api-key/create-api-key.handler';
+import { listDaemonsCmdBuilder } from './handlers/list-daemons/list-daemons.command-builder';
 
 export type EnvMap = Readonly<{
     configName: string;
@@ -134,6 +133,8 @@ export class CliDriver
         'lt',
         'list-connections',
         'lc',
+        'list-daemons',
+        'ld',
         'ssh-proxy-config',
         'ssh-proxy',
         'configure',
@@ -306,13 +307,16 @@ export class CliDriver
             )
             .command(
                 'status [targetType]',
-                'Get status of a running daemon',
+                'List all daemons running on this machine',
                 (yargs) => {
-                    return statusCmdBuilder(yargs);
+                    return listDaemonsCmdBuilder(yargs);
                 },
                 async (argv) => {
-                    await statusHandler(argv, this.configService, this.logger);
-                }
+                    this.logger.warn('The status command is deprecated and will be removed soon, please use its equivalent \'zli list-daemons\'');
+                    await listDaemonsHandler(argv, this.configService, this.logger);
+                },
+                [],
+                true // deprecated = true
             )
             .command(
                 'disconnect [targetType]',
@@ -580,7 +584,7 @@ export class CliDriver
             )
             .command(
                 'close [connectionId]',
-                'Close an open zli connection',
+                'Close an open connection',
                 (yargs) => {
                     return closeConnectionCmdBuilder(yargs);
                 },
@@ -589,7 +593,7 @@ export class CliDriver
                         this.logger.error(`Passed connection id ${argv.connectionId} is not a valid Guid`);
                         await cleanExit(1, this.logger);
                     }
-                    await closeConnectionHandler(this.configService, this.logger, argv.connectionId, argv.all);
+                    await closeConnectionHandler(argv, this.configService, this.logger);
                 }
             )
             .command(
@@ -604,12 +608,22 @@ export class CliDriver
             )
             .command(
                 ['list-connections', 'lc'],
-                'List all open zli connections',
+                'List all open shell and db connections',
                 (yargs) => {
                     return listConnectionsCmdBuilder(yargs);
                 },
                 async (argv) => {
                     await listConnectionsHandler(argv, this.configService, this.logger);
+                }
+            )
+            .command(
+                ['list-daemons [targetType]', 'ld'],
+                'List all daemons running on this machine',
+                (yargs) => {
+                    return listDaemonsCmdBuilder(yargs);
+                },
+                async (argv) => {
+                    await listDaemonsHandler(argv, this.configService, this.logger);
                 }
             )
             .command(

@@ -50,6 +50,7 @@ export type BzeroTestTarget = BaseTarget & {
 // Hold our common TestRails caseIds
 interface BaseTarget {
     sshCaseId?: string // Zli - Ssh - Successful remote command execution
+    sshWithEnvCaseId?: string // Zli - Ssh - Successful remote command execution with environment
     sshByUuidCaseId?: string // Zli - Ssh - Ssh by id instead of name
     sshBadUserCaseId?: string // Zli - Ssh - Cannot tunnel as invalid user
     sshConnectFailsCaseId?: string // Zli - Ssh - Connect fails with only tunnel policy
@@ -62,10 +63,8 @@ interface BaseTarget {
     attachCaseId?: string; //  For our attach test suite
     groupConnectCaseId?: string; // For our group based connect
     badConnectCaseId?: string; // for our connect negation test
-    dbCaseId?: string; // For our db test suite
     iperfUpload?: string; // For our iperf upload suite
     iperfDownload?: string; // For our iperf download suite
-    badDbCaseId?: string // For out db negation negation test
     webCaseId?: string; // For our web test suite
     badWebCaseId?: string; // For out web negation tests
     sessionRecordingCaseId?: string;

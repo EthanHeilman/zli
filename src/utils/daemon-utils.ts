@@ -10,6 +10,8 @@ import { ConfigService } from '../services/config/config.service';
 import { LoggerConfigService } from '../services/logger/logger-config.service';
 import { ShellConnectionAuthDetails } from '../../webshell-common-ts/http/v2/connection/types/shell-connection-auth-details.types';
 import { DAEMON_EXIT_CODES } from './daemon-exit-codes';
+import { check as checkTcpPort } from 'tcp-port-used';
+import { ILogger } from '../../webshell-common-ts/logging/logging.types';
 
 const { spawn } = require('child_process');
 const exec = require('child_process').execSync;
@@ -290,7 +292,10 @@ async function deleteIfExists(pathToFile: string) {
  * @param {number} localPid Local pid we are trying to kill
  * @param {Logger} logger Logger
  */
-export async function killDaemon(localPid: number, logger: Logger) {
+export async function killDaemon(localPid: number, logger: ILogger) {
+    // TODO: CWC-2030 Remove this function once kube and web migrate to
+    // DaemonManagementService
+
     // then kill the daemon
     if ( localPid != null) {
         // First try to kill the process
@@ -318,15 +323,20 @@ export async function killLocalPortAndPid(savedPid: number, localPort: number, l
     }
 
     // Also check if anything is using that local port
-    const portPids = await getPidForPort(localPort);
-    if (portPids.length != 0) {
-        logger.error(`It looks like an application is using port: ${localPort}`);
+    await checkIfPortAvailable(localPort, logger);
+}
+
+export async function checkIfPortAvailable(port: number, logger: Logger) {
+    const isPortInUse = await checkTcpPort(port, 'localhost');
+    if (isPortInUse) {
+        logger.error(`It looks like an application is using port: ${port}`);
         await cleanExit(1, logger);
     }
 }
 
 export async function killPortProcess(port: number, logger: Logger) {
     if(port == null) return;
+    logger.debug(`Killing processes listening to port: ${port}`);
 
     // Helper function to kill a process running on a given port (if it exists)
     try {
@@ -357,7 +367,7 @@ async function getPidForPort(port: number): Promise<number[]> {
     return awaitedPorts;
 }
 
-function killPid(pid: string) {
+export function killPid(pid: string) {
     // Helper function to kill a process for a given pid
     // Ignore output and do not show that to the user
     // For unix based os we kill all processes based on group id by using kill -{signal} -{pid}

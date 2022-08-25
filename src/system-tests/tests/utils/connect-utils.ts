@@ -13,7 +13,7 @@ import { callZli } from './zli-utils';
 import { ConnectionHttpService } from '../../../http-services/connection/connection.http-services';
 import { ConnectionEventType } from '../../../../webshell-common-ts/http/v2/event/types/connection-event.types';
 import { getMockResultValue } from './jest-utils';
-import { testTargets } from '../system-test';
+import { configService, testTargets } from '../system-test';
 import { TestTarget } from '../system-test.types';
 import { TargetUser } from '../../../../webshell-common-ts/http/v2/policy/types/target-user.types';
 import { DynamicAccessConnectionUtils } from '../../../handlers/connect/dynamic-access-connect-utils';
@@ -95,8 +95,12 @@ export class ConnectTestUtils {
 
         // Call "zli connect"
         // Additionally, calls uses environmentId in the connect string. expected flow is the same
-        // We should expect to see this environment variable in the connection event and command event logs
-        const connectPromise = callZli(['connect', `${connectTarget.targetUser}@${connectTarget.name}.${connectTarget.environmentId}`]);
+        // We should expect to see this environment variable in the connection event and command event logs for non-ssm targets
+        let targetString = `${connectTarget.targetUser}@${connectTarget.name}`;
+        if(connectTarget.type !== 'ssm') {
+            targetString += `.${connectTarget.environmentId}`;
+        }
+        const connectPromise = callZli(['connect', targetString]);
 
         if(connectTarget.type === 'dat-bzero') {
             // For DATs we have to wait for the waitForDATConnection method to
@@ -107,11 +111,14 @@ export class ConnectTestUtils {
             await this.testUtils.waitForExpect(async () => expect(waitForDATConnectionSpy).toHaveBeenCalled());
             const finalConnectionSummary = await getMockResultValue(waitForDATConnectionSpy.mock.results[0]);
             connectTarget.id = finalConnectionSummary.targetId;
+
+            // DATs add suffix of user's email to target name
+            connectTarget.name += `-${configService.me().email}`;
         }
 
         // Ensure that the created and connect event exists
-        expect(await this.testUtils.EnsureConnectionEventCreated(connectTarget.id, connectTarget.name, connectTarget.targetUser, connectTarget.eventTargetType, connectTarget.environmentId, ConnectionEventType.ClientConnect));
-        expect(await this.testUtils.EnsureConnectionEventCreated(connectTarget.id, connectTarget.name, connectTarget.targetUser, connectTarget.eventTargetType, connectTarget.environmentId, ConnectionEventType.Created));
+        await this.ensureConnectionEvent(connectTarget, ConnectionEventType.ClientConnect);
+        await this.ensureConnectionEvent(connectTarget, ConnectionEventType.Created);
 
         await this.testEchoCommand(connectTarget, stringToEcho);
 
@@ -135,7 +142,7 @@ export class ConnectTestUtils {
             await connectPromise;
 
             // Ensure that the client disconnect event is here
-            expect(await this.testUtils.EnsureConnectionEventCreated(connectTarget.id, connectTarget.name, connectTarget.targetUser, connectTarget.eventTargetType, connectTarget.environmentId, ConnectionEventType.ClientDisconnect));
+            await this.ensureConnectionEvent(connectTarget, ConnectionEventType.ClientDisconnect);
         }
 
         return gotUniversalConnectionResponse.connectionId;
@@ -191,6 +198,24 @@ export class ConnectTestUtils {
             1000 * 60,  // Timeout,
             1000 * 1    // Interval
         );
+    }
+
+    /**
+     * Ensure a connection event exists for a ConnectTarget
+     * @param connectTarget The target expected to connect
+     * @param eventType The event type to look for
+     */
+    public async ensureConnectionEvent(connectTarget: ConnectTarget, eventType: ConnectionEventType) {
+        await this.testUtils.EnsureConnectionEventCreated({
+            targetId: connectTarget.id,
+            targetName: connectTarget.name,
+            targetUser: connectTarget.targetUser,
+            targetType: connectTarget.eventTargetType,
+            environmentId: connectTarget.environmentId,
+            connectionEventType: eventType,
+            // All shell connections created by the zli exist in the cli-space
+            sessionName: 'cli-space'
+        });
     }
 
     /**

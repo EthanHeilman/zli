@@ -1,7 +1,11 @@
-import { Logger } from '../services/logger/logger.service';
+import { ILogger } from '../../webshell-common-ts/logging/logging.types';
 
+export interface IExitableLogger extends ILogger {
+    flushLogs(): Promise<void>;
+    logGAError(): Promise<void>;
+}
 
-export async function cleanExit(exitCode: number, logger: Logger) {
+export async function cleanExit(exitCode: number, logger: IExitableLogger) {
     await logger.flushLogs();
 
     if (exitCode != 0) {

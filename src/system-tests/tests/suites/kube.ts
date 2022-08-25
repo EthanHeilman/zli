@@ -2,7 +2,7 @@ import * as k8s from '@kubernetes/client-node';
 import * as CleanExitHandler from '../../../handlers/clean-exit.handler';
 import { callZli } from '../utils/zli-utils';
 import { HttpError, V1Pod } from '@kubernetes/client-node';
-import { loggerConfigService, systemTestUniqueId, testCluster } from '../system-test';
+import { loggerConfigService, systemTestEnvNameCluster, systemTestUniqueId, testCluster } from '../system-test';
 import { configService, logger } from '../system-test';
 import { TestUtils } from '../utils/test-utils';
 import { ConnectionEventType } from '../../../../webshell-common-ts/http/v2/event/types/connection-event.types';
@@ -58,6 +58,18 @@ export const kubeSuite = () => {
             // Reset test passed
             testPassed = false;
         }, 15 * 1000);
+
+        const ensureConnectionEvent = async (eventType: ConnectionEventType) => {
+            await testUtils.EnsureConnectionEventCreated({
+                targetId: testCluster.bzeroClusterTargetSummary.id,
+                targetName: testCluster.bzeroClusterTargetSummary.name,
+                targetUser: KubeTestUserName,
+                targetType: 'CLUSTER',
+                environmentId: testCluster.bzeroClusterTargetSummary.environmentId,
+                environmentName: systemTestEnvNameCluster,
+                connectionEventType: eventType
+            });
+        };
 
         test('2159: zli generate kubeConfig', async () => {
             // Generate the kubeConfig YAML and write to a file to be read by
@@ -117,8 +129,8 @@ export const kubeSuite = () => {
             await callZli(finalArgs);
 
             // Ensure the created and connected event exist
-            expect(await testUtils.EnsureConnectionEventCreated(doCluster.bzeroClusterTargetSummary.id, doCluster.bzeroClusterTargetSummary.name, KubeTestUserName, 'CLUSTER', doCluster.bzeroClusterTargetSummary.environmentId, ConnectionEventType.Created));
-            expect(await testUtils.EnsureConnectionEventCreated(doCluster.bzeroClusterTargetSummary.id, doCluster.bzeroClusterTargetSummary.name, KubeTestUserName, 'CLUSTER', doCluster.bzeroClusterTargetSummary.environmentId, ConnectionEventType.ClientConnect));
+            await ensureConnectionEvent(ConnectionEventType.Created);
+            await ensureConnectionEvent(ConnectionEventType.ClientConnect);
 
             // Delete the agent pod
             let oldAgentPodName = '';
@@ -141,8 +153,8 @@ export const kubeSuite = () => {
             await callZli(['disconnect', 'kube']);
 
             // Ensure that the disconnect and close events exist
-            expect(await testUtils.EnsureConnectionEventCreated(doCluster.bzeroClusterTargetSummary.id, doCluster.bzeroClusterTargetSummary.name, KubeTestUserName, 'CLUSTER', doCluster.bzeroClusterTargetSummary.environmentId, ConnectionEventType.ClientDisconnect));
-            expect(await testUtils.EnsureConnectionEventCreated(doCluster.bzeroClusterTargetSummary.id, doCluster.bzeroClusterTargetSummary.name, KubeTestUserName, 'CLUSTER', doCluster.bzeroClusterTargetSummary.environmentId, ConnectionEventType.Closed));
+            await ensureConnectionEvent(ConnectionEventType.ClientDisconnect);
+            await ensureConnectionEvent(ConnectionEventType.Closed);
 
             // Ensure that we see a log of this under the kube logs
             expect(await testUtils.EnsureKubeEvent(doCluster.bzeroClusterTargetSummary.name, KubeTestUserName, ['system:masters'], 'N/A', [`/api/v1/namespaces/${doCluster.helmChartNamespace}/pods`], []));
@@ -186,8 +198,8 @@ export const kubeSuite = () => {
             await callZli(finalArgs);
 
             // Ensure the created and connected event exist
-            expect(await testUtils.EnsureConnectionEventCreated(doCluster.bzeroClusterTargetSummary.id, doCluster.bzeroClusterTargetSummary.name, KubeTestUserName, 'CLUSTER', doCluster.bzeroClusterTargetSummary.environmentId, ConnectionEventType.Created));
-            expect(await testUtils.EnsureConnectionEventCreated(doCluster.bzeroClusterTargetSummary.id, doCluster.bzeroClusterTargetSummary.name, KubeTestUserName, 'CLUSTER', doCluster.bzeroClusterTargetSummary.environmentId, ConnectionEventType.ClientConnect));
+            await ensureConnectionEvent(ConnectionEventType.Created);
+            await ensureConnectionEvent(ConnectionEventType.ClientConnect);
 
             // Attempt to list namespaces using agent
             try {
@@ -208,8 +220,8 @@ export const kubeSuite = () => {
             await callZli(['disconnect', 'kube']);
 
             // Ensure that the disconnect and close events exist
-            expect(await testUtils.EnsureConnectionEventCreated(doCluster.bzeroClusterTargetSummary.id, doCluster.bzeroClusterTargetSummary.name, KubeTestUserName, 'CLUSTER', doCluster.bzeroClusterTargetSummary.environmentId, ConnectionEventType.ClientDisconnect));
-            expect(await testUtils.EnsureConnectionEventCreated(doCluster.bzeroClusterTargetSummary.id, doCluster.bzeroClusterTargetSummary.name, KubeTestUserName, 'CLUSTER', doCluster.bzeroClusterTargetSummary.environmentId, ConnectionEventType.Closed));
+            await ensureConnectionEvent(ConnectionEventType.ClientDisconnect);
+            await ensureConnectionEvent(ConnectionEventType.Closed);
 
             // Ensure that we see a log of this under the kube logs
             expect(await testUtils.EnsureKubeEvent(doCluster.bzeroClusterTargetSummary.name, KubeTestUserName, ['system:masters'], 'N/A', ['/api/v1/namespaces'], []));
@@ -250,8 +262,8 @@ export const kubeSuite = () => {
             await callZli(finalArgs);
 
             // Ensure the created and connected event exist
-            expect(await testUtils.EnsureConnectionEventCreated(doCluster.bzeroClusterTargetSummary.id, doCluster.bzeroClusterTargetSummary.name, KubeTestUserName, 'CLUSTER', doCluster.bzeroClusterTargetSummary.environmentId, ConnectionEventType.Created));
-            expect(await testUtils.EnsureConnectionEventCreated(doCluster.bzeroClusterTargetSummary.id,  doCluster.bzeroClusterTargetSummary.name, KubeTestUserName,'CLUSTER', doCluster.bzeroClusterTargetSummary.environmentId, ConnectionEventType.ClientConnect));
+            await ensureConnectionEvent(ConnectionEventType.Created);
+            await ensureConnectionEvent(ConnectionEventType.ClientConnect);
 
             // Attempt to list namespaces using agent
             try {
@@ -271,8 +283,8 @@ export const kubeSuite = () => {
             await callZli(['disconnect', 'kube']);
 
             // Ensure that the disconnect and close events exist
-            expect(await testUtils.EnsureConnectionEventCreated(doCluster.bzeroClusterTargetSummary.id,  doCluster.bzeroClusterTargetSummary.name, KubeTestUserName, 'CLUSTER', doCluster.bzeroClusterTargetSummary.environmentId, ConnectionEventType.ClientDisconnect));
-            expect(await testUtils.EnsureConnectionEventCreated(doCluster.bzeroClusterTargetSummary.id,  doCluster.bzeroClusterTargetSummary.name, KubeTestUserName, 'CLUSTER', doCluster.bzeroClusterTargetSummary.environmentId, ConnectionEventType.Closed));
+            await ensureConnectionEvent(ConnectionEventType.ClientDisconnect);
+            await ensureConnectionEvent(ConnectionEventType.Closed);
 
             // Ensure that we see a log of this under the kube logs
             expect(await testUtils.EnsureKubeEvent(doCluster.bzeroClusterTargetSummary.name, KubeTestUserName, KubeTestTargetGroups, 'N/A', ['/api/v1/namespaces'], []));

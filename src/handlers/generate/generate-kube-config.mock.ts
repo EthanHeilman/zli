@@ -1,8 +1,8 @@
 import { ConfigService } from '../../services/config/config.service';
 import { mockEnvList } from '../../utils/unit-test-utils';
-import { KubeConfig } from '../../utils/kubernetes.utils';
 import * as DaemonUtils from '../../utils/daemon-utils';
 import * as KubeConfigHandler from './generate-kube-config.handler';
+import { KubeConfig } from '../../services/config/config.service.types';
 import { EnvironmentHttpService } from '../../http-services/environment/environment.http-services';
 
 export function kubeConfigMockSetup() {
@@ -19,6 +19,7 @@ export function kubeConfigMockSetup() {
 }
 
 export const mockKubeConfig: KubeConfig = {
+    type: 'kube',
     keyPath: 'pathToKey',
     certPath: 'pathToCert',
     csrPath: 'pathToCsr',

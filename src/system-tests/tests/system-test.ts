@@ -22,7 +22,6 @@ import { checkAllSettledPromise } from './utils/utils';
 import { NewApiKeyResponse } from '../../../webshell-common-ts/http/v2/api-key/responses/new-api-key.responses';
 import { TestTarget } from './system-test.types';
 import { EnvironmentHttpService } from '../../http-services/environment/environment.http-services';
-import { vtSuite } from './suites/vt';
 import { iperfSuite } from './suites/iperf';
 import { extraSsmTestTargetsToRun, extraBzeroTestTargetsToRun, ssmTestTargetsToRun, bzeroTestTargetsToRun, initRegionalSSMTargetsTestConfig } from './targets-to-run';
 import { setupDOTestCluster, createDOTestTargets, setupSystemTestApiKeys } from './system-test-setup';
@@ -47,6 +46,8 @@ import { userRestApiSuite } from './suites/rest-api/users';
 import { spacesRestApiSuite } from './suites/rest-api/spaces';
 import { mfaSuite } from './suites/rest-api/mfa';
 import { eventsRestApiSuite } from './suites/rest-api/events';
+import { webSuite } from './suites/web';
+import { dbSuite } from './suites/db';
 
 // Uses config name from ZLI_CONFIG_NAME environment variable (defaults to prod
 // if unset) This can be run against dev/stage/prod when running system tests
@@ -54,6 +55,8 @@ import { eventsRestApiSuite } from './suites/rest-api/events';
 // pipeline in the AWS dev account this will be 'dev' and when running as part
 // of the CD pipeline in the AWS prod account it will be 'stage'
 const configName = envMap.configName;
+
+export const testStartTime = new Date();
 
 // Setup services used for running system tests
 export const loggerConfigService = new LoggerConfigService(configName, envMap.configDir);
@@ -182,6 +185,7 @@ export const resourceNamePrefix = `st-${systemTestUniqueId}`;
 export const systemTestEnvName = `${resourceNamePrefix}-non-kube-env`;
 export let systemTestEnvId: string = undefined;
 export const systemTestPolicyTemplate = `${resourceNamePrefix}-$POLICY_TYPE-policy`;
+export const systemTestEnvNameCluster = `${resourceNamePrefix}-cluster-env`;
 
 // Setup all droplets before running tests
 beforeAll(async () => {
@@ -312,7 +316,8 @@ if(KUBE_ENABLED) {
 }
 
 if(VT_ENABLED) {
-    vtSuite();
+    dbSuite();
+    webSuite();
     iperfSuite();
 }
 
