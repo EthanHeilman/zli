@@ -17,6 +17,7 @@ export async function targetRestartHandler(
         throw Error('Must be an admin to restart a bzero target');
     }
 
+    const now = new Date(new Date().toUTCString());
     const parsedTarget = parseTargetString(argv.targetString);
 
     const bzeroTargetService = new BzeroTargetHttpService(configService, logger);
@@ -27,12 +28,15 @@ export async function targetRestartHandler(
         envName: parsedTarget.envName,
     });
 
-    /*
+
     const eventService = new EventsHttpService(configService, logger);
     // TODO: not that this even lives here but obviously need to fix this
     const x = await eventService.GetAgentStatusChangeEvents(parsedTarget.id, TargetType.Bzero);
-    console.log(x);
-    */
+    const y = x.filter(z => new Date(z.timeStamp).getTime() > now.getTime());
+    console.log(y);
+
+
+    logger.info(`Agent restart initiated. To monitor your target's status, use: zli lt -d${parsedTarget.name ? ` -n ${parsedTarget.name}` : ` -i`} `)
 
     await cleanExit(0, logger);
 }

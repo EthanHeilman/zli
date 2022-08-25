@@ -8,10 +8,8 @@ import { UserEventDataMessage } from '../../../webshell-common-ts/http/v2/event/
 import { AgentStatusChangeData } from '../../../webshell-common-ts/http/v2/event/types/agent-status-change-data.types';
 
 
-export class EventsHttpService extends HttpService
-{
-    constructor(configService: ConfigService, logger: Logger)
-    {
+export class EventsHttpService extends HttpService {
+    constructor(configService: ConfigService, logger: Logger) {
         super(configService, 'api/v2/events/', logger);
     }
 
@@ -29,8 +27,7 @@ export class EventsHttpService extends HttpService
         return this.Get('connection', params);
     }
 
-    public GetCommandEvent(startTime: Date, subjectIds: string[]) : Promise<CommandEventDataMessage[]>
-    {
+    public GetCommandEvent(startTime: Date, subjectIds: string[]): Promise<CommandEventDataMessage[]> {
         const params = {
             startTimestamp: startTime.toJSON(),
             subjectIds: subjectIds.toString()
@@ -38,13 +35,11 @@ export class EventsHttpService extends HttpService
         return this.Get('command', params);
     }
 
-    public GetKubeEvents() : Promise<KubeEventDataMessage[]>
-    {
+    public GetKubeEvents(): Promise<KubeEventDataMessage[]> {
         return this.Get('kube');
     }
 
-    public GetUserEvents(startTime?: Date, subjectIds?: string[], count?: number) : Promise<UserEventDataMessage[]>
-    {
+    public GetUserEvents(startTime?: Date, subjectIds?: string[], count?: number): Promise<UserEventDataMessage[]> {
         const params = {
             startTimestamp: startTime?.toJSON(),
             subjectIds: subjectIds?.toString(),
