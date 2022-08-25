@@ -11,7 +11,6 @@ import { Logger } from '../services/logger/logger.service';
 import { TargetType } from '../../webshell-common-ts/http/v2/target/types/target.types';
 import { TargetStatus } from '../../webshell-common-ts/http/v2/target/types/targetStatus.types';
 import { EnvironmentSummary } from '../../webshell-common-ts/http/v2/environment/types/environment-summary.responses';
-import { ShellConnectionSummary } from '../../webshell-common-ts/http/v2/connection/types/shell-connection-summary.types';
 import { UserSummary } from '../../webshell-common-ts/http/v2/user/types/user-summary.types';
 import { KubernetesPolicySummary } from '../../webshell-common-ts/http/v2/policy/kubernetes/types/kubernetes-policy-summary.types';
 import { TargetConnectPolicySummary } from '../../webshell-common-ts/http/v2/policy/target-connect/types/target-connect-policy-summary.types';
@@ -23,16 +22,14 @@ import { VerbType } from '../../webshell-common-ts/http/v2/policy/types/verb-typ
 import { GroupSummary } from '../../webshell-common-ts/http/v2/organization/types/group-summary.types';
 import { SsmTargetSummary } from '../../webshell-common-ts/http/v2/target/ssm/types/ssm-target-summary.types';
 import { DynamicAccessConfigSummary } from '../../webshell-common-ts/http/v2/target/dynamic/types/dynamic-access-config-summary.types';
-import { WebConfig } from '../services/web/web.service';
-import { DbConfig } from '../services/database/database.service';
 import { ProxyPolicySummary } from '../../webshell-common-ts/http/v2/policy/proxy/types/proxy-policy-summary.types';
 import { Group } from '../../webshell-common-ts/http/v2/policy/types/group.types';
 import { BzeroAgentSummary } from '../../webshell-common-ts/http/v2/target/bzero/types/bzero-agent-summary.types';
-import { KubeConfig } from './kubernetes.utils';
 import { DynamicAccessConfigStatus } from '../../webshell-common-ts/http/v2/target/dynamic/types/dynamic-access-config-status.types';
 import { CaseInsensitiveArgv } from './types/case-insensitive-argv';
 import { JustInTimePolicySummary } from '../../webshell-common-ts/http/v2/policy/just-in-time/types/just-in-time-policy-summary.types';
-
+import { DbTargetSummary } from '../../webshell-common-ts/http/v2/target/db/types/db-target-summary.types';
+import { DbConfig, KubeConfig, WebConfig } from '../services/config/config.service.types';
 
 // case insensitive substring search, 'find targetString in searchString'
 export function isSubstring(targetString: string, searchString: string) : boolean
@@ -313,23 +310,15 @@ export function getTableOfTargets(targets: TargetSummary[], envs: EnvironmentSum
     return table.toString();
 }
 
-export function getTableOfConnections(connections: ShellConnectionSummary[], allTargets: TargetSummary[]) : string
-{
-    const connIdLength = max(connections.map(c => c.id.length).concat(36));
-    const targetUserLength = max(connections.map(c => c.targetUser.length).concat(16));
-    const targetNameLength = max(allTargets.map(t => t.name.length).concat(16));
-    const header: string[] = ['Connection ID', 'Target User', 'Target', 'Time Created'];
-    const columnWidths = [connIdLength + 2, targetUserLength + 2, targetNameLength + 2, 20];
-
-    const table = new Table({ head: header, colWidths: columnWidths });
-    const dateOptions = {year: '2-digit', month: 'numeric', day: 'numeric', hour:'numeric', minute:'numeric', hour12: true};
-    connections.forEach(connection => {
-        const row = [connection.id, connection.targetUser, allTargets.filter(t => t.id == connection.targetId).pop().name, new Date(connection.timeCreated).toLocaleString('en-US', dateOptions as any)];
-        table.push(row);
+export function createTableWithWordWrap(header: string[], rows: string[][]) : string {
+    const table = new Table({
+        head: header,
+        wordWrap: true,
+        wrapOnWordBoundary: true,
     });
 
+    table.push(...rows);
     return table.toString();
-
 }
 
 export function getTableOfUsers(users: UserSummary[]) : string
@@ -988,6 +977,23 @@ export function bzeroTargetToTargetSummary(bzeroTarget: BzeroAgentSummary): Targ
 }
 
 /**
+ * Converts a DbTargetSummary to the common TargetSummary interface so it can be used with other targets
+ */
+export function dbTargetToTargetSummary(dbTarget: DbTargetSummary): TargetSummary {
+    return {
+        type: TargetType.Db,
+        agentPublicKey: dbTarget.agentPublicKey,
+        id: dbTarget.id,
+        name: dbTarget.name,
+        status: parseTargetStatus(dbTarget.status.toString()),
+        environmentId: dbTarget.environmentId,
+        targetUsers: [],
+        agentVersion: dbTarget.agentVersion,
+        region: dbTarget.region
+    };
+}
+
+/**
  * handle npm install edge case
  * note: node will also show up when running 'npm run start -- ssh-proxy-config'
  * so for devs, they should not rely on generating configs from here and should
@@ -1015,4 +1021,9 @@ export function isZliSilent(silent_flag: boolean, json_flag: boolean, verbose_fl
     if(silent_flag) return true;
     else if(json_flag && !verbose_flag) return true;
     return false;
+}
+
+export function toUpperCase(str: string): string
+{
+    return str.charAt(0).toUpperCase().concat(str.slice(1));
 }

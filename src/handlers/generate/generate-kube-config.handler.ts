@@ -42,6 +42,7 @@ export async function generateKubeConfigHandler(
 
             // Now save the path in the configService
             kubeConfig = {
+                type: 'kube',
                 keyPath: pathToKey,
                 certPath: pathToCert,
                 csrPath: pathToCsr,

@@ -1,4 +1,4 @@
-import { dynamicConfigToTargetSummary, parseTargetStatus, ssmTargetToTargetSummary, bzeroTargetToTargetSummary } from '../../utils/utils';
+import { dynamicConfigToTargetSummary, parseTargetStatus, ssmTargetToTargetSummary, bzeroTargetToTargetSummary, dbTargetToTargetSummary } from '../../utils/utils';
 import { TargetSummary } from '../../../webshell-common-ts/http/v2/target/targetSummary.types';
 import { ConfigService } from '../config/config.service';
 import { Logger } from '../logger/logger.service';
@@ -132,19 +132,7 @@ export async function listTargets(
                 dbTargetSummaries = dbTargetSummaries.filter(t => policyQueryResponse[t.id].allowed);
             }
 
-            return dbTargetSummaries.map<TargetSummary>((dbTarget) => {
-                return {
-                    type: TargetType.Db,
-                    agentPublicKey: dbTarget.agentPublicKey,
-                    id: dbTarget.id,
-                    name: dbTarget.name,
-                    status: parseTargetStatus(dbTarget.status.toString()),
-                    environmentId: dbTarget.environmentId,
-                    targetUsers: [],
-                    agentVersion: dbTarget.agentVersion,
-                    region: dbTarget.region
-                };
-            });
+            return dbTargetSummaries.map<TargetSummary>(dbTargetToTargetSummary);
         };
 
         targetSummaryWork = targetSummaryWork.concat(getDbTargetSummaries());

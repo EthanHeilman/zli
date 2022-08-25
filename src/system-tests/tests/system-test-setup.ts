@@ -1,5 +1,5 @@
 import { DigitalOceanDropletSize } from '../digital-ocean/digital-ocean.types';
-import { allTargets,  bctlQuickstartVersion, bzeroAgentBranch, bzeroAgentVersion, bzeroKubeAgentImageName, configService, digitalOceanRegistry, doApiKey, goVersion, logger, resourceNamePrefix, systemTestEnvId, systemTestEnvName, systemTestRegistrationApiKey, systemTestTags, systemTestUniqueId, testTargets } from './system-test';
+import { allTargets,  bctlQuickstartVersion, bzeroAgentBranch, bzeroAgentVersion, bzeroKubeAgentImageName, configService, digitalOceanRegistry, doApiKey, goVersion, logger, resourceNamePrefix, systemTestEnvId, systemTestEnvName, systemTestEnvNameCluster, systemTestRegistrationApiKey, systemTestTags, systemTestUniqueId, testTargets } from './system-test';
 import { checkAllSettledPromise, stripTrailingSlash } from './utils/utils';
 import * as k8s from '@kubernetes/client-node';
 import { ClusterTargetStatusPollError, RegisteredDigitalOceanKubernetesCluster } from '../digital-ocean/digital-ocean-kube.service.types';
@@ -127,7 +127,7 @@ export async function setupDOTestCluster(): Promise<RegisteredDigitalOceanKubern
     helmVariables['serviceUrl'] = { value: stripTrailingSlash(configService.serviceUrl()), type: 'single' };
     helmVariables['apiKey'] = { value: systemTestRegistrationApiKey.secret, type: 'single' };
     helmVariables['clusterName'] = { value: clusterTargetName, type: 'single' };
-    helmVariables['environmentName'] = { value: `${resourceNamePrefix}-cluster-env`, type: 'single'};
+    helmVariables['environmentName'] = { value: systemTestEnvNameCluster, type: 'single'};
     helmVariables['users'] = { value: [configService.me().email], type: 'multi' };
     helmVariables['targetUsers'] = { value: [KubeTestUserName], type: 'multi' };
     helmVariables['targetGroups'] = { value: KubeTestTargetGroups, type: 'multi' };

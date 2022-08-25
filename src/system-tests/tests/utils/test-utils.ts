@@ -1,8 +1,7 @@
 import { ConfigService } from '../../../../src/services/config/config.service';
 import { Logger } from '../../../services/logger/logger.service';
 import { EventsHttpService } from '../../../../src/http-services/events/events.http-server';
-import { ConnectionEventType } from '../../../../webshell-common-ts/http/v2/event/types/connection-event.types';
-import { configService } from '../system-test';
+import { configService, testStartTime } from '../system-test';
 import { LoggerConfigService } from '../../../../src/services/logger/logger-config.service';
 import { SubjectType } from '../../../../webshell-common-ts/http/v2/common.types/subject.types';
 import { CommandEventDataMessage } from '../../../../webshell-common-ts/http/v2/event/types/command-event-data-message';
@@ -64,16 +63,33 @@ export class TestUtils {
     }
 
     /**
-     * Helper function to build a command event so we can verify it exist in our backend
-     * @param {string} targetId Target id we are looking fo
-     * @param {string} targetName Target name we are looking for
-     * @param {string} targetUsers Target user we are connected as
-     * @param {string} targetType Target type we are looking for (i.e. CLUSTER)
-     * @param {ConnectionEventType} eventType Event we are looking for
+     * Polls for connection events until it finds a specific event or hits a
+     * timeout.
+     * @param expectedEvent The event to match for in the array of polled
+     * connection events. The argument is a partial type, so that the event can
+     * be matched on the test's interested fields. If some field is not
+     * specified, an applicable default is used or expect.anything() is used.
+     * @param timeout A global timeout that will reject this promise with the
+     * last known error from the expectation function as soon as the timeout is
+     * reached. Doesn't wait for the final expectation function to finish before
+     * rejecting.
+     * @param retryInterval Time to wait in-between polls of the
+     * GetConnectionsEvents() API
      */
-    private async BuildConnectionEvent(targetId: string, targetName: string, targetUser: string, targetType: string, targetEnvId: string, targetEnvName: string, eventType: ConnectionEventType): Promise<ConnectionEventDataMessage> {
+    public async EnsureConnectionEventCreated(partialEvent: Partial<ConnectionEventDataMessage>, timeout: number = 25 * 1000, retryInterval: number = SLEEP_TIME * 1000) : Promise<void>
+    {
+        const defaultExpectedEnvironmentName =
+        // If environmentId is specified and is not equal to the Guid.empty ID (used by SSM targets)
+        (partialEvent.environmentId && partialEvent.environmentId !== '00000000-0000-0000-0000-000000000000') &&
+        // and the caller never specified environmentName ahead of time
+        (! partialEvent.environmentName)
+        // then query the backend for the name based on the environmentId
+            ? (await this.environmentService.GetEnvironment(partialEvent.environmentId)).name
+        // otherwise the default expected environment name is 'n/a'
+            : 'n/a';
+
         const me = configService.me();
-        const toReturn: ConnectionEventDataMessage = {
+        const defaults: ConnectionEventDataMessage = {
             id: expect.anything(),
             connectionId: expect.anything(),
             subjectId: me.id,
@@ -81,74 +97,35 @@ export class TestUtils {
             userName: me.email,
             organizationId: me.organizationId,
             sessionId: expect.anything(),
-            sessionName: expect.anything(),
-            targetId: targetId,
-            targetType: targetType,
-            targetName: targetName,
-            targetUser: targetUser,
+            sessionName: 'n/a',
+            targetId: expect.anything(),
+            targetType: expect.anything(),
+            targetName: expect.anything(),
+            targetUser: 'n/a',
             timestamp: expect.anything(),
-            environmentId: targetEnvId,
-            environmentName: targetEnvName,
-            connectionEventType: eventType,
-            reason: expect.anything()
+            environmentId: expect.anything(),
+            environmentName: defaultExpectedEnvironmentName,
+            connectionEventType: expect.anything(),
+            reason: expect.toBeOneOf([null, expect.anything()])
         };
-        return toReturn;
-    }
+        const expectedEvent : ConnectionEventDataMessage = { ...defaults, ...partialEvent};
 
-    /**
-     * Helper function to ensure that a connection event was created
-     * (i.e. client connect -> closed exists in our db events logs)
-     * @param {string} targetId Target id we are looking for
-     * @param {string} targetName Target name we are looking for
-     * @param {string} targetUsers Target user we are connected as
-     * @param {string} targetType Target type we are looking for (i.e. CLUSTER)
-     * @param {ConnectionEventType} eventType Event we are checking for
-     */
-    public async EnsureConnectionEventCreated(targetId: string, targetName: string, targetUser: string, targetType: string, targetEnvId: string, eventType: ConnectionEventType) {
-        // Sometimes the system test goes too fast before the event
-        // is propagated to our database, retry getting the event 5 times with some sleep in between
-        let failures = 0;
-        let eventCreated: ConnectionEventDataMessage = undefined;
+        return await this.waitForExpect(
+            async () => {
+                const gotEvents = await this.eventsService.GetConnectionEvents(
+                    testStartTime,
+                    [configService.me().id],
+                    partialEvent.targetId ? [partialEvent.targetId] : []
+                );
 
-        while (failures < 5) {
-            // Query for our events
-            const startTimestamp = new Date();
-            startTimestamp.setHours(startTimestamp.getHours() - EVENT_QUERY_TIME);
-            const events = await this.eventsService.GetConnectionEvents(startTimestamp, [configService.me().id]);
-
-            eventCreated = events.find(event => {
-                if (event.targetId == targetId && event.targetType == targetType) {
-                    if (event.connectionEventType == eventType) {
-                        return true;
-                    }
-                };
-            });
-
-            if (eventCreated == undefined) {
-                failures += 1;
-                this.logger.warn(`Unable to find event for targetId ${targetId} for type ${eventType}, sleeping for ${SLEEP_TIME}s and trying again. Failures: ${failures}`);
-                await sleepTimeout(SLEEP_TIME * 1000);
-            } else {
-                // We were able to find the event, break
-                break;
-            }
-        }
-
-        if (eventCreated == undefined) {
-            throw new Error(`Unable to find event for targetId ${targetId} for type ${eventType}`);
-        }
-
-        // get the environment summary to assert on environment name as well
-        let environmentName = 'n/a';
-        if(targetEnvId !== '00000000-0000-0000-0000-000000000000') {
-            environmentName = (await this.environmentService.GetEnvironment(targetEnvId)).name;
-        }
-
-        // Build our connection event
-        const connectionEvent = this.BuildConnectionEvent(targetId, targetName, targetUser, targetType, targetEnvId, environmentName, eventType);
-
-        // Ensure the values match
-        expect(eventCreated).toMatchObject(connectionEvent);
+                // Use arrayContaining, so that got value can contain extra
+                // elements. Include explicit generic constraint, so that jest
+                // prints the object if something does not match.
+                expect(gotEvents).toEqual<ConnectionEventDataMessage[]>(expect.arrayContaining([expectedEvent]));
+            },
+            timeout,
+            retryInterval
+        );
     }
 
     /**

@@ -1,67 +1,120 @@
 import { ConfigService } from '../../services/config/config.service';
 import { Logger } from '../../services/logger/logger.service';
-import { bzeroTargetToTargetSummary, getTableOfConnections, ssmTargetToTargetSummary } from '../../utils/utils';
-import { cleanExit } from '../clean-exit.handler';
-import { getCliSpace } from '../../utils/shell-utils';
+import { createTableWithWordWrap, toUpperCase } from '../../utils/utils';
 import { listConnectionsArgs } from './list-connections.command-builder';
-import { SpaceHttpService } from '../../http-services/space/space.http-services';
-import { ShellConnectionSummary } from '../../../webshell-common-ts/http/v2/connection/types/shell-connection-summary.types';
-import { ConnectionState } from '../../../webshell-common-ts/http/v2/connection/types/connection-state.types';
 import yargs from 'yargs';
-import { SsmTargetHttpService } from '../../http-services/targets/ssm/ssm-target.http-services';
-import { BzeroTargetHttpService } from '../../http-services/targets/bzero/bzero.http-services';
+import { ConnectionInfo } from '../../services/list-connections/list-connections.service.types';
+import { listOpenDbConnections, listOpenShellConnections } from '../../services/list-connections/list-connections.service';
+import { cleanExit } from '../clean-exit.handler';
 
 export async function listConnectionsHandler(
     argv: yargs.Arguments<listConnectionsArgs>,
     configService: ConfigService,
     logger: Logger
-){
-    const spaceHttpService = new SpaceHttpService(configService, logger);
-    const cliSpace = await getCliSpace(spaceHttpService, logger);
-
-    if (cliSpace == undefined) {
-        logger.warn('You have not opened any zli connections.');
-        await cleanExit(0, logger);
-    }
-
-    const openConnections = cliSpace.connections.filter(c => c.state === ConnectionState.Open);
-
-    const ssmTargetHttpService = new SsmTargetHttpService(configService, logger);
-    const ssmTargets = await ssmTargetHttpService.ListSsmTargets(true);
-
-    const bzeroTargetService = new BzeroTargetHttpService(configService, logger);
-    const bzeroTargets = await bzeroTargetService.ListBzeroTargets();
-
-    const allTargets = [...ssmTargets.map(ssmTargetToTargetSummary), ...bzeroTargets.map(bzeroTargetToTargetSummary)];
-
-    const formattedConnections = openConnections.map<ShellConnectionSummary>((conn, _index, _array) => {
-        return {
-            id: conn.id,
-            timeCreated: conn.timeCreated,
-            targetId: conn.targetId,
-            spaceId: conn.spaceId,
-            state: conn.state,
-            targetType: conn.targetType,
-            targetUser: conn.targetUser,
-            sessionRecordingAvailable: conn.sessionRecordingAvailable,
-            sessionRecording: conn.sessionRecording,
-            inputRecording: conn.inputRecording,
-            subjectId: conn.subjectId
-        };
-    });
-
-    if(!! argv.json) {
-        // json output
-        console.log(JSON.stringify(formattedConnections));
-    } else {
-        if (formattedConnections.length === 0){
-            logger.info('There are no open zli connections');
-            await cleanExit(0, logger);
+) {
+    const printTableOrJson = async <T extends NormalizedConnectionInfo>(type: 'shell' | 'db' | 'all', connections: T[]) => {
+        if (!!argv.json) {
+            // json output
+            console.log(JSON.stringify(connections));
+        } else {
+            if (connections.length === 0) {
+                if (type == 'all') {
+                    logger.info('There are no open connections');
+                } else {
+                    logger.info(`There are no open ${type} connections`);
+                }
+                return;
+            }
+            // regular table output
+            const tableString = getTableOfConnections(connections);
+            console.log(tableString);
         }
-        // regular table output
-        const tableString = getTableOfConnections(formattedConnections, allTargets);
-        console.log(tableString);
+    };
+
+    if (argv.type) {
+        switch (argv.type) {
+        case 'shell':
+            const openShellConnections = await listOpenShellConnections(configService, logger);
+            await printTableOrJson('shell', normalizeConnectionInfos(openShellConnections));
+            break;
+        case 'db':
+            const openDbConnections = await listOpenDbConnections(configService, logger);
+            await printTableOrJson('db', normalizeConnectionInfos(openDbConnections));
+            break;
+        default:
+            // Compile-time exhaustive check
+            const exhaustiveCheck: never = argv.type;
+            throw new Error(`Unhandled case: ${exhaustiveCheck}`);
+        }
+    } else {
+        // If type option not provided, get all open connections
+
+        // Get open shell and db connections concurrently
+        const [shellConnections, dbConnections] = await Promise.all([
+            listOpenShellConnections(configService, logger),
+            listOpenDbConnections(configService, logger)
+        ]);
+        await printTableOrJson('all', normalizeConnectionInfos([...shellConnections, ...dbConnections]));
     }
 
     await cleanExit(0, logger);
+}
+
+// This type should conform to the table output's columns, so that the --json
+// option output stays consistent with table output
+interface NormalizedConnectionInfo {
+    type: string;
+    connectionId: string;
+    targetUser: string;
+    target: string;
+    timeCreated: string;
+}
+
+function normalizeConnectionInfos(connections: ConnectionInfo[]): NormalizedConnectionInfo[] {
+    const dateOptions = { year: '2-digit', month: 'numeric', day: 'numeric', hour: 'numeric', minute: 'numeric', hour12: true };
+    return connections.map<NormalizedConnectionInfo>((conn) => {
+        // Build common parameters
+        const type = toUpperCase(conn.type);
+        const connectionId = conn.connectionId;
+        const target = conn.targetName;
+        const timeCreated = new Date(conn.timeCreated).toLocaleString('en-US', dateOptions as any);
+
+        // Special logic for these parameters (targetUser)
+        let targetUser: string;
+        switch (conn.type) {
+        case 'db':
+            // DB connections don't have a concept of target user
+            targetUser = 'N/A';
+            break;
+        case 'shell':
+            targetUser = conn.targetUser;
+            break;
+        default:
+            // Compile-time exhaustive check
+            const exhaustiveCheck: never = conn;
+            throw new Error(`Unhandled case: ${exhaustiveCheck}`);
+        }
+
+        return {
+            type: type,
+            connectionId: connectionId,
+            targetUser: targetUser,
+            target: target,
+            timeCreated: timeCreated
+        };
+    });
+}
+
+function getTableOfConnections(connections: NormalizedConnectionInfo[]): string {
+    const header: string[] = ['Type', 'Connection ID', 'Target User', 'Target', 'Time Created'];
+    const rows = connections.map<string[]>((conn) => {
+        return [
+            conn.type,
+            conn.connectionId,
+            conn.targetUser,
+            conn.target,
+            conn.timeCreated
+        ];
+    });
+    return createTableWithWordWrap(header, rows);
 }

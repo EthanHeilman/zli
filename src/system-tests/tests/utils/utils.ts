@@ -24,3 +24,15 @@ export async function testIf(condition: boolean, ...args: any[]) {
     // @ts-ignore
     condition ? it(...args) : it.skip(...args);
 }
+
+/**
+ * Convert a map to an array of tuples where the first element is the key and
+ * the second element is the value
+ * @param map Map to convert
+ */
+export function mapToArrayTuples<K,V>(map: Map<K,V>): [K, V][] {
+    return Array.from(map.keys()).reduce<[K, V][]>((acc, el) => {
+        acc.push([el, map.get(el)]);
+        return acc;
+    }, []);
+}

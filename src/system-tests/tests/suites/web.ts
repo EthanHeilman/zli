@@ -1,6 +1,5 @@
 import { systemTestEnvId, systemTestEnvName, systemTestPolicyTemplate, systemTestUniqueId, testTargets } from '../system-test';
 import { callZli } from '../utils/zli-utils';
-import { DbTargetService } from '..../../../http-services/db-target/db-target.http-service';
 import got from 'got/dist/source';
 import * as CleanExitHandler from '../../../handlers/clean-exit.handler';
 import FormData from 'form-data';
@@ -13,23 +12,26 @@ import { SubjectType } from '../../../../webshell-common-ts/http/v2/common.types
 import { Environment } from '../../../../webshell-common-ts/http/v2/policy/types/environment.types';
 import { ConnectionEventType } from '../../../../webshell-common-ts/http/v2/event/types/connection-event.types';
 import { bzeroTestTargetsToRun } from '../targets-to-run';
-import { TestTarget } from '../system-test.types';
 import { PolicyHttpService } from '../../../http-services/policy/policy.http-services';
 import { Subject } from '../../../../webshell-common-ts/http/v2/policy/types/subject.types';
 import { setupBackgroundDaemonMocks } from '../utils/connect-utils';
 
-const { Client } = require('pg');
-const fs = require('fs');
+import fs from 'fs';
 
-export const vtSuite = () => {
-    describe('vt suite', () => {
+const findPort = require('find-open-port');
+
+export const webSuite = () => {
+    describe('web suite', () => {
         let policyService: PolicyHttpService;
         let testUtils: TestUtils;
 
         let testPassed = false;
 
-        const localDbPort = 6100;
-        const localWebPort = 6200;
+        // Proxy policy ID created for this entire suite in order to make Web
+        // connections
+        let proxyPolicyID: string;
+
+        let localWebPort: number;
         const webserverRemotePort = 8000;
         const filePath = 'test.txt';
 
@@ -47,14 +49,16 @@ export const vtSuite = () => {
                 id: systemTestEnvId
             };
 
-            await policyService.AddProxyPolicy({
-                name: systemTestPolicyTemplate.replace('$POLICY_TYPE', 'proxy'),
+            proxyPolicyID = (await policyService.AddProxyPolicy({
+                name: `${systemTestPolicyTemplate.replace('$POLICY_TYPE', 'proxy')}-web-suite`,
                 subjects: [currentUser],
                 groups: [],
                 description: `Proxy policy created for system test: ${systemTestUniqueId}`,
                 environments: [environment],
                 targets: []
-            });
+            })).id;
+
+            localWebPort = await findPort();
         }, 60 * 1000);
 
         beforeEach(() => {
@@ -63,15 +67,9 @@ export const vtSuite = () => {
 
         // Cleanup all policy after the tests
         afterAll(async () => {
-            // Search and delete our proxy policy
-            const proxyPolicies = await policyService.ListProxyPolicies();
-            const proxyPolicy = proxyPolicies.find(policy =>
-                policy.name == systemTestPolicyTemplate.replace('$POLICY_TYPE', 'proxy')
-            );
-            policyService.DeleteProxyPolicy(proxyPolicy.id);
+            await policyService.DeleteProxyPolicy(proxyPolicyID);
 
             // Also attempt to close any daemons to avoid any leaks in the tests
-            await callZli(['disconnect', 'db']);
             await callZli(['disconnect', 'web']);
         }, 60 * 1000);
 
@@ -82,12 +80,10 @@ export const vtSuite = () => {
 
             // Always make sure our ports are free, else throw an error
             try {
-                await testUtils.CheckPort(localDbPort);
                 await testUtils.CheckPort(localWebPort);
             } catch (e: any) {
                 // Always ensure we clean up any dangling connections if there are any errors
                 await callZli(['disconnect', 'web']);
-                await callZli(['disconnect', 'db']);
 
                 throw e;
             }
@@ -95,115 +91,6 @@ export const vtSuite = () => {
             // Reset test passed
             testPassed = false;
         });
-
-        bzeroTestTargetsToRun.forEach(async (testTarget: TestTarget) => {
-            it(`${testTarget.dbCaseId}: db virtual target connect - ${testTarget.awsRegion} - ${getDOImageName(testTarget.dropletImage)}`, async () => {
-                const doTarget = testTargets.get(testTarget) as DigitalOceanBZeroTarget;
-
-                // Create a new db virtual target
-                const dbTargetService: DbTargetService = new DbTargetService(configService, logger);
-                const dbVtName = `${doTarget.bzeroTarget.name}-db-vt`;
-
-                const createDbTargetResponse = await dbTargetService.CreateDbTarget({
-                    targetName: dbVtName,
-                    proxyTargetId: doTarget.bzeroTarget.id,
-                    remoteHost: 'localhost',
-                    remotePort: { value: 5432 },
-                    localHost: 'localhost',
-                    localPort: { value: localDbPort },
-                    environmentName: systemTestEnvName
-                });
-
-                const dbTargetSummary = await dbTargetService.GetDbTarget(createDbTargetResponse.targetId);
-
-                logger.info('Creating db target connection');
-
-                // Start the connection to the db virtual target
-                logger.info('Connecting to db target with psql');
-                await callZli(['connect', dbVtName]);
-
-                // Ensure the created and connected event exist
-                expect(await testUtils.EnsureConnectionEventCreated(createDbTargetResponse.targetId, dbVtName, 'n/a', 'DB', dbTargetSummary.environmentId, ConnectionEventType.Created));
-                expect(await testUtils.EnsureConnectionEventCreated(createDbTargetResponse.targetId, dbVtName, 'n/a', 'DB', dbTargetSummary.environmentId, ConnectionEventType.ClientConnect));
-
-
-                // Attempt to make our PSQL connection and create a database
-                const client = new Client({
-                    host: 'localhost',
-                    port: localDbPort,
-                    user: 'postgres',
-                    password: '',
-                });
-
-                // First make our connection
-                try {
-                    await client.connect();
-                } catch (error) {
-                    logger.error(`Error connecting to db: ${error.stack}`);
-                    throw error;
-                }
-
-                // Then attempt our query
-                const PSQL_QUERY = 'CREATE DATABASE somedb';
-                const runQuery = new Promise<void>(async (resolve, reject) => {
-                    await client.query(PSQL_QUERY)
-                        .then((_: any) => {
-                            resolve();
-                        })
-                        .catch((e: any) => {
-                            logger.error(`Error running query ${PSQL_QUERY}. Error: ${e.stack}`);
-                            reject();
-                        });
-                });
-
-                await runQuery;
-                client.end();
-
-                // Disconnect
-                await callZli(['disconnect', 'db']);
-
-                // Ensure the disconnect and close event exist
-                expect(await testUtils.EnsureConnectionEventCreated(createDbTargetResponse.targetId, dbVtName, 'n/a', 'DB', dbTargetSummary.environmentId, ConnectionEventType.ClientDisconnect));
-                expect(await testUtils.EnsureConnectionEventCreated(createDbTargetResponse.targetId, dbVtName, 'n/a', 'DB', dbTargetSummary.environmentId, ConnectionEventType.Closed));
-
-                // Reset our testPassed flag
-                testPassed = true;
-            }, 60 * 1000);
-
-            it(`${testTarget.badDbCaseId}: db virtual target bad connect - ${testTarget.awsRegion} - ${getDOImageName(testTarget.dropletImage)}`, async () => {
-                const doTarget = testTargets.get(testTarget) as DigitalOceanBZeroTarget;
-
-                // Create a new db virtual target in the default env
-                const dbTargetService: DbTargetService = new DbTargetService(configService, logger);
-                const dbVtName = `${doTarget.bzeroTarget.name}-db-vt-no-policy`;
-
-                await dbTargetService.CreateDbTarget({
-                    targetName: dbVtName,
-                    proxyTargetId: doTarget.bzeroTarget.id,
-                    remoteHost: 'localhost',
-                    remotePort: { value: 5432 },
-                    localHost: 'localhost',
-                    localPort: { value: localDbPort },
-                    environmentName: 'Default'
-                });
-
-                logger.info('Creating db target connection with db target + no policy');
-
-                const expectedErrorMessage = 'Expected error';
-                jest.spyOn(CleanExitHandler, 'cleanExit').mockImplementationOnce(() => {
-                    throw new Error(expectedErrorMessage);
-                });
-
-                // Start the connection to the db virtual target
-                const connectZli = callZli(['connect', dbVtName]);
-
-                await expect(connectZli).rejects.toThrow(expectedErrorMessage);
-
-                // Reset our testPassed flag
-                testPassed = true;
-            }, 60 * 1000);
-        });
-
 
         bzeroTestTargetsToRun.forEach(async (testTarget) => {
             it(`${testTarget.webCaseId}: web virtual target connect - ${testTarget.awsRegion} - ${getDOImageName(testTarget.dropletImage)}`, async () => {
@@ -230,9 +117,20 @@ export const vtSuite = () => {
                 // Start the connection to the db virtual target
                 await callZli(['connect', webVtName, '--openBrowser=false']);
 
+                const ensureConnectionEvent = async (eventType: ConnectionEventType) => {
+                    await testUtils.EnsureConnectionEventCreated({
+                        targetId: createWebTargetResponse.targetId,
+                        targetName: webVtName,
+                        targetType: 'WEB',
+                        environmentId: webTargetSummary.environmentId,
+                        environmentName: systemTestEnvName,
+                        connectionEventType: eventType
+                    });
+                };
+
                 // Ensure the created and connected event exist
-                expect(await testUtils.EnsureConnectionEventCreated(createWebTargetResponse.targetId, webVtName, 'n/a', 'WEB', webTargetSummary.environmentId, ConnectionEventType.Created));
-                expect(await testUtils.EnsureConnectionEventCreated(createWebTargetResponse.targetId, webVtName, 'n/a', 'WEB', webTargetSummary.environmentId, ConnectionEventType.ClientConnect));
+                await ensureConnectionEvent(ConnectionEventType.Created);
+                await ensureConnectionEvent(ConnectionEventType.ClientConnect);
 
                 logger.info('Sending http request to web connection');
                 const testConnectionRequest = await got.get(`http://localhost:${localWebPort}/`, { throwHttpErrors: false, https: { rejectUnauthorized: false } });
@@ -243,8 +141,8 @@ export const vtSuite = () => {
                 await callZli(['disconnect', 'web']);
 
                 // Ensure the disconnect and close event exist
-                expect(await testUtils.EnsureConnectionEventCreated(createWebTargetResponse.targetId, webVtName, 'n/a', 'WEB', webTargetSummary.environmentId, ConnectionEventType.ClientDisconnect));
-                expect(await testUtils.EnsureConnectionEventCreated(createWebTargetResponse.targetId, webVtName, 'n/a', 'WEB', webTargetSummary.environmentId, ConnectionEventType.Closed));
+                await ensureConnectionEvent(ConnectionEventType.ClientDisconnect);
+                await ensureConnectionEvent(ConnectionEventType.Closed);
 
                 testPassed = true;
             }, 60 * 1000);
@@ -294,7 +192,7 @@ export const vtSuite = () => {
                 testPassed = true;
             }, 60 * 1000);
 
-            it(`${testTarget.badDbCaseId}: web virtual target bad connect - ${testTarget.awsRegion} - ${getDOImageName(testTarget.dropletImage)}`, async () => {
+            it(`${testTarget.badWebCaseId}: web virtual target bad connect - ${testTarget.awsRegion} - ${getDOImageName(testTarget.dropletImage)}`, async () => {
                 const doTarget = testTargets.get(testTarget) as DigitalOceanBZeroTarget;
 
                 // Create a new web virtual target
@@ -307,7 +205,7 @@ export const vtSuite = () => {
                     remoteHost: 'http://localhost',
                     remotePort: { value: webserverRemotePort },
                     localHost: 'localhost',
-                    localPort: { value: localWebPort },
+                    localPort: { value: null },
                     environmentName: 'Default'
                 });
 

@@ -37,6 +37,8 @@ import { ConfigService } from '../services/config/config.service';
 import * as middlewareHandler from '../handlers/middleware.handler';
 import * as CleanExitHandler from '../handlers/clean-exit.handler';
 import { JustInTimePolicySummary } from '../../webshell-common-ts/http/v2/policy/just-in-time/types/just-in-time-policy-summary.types';
+import { DbConnectionSummary } from '../../webshell-common-ts/http/v2/connection/types/db-connection-summary.types';
+import { randomUUID } from 'crypto';
 
 export function unitTestMockSetup(withCleanExit: boolean): void {
     // Always mock out the following services
@@ -310,6 +312,18 @@ export const mockConnectionSummary: ShellConnectionSummary = {
     subjectId : 'some-subject-id'
 };
 
+export const mockDbConnectionSummary: DbConnectionSummary = {
+    id: randomUUID(),
+    timeCreated: new Date(1998, 3, 5, 0, 0, 0, 0),
+    state: ConnectionState.Open,
+    targetId: 'some-target-id',
+    targetName: 'some-target-name',
+    targetType: TargetType.Db,
+    subjectId: 'some-subject-id',
+    remoteHost: 'localhost',
+    remotePort: 5432
+};
+
 export const mockShellAuthDetails: ShellConnectionAuthDetails = {
     connectionNodeId: '998457d7-cce5-4fd2-98b9-7c550eb7ed5f',
     authToken: 'test-token',
@@ -400,4 +414,16 @@ export function deleteDirectory(pathToDir: string) {
 export function cleanConsoleLog(output: string): string {
     return output.replace(
         /[\u001b\u009b][[()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=><]/g, '');
+}
+
+/**
+ * Convert a map to an array of tuples where the first element is the key and
+ * the second element is the value
+ * @param map Map to convert
+ */
+export function mapToArrayTuples<K, V>(map: Map<K, V>): [K, V][] {
+    return Array.from(map.keys()).reduce<[K, V][]>((acc, el) => {
+        acc.push([el, map.get(el)]);
+        return acc;
+    }, []);
 }

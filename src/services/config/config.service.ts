@@ -4,13 +4,11 @@ import { Logger } from '../logger/logger.service';
 import { KeySplittingConfigSchema, ConfigInterface, getDefaultKeysplittingConfig } from '../../../webshell-common-ts/keysplitting.service/keysplitting.service.types';
 import path from 'path';
 import { Observable, Subject } from 'rxjs';
-import { DbConfig, getDefaultDbConfig } from '../database/database.service';
-import { WebConfig, getDefaultWebConfig } from '../web/web.service';
 import { IdentityProvider } from '../../../webshell-common-ts/auth-service/auth.types';
 import { TokenHttpService } from '../../http-services/token/token.http-services';
 import { UserSummary } from '../../../webshell-common-ts/http/v2/user/types/user-summary.types';
-import { getDefaultKubeConfig, KubeConfig } from '../../utils/kubernetes.utils';
-
+import { DaemonConfigs, DbConfig, getDefaultKubeConfig, getDefaultWebConfig, KubeConfig, WebConfig } from './config.service.types';
+import { LEGACY_KEY_STRING } from '../../services/daemon-management/daemon-management.service';
 
 // refL: https://github.com/sindresorhus/conf/blob/master/test/index.test-d.ts#L5-L14
 type BastionZeroConfigSchema = {
@@ -29,8 +27,8 @@ type BastionZeroConfigSchema = {
     sshKeyPath: string
     keySplitting: KeySplittingConfigSchema,
     kubeConfig: KubeConfig
-    dbConfig: DbConfig,
-    webConfig: WebConfig
+    webConfig: WebConfig,
+    dbDaemons: DaemonConfigs<DbConfig>
 };
 
 export class ConfigService implements ConfigInterface {
@@ -81,17 +79,60 @@ export class ConfigService implements ConfigInterface {
                 sshKeyPath: undefined,
                 keySplitting: getDefaultKeysplittingConfig(),
                 kubeConfig: getDefaultKubeConfig(),
-                dbConfig: getDefaultDbConfig(),
-                webConfig: getDefaultWebConfig()
+                webConfig: getDefaultWebConfig(),
+                dbDaemons: {}
             },
             accessPropertiesByDotNotation: true,
             clearInvalidConfig: true,    // if config is invalid, delete
             migrations: {
                 // migrate old configs to have new serviceUrl
                 '>4.3.0': (config: Conf<BastionZeroConfigSchema>) => {
-                    if(appName)
+                    if (appName)
                         config.set('serviceUrl', this.getServiceUrl(appName));
-                }
+                },
+                // migrate old dbConfig to new dbDaemons format + discriminant property
+                // migrate kubeConfig and webConfig to use discriminant property
+                '>=6.8.0': (config: Conf<BastionZeroConfigSchema>) => {
+                    const legacyDbConfig: DbConfig = config.get('dbConfig', undefined);
+                    const kubeConfig: KubeConfig = config.get('kubeConfig', undefined);
+                    const webConfig: WebConfig = config.get('webConfig', undefined);
+
+                    // Important! Legacy configs did not set discriminant
+                    // property (`type`). We must set it now that DaemonConfig
+                    // contains a type field which some caller might
+                    // discriminate on.
+                    if (legacyDbConfig) {
+                        legacyDbConfig.type = 'db';
+
+                        // Add legacy db config to new schema which is a
+                        // dictionary keyed by connectionId. In the future,
+                        // multi-web and multi-kube can do a similar migration
+                        // to init their respective daemons dictionary.
+
+                        const initDbDaemons: DaemonConfigs<DbConfig> = {};
+                        // Use special LEGACY_KEY_STRING as a key, so that
+                        // DaemonManagementService() can interpret this config
+                        // as a legacy config with no connection ID
+                        initDbDaemons[LEGACY_KEY_STRING] = legacyDbConfig;
+                        config.set('dbDaemons', initDbDaemons);
+
+                        // Delete the old db config value as it's no longer used
+                        // in connect handler. We have to use "as any" because
+                        // the schema type no longer includes it.
+                        config.delete('dbConfig' as any);
+                    }
+
+                    // Set the kubeConfig and webConfig values to ensure the
+                    // discriminant property is saved.
+                    if (kubeConfig) {
+                        kubeConfig.type = 'kube';
+                        config.set('kubeConfig', kubeConfig);
+                    }
+                    if (webConfig) {
+                        webConfig.type = 'web';
+                        config.set('webConfig', webConfig);
+                    }
+                },
             },
             watch: watch
         });
@@ -298,10 +339,6 @@ export class ConfigService implements ConfigInterface {
         return this.config.get('kubeConfig');
     }
 
-    public getDbConfig() {
-        return this.config.get('dbConfig');
-    }
-
     public getWebConfig() {
         return this.config.get('webConfig');
     }
@@ -314,12 +351,16 @@ export class ConfigService implements ConfigInterface {
         this.config.set('kubeConfig', kubeConfig);
     }
 
-    public setDbConfig(dbConfig: DbConfig) {
-        this.config.set('dbConfig', dbConfig);
-    }
-
     public setWebConfig(webConfig: WebConfig) {
         this.config.set('webConfig', webConfig);
+    }
+
+    public setDbDaemons(dbDaemons: DaemonConfigs<DbConfig>) {
+        this.config.set('dbDaemons', dbDaemons);
+    }
+
+    public getDbDaemons(): DaemonConfigs<DbConfig> {
+        return this.config.get('dbDaemons');
     }
 
     private getAppName(configName: string) {

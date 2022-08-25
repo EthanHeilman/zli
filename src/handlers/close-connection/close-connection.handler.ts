@@ -1,45 +1,52 @@
-import { getCliSpace } from '../../utils/shell-utils';
 import { ConfigService } from '../../services/config/config.service';
 import { Logger } from '../../services/logger/logger.service';
 import { cleanExit } from '../clean-exit.handler';
 import { ConnectionHttpService } from '../../http-services/connection/connection.http-services';
-import { SpaceHttpService } from '../../http-services/space/space.http-services';
-import { ConnectionState } from '../../../webshell-common-ts/http/v2/connection/types/connection-state.types';
+import { closeConnectionArgs } from './close-connection.command-builder';
+import yargs from 'yargs';
+import { closeDbConnections, closeShellConnections } from '../../services/close-connections/close-connections.service';
 
 export async function closeConnectionHandler(
+    argv: yargs.Arguments<closeConnectionArgs>,
     configService: ConfigService,
     logger: Logger,
-    connectionId: string,
-    closeAll: boolean
-){
-    const spaceHttpService = new SpaceHttpService(configService, logger);
-    const cliSpace = await getCliSpace(spaceHttpService, logger);
-    if(! cliSpace){
-        logger.error(`There is no cli session. Try creating a new connection to a target using the zli`);
-        await cleanExit(1, logger);
-    }
-    const connectionHttpService = new ConnectionHttpService(configService, logger);
+) {
+    const handleShell = async () => {
+        const cliSpaceExists = await closeShellConnections(configService, logger);
+        if (!cliSpaceExists) {
+            throw new Error('There is no cli session. Try creating a new connection to a target using the zli');
+        }
+    };
+    const handleDb = () => closeDbConnections(configService, logger);
 
-    if(closeAll)
-    {
-        logger.info('Closing all shell connections');
-        await spaceHttpService.CloseSpace(cliSpace.id);
-        await spaceHttpService.CreateSpace('cli-space');
+    if (argv.all) {
+        // Handle closing all connections
+        if (argv.type) {
+            // Handle optional type filter
+            switch (argv.type) {
+            case 'shell':
+                logger.info('Closing all shell connections');
+                await handleShell();
+                break;
+            case 'db':
+                logger.info('Closing all db connections');
+                await handleDb();
+                break;
+            default:
+                // Compile-time exhaustive check
+                const exhaustiveCheck: never = argv.type;
+                throw new Error(`Unhandled case: ${exhaustiveCheck}`);
+            }
+        } else {
+            // Otherwise close all types of connections
+            logger.info('Closing all shell and db connections');
+            await Promise.all([handleDb(), handleShell()]);
+        }
     } else {
-        const conn = await connectionHttpService.GetShellConnection(connectionId);
-        // if the connection does belong to the cli space
-        if (conn.spaceId !== cliSpace.id){
-            logger.error(`Connection ${connectionId} does not belong to the cli space`);
-            await cleanExit(1, logger);
-        }
-        // if connection not already closed
-        if(conn.state == ConnectionState.Open){
-            await connectionHttpService.CloseConnection(connectionId);
-            logger.info(`Connection ${connectionId} successfully closed`);
-        }else{
-            logger.error(`Connection ${connectionId} is not open`);
-            await cleanExit(1, logger);
-        }
+        // Handle closing specific connection
+        const connectionHttpService = new ConnectionHttpService(configService, logger);
+        await connectionHttpService.CloseConnection(argv.connectionId);
+        logger.info(`Connection ${argv.connectionId} successfully closed`);
     }
 
     await cleanExit(0, logger);
