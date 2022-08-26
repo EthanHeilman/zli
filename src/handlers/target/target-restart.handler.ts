@@ -5,8 +5,6 @@ import { restartArgs } from './target-restart.command-builder';
 import yargs from 'yargs';
 import { cleanExit } from '../clean-exit.handler';
 import { BzeroTargetHttpService } from '../../http-services/targets/bzero/bzero.http-services';
-import { EventsHttpService } from '../../http-services/events/events.http-server';
-import { TargetType } from '../../../webshell-common-ts/http/v2/target/types/target.types';
 
 export async function targetRestartHandler(
     argv: yargs.Arguments<restartArgs>,
@@ -27,14 +25,6 @@ export async function targetRestartHandler(
         envId: parsedTarget.envId,
         envName: parsedTarget.envName,
     });
-
-
-    const eventService = new EventsHttpService(configService, logger);
-    // TODO: not that this even lives here but obviously need to fix this
-    const x = await eventService.GetAgentStatusChangeEvents(parsedTarget.id, TargetType.Bzero);
-    const y = x.filter(z => new Date(z.timeStamp).getTime() > now.getTime());
-    console.log(y);
-
 
     logger.info(`Agent restart initiated. To monitor your target's status, use: zli lt -d${parsedTarget.name ? ` -n ${parsedTarget.name}` : ` -i`} `)
 

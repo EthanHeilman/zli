@@ -60,19 +60,25 @@ export const sshSuite = () => {
                         goneOffline = myTarget[0].status === TargetStatus.Offline;
                     }
                 }
+
                 while (!backOnline) {
                     const targets = await listTargets(configService, logger, [TargetType.Bzero]);
                     const myTarget = targets.filter(target => target.name === targetName);
                     if (myTarget.length !== 1) {
                         throw new Error(`Expected 1 target but got ${myTarget.length}`);
                     } else {
-                        goneOffline = myTarget[0].status === TargetStatus.Online;
+                        backOnline = myTarget[0].status === TargetStatus.Online;
                     }
                 }
 
                 const eventService = new EventsHttpService(configService, logger);
                 const agentStatusChanges = await eventService.GetAgentStatusChangeEvents(targetId, TargetType.Bzero);
-                // TODO: what do I expect?
+                const newChanges = agentStatusChanges.filter(e => new Date(e.timeStamp).getTime() > now.getTime())
+                    .sort((a, b) => new Date(a.timeStamp).getTime() - new Date(b.timeStamp).getTime());
+                expect(newChanges.length).toBe(3);
+                expect(newChanges[0].statusChange).toBe("OnlineToOffline");
+                expect(newChanges[1].statusChange).toBe("OfflineToRestarting");
+                expect(newChanges[2].statusChange).toBe("RestartingToOnline");
 
             }, 60 * 1000);
         });
