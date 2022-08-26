@@ -18,8 +18,13 @@ export class UserHttpService extends HttpService
     {
         const requestHeaders = {
             'AccessToken': this.configService.getAccessToken(),
-            'IdToken': this.configService.getIdToken()
+            'IdToken': this.configService.getIdToken(),
+            // 'X-SERV-ACC' : "true",
         };
+        // this.logger.info("Register: "+ requestHeaders);
+        // this.logger.info("this.baseUrl:  "+ this.baseUrl + '/register');
+
+        
         const resp = await this.Post<{}, UserRegisterResponse>('register', {}, requestHeaders);
 
         // Store the session cookies in config

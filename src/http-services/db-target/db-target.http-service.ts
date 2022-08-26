@@ -10,11 +10,15 @@ export class DbTargetService extends HttpService
 {
     constructor(configService: ConfigService, logger: Logger)
     {
-        super(configService, 'api/v2/targets/database', logger);
+        super(configService, 'api/v2/targets/database', logger);        
     }
 
     public ListDbTargets(): Promise<DbTargetSummary[]> {
-        return this.Get('', {});
+        const requestHeaders = {
+            'X-SERV-ACC' : "true",
+        };
+
+        return this.Get('', {}, requestHeaders);
     }
 
     public CreateDbTarget(request: AddNewDbTargetRequest): Promise<AddNewDbTargetResponse> {
