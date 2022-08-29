@@ -48,6 +48,7 @@ import { mfaSuite } from './suites/rest-api/mfa';
 import { eventsRestApiSuite } from './suites/rest-api/events';
 import { webSuite } from './suites/web';
 import { dbSuite } from './suites/db';
+import { agentRecoverySuite } from './suites/agent-recovery'
 
 // Uses config name from ZLI_CONFIG_NAME environment variable (defaults to prod
 // if unset) This can be run against dev/stage/prod when running system tests
@@ -306,11 +307,6 @@ if(IN_PIPELINE) {
     agentContainerSuite();
 }
 
-// BZero only test suites
-if(BZERO_ENABLED) {
-    dynamicAccessSuite();
-}
-
 if(KUBE_ENABLED) {
     kubeSuite();
 }
@@ -357,6 +353,13 @@ if (API_ENABLED) {
     } else {
         logger.info('Skipping kube cluster REST API suite because kube cluster creation is disabled.');
     }
+}
+
+if (process.env.TEST_RUNNER_KUBE_CONFIG) {
+    logger.info("Running agent recovery tests");
+    agentRecoverySuite(process.env.TEST_RUNNER_KUBE_CONFIG, process.env.TEST_RUNNER_UNIQUE_ID);
+} else {
+    logger.info('Skipping agent recovery tests because we are not running against a test runner.');
 }
 
 // Always run the version suite
