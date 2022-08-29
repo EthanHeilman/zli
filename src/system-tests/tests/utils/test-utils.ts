@@ -64,12 +64,11 @@ export class TestUtils {
         return toReturn;
     }
 
-    public async EnsureAgentStatusEvent(targetId: string, partialEvent: Partial<AgentStatusChangeData>, timeout: number = 25 * 100, retryInterval: number = 5 * 1000) {
+    public async EnsureAgentStatusEvent(targetId: string, partialEvent: Partial<AgentStatusChangeData>, startTime?: Date, endTime?: Date, timeout: number = 25 * 100, retryInterval: number = 5 * 1000) {
         const defaults: AgentStatusChangeData = {
-            id: expect.anything(),
             statusChange: expect.anything(),
             timeStamp: expect.anything(),
-            origin: expect.anything(),
+            reason: expect.anything(),
             agentPublicKey: expect.anything(),
         };
 
@@ -78,7 +77,7 @@ export class TestUtils {
         // TODO: Add startTime filter
         return await this.waitForExpect(
             async () => {
-                const gotEvents = await this.eventsService.GetAgentStatusChangeEvents(targetId, TargetType.Bzero);
+                const gotEvents = await this.eventsService.GetAgentStatusChangeEvents(targetId, startTime, endTime);
 
                 // Use arrayContaining, so that got value can contain extra
                 // elements. Include explicit generic constraint, so that jest

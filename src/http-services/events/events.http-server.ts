@@ -5,7 +5,7 @@ import { ConnectionEventDataMessage } from '../../../webshell-common-ts/http/v2/
 import { CommandEventDataMessage } from '../../../webshell-common-ts/http/v2/event/types/command-event-data-message';
 import { KubeEventDataMessage } from '../../../webshell-common-ts/http/v2/event/types/kube-event-data-message.types';
 import { UserEventDataMessage } from '../../../webshell-common-ts/http/v2/event/types/user-event-data-message.types';
-import { TargetType } from '../../../webshell-common-ts/http/v2/target/types/target.types';
+import { AgentStatusChangeData } from '../../../webshell-common-ts/http/v2/event/types/agent-status-change-data.types';
 
 
 export class EventsHttpService extends HttpService
@@ -53,11 +53,13 @@ export class EventsHttpService extends HttpService
         return this.Get('user', params);
     }
 
-    public GetAgentStatusChangeEvents(targetId: string, targetType: TargetType) {
+    public GetAgentStatusChangeEvents(targetId: string, startTime?: Date, endTime?: Date): Promise<AgentStatusChangeData> {
         const params = {
-            targetId,
-            targetType,
+            targetId: targetId,
+            startTime: startTime?.toJSON(),
+            endTime: endTime?.toJSON(),
         };
+
         return this.Get('agentstatuschange', params);
     }
 }
