@@ -1,3 +1,5 @@
+import *  as fs from 'fs';
+
 import { ConfigService } from '../../../../src/services/config/config.service';
 import { Logger } from '../../../services/logger/logger.service';
 import { EventsHttpService } from '../../../../src/http-services/events/events.http-server';
@@ -7,8 +9,8 @@ import { SubjectType } from '../../../../webshell-common-ts/http/v2/common.types
 import { CommandEventDataMessage } from '../../../../webshell-common-ts/http/v2/event/types/command-event-data-message';
 import { ConnectionEventDataMessage } from '../../../../webshell-common-ts/http/v2/event/types/connection-event-data-message';
 import { EnvironmentHttpService } from '../../../../src/http-services/environment/environment.http-services';
-
-import *  as fs from 'fs';
+import { AgentStatusChangeData } from '../../../../webshell-common-ts/http/v2/event/types/agent-status-change-data.types';
+import { TargetType } from '../../../../webshell-common-ts/http/v2/target/types/target.types';
 
 const pids = require('port-pid');
 
@@ -60,6 +62,32 @@ export class TestUtils {
             command: command
         };
         return toReturn;
+    }
+
+    public async EnsureAgentStatusEvent(targetId: string, partialEvent: Partial<AgentStatusChangeData>, timeout: number = 25 * 100, retryInterval: number = 5 * 1000) {
+        const defaults: AgentStatusChangeData = {
+            id: expect.anything(),
+            statusChange: expect.anything(),
+            timeStamp: expect.anything(),
+            origin: expect.anything(),
+            agentPublicKey: expect.anything(),
+        };
+
+        const expectedEvent : AgentStatusChangeData = { ...defaults, ...partialEvent};
+
+        // TODO: Add startTime filter
+        return await this.waitForExpect(
+            async () => {
+                const gotEvents = await this.eventsService.GetAgentStatusChangeEvents(targetId, TargetType.Bzero);
+
+                // Use arrayContaining, so that got value can contain extra
+                // elements. Include explicit generic constraint, so that jest
+                // prints the object if something does not match.
+                expect(gotEvents).toEqual<ConnectionEventDataMessage[]>(expect.arrayContaining([expectedEvent]));
+            },
+            timeout,
+            retryInterval
+        );
     }
 
     /**
