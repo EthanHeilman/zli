@@ -16,6 +16,7 @@ import { cleanupTargetConnectPolicies } from '../system-test-cleanup';
 import { PolicyHttpService } from '../../../http-services/policy/policy.http-services';
 import { Subject } from '../../../../webshell-common-ts/http/v2/policy/types/subject.types';
 import { VerbType } from '../../../../webshell-common-ts/http/v2/policy/types/verb-type.types';
+import { ConnectTestUtils } from '../utils/connect-utils';
 import { ssmUser, getTargetInfo, expectIncludeStmtInConfig, expectTargetsInBzConfig } from '../utils/ssh-utils';
 import { bzeroTestTargetsToRun } from '../targets-to-run';
 import { EventsHttpService } from '../../../http-services/events/events.http-server';
@@ -27,6 +28,7 @@ export const sshSuite = () => {
     describe('target suite', () => {
 
         let testUtils: TestUtils;
+        let connectTestUtils: ConnectTestUtils;
 
         beforeAll(() => {
         });
@@ -50,6 +52,7 @@ export const sshSuite = () => {
 
                 const now = new Date(new Date().toUTCString());
 
+                // first, check that the agent restarted
                 // TODO: factor this out
                 while (!goneOffline) {
                     const targets = await listTargets(configService, logger, [TargetType.Bzero]);
@@ -72,13 +75,16 @@ export const sshSuite = () => {
                 }
 
                 const eventService = new EventsHttpService(configService, logger);
-                const agentStatusChanges = await eventService.GetAgentStatusChangeEvents(targetId, TargetType.Bzero);
+                const agentStatusChanges = await eventService.GetAgentStatusChangeEvents(targetId);
                 const newChanges = agentStatusChanges.filter(e => new Date(e.timeStamp).getTime() > now.getTime())
                     .sort((a, b) => new Date(a.timeStamp).getTime() - new Date(b.timeStamp).getTime());
                 expect(newChanges.length).toBe(3);
                 expect(newChanges[0].statusChange).toBe("OnlineToOffline");
                 expect(newChanges[1].statusChange).toBe("OfflineToRestarting");
                 expect(newChanges[2].statusChange).toBe("RestartingToOnline");
+
+                // second, check that we can still connect to the agent
+                await connectTestUtils.runShellConnectTest(testTarget, `target restart test - ${systemTestUniqueId}`, true);
 
             }, 60 * 1000);
         });

@@ -7,7 +7,6 @@ import { KubeEventDataMessage } from '../../../webshell-common-ts/http/v2/event/
 import { UserEventDataMessage } from '../../../webshell-common-ts/http/v2/event/types/user-event-data-message.types';
 import { AgentStatusChangeData } from '../../../webshell-common-ts/http/v2/event/types/agent-status-change-data.types';
 
-
 export class EventsHttpService extends HttpService {
     constructor(configService: ConfigService, logger: Logger) {
         super(configService, 'api/v2/events/', logger);
