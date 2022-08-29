@@ -94,6 +94,7 @@ const VT_ENABLED = process.env.VT_ENABLED ? (process.env.VT_ENABLED === 'true') 
 const BZERO_ENABLED = process.env.BZERO_ENABLED ? (process.env.BZERO_ENABLED === 'true') : true;
 const SSM_ENABLED =  process.env.SSM_ENABLED ? (process.env.SSM_ENABLED === 'true') : true;
 const API_ENABLED = process.env.API_ENABLED ? (process.env.API_ENABLED === 'true') : true;
+const AGENT_RECOVERY_ENABLED = process.env.AGENT_RECOVERY_ENABLED ? (process.env.AGENT_RECOVERY_ENABLED === 'true') : true;
 export const IN_PIPELINE = process.env.IN_PIPELINE ? process.env.IN_PIPELINE === 'true' : false;;
 
 export const IN_CI = process.env.BZERO_IN_CI ? (process.env.BZERO_IN_CI === '1') : false;
@@ -355,11 +356,11 @@ if (API_ENABLED) {
     }
 }
 
-if (process.env.TEST_RUNNER_KUBE_CONFIG) {
+if (AGENT_RECOVERY_ENABLED && BZERO_ENABLED && process.env.TEST_RUNNER_KUBE_CONFIG) {
     logger.info("Running agent recovery tests");
     agentRecoverySuite(process.env.TEST_RUNNER_KUBE_CONFIG, process.env.TEST_RUNNER_UNIQUE_ID);
 } else {
-    logger.info('Skipping agent recovery tests because we are not running against a test runner.');
+    logger.info('Skipping agent recovery tests.');
 }
 
 // Always run the version suite
