@@ -130,5 +130,35 @@ export const agentRecoverySuite = (testRunnerKubeConfigFile: string, testRunnerU
 
             return resp.body.items[0];
         }
+
+        // adding a success case for connecting to bzero targets via ssh using .environment
+        bzeroTestTargetsToRun.forEach(async (testTarget: TestTarget) => {
+            // FIXME: add case id!!
+            it(`${testTarget.sshCaseId}: restart target by name - ${testTarget.awsRegion} - ${testTarget.installType} - ${testTarget.dropletImage}`, async () => {
+                const { targetName, targetId } = await getTargetInfo(testTarget);
+                await callZli(['target', 'restart', targetName]);
+
+                // first, check that the agent restarted
+                await testUtils.EnsureAgentStatusEvent(targetId, {
+                    statusChange: 'OnlineToOffline'
+                }, testStartTime, undefined, 30 * 1000);
+
+                // second, check that it restarted
+                await testUtils.EnsureAgentStatusEvent(targetId, {
+                    statusChange: 'OfflineToRestarting'
+                }, testStartTime, undefined, 2 * 60 * 1000);
+
+                // second, check that it restarted
+                await testUtils.EnsureAgentStatusEvent(targetId, {
+                    statusChange: 'RestartingToOnline'
+                }, testStartTime, undefined, 30 * 1000);
+
+                // TODO: oh and can check the restart Origin!
+
+                // finally, check that we can still connect to the agent
+                await connectTestUtils.runShellConnectTest(testTarget, `zli target restart test - ${systemTestUniqueId}`, true);
+
+            }, 120 * 1000);
+        });
     });
 };
