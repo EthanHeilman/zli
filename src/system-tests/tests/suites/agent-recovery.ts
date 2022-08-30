@@ -17,6 +17,7 @@ import { callZli } from '../utils/zli-utils';
 import { getTargetInfo } from '../utils/ssh-utils';
 import { EventsHttpService } from '../../../http-services/events/events.http-server';
 import { TestTarget } from '../system-test.types';
+import { AgentStatusChangeData } from '../../../../webshell-common-ts/http/v2/event/types/agent-status-change-data.types';
 
 // Create mapping object and function for test rails case IDs
 interface testRailsCaseIdMapping {
@@ -168,17 +169,35 @@ export const agentRecoverySuite = (testRunnerKubeConfigFile: string, testRunnerU
                 const { targetName, targetId } = await getTargetInfo(testTarget);
                 await callZli(['target', 'restart', targetName]);
 
+                const eventsService = new EventsHttpService(configService, logger);
+                let latestEvents: AgentStatusChangeData[]
+
                 console.log("going offline");
                 // first, check that the agent restarted
                 await testUtils.EnsureAgentStatusEvent(targetId, {
                     statusChange: 'OnlineToOffline'
                 }, testStartTime, undefined, 60 * 1000, 3000);
 
+                latestEvents = await eventsService.GetAgentStatusChangeEvents(targetId, testStartTime);
+                console.log(JSON.stringify(latestEvents));
+
+                console.log("going offline again somehow?");
+                // first, check that the agent restarted
+                await testUtils.EnsureAgentStatusEvent(targetId, {
+                    statusChange: 'OnlineToOffline'
+                }, testStartTime, undefined, 60 * 1000, 3000);
+
+                latestEvents = await eventsService.GetAgentStatusChangeEvents(targetId, testStartTime);
+                console.log(JSON.stringify(latestEvents));
+
                 console.log("going restarting");
                 // second, check that it restarted
                 await testUtils.EnsureAgentStatusEvent(targetId, {
                     statusChange: 'OfflineToRestarting'
                 }, testStartTime, undefined, 2 * 60 * 1000, 3000);
+
+                latestEvents = await eventsService.GetAgentStatusChangeEvents(targetId, testStartTime);
+                console.log(JSON.stringify(latestEvents));
 
                 console.log("going online");
                 // second, check that it restarted
@@ -188,6 +207,12 @@ export const agentRecoverySuite = (testRunnerKubeConfigFile: string, testRunnerU
 
                 // finally, check that we can still connect to the agent
                 await connectTestUtils.runShellConnectTest(testTarget, `zli target restart test - ${systemTestUniqueId}`, true);
+
+
+                const restart = latestEvents.filter(e => e.statusChange === 'OfflineToRestarting');
+                expect(restart.length).toEqual(1);
+                console.log(restart[0]);
+                expect(restart[0].reason).toContain("received manual restart from user");
 
             }, 10 * 60 * 1000);
         });
