@@ -47,19 +47,11 @@ export class EventsHttpService extends HttpService {
         return this.Get('user', params);
     }
 
-<<<<<<< HEAD
     public GetAgentStatusChangeEvents(targetId: string, startTime?: Date, endTime?: Date): Promise<AgentStatusChangeData> {
         const params = {
             targetId: targetId,
             startTimestamp: startTime?.toJSON(),
             endTimestamp: endTime?.toJSON(),
-=======
-    public GetAgentStatusChangeEvents(targetId: string, startTimestamp?: Date, endTimestamp?: Date): Promise<AgentStatusChangeData[]> {
-        const params = {
-            targetId,
-            startTimestamp: startTimestamp?.toJSON(),
-            endTImestamp: endTimestamp?.toJSON(),
->>>>>>> 12e721b (actually add suite)
         };
 
         return this.Get('agentstatuschange', params);

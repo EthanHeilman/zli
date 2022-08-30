@@ -13,6 +13,9 @@ import { Subject } from '../../../../webshell-common-ts/http/v2/policy/types/sub
 import { SubjectType } from '../../../../webshell-common-ts/http/v2/common.types/subject.types';
 import { Environment } from '../../../../webshell-common-ts/http/v2/policy/types/environment.types';
 import { VerbType } from '../../../../webshell-common-ts/http/v2/policy/types/verb-type.types';
+import { callZli } from '../utils/zli-utils';
+import { getTargetInfo } from '../utils/ssh-utils';
+import { TestTarget } from '../system-test.types';
 
 export const agentRecoverySuite = (testRunnerKubeConfigFile: string, testRunnerUniqueId: string) => {
     describe('Agent Recovery Suite', () => {
@@ -22,6 +25,8 @@ export const agentRecoverySuite = (testRunnerKubeConfigFile: string, testRunnerU
         let testUtils: TestUtils;
         let connectionService: ConnectionHttpService;
         let connectTestUtils: ConnectTestUtils;
+
+        let testStartTime: Date;
 
         beforeAll(async () => {
             policyService = new PolicyHttpService(configService, logger);
@@ -55,18 +60,18 @@ export const agentRecoverySuite = (testRunnerKubeConfigFile: string, testRunnerU
                 environments: [environment],
                 targets: [],
                 targetUsers: ConnectTestUtils.getPolicyTargetUsers(),
-                verbs: [{type: VerbType.Shell},]
+                verbs: [{ type: VerbType.Shell },]
             });
         });
 
         // Called before each case
         beforeEach(() => {
+            testStartTime = new Date();
             connectTestUtils = new ConnectTestUtils(connectionService, testUtils);
         });
 
         bzeroTestTargetsToRun.forEach(async (testTarget) => {
             it(`247517: bastion restart ${testTarget.awsRegion} - ${getDOImageName(testTarget.dropletImage)}`, async () => {
-                const testStartTime = new Date();
                 const doTarget = testTargets.get(testTarget);
                 const connectTarget = connectTestUtils.getConnectTarget(doTarget, testTarget.awsRegion);
 
@@ -128,14 +133,14 @@ export const agentRecoverySuite = (testRunnerKubeConfigFile: string, testRunnerU
 
                 await connectTestUtils.runShellConnectTest(testTarget, `bastion restart test - ${systemTestUniqueId}`, true);
             },
-            10 * 60 * 1000); // 10 min timeout
+                10 * 60 * 1000); // 10 min timeout
         });
 
         async function getBastionPod(k8sApi: k8s.CoreV1Api, uniqueId: string) {
-            const resp = await getPodWithLabelSelector(k8sApi, 'default', { 'uniqueId': uniqueId, 'podType': 'bastion'});
+            const resp = await getPodWithLabelSelector(k8sApi, 'default', { 'uniqueId': uniqueId, 'podType': 'bastion' });
 
             const podCount = resp.body.items.length;
-            if(podCount != 1) {
+            if (podCount != 1) {
                 throw new Error(`Found ${podCount} bastion pods.`);
             }
 
@@ -145,20 +150,23 @@ export const agentRecoverySuite = (testRunnerKubeConfigFile: string, testRunnerU
         // adding a success case for connecting to bzero targets via ssh using .environment
         bzeroTestTargetsToRun.forEach(async (testTarget: TestTarget) => {
             // FIXME: add case id!!
-            it(`${testTarget.sshCaseId}: restart target by name - ${testTarget.awsRegion} - ${testTarget.installType} - ${testTarget.dropletImage}`, async () => {
+            it(`99999999999999: restart target by name - ${testTarget.awsRegion} - ${testTarget.installType} - ${testTarget.dropletImage}`, async () => {
                 const { targetName, targetId } = await getTargetInfo(testTarget);
                 await callZli(['target', 'restart', targetName]);
 
+                console.log("going offline");
                 // first, check that the agent restarted
                 await testUtils.EnsureAgentStatusEvent(targetId, {
                     statusChange: 'OnlineToOffline'
                 }, testStartTime, undefined, 30 * 1000);
 
+                console.log("going restarting");
                 // second, check that it restarted
                 await testUtils.EnsureAgentStatusEvent(targetId, {
                     statusChange: 'OfflineToRestarting'
                 }, testStartTime, undefined, 2 * 60 * 1000);
 
+                console.log("going online");
                 // second, check that it restarted
                 await testUtils.EnsureAgentStatusEvent(targetId, {
                     statusChange: 'RestartingToOnline'
@@ -169,7 +177,7 @@ export const agentRecoverySuite = (testRunnerKubeConfigFile: string, testRunnerU
                 // finally, check that we can still connect to the agent
                 await connectTestUtils.runShellConnectTest(testTarget, `zli target restart test - ${systemTestUniqueId}`, true);
 
-            }, 120 * 1000);
+            }, 10 * 60 * 1000);
         });
     });
 };
