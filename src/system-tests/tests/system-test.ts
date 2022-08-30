@@ -277,87 +277,88 @@ beforeEach(async () => {
     mockCleanExit();
 });
 
-// Call list target suite anytime a target test is called
-if (SSM_ENABLED || BZERO_ENABLED || KUBE_ENABLED) {
-    listTargetsSuite();
-}
+// // Call list target suite anytime a target test is called
+// if (SSM_ENABLED || BZERO_ENABLED || KUBE_ENABLED) {
+//     listTargetsSuite();
+// }
 
-// These suites are based on testing allTargets use SSM_ENABLED or BZERO_ENABLED
-// environment variables to control which targets are created
-if(SSM_ENABLED || BZERO_ENABLED) {
-    connectSuite();
-    sessionRecordingSuite();
-    sshSuite();
+// // These suites are based on testing allTargets use SSM_ENABLED or BZERO_ENABLED
+// // environment variables to control which targets are created
+// if(SSM_ENABLED || BZERO_ENABLED) {
+//     connectSuite();
+//     sessionRecordingSuite();
+//     sshSuite();
 
-    if (IN_CI && NOT_USING_RUNNER) {
-        // Only run group tests if we are in CI and talking to staging or dev
-        groupsSuite();
-    };
-}
+//     if (IN_CI && NOT_USING_RUNNER) {
+//         // Only run group tests if we are in CI and talking to staging or dev
+//         groupsSuite();
+//     };
+// }
 
-// BZero only test suites
-if(BZERO_ENABLED) {
-    dynamicAccessSuite();
-}
+// // BZero only test suites
+// if(BZERO_ENABLED) {
+//     dynamicAccessSuite();
+// }
 
 // Only run the agent container suite when we are running
 // in the pipeline
-if(IN_PIPELINE) {
-    agentContainerSuite();
-}
+// if(IN_PIPELINE) {
+// }
 
-// BZero only test suites
-if(BZERO_ENABLED) {
-    dynamicAccessSuite();
-}
+agentContainerSuite();
 
-if(KUBE_ENABLED) {
-    kubeSuite();
-}
+// // BZero only test suites
+// if(BZERO_ENABLED) {
+//     dynamicAccessSuite();
+// }
 
-if(VT_ENABLED) {
-    dbSuite();
-    webSuite();
-    iperfSuite();
-}
+// if(KUBE_ENABLED) {
+//     kubeSuite();
+// }
 
-if (API_ENABLED) {
-    apiKeySuite();
-    organizationSuite();
-    environmentsSuite();
-    policySuite();
-    dynamicAccessConfigRestApiSuite();
-    userRestApiSuite();
-    spacesRestApiSuite();
-    mfaSuite();
-    eventsRestApiSuite();
+// if(VT_ENABLED) {
+//     dbSuite();
+//     webSuite();
+//     iperfSuite();
+// }
 
-    if (SSM_ENABLED) {
-        // Since this suite modifies an SSM target name, we must be cautious if we parallelize test suite running because
-        // other SSM-related tests could fail that rely on the name, such as tests that use the name with 'zli connect'.
-        // It may be possible to allow parallelization if we use target IDs instead of names in `zli connect`.
-        ssmTargetRestApiSuite();
-    } else {
-        logger.info('Skipping SSM target REST API suite because SSM target creation is disabled.');
-    }
-    if (VT_ENABLED) {
-        // Since this suite modifies a bzero target name, we must be cautious if we parallelize test suite running because
-        // other SSM-related tests could fail that rely on the name, such as tests that use the name with 'zli connect'.
-        // It may be possible to allow parallelization if we use target IDs instead of names in `zli connect`.
-        bzeroTargetRestApiSuite();
+// if (API_ENABLED) {
+//     apiKeySuite();
+//     organizationSuite();
+//     environmentsSuite();
+//     policySuite();
+//     dynamicAccessConfigRestApiSuite();
+//     userRestApiSuite();
+//     spacesRestApiSuite();
+//     mfaSuite();
+//     eventsRestApiSuite();
 
-        databaseTargetRestApiSuite();
-        webTargetRestApiSuite();
-    } else {
-        logger.info('Skipping Bzero, web, and db target REST API suites because Bzero target creation is disabled.');
-    }
-    if (KUBE_ENABLED) {
-        // See notes above about running this suite in parallel - the same caution applies here.
-        kubeClusterRestApiSuite();
-    } else {
-        logger.info('Skipping kube cluster REST API suite because kube cluster creation is disabled.');
-    }
-}
+//     if (SSM_ENABLED) {
+//         // Since this suite modifies an SSM target name, we must be cautious if we parallelize test suite running because
+//         // other SSM-related tests could fail that rely on the name, such as tests that use the name with 'zli connect'.
+//         // It may be possible to allow parallelization if we use target IDs instead of names in `zli connect`.
+//         ssmTargetRestApiSuite();
+//     } else {
+//         logger.info('Skipping SSM target REST API suite because SSM target creation is disabled.');
+//     }
+//     if (VT_ENABLED) {
+//         // Since this suite modifies a bzero target name, we must be cautious if we parallelize test suite running because
+//         // other SSM-related tests could fail that rely on the name, such as tests that use the name with 'zli connect'.
+//         // It may be possible to allow parallelization if we use target IDs instead of names in `zli connect`.
+//         bzeroTargetRestApiSuite();
+
+//         databaseTargetRestApiSuite();
+//         webTargetRestApiSuite();
+//     } else {
+//         logger.info('Skipping Bzero, web, and db target REST API suites because Bzero target creation is disabled.');
+//     }
+//     if (KUBE_ENABLED) {
+//         // See notes above about running this suite in parallel - the same caution applies here.
+//         kubeClusterRestApiSuite();
+//     } else {
+//         logger.info('Skipping kube cluster REST API suite because kube cluster creation is disabled.');
+//     }
+// }
 
 // Always run the version suite
 versionSuite();
