@@ -22,6 +22,8 @@ export async function waitForRestart(configService: ConfigService, logger: Logge
         }
     }
 
+    console.log("Gone offline!")
+
     while (!backOnline) {
         const targets = await listTargets(configService, logger, [TargetType.Bzero]);
         const myTarget = targets.filter(target => target.name === targetString.name);

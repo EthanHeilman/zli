@@ -35,7 +35,10 @@ export const targetSuite = () => {
                 const now = new Date(new Date().toUTCString());
 
                 // first, check that the agent restarted
+                console.log("Waiting for restart...");
                 await waitForRestart(configService, logger, parseTargetString(targetName));
+
+                console.log("restarted");
 
                 const eventService = new EventsHttpService(configService, logger);
                 const newChanges = await eventService.GetAgentStatusChangeEvents(targetId, now);
@@ -44,10 +47,12 @@ export const targetSuite = () => {
                 expect(newChanges[1].statusChange).toBe("OfflineToRestarting");
                 expect(newChanges[2].statusChange).toBe("RestartingToOnline");
 
+                // TODO: oh and can check the restart Origin!
+
                 // second, check that we can still connect to the agent
                 await connectTestUtils.runShellConnectTest(testTarget, `target restart test - ${systemTestUniqueId}`, true);
 
-            }, 60 * 1000);
+            }, 120 * 1000);
         });
     });
 }

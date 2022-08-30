@@ -34,14 +34,13 @@ export async function targetRestartHandler(
     }
     parsedTarget.name = "john-bzero-agent";
 
-    /* FIXME: remove
+
     // first, check that the agent restarted
     await waitForRestart(configService, logger, parsedTarget);
 
     const eventService = new EventsHttpService(configService, logger);
     const newChanges = await eventService.GetAgentStatusChangeEvents(parsedTarget.id, now);
     console.log(newChanges);
-    */
 
     logger.info(`Agent restart initiated. To monitor your target's status, use: zli lt -d${parsedTarget.name ? ` -n ${parsedTarget.name}` : ` -i`} `)
 
