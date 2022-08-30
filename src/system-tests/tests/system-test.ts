@@ -45,6 +45,10 @@ import { eventsRestApiSuite } from './suites/rest-api/events';
 import { webSuite } from './suites/web';
 import { dbSuite } from './suites/db';
 import { agentRecoverySuite } from './suites/agent-recovery';
+import { connectSuite } from './suites/connect';
+import { sessionRecordingSuite } from './suites/session-recording';
+import { sshSuite } from './suites/ssh';
+import { dynamicAccessSuite } from './suites/dynamic-access';
 
 // Uses config name from ZLI_CONFIG_NAME environment variable (defaults to prod
 // if unset) This can be run against dev/stage/prod when running system tests
@@ -283,9 +287,9 @@ if (SSM_ENABLED || BZERO_ENABLED || KUBE_ENABLED) {
 // These suites are based on testing allTargets use SSM_ENABLED or BZERO_ENABLED
 // environment variables to control which targets are created
 if(SSM_ENABLED || BZERO_ENABLED) {
-    // connectSuite();
-    // sessionRecordingSuite();
-    // sshSuite();
+    connectSuite();
+    sessionRecordingSuite();
+    sshSuite();
 
     if (IN_CI && NOT_USING_RUNNER) {
         // Only run group tests if we are in CI and talking to staging or dev
@@ -295,7 +299,7 @@ if(SSM_ENABLED || BZERO_ENABLED) {
 
 // BZero only test suites
 if(BZERO_ENABLED) {
-    // dynamicAccessSuite();
+    dynamicAccessSuite();
 }
 
 // Only run the agent container suite when we are running
