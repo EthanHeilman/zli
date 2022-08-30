@@ -169,16 +169,25 @@ export const agentRecoverySuite = (testRunnerKubeConfigFile: string, testRunnerU
                 const { targetName, targetId } = await getTargetInfo(testTarget);
                 await callZli(['target', 'restart', targetName]);
 
+                logger.info(`Running with test start time = ${testStartTime}`);
+
                 const eventsService = new EventsHttpService(configService, logger);
                 let latestEvents: AgentStatusChangeData[]
 
-                console.log("going offline");
+                logger.info("going offline");
                 // first, check that the agent restarted
                 await testUtils.EnsureAgentStatusEvent(targetId, {
                     statusChange: 'OnlineToOffline'
                 }, testStartTime, undefined, 60 * 1000, 3000);
 
-                latestEvents = await eventsService.GetAgentStatusChangeEvents(targetId, testStartTime);
+
+                const backOnline = false;
+                while (!backOnline) {
+                    await new Promise(r => setTimeout(r, 5000));
+                    latestEvents = await eventsService.GetAgentStatusChangeEvents(targetId, testStartTime);
+                    logger.info(JSON.stringify(latestEvents))
+                }
+                /*
                 console.log(JSON.stringify(latestEvents));
 
                 console.log("going offline again somehow?");
@@ -204,6 +213,7 @@ export const agentRecoverySuite = (testRunnerKubeConfigFile: string, testRunnerU
                 await testUtils.EnsureAgentStatusEvent(targetId, {
                     statusChange: 'RestartingToOnline'
                 }, testStartTime, undefined, 30 * 1000, 3000);
+                */
 
                 // finally, check that we can still connect to the agent
                 await connectTestUtils.runShellConnectTest(testTarget, `zli target restart test - ${systemTestUniqueId}`, true);
