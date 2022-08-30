@@ -56,8 +56,8 @@ export class EventsHttpService extends HttpService
     public GetAgentStatusChangeEvents(targetId: string, startTime?: Date, endTime?: Date): Promise<AgentStatusChangeData> {
         const params = {
             targetId: targetId,
-            startTime: startTime?.toJSON(),
-            endTime: endTime?.toJSON(),
+            startTimestamp: startTime?.toJSON(),
+            endTimestamp: endTime?.toJSON(),
         };
 
         return this.Get('agentstatuschange', params);

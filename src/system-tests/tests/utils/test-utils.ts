@@ -73,8 +73,6 @@ export class TestUtils {
         };
 
         const expectedEvent : AgentStatusChangeData = { ...defaults, ...partialEvent};
-
-        // TODO: Add startTime filter
         return await this.waitForExpect(
             async () => {
                 const gotEvents = await this.eventsService.GetAgentStatusChangeEvents(targetId, startTime, endTime);
