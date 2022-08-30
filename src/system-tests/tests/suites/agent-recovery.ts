@@ -1,4 +1,3 @@
-import fs from 'fs';
 import * as k8s from '@kubernetes/client-node';
 
 import { configService, logger, loggerConfigService, systemTestEnvId, systemTestPolicyTemplate, systemTestUniqueId, testTargets } from '../system-test';
@@ -32,7 +31,7 @@ export const agentRecoverySuite = (testRunnerKubeConfigFile: string, testRunnerU
             // const kubeConfigFileContent = fs.readFileSync(testRunnerKubeConfigFile).toString();
             // logger.info(`Test runner kube config file is ${testRunnerKubeConfigFile} with contents: ${kubeConfigFileContent}`);
             logger.info(`Test runner uniqueId is: ${testRunnerUniqueId}`);
-            
+
             // Setup the kube client from the test runner configuration
             const kc = new k8s.KubeConfig();
             kc.loadFromFile(testRunnerKubeConfigFile);
@@ -77,11 +76,11 @@ export const agentRecoverySuite = (testRunnerKubeConfigFile: string, testRunnerU
                 // the control channel and the offline event should happen
                 // immediately on bastion
 
-                let bastionPod = await getBastionPod(k8sApi, testRunnerUniqueId);
+                const bastionPod = await getBastionPod(k8sApi, testRunnerUniqueId);
                 const bastionContainer = 'bastion';
-                
+
                 // Stop the systemd service on the bastion container to simulate bastion going down temporarily
-                logger.info("stopping bastion container");
+                logger.info('stopping bastion container');
 
                 // send a SIGKILL signal to simulate the bastion crashing instead of gracefully shutting down
                 // https://serverfault.com/questions/936037/killing-systemd-service-with-and-without-systemctl
@@ -89,38 +88,38 @@ export const agentRecoverySuite = (testRunnerKubeConfigFile: string, testRunnerU
                 // const gracefulStopCommand = ['/usr/local/bin/systemctl', 'stop', 'bzero-server'];
 
                 await execOnPod(k8sExec, bastionPod, bastionContainer, harshStopCommand, logger);
-    
+
                 // Wait for 2 min to ensure when we start bastion again the
                 // heartbeat poller will move the agent to offline status
-                logger.info("waiting 2 min before restarting bastion");
+                logger.info('waiting 2 min before restarting bastion');
                 await sleepTimeout(2 * 60 * 1000);
-                
+
                 // Start the systemd service on the bastion container
-                logger.info("starting bastion container");
+                logger.info('starting bastion container');
                 const startCommand = ['/usr/local/bin/systemctl', 'start', 'bzero-server'];
                 await execOnPod(k8sExec, bastionPod, bastionContainer, startCommand, logger);
-                
+
                 // Once bastion comes back online the agent status should
                 // immediately move to offline because its been > 2 min since
                 // last heartbeat
                 await testUtils.EnsureAgentStatusEvent(connectTarget.id, {
-                    statusChange: "OnlineToOffline"
+                    statusChange: 'OnlineToOffline'
                 }, testStartTime, undefined, 2 * 60 * 1000);
 
-                logger.info("Found online to offline event");
+                logger.info('Found online to offline event');
 
                 // Then the agent should try and reconnect its control channel
-                // websocket to bastion which will move the agent back to online 
+                // websocket to bastion which will move the agent back to online
                 await testUtils.EnsureAgentStatusEvent(connectTarget.id, {
-                    statusChange: "OfflineToOnline",
+                    statusChange: 'OfflineToOnline',
                 }, testStartTime, undefined, 2 * 60 * 1000);
 
-                logger.info("Found offline to online event");
+                logger.info('Found offline to online event');
 
                 await connectTestUtils.runShellConnectTest(testTarget, `bastion restart test - ${systemTestUniqueId}`, true);
 
-                logger.info("ran connect test successfully");
-                
+                logger.info('ran connect test successfully');
+
             },
             10 * 60 * 1000); // 10 min timeout
         });
@@ -135,9 +134,5 @@ export const agentRecoverySuite = (testRunnerKubeConfigFile: string, testRunnerU
 
             return resp.body.items[0];
         }
-
-        async function getConnectionNodePods(k8sApi: k8s.CoreV1Api, uniqueId: string) {
-            return getPodWithLabelSelector(k8sApi, 'connection-service', { 'uniqueId': uniqueId, 'podType': 'connection-node'});
-        }
     });
-}
+};

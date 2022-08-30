@@ -1,9 +1,9 @@
 // TODO: Remove this once we determine the cause of the leaky handlers
-require('leaked-handles').set({
-    fullStack: true, // use full stack traces
-    timeout: 30000, // run every 30 seconds instead of 5.
-    debugSockets: true // pretty print tcp thrown exceptions.
-});
+// require('leaked-handles').set({
+//     fullStack: true, // use full stack traces
+//     timeout: 30000, // run every 30 seconds instead of 5.
+//     debugSockets: true // pretty print tcp thrown exceptions.
+// });
 
 import { envMap } from '../../cli-driver';
 import { DigitalOceanBZeroTarget, DigitalOceanSSMTarget } from '../digital-ocean/digital-ocean-ssm-target.service.types';
@@ -12,8 +12,6 @@ import { Logger } from '../../services/logger/logger.service';
 import { ConfigService } from '../../services/config/config.service';
 import { OAuthService } from '../../services/oauth/oauth.service';
 import { randomAlphaNumericString } from '../../utils/utils';
-import { connectSuite } from './suites/connect';
-import { sshSuite } from './suites/ssh';
 import { listTargetsSuite } from './suites/list-targets';
 import { versionSuite } from './suites/version';
 import { RegisteredDigitalOceanKubernetesCluster } from '../digital-ocean/digital-ocean-kube.service.types';
@@ -31,7 +29,6 @@ import { organizationSuite } from './suites/rest-api/organization';
 import { environmentsSuite } from './suites/rest-api/environments';
 import { policySuite } from './suites/rest-api/policies/policies';
 import { groupsSuite } from './suites/groups';
-import { sessionRecordingSuite } from './suites/session-recording';
 import { callZli, mockCleanExit } from './utils/zli-utils';
 import { UserHttpService } from '../../http-services/user/user.http-services';
 import { ssmTargetRestApiSuite } from './suites/rest-api/ssm-targets';
@@ -41,14 +38,13 @@ import { databaseTargetRestApiSuite } from './suites/rest-api/database-targets';
 import { webTargetRestApiSuite } from './suites/rest-api/web-targets';
 import { dynamicAccessConfigRestApiSuite } from './suites/rest-api/dynamic-access-configs';
 import { agentContainerSuite } from './suites/agent-container';
-import { dynamicAccessSuite } from './suites/dynamic-access';
 import { userRestApiSuite } from './suites/rest-api/users';
 import { spacesRestApiSuite } from './suites/rest-api/spaces';
 import { mfaSuite } from './suites/rest-api/mfa';
 import { eventsRestApiSuite } from './suites/rest-api/events';
 import { webSuite } from './suites/web';
 import { dbSuite } from './suites/db';
-import { agentRecoverySuite } from './suites/agent-recovery'
+import { agentRecoverySuite } from './suites/agent-recovery';
 
 // Uses config name from ZLI_CONFIG_NAME environment variable (defaults to prod
 // if unset) This can be run against dev/stage/prod when running system tests
@@ -287,9 +283,9 @@ if (SSM_ENABLED || BZERO_ENABLED || KUBE_ENABLED) {
 // These suites are based on testing allTargets use SSM_ENABLED or BZERO_ENABLED
 // environment variables to control which targets are created
 if(SSM_ENABLED || BZERO_ENABLED) {
-    connectSuite();
-    sessionRecordingSuite();
-    sshSuite();
+    // connectSuite();
+    // sessionRecordingSuite();
+    // sshSuite();
 
     if (IN_CI && NOT_USING_RUNNER) {
         // Only run group tests if we are in CI and talking to staging or dev
@@ -299,7 +295,7 @@ if(SSM_ENABLED || BZERO_ENABLED) {
 
 // BZero only test suites
 if(BZERO_ENABLED) {
-    dynamicAccessSuite();
+    // dynamicAccessSuite();
 }
 
 // Only run the agent container suite when we are running
@@ -357,7 +353,7 @@ if (API_ENABLED) {
 }
 
 if (AGENT_RECOVERY_ENABLED && BZERO_ENABLED && process.env.TEST_RUNNER_KUBE_CONFIG) {
-    logger.info("Running agent recovery tests");
+    logger.info('Running agent recovery tests');
     agentRecoverySuite(process.env.TEST_RUNNER_KUBE_CONFIG, process.env.TEST_RUNNER_UNIQUE_ID);
 } else {
     logger.info('Skipping agent recovery tests.');

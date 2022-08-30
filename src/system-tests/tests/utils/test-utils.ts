@@ -10,7 +10,6 @@ import { CommandEventDataMessage } from '../../../../webshell-common-ts/http/v2/
 import { ConnectionEventDataMessage } from '../../../../webshell-common-ts/http/v2/event/types/connection-event-data-message';
 import { EnvironmentHttpService } from '../../../../src/http-services/environment/environment.http-services';
 import { AgentStatusChangeData } from '../../../../webshell-common-ts/http/v2/event/types/agent-status-change-data.types';
-import { TargetType } from '../../../../webshell-common-ts/http/v2/target/types/target.types';
 
 const pids = require('port-pid');
 
@@ -80,6 +79,7 @@ export class TestUtils {
                 // Use arrayContaining, so that got value can contain extra
                 // elements. Include explicit generic constraint, so that jest
                 // prints the object if something does not match.
+                console.log(JSON.stringify(gotEvents, null, 2));
                 expect(gotEvents).toEqual<ConnectionEventDataMessage[]>(expect.arrayContaining([expectedEvent]));
             },
             timeout,
