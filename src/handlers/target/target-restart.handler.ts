@@ -31,9 +31,9 @@ export async function targetRestartHandler(
         });
     } catch (error) {
         logger.error(`error: ${error}`);
+        await cleanExit(1, logger);
     }
     parsedTarget.name = "john-bzero-agent";
-
 
     // first, check that the agent restarted
     await waitForRestart(configService, logger, parsedTarget);
