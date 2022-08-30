@@ -3,7 +3,7 @@ import *  as fs from 'fs';
 import { ConfigService } from '../../../../src/services/config/config.service';
 import { Logger } from '../../../services/logger/logger.service';
 import { EventsHttpService } from '../../../../src/http-services/events/events.http-server';
-import { configService, testStartTime } from '../system-test';
+import { configService } from '../system-test';
 import { LoggerConfigService } from '../../../../src/services/logger/logger-config.service';
 import { SubjectType } from '../../../../webshell-common-ts/http/v2/common.types/subject.types';
 import { CommandEventDataMessage } from '../../../../webshell-common-ts/http/v2/event/types/command-event-data-message';
@@ -113,7 +113,7 @@ export class TestUtils {
      * @param retryInterval Time to wait in-between polls of the
      * GetConnectionsEvents() API
      */
-    public async EnsureConnectionEventCreated(partialEvent: Partial<ConnectionEventDataMessage>, timeout: number = 25 * 1000, retryInterval: number = SLEEP_TIME * 1000) : Promise<void>
+    public async EnsureConnectionEventCreated(partialEvent: Partial<ConnectionEventDataMessage>, startTime: Date, timeout: number = 25 * 1000, retryInterval: number = SLEEP_TIME * 1000) : Promise<void>
     {
         const defaultExpectedEnvironmentName =
         // If environmentId is specified and is not equal to the Guid.empty ID (used by SSM targets)
@@ -150,7 +150,7 @@ export class TestUtils {
         return await this.waitForExpect(
             async () => {
                 const gotEvents = await this.eventsService.GetConnectionEvents(
-                    testStartTime,
+                    startTime,
                     [configService.me().id],
                     partialEvent.targetId ? [partialEvent.targetId] : []
                 );

@@ -57,8 +57,6 @@ import { dynamicAccessSuite } from './suites/dynamic-access';
 // of the CD pipeline in the AWS prod account it will be 'stage'
 const configName = envMap.configName;
 
-export const testStartTime = new Date();
-
 // Setup services used for running system tests
 export const loggerConfigService = new LoggerConfigService(configName, envMap.configDir);
 export const logger = new Logger(loggerConfigService, false, false, true);
