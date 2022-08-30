@@ -21,6 +21,7 @@ export const kubeSuite = () => {
     describe('kube suite', () => {
         let policyService: PolicyHttpService;
         let testUtils: TestUtils;
+        let testStartTime: Date;
 
         let testPassed = false;
         const kubeConfigYamlFilePath = `/tmp/bzero-agent-kubeconfig-${systemTestUniqueId}.yml`;
@@ -32,6 +33,7 @@ export const kubeSuite = () => {
         });
 
         beforeEach(() => {
+            testStartTime = new Date();
             setupBackgroundDaemonMocks();
         });
 
@@ -68,7 +70,7 @@ export const kubeSuite = () => {
                 environmentId: testCluster.bzeroClusterTargetSummary.environmentId,
                 environmentName: systemTestEnvNameCluster,
                 connectionEventType: eventType
-            });
+            }, testStartTime);
         };
 
         test('2159: zli generate kubeConfig', async () => {

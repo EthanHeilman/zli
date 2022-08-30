@@ -24,8 +24,8 @@ export const webSuite = () => {
     describe('web suite', () => {
         let policyService: PolicyHttpService;
         let testUtils: TestUtils;
-
         let testPassed = false;
+        let testStartTime: Date;
 
         // Proxy policy ID created for this entire suite in order to make Web
         // connections
@@ -62,6 +62,7 @@ export const webSuite = () => {
         }, 60 * 1000);
 
         beforeEach(() => {
+            testStartTime = new Date();
             setupBackgroundDaemonMocks();
         });
 
@@ -125,7 +126,7 @@ export const webSuite = () => {
                         environmentId: webTargetSummary.environmentId,
                         environmentName: systemTestEnvName,
                         connectionEventType: eventType
-                    });
+                    }, testStartTime);
                 };
 
                 // Ensure the created and connected event exist

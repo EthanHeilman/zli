@@ -25,6 +25,7 @@ export const connectSuite = () => {
         let connectTestUtils: ConnectTestUtils;
         let testPassed = false;
         let userLogFilterStartTime: Date;
+        let testStartTime: Date;
 
         // Set up the policy before all the tests
         beforeAll(async () => {
@@ -66,6 +67,7 @@ export const connectSuite = () => {
 
         // Called before each case
         beforeEach(() => {
+            testStartTime = new Date();
             connectTestUtils = new ConnectTestUtils(connectionService, testUtils);
         });
 
@@ -109,7 +111,7 @@ export const connectSuite = () => {
                 const attachPromise = callZli(['attach', connectionId]);
 
                 // After attaching we should see another client connection event
-                await connectTestUtils.ensureConnectionEvent(attachTarget, ConnectionEventType.ClientConnect);
+                await connectTestUtils.ensureConnectionEvent(attachTarget, ConnectionEventType.ClientConnect, testStartTime);
                 const eventExists = await testUtils.EnsureUserEventExists('connectionservice:connect', true, attachTarget.id, new Date(userLogFilterStartTime));
                 expect(eventExists).toBeTrue();
 
@@ -138,7 +140,7 @@ export const connectSuite = () => {
                 await attachPromise;
 
                 // After exiting we should see a client disconnected event
-                await connectTestUtils.ensureConnectionEvent(attachTarget, ConnectionEventType.ClientDisconnect);
+                await connectTestUtils.ensureConnectionEvent(attachTarget, ConnectionEventType.ClientDisconnect, testStartTime);
 
                 testPassed = true;
             }, 4 * 60 * 1000); // Use a longer timeout on attach tests because they essentially run 2 back-to-back connect tests
@@ -165,7 +167,7 @@ export const connectSuite = () => {
                 );
 
                 // Expect our close event now
-                await connectTestUtils.ensureConnectionEvent(connectTarget, ConnectionEventType.Closed);
+                await connectTestUtils.ensureConnectionEvent(connectTarget, ConnectionEventType.Closed, testStartTime);
 
                 testPassed = true;
             }, 2 * 60 * 1000);

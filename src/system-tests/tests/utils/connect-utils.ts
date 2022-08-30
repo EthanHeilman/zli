@@ -83,6 +83,8 @@ export class ConnectTestUtils {
     }
 
     private async runShellConnectTestHelper(connectTarget: ConnectTarget, stringToEcho: string, exit: boolean): Promise<string> {
+        const startTime = new Date();
+
         // Spy on result of the ConnectionHttpService.CreateUniversalConnection
         // call. This spy is used to return the connectionId. For non-DAT
         // targets its also used to assert the correct regional connection node
@@ -117,8 +119,8 @@ export class ConnectTestUtils {
         }
 
         // Ensure that the created and connect event exists
-        await this.ensureConnectionEvent(connectTarget, ConnectionEventType.ClientConnect);
-        await this.ensureConnectionEvent(connectTarget, ConnectionEventType.Created);
+        await this.ensureConnectionEvent(connectTarget, ConnectionEventType.ClientConnect, startTime);
+        await this.ensureConnectionEvent(connectTarget, ConnectionEventType.Created, startTime);
 
         await this.testEchoCommand(connectTarget, stringToEcho);
 
@@ -142,7 +144,7 @@ export class ConnectTestUtils {
             await connectPromise;
 
             // Ensure that the client disconnect event is here
-            await this.ensureConnectionEvent(connectTarget, ConnectionEventType.ClientDisconnect);
+            await this.ensureConnectionEvent(connectTarget, ConnectionEventType.ClientDisconnect, startTime);
         }
 
         return gotUniversalConnectionResponse.connectionId;
@@ -205,7 +207,7 @@ export class ConnectTestUtils {
      * @param connectTarget The target expected to connect
      * @param eventType The event type to look for
      */
-    public async ensureConnectionEvent(connectTarget: ConnectTarget, eventType: ConnectionEventType) {
+    public async ensureConnectionEvent(connectTarget: ConnectTarget, eventType: ConnectionEventType, startTime: Date) {
         await this.testUtils.EnsureConnectionEventCreated({
             targetId: connectTarget.id,
             targetName: connectTarget.name,
@@ -215,7 +217,7 @@ export class ConnectTestUtils {
             connectionEventType: eventType,
             // All shell connections created by the zli exist in the cli-space
             sessionName: 'cli-space'
-        });
+        }, startTime);
     }
 
     /**
