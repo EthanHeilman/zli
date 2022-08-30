@@ -2,7 +2,7 @@ import * as k8s from '@kubernetes/client-node';
 
 import { configService, logger, loggerConfigService, systemTestEnvId, systemTestPolicyTemplate, systemTestUniqueId, testTargets } from '../system-test';
 import { ConnectionHttpService } from '../../../http-services/connection/connection.http-services';
-import { getDOImageName } from '../../digital-ocean/digital-ocean-ssm-target.service.types';
+import { DigitalOceanDistroImage, getDOImageName } from '../../digital-ocean/digital-ocean-ssm-target.service.types';
 import { sleepTimeout, TestUtils } from '../utils/test-utils';
 import { ConnectTestUtils } from '../utils/connect-utils';
 import { bzeroTestTargetsToRun } from '../targets-to-run';
@@ -13,6 +13,25 @@ import { Subject } from '../../../../webshell-common-ts/http/v2/policy/types/sub
 import { SubjectType } from '../../../../webshell-common-ts/http/v2/common.types/subject.types';
 import { Environment } from '../../../../webshell-common-ts/http/v2/policy/types/environment.types';
 import { VerbType } from '../../../../webshell-common-ts/http/v2/policy/types/verb-type.types';
+import { TestTarget } from '../system-test.types';
+
+// Create mapping object and function for test rails case IDs
+interface testRailsCaseIdMapping {
+    agentRecoveryBastionRestart: string;
+}
+
+function fromTestTargetToCaseIdMapping(testTarget: TestTarget): testRailsCaseIdMapping {
+    // agent recovery tests only run in CI and not in pipeline so for now we
+    // only need to map a single bzero target
+    switch (testTarget.dropletImage) {
+    case DigitalOceanDistroImage.BzeroVTUbuntuTestImage:
+        return {
+            agentRecoveryBastionRestart: '247517'
+        };
+    default:
+        throw new Error(`Unexpected distro image: ${testTarget.dropletImage}`);
+    }
+}
 
 export const agentRecoverySuite = (testRunnerKubeConfigFile: string, testRunnerUniqueId: string) => {
     describe('Agent Recovery Suite', () => {
@@ -22,15 +41,12 @@ export const agentRecoverySuite = (testRunnerKubeConfigFile: string, testRunnerU
         let testUtils: TestUtils;
         let connectionService: ConnectionHttpService;
         let connectTestUtils: ConnectTestUtils;
+        let testStartTime: Date;
 
         beforeAll(async () => {
             policyService = new PolicyHttpService(configService, logger);
             testUtils = new TestUtils(configService, logger, loggerConfigService);
             connectionService = new ConnectionHttpService(configService, logger);
-
-            // const kubeConfigFileContent = fs.readFileSync(testRunnerKubeConfigFile).toString();
-            // logger.info(`Test runner kube config file is ${testRunnerKubeConfigFile} with contents: ${kubeConfigFileContent}`);
-            logger.info(`Test runner uniqueId is: ${testRunnerUniqueId}`);
 
             // Setup the kube client from the test runner configuration
             const kc = new k8s.KubeConfig();
@@ -61,12 +77,12 @@ export const agentRecoverySuite = (testRunnerKubeConfigFile: string, testRunnerU
 
         // Called before each case
         beforeEach(() => {
+            testStartTime = new Date();
             connectTestUtils = new ConnectTestUtils(connectionService, testUtils);
         });
 
         bzeroTestTargetsToRun.forEach(async (testTarget) => {
-            it(`247517: bastion restart ${testTarget.awsRegion} - ${getDOImageName(testTarget.dropletImage)}`, async () => {
-                const testStartTime = new Date();
+            it(`${fromTestTargetToCaseIdMapping(testTarget)}: bastion restart ${testTarget.awsRegion} - ${getDOImageName(testTarget.dropletImage)}`, async () => {
                 const doTarget = testTargets.get(testTarget);
                 const connectTarget = connectTestUtils.getConnectTarget(doTarget, testTarget.awsRegion);
 
