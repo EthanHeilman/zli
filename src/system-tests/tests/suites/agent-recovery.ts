@@ -15,7 +15,7 @@ import { Environment } from '../../../../webshell-common-ts/http/v2/policy/types
 import { VerbType } from '../../../../webshell-common-ts/http/v2/policy/types/verb-type.types';
 
 export const agentRecoverySuite = (testRunnerKubeConfigFile: string, testRunnerUniqueId: string) => {
-    describe('agent recovery suite', () => {
+    describe('Agent Recovery Suite', () => {
         let k8sApi: k8s.CoreV1Api;
         let k8sExec: k8s.Exec;
         let policyService: PolicyHttpService;
@@ -65,8 +65,7 @@ export const agentRecoverySuite = (testRunnerKubeConfigFile: string, testRunnerU
         });
 
         bzeroTestTargetsToRun.forEach(async (testTarget) => {
-            const caseIdPlaceholder = 'xyz';
-            it(`${caseIdPlaceholder}: bastion restart ${testTarget.awsRegion} - ${getDOImageName(testTarget.dropletImage)}`, async () => {
+            it(`247517: bastion restart ${testTarget.awsRegion} - ${getDOImageName(testTarget.dropletImage)}`, async () => {
                 const testStartTime = new Date();
                 const doTarget = testTargets.get(testTarget);
                 const connectTarget = connectTestUtils.getConnectTarget(doTarget, testTarget.awsRegion);
@@ -117,9 +116,6 @@ export const agentRecoverySuite = (testRunnerKubeConfigFile: string, testRunnerU
                 logger.info('Found offline to online event');
 
                 await connectTestUtils.runShellConnectTest(testTarget, `bastion restart test - ${systemTestUniqueId}`, true);
-
-                logger.info('ran connect test successfully');
-
             },
             10 * 60 * 1000); // 10 min timeout
         });

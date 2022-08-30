@@ -66,10 +66,10 @@ export class TestUtils {
     /**
      * Polls for agent status changes events until it finds a specific event or
      * times out and throws an error
-     * @param targetId The target to search for  
+     * @param targetId The target to search for
      * @param partialEvent A partial expected event to search for. Any
      * properties that are omitted from the partial event will default to
-     * expect.anything() instead 
+     * expect.anything() instead
      * @param startTime Optional start time to filter events
      * @param endTime Optional end time to filter events
      * @param timeout Max time to wait for the event before timing out
