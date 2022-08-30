@@ -16,6 +16,7 @@ import { VerbType } from '../../../../webshell-common-ts/http/v2/policy/types/ve
 import { callZli } from '../utils/zli-utils';
 import { getTargetInfo } from '../utils/ssh-utils';
 import { TestTarget } from '../system-test.types';
+import { EventsHttpService } from '../../../http-services/events/events.http-server';
 
 export const agentRecoverySuite = (testRunnerKubeConfigFile: string, testRunnerUniqueId: string) => {
     describe('Agent Recovery Suite', () => {
@@ -158,21 +159,19 @@ export const agentRecoverySuite = (testRunnerKubeConfigFile: string, testRunnerU
                 // first, check that the agent restarted
                 await testUtils.EnsureAgentStatusEvent(targetId, {
                     statusChange: 'OnlineToOffline'
-                }, testStartTime, undefined, 30 * 1000);
+                }, testStartTime, undefined, 60 * 1000, 3000);
 
                 console.log("going restarting");
                 // second, check that it restarted
                 await testUtils.EnsureAgentStatusEvent(targetId, {
                     statusChange: 'OfflineToRestarting'
-                }, testStartTime, undefined, 2 * 60 * 1000);
+                }, testStartTime, undefined, 2 * 60 * 1000, 3000);
 
                 console.log("going online");
                 // second, check that it restarted
                 await testUtils.EnsureAgentStatusEvent(targetId, {
                     statusChange: 'RestartingToOnline'
-                }, testStartTime, undefined, 30 * 1000);
-
-                // TODO: oh and can check the restart Origin!
+                }, testStartTime, undefined, 30 * 1000, 3000);
 
                 // finally, check that we can still connect to the agent
                 await connectTestUtils.runShellConnectTest(testTarget, `zli target restart test - ${systemTestUniqueId}`, true);
