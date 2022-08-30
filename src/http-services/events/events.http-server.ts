@@ -53,7 +53,7 @@ export class EventsHttpService extends HttpService
         return this.Get('user', params);
     }
 
-    public GetAgentStatusChangeEvents(targetId: string, startTime?: Date, endTime?: Date): Promise<AgentStatusChangeData> {
+    public GetAgentStatusChangeEvents(targetId: string, startTime?: Date, endTime?: Date): Promise<AgentStatusChangeData[]> {
         const params = {
             targetId: targetId,
             startTimestamp: startTime?.toJSON(),

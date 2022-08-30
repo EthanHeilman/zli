@@ -92,7 +92,7 @@ export class TestUtils {
                 // Use arrayContaining, so that got value can contain extra
                 // elements. Include explicit generic constraint, so that jest
                 // prints the object if something does not match.
-                expect(gotEvents).toEqual<ConnectionEventDataMessage[]>(expect.arrayContaining([expectedEvent]));
+                expect(gotEvents).toEqual<AgentStatusChangeData[]>(expect.arrayContaining([expectedEvent]));
             },
             timeout,
             retryInterval
