@@ -1,7 +1,7 @@
 import fs from 'fs';
 import * as k8s from '@kubernetes/client-node';
 
-import { configService, logger, loggerConfigService, systemTestUniqueId, testTargets } from '../system-test';
+import { configService, logger, loggerConfigService, systemTestEnvId, systemTestPolicyTemplate, systemTestUniqueId, testTargets } from '../system-test';
 import { ConnectionHttpService } from '../../../http-services/connection/connection.http-services';
 import { getDOImageName } from '../../digital-ocean/digital-ocean-ssm-target.service.types';
 import { sleepTimeout, TestUtils } from '../utils/test-utils';
@@ -9,16 +9,23 @@ import { ConnectTestUtils } from '../utils/connect-utils';
 import { bzeroTestTargetsToRun } from '../targets-to-run';
 import { execOnPod } from '../../../utils/kube-utils';
 import { getPodWithLabelSelector } from '../../../utils/kube-utils';
+import { PolicyHttpService } from '../../../http-services/policy/policy.http-services';
+import { Subject } from '../../../../webshell-common-ts/http/v2/policy/types/subject.types';
+import { SubjectType } from '../../../../webshell-common-ts/http/v2/common.types/subject.types';
+import { Environment } from '../../../../webshell-common-ts/http/v2/policy/types/environment.types';
+import { VerbType } from '../../../../webshell-common-ts/http/v2/policy/types/verb-type.types';
 
 export const agentRecoverySuite = (testRunnerKubeConfigFile: string, testRunnerUniqueId: string) => {
     describe('agent recovery suite', () => {
         let k8sApi: k8s.CoreV1Api;
         let k8sExec: k8s.Exec;
+        let policyService: PolicyHttpService;
         let testUtils: TestUtils;
         let connectionService: ConnectionHttpService;
         let connectTestUtils: ConnectTestUtils;
 
         beforeAll(async () => {
+            policyService = new PolicyHttpService(configService, logger);
             testUtils = new TestUtils(configService, logger, loggerConfigService);
             connectionService = new ConnectionHttpService(configService, logger);
 
@@ -31,6 +38,26 @@ export const agentRecoverySuite = (testRunnerKubeConfigFile: string, testRunnerU
             kc.loadFromFile(testRunnerKubeConfigFile);
             k8sApi = kc.makeApiClient(k8s.CoreV1Api);
             k8sExec = new k8s.Exec(kc);
+
+            // Then create our targetConnect policy
+            const currentUser: Subject = {
+                id: configService.me().id,
+                type: SubjectType.User
+            };
+            const environment: Environment = {
+                id: systemTestEnvId
+            };
+
+            await policyService.AddTargetConnectPolicy({
+                name: systemTestPolicyTemplate.replace('$POLICY_TYPE', 'target-connect'),
+                subjects: [currentUser],
+                groups: [],
+                description: `Target connect policy created for agent recovery system test: ${systemTestUniqueId}`,
+                environments: [environment],
+                targets: [],
+                targetUsers: ConnectTestUtils.getPolicyTargetUsers(),
+                verbs: [{type: VerbType.Shell},]
+            });
         });
 
         // Called before each case
