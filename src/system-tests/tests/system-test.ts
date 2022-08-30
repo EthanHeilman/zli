@@ -1,9 +1,9 @@
 // TODO: Remove this once we determine the cause of the leaky handlers
-// require('leaked-handles').set({
-//     fullStack: true, // use full stack traces
-//     timeout: 30000, // run every 30 seconds instead of 5.
-//     debugSockets: true // pretty print tcp thrown exceptions.
-// });
+require('leaked-handles').set({
+    fullStack: true, // use full stack traces
+    timeout: 30000, // run every 30 seconds instead of 5.
+    debugSockets: true // pretty print tcp thrown exceptions.
+});
 
 import { envMap } from '../../cli-driver';
 import { DigitalOceanBZeroTarget, DigitalOceanSSMTarget } from '../digital-ocean/digital-ocean-ssm-target.service.types';
