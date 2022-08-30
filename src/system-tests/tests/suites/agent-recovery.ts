@@ -82,8 +82,13 @@ export const agentRecoverySuite = (testRunnerKubeConfigFile: string, testRunnerU
                 
                 // Stop the systemd service on the bastion container to simulate bastion going down temporarily
                 logger.info("stopping bastion container");
-                const stopCommand = ['/usr/local/bin/systemctl', 'stop', 'bzero-server'];
-                await execOnPod(k8sExec, bastionPod, bastionContainer, stopCommand, logger);
+
+                // send a SIGKILL signal to simulate the bastion crashing instead of gracefully shutting down
+                // https://serverfault.com/questions/936037/killing-systemd-service-with-and-without-systemctl
+                const harshStopCommand = ['/usr/local/bin/systemctl', 'kill', '-s', 'SIGKILL', 'bzero-server'];
+                // const gracefulStopCommand = ['/usr/local/bin/systemctl', 'stop', 'bzero-server'];
+
+                await execOnPod(k8sExec, bastionPod, bastionContainer, harshStopCommand, logger);
     
                 // Wait for 2 min to ensure when we start bastion again the
                 // heartbeat poller will move the agent to offline status
@@ -100,7 +105,7 @@ export const agentRecoverySuite = (testRunnerKubeConfigFile: string, testRunnerU
                 // last heartbeat
                 await testUtils.EnsureAgentStatusEvent(connectTarget.id, {
                     statusChange: "OnlineToOffline"
-                }, 2 * 60 * 1000);
+                }, testStartTime, undefined, 2 * 60 * 1000);
 
                 logger.info("Found online to offline event");
 
@@ -108,15 +113,13 @@ export const agentRecoverySuite = (testRunnerKubeConfigFile: string, testRunnerU
                 // websocket to bastion which will move the agent back to online 
                 await testUtils.EnsureAgentStatusEvent(connectTarget.id, {
                     statusChange: "OfflineToOnline",
-                    // TODO: fix this to filter by start time
-                    timeStamp: expect.toBeAfter(testStartTime)
-                }, 2 * 60 * 1000);
+                }, testStartTime, undefined, 2 * 60 * 1000);
 
                 logger.info("Found offline to online event");
 
                 await connectTestUtils.runShellConnectTest(testTarget, `bastion restart test - ${systemTestUniqueId}`, true);
 
-                logger.info("ran connect test");
+                logger.info("ran connect test successfully");
                 
             },
             10 * 60 * 1000); // 10 min timeout
