@@ -70,37 +70,44 @@ export const agentRecoverySuite = (testRunnerKubeConfigFile: string, testRunnerU
                 const doTarget = testTargets.get(testTarget);
                 const connectTarget = connectTestUtils.getConnectTarget(doTarget, testTarget.awsRegion);
 
-                // Note: with CC -> CN changes we can instead refactor this to
-                // simulate a failure of the connection node pod that contains
-                // the control channel and the offline event should happen
-                // immediately on bastion
-
                 const bastionPod = await getBastionPod(k8sApi, testRunnerUniqueId);
                 const bastionContainer = 'bastion';
 
                 // Stop the systemd service on the bastion container to simulate bastion going down temporarily
                 logger.info('stopping bastion container');
 
-                // send a SIGKILL signal to simulate the bastion crashing instead of gracefully shutting down
+                // In practice both the SIGKILL and the stop commands still
+                // result in agent going offline because of
+                // control-channel-disconnect- so the websocket is still closing
+                // normally and updating the status in the database. The harsh
+                // command is probably not working as intended because it only
+                // kills the start.sh script which calls dotnet run but not the
+                // actual Webshell.WebApp process itself.
+
+                // With CC -> CN changes we can instead refactor this to
+                // simulate a failure of the connection node pod by deleting the
+                // pod that contains the control channel and the offline event
+                // should happen immediately on bastion
+                
+                // send a SIGKILL signal to simulate the bastion crashing
+                // instead of gracefully shutting down
                 // https://serverfault.com/questions/936037/killing-systemd-service-with-and-without-systemctl
-                const harshStopCommand = ['/usr/local/bin/systemctl', 'kill', '-s', 'SIGKILL', 'bzero-server'];
-                // const gracefulStopCommand = ['/usr/local/bin/systemctl', 'stop', 'bzero-server'];
+                // const harshStopCommand = ['/usr/local/bin/systemctl', 'kill', '-s', 'SIGKILL', 'bzero-server'];
+                const gracefulStopCommand = ['/usr/local/bin/systemctl', 'stop', 'bzero-server'];
 
-                await execOnPod(k8sExec, bastionPod, bastionContainer, harshStopCommand, logger);
+                await execOnPod(k8sExec, bastionPod, bastionContainer, gracefulStopCommand, logger);
 
-                // Wait for 2 min to ensure when we start bastion again the
-                // heartbeat poller will move the agent to offline status
-                logger.info('waiting 2 min before restarting bastion');
-                await sleepTimeout(2 * 60 * 1000);
+                // Wait for 1 min before restarting bastion
+                logger.info('waiting 1 min before restarting bastion');
+                await sleepTimeout(1 * 60 * 1000);
 
                 // Start the systemd service on the bastion container
                 logger.info('starting bastion container');
                 const startCommand = ['/usr/local/bin/systemctl', 'start', 'bzero-server'];
                 await execOnPod(k8sExec, bastionPod, bastionContainer, startCommand, logger);
 
-                // Once bastion comes back online the agent status should
-                // immediately move to offline because its been > 2 min since
-                // last heartbeat
+                // Once bastion comes back online we should be able to query and
+                // find a online->offline event for this agent
                 await testUtils.EnsureAgentStatusEvent(connectTarget.id, {
                     statusChange: 'OnlineToOffline'
                 }, testStartTime, undefined, 2 * 60 * 1000);
@@ -108,10 +115,14 @@ export const agentRecoverySuite = (testRunnerKubeConfigFile: string, testRunnerU
                 logger.info('Found online to offline event');
 
                 // Then the agent should try and reconnect its control channel
-                // websocket to bastion which will move the agent back to online
+                // websocket to bastion which will move the agent back to
+                // online. We use a longer timeout here because while the
+                // bastion is down the agent goes into a reconnect loop with
+                // exponential backoff that will cause it to wait longer before
+                // reconnecting
                 await testUtils.EnsureAgentStatusEvent(connectTarget.id, {
                     statusChange: 'OfflineToOnline',
-                }, testStartTime, undefined, 2 * 60 * 1000);
+                }, testStartTime, undefined, 5 * 60 * 1000);
 
                 logger.info('Found offline to online event');
 
