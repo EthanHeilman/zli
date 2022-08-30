@@ -88,7 +88,7 @@ export const agentRecoverySuite = (testRunnerKubeConfigFile: string, testRunnerU
                 // simulate a failure of the connection node pod by deleting the
                 // pod that contains the control channel and the offline event
                 // should happen immediately on bastion
-                
+
                 // send a SIGKILL signal to simulate the bastion crashing
                 // instead of gracefully shutting down
                 // https://serverfault.com/questions/936037/killing-systemd-service-with-and-without-systemctl
