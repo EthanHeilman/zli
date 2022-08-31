@@ -259,7 +259,7 @@ export async function createDOTestTargets() {
                 throw err;
             }
 
-            console.log(
+            logger.info(
                 `Successfully created DigitalOceanTarget:
                 \tAWS region: ${testTarget.awsRegion}
                 \tDigitalOcean region: ${testTarget.doRegion}
@@ -294,7 +294,7 @@ export async function createDOTestTargets() {
                 throw err;
             }
 
-            console.log(
+            logger.info(
                 `Successfully created DigitalOceanSSMTarget:
                 \tAWS region: ${testTarget.awsRegion}
                 \tDigitalOcean region: ${testTarget.doRegion}
@@ -377,19 +377,42 @@ function getPackageManagerRegistrationScript(packageName: string, testTarget: SS
     const shouldBuildFromSource = packageName === 'bzero-beta' && bzeroAgentBranch;
     const executableName = shouldBuildFromSource ? './root/bzero/bctl/agent/agent' : packageName;
 
+    // Always install agent using the beta repo
+    switch (packageManager) {
+    case 'apt':
+        installBlock = String.raw`sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys E5C358E613982017
+sudo apt update -y
+sudo apt install -y software-properties-common iperf3
+sudo add-apt-repository 'deb https://download-apt.bastionzero.com/beta/apt-repo stable main'
+sudo apt update -y
+sudo apt install ${packageName} -y
+`;
+        break;
+    case 'yum':
+        installBlock = String.raw`sudo yum-config-manager --add-repo https://download-yum.bastionzero.com/bastionzero-beta.repo
+sudo yum update -y
+sudo yum install ${packageName} iperf3 -y
+`;
+        break;
+    default:
+        // Compile-time exhaustive check
+        const _exhaustiveCheck: never = packageManager;
+        return _exhaustiveCheck;
+    }
+
     if (shouldBuildFromSource) {
         // Install agent from source by cloning via git and compiling with go
         let installBlockGit: string;
         switch (packageManager) {
-        case 'apt':
-            installBlockGit = 'sudo apt update -y && sudo apt install -y git iperf3';
-            break;
-        case 'yum':
-            installBlockGit = 'sudo yum update -y && sudo yum install git iperf3 -y';
-            break;
-        default:
-            const _exhaustiveCheck: never = packageManager;
-            return _exhaustiveCheck;
+            case 'apt':
+                installBlockGit = 'sudo apt update -y && sudo apt install -y git iperf3';
+                break;
+            case 'yum':
+                installBlockGit = 'sudo yum update -y && sudo yum install git iperf3 -y';
+                break;
+            default:
+                const _exhaustiveCheck: never = packageManager;
+                return _exhaustiveCheck;
         }
 
         const installBlockCompileWithGo = String.raw`cd /
@@ -405,34 +428,12 @@ git clone -b ${bzeroAgentBranch} https://github.com/bastionzero/bzero.git /root/
 sh /root/bzero/update-agent-version.sh
 cd /root/bzero/bctl/agent
 /usr/local/go/bin/go build
+cp agent /usr/bin/bzero
 cd /
 `;
         installBlock = `${installBlockGit}\n${installBlockCompileWithGo}\n${executableName} -w &`;
-    } else {
-        // Install agent using the beta repo
-        switch (packageManager) {
-        case 'apt':
-            installBlock = String.raw`sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys E5C358E613982017
-sudo apt update -y
-sudo apt install -y software-properties-common iperf3
-sudo add-apt-repository 'deb https://download-apt.bastionzero.com/beta/apt-repo stable main'
-sudo apt update -y
-sudo apt install ${packageName} -y
-`;
-            break;
-        case 'yum':
-            installBlock = String.raw`sudo yum-config-manager --add-repo https://download-yum.bastionzero.com/bastionzero-beta.repo
-sudo yum update -y
-sudo yum install ${packageName} iperf3 -y
-`;
-            break;
-        default:
-            // Compile-time exhaustive check
-            const _exhaustiveCheck: never = packageManager;
-            return _exhaustiveCheck;
-        }
     }
-
+        
 
     let registerCommand: string;
     let initBlock: string = '';
@@ -441,7 +442,7 @@ sudo yum install ${packageName} iperf3 -y
         registerCommand = `${packageName} --serviceUrl ${configService.serviceUrl()} -registrationKey "${registrationApiKeySecret}" -envName "${envName}"`;
         break;
     case 'pm-bzero':
-        registerCommand = `${executableName} --serviceUrl ${configService.serviceUrl()} -registrationKey "${registrationApiKeySecret}" -environmentName "${envName}"`;
+        registerCommand = `${executableName} --serviceUrl ${configService.serviceUrl()} -registrationKey "${registrationApiKeySecret}" -environmentName "${envName}" && systemctl restart bzero-agent`;
 
         // Common initialization for bzero targets
 

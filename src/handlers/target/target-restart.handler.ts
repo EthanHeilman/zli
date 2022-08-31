@@ -33,7 +33,7 @@ export async function targetRestartHandler(
             envName: parsedTarget.envName,
         });
     } catch (error) {
-        logger.error(`error: ${error}`);
+        logger.error(error);
         await cleanExit(1, logger);
     }
     parsedTarget.name = "john-bzero-agent";
