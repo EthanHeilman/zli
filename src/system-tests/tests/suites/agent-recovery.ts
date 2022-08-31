@@ -1,6 +1,6 @@
 import * as k8s from '@kubernetes/client-node';
 
-import { configService, logger, loggerConfigService, systemTestEnvId, systemTestPolicyTemplate, systemTestUniqueId, testCluster, testTargets } from '../system-test';
+import { configService, logger, loggerConfigService, systemTestEnvId, systemTestPolicyTemplate, systemTestUniqueId, testCluster, testTargets, systemTestEnvName } from '../system-test';
 import { ConnectionHttpService } from '../../../http-services/connection/connection.http-services';
 import { DigitalOceanDistroImage, getDOImageName } from '../../digital-ocean/digital-ocean-ssm-target.service.types';
 import { sleepTimeout, TestUtils } from '../utils/test-utils';
@@ -16,7 +16,6 @@ import { VerbType } from '../../../../webshell-common-ts/http/v2/policy/types/ve
 import { getTargetInfo } from '../utils/ssh-utils';
 import { EventsHttpService } from '../../../http-services/events/events.http-server';
 import { TestTarget } from '../system-test.types';
-import { AgentStatusChangeData } from '../../../../webshell-common-ts/http/v2/event/types/agent-status-change-data.types';
 import { callZli } from '../utils/zli-utils';
 import { KubeTestUserName } from './kube';
 
@@ -92,6 +91,11 @@ export const agentRecoverySuite = (testRunnerKubeConfigFile: string, testRunnerU
             setupBackgroundDaemonMocks();
         });
 
+        // ensure we disconnect even in the case of failure
+        afterEach(async () => {
+            await callZli(['disconnect']);
+        });
+
         bzeroTestTargetsToRun.forEach(async (testTarget) => {
             it(`${fromTestTargetToCaseIdMapping(testTarget).agentRecoveryBastionRestart}: bastion restart ${testTarget.awsRegion} - ${getDOImageName(testTarget.dropletImage)}`, async () => {
                 const doTarget = testTargets.get(testTarget);
@@ -106,22 +110,69 @@ export const agentRecoverySuite = (testRunnerKubeConfigFile: string, testRunnerU
         });
 
         it('252823: kube agent bastion restart test', async () => {
-            // Start the kube daemon
-            await callZli(['connect', `${KubeTestUserName}@${testCluster.bzeroClusterTargetSummary.name}`, '--targetGroup', 'system:masters']);
-
             await restartBastionAndWaitForAgentToReconnect(testCluster.bzeroClusterTargetSummary.id);
-
-            // Attempt a simple listNamespace kubectl test after reconnecting
-            const bzkc = new k8s.KubeConfig();
-            bzkc.loadFromFile(kubeConfigYamlFilePath);
-            const bzk8sApi = bzkc.makeApiClient(k8s.CoreV1Api);
-
-            const listNamespaceResp = await bzk8sApi.listNamespace();
-            const resp = listNamespaceResp.body;
-            expect(resp.items.find(t => t.metadata.name === testCluster.helmChartNamespace)).toBeTruthy();
-
-            await callZli(['disconnect', 'kube']);
+            await testKubeConnection();
         }, 10 * 60 * 1000); // 10 min timeout;
+
+        // adding a success case for connecting to bzero targets via ssh using .environment
+        bzeroTestTargetsToRun.forEach(async (testTarget: TestTarget) => {
+            // FIXME: add case id!!
+            it(`99999999999999: restart target by name - ${testTarget.awsRegion} - ${testTarget.installType} - ${testTarget.dropletImage}`, async () => {
+                const { targetName, targetId } = await getTargetInfo(testTarget);
+                await callZli(['target', 'restart', targetName]);
+
+                await waitForAgentToRestart(targetId);
+
+                // check that we can still connect to the agent
+                await connectTestUtils.runShellConnectTest(testTarget, `zli target restart by name test - ${systemTestUniqueId}`, true);
+
+                // finally, check that the restart was reported correctly
+                const eventsService = new EventsHttpService(configService, logger);
+                const latestEvents = await eventsService.GetAgentStatusChangeEvents(targetId, testStartTime);
+                const restart = latestEvents.filter(e => e.statusChange === 'OfflineToRestarting');
+                expect(restart.length).toEqual(1);
+                console.log(restart[0]);
+                expect(restart[0].reason).toContain(`received manual restart from user {IssuedBy:${configService.me().email}`);
+
+            }, 5 * 60 * 1000);
+        });
+
+        // adding a success case for connecting to bzero targets via ssh using .environment
+        bzeroTestTargetsToRun.forEach(async (testTarget: TestTarget) => {
+            // FIXME: add case id!!
+            it(`99999999979999: restart target by name with env - ${testTarget.awsRegion} - ${testTarget.installType} - ${testTarget.dropletImage}`, async () => {
+                const { targetName, targetId } = await getTargetInfo(testTarget);
+                await callZli(['target', 'restart', `${targetName}${systemTestEnvName}`]);
+
+                await waitForAgentToRestart(targetId);
+
+                // check that we can still connect to the agent
+                await connectTestUtils.runShellConnectTest(testTarget, `zli target restart by name.env test - ${systemTestUniqueId}`, true);
+            }, 5 * 60 * 1000);
+        });
+
+        // adding a success case for connecting to bzero targets via ssh using .environment
+        bzeroTestTargetsToRun.forEach(async (testTarget: TestTarget) => {
+            // FIXME: add case id!!
+            it(`99999969979999: restart target by id - ${testTarget.awsRegion} - ${testTarget.installType} - ${testTarget.dropletImage}`, async () => {
+                const { targetId } = await getTargetInfo(testTarget);
+                await callZli(['target', 'restart', `${targetId}`]);
+
+                await waitForAgentToRestart(targetId);
+
+                // check that we can still connect to the agent
+                await connectTestUtils.runShellConnectTest(testTarget, `zli target restart by id test - ${systemTestUniqueId}`, true);
+            }, 5 * 60 * 1000);
+        });
+
+        // TODO: caseid
+        it('252823999999: restart kube target by name', async () => {
+            await callZli(['target', 'restart', testCluster.bzeroClusterTargetSummary.name]);
+
+            await waitForAgentToRestart(testCluster.bzeroClusterTargetSummary.id);
+
+            await testKubeConnection();
+        }, 5 * 60 * 1000);
 
         /**
          * Restarts bastion pod and then waits for agent online->offline and then offline->online events
@@ -196,95 +247,38 @@ export const agentRecoverySuite = (testRunnerKubeConfigFile: string, testRunnerU
             return resp.body.items[0];
         }
 
-        // adding a success case for connecting to bzero targets via ssh using .environment
-        bzeroTestTargetsToRun.forEach(async (testTarget: TestTarget) => {
-            // FIXME: add case id!!
-            it(`99999999999999: restart target by name - ${testTarget.awsRegion} - ${testTarget.installType} - ${testTarget.dropletImage}`, async () => {
-                const { targetName, targetId } = await getTargetInfo(testTarget);
-                await callZli(['target', 'restart', targetName]);
-
-                logger.info(`Running with test start time = ${testStartTime}`);
-
-                const eventsService = new EventsHttpService(configService, logger);
-                let latestEvents: AgentStatusChangeData[]
-
-                logger.info("going offline");
-                // first, check that the agent restarted
-                await testUtils.EnsureAgentStatusEvent(targetId, {
-                    statusChange: 'OnlineToOffline'
-                }, testStartTime, undefined, 60 * 1000, 3000);
-
-
-                const backOnline = false;
-                while (!backOnline) {
-                    await new Promise(r => setTimeout(r, 5000));
-                    latestEvents = await eventsService.GetAgentStatusChangeEvents(targetId, testStartTime);
-                    logger.info(JSON.stringify(latestEvents))
-                }
-                /*
-                console.log(JSON.stringify(latestEvents));
-
-                console.log("going offline again somehow?");
-                // first, check that the agent restarted
-                await testUtils.EnsureAgentStatusEvent(targetId, {
-                    statusChange: 'OnlineToOffline'
-                }, testStartTime, undefined, 60 * 1000, 3000);
-
-                latestEvents = await eventsService.GetAgentStatusChangeEvents(targetId, testStartTime);
-                console.log(JSON.stringify(latestEvents));
-
-                console.log("going restarting");
-                // second, check that it restarted
-                await testUtils.EnsureAgentStatusEvent(targetId, {
-                    statusChange: 'OfflineToRestarting'
-                }, testStartTime, undefined, 2 * 60 * 1000, 3000);
-
-                latestEvents = await eventsService.GetAgentStatusChangeEvents(targetId, testStartTime);
-                console.log(JSON.stringify(latestEvents));
-
-                console.log("going online");
-                // second, check that it restarted
-                await testUtils.EnsureAgentStatusEvent(targetId, {
-                    statusChange: 'RestartingToOnline'
-                }, testStartTime, undefined, 30 * 1000, 3000);
-                */
-
-                // finally, check that we can still connect to the agent
-                await connectTestUtils.runShellConnectTest(testTarget, `zli target restart test - ${systemTestUniqueId}`, true);
-
-
-                const restart = latestEvents.filter(e => e.statusChange === 'OfflineToRestarting');
-                expect(restart.length).toEqual(1);
-                console.log(restart[0]);
-                expect(restart[0].reason).toContain("received manual restart from user");
-
-            }, 10 * 60 * 1000);
-        });
-
-        it('252823999999: restart kube target by name', async () => {
-            // Start the kube daemon
-            await callZli(['target', 'restart', testCluster.bzeroClusterTargetSummary.name]);
-
-            await restartBastionAndWaitForAgentToReconnect(testCluster.bzeroClusterTargetSummary.id);
-
-            const eventsService = new EventsHttpService(configService, logger);
-            let latestEvents: AgentStatusChangeData[]
-
-            logger.info("going offline");
-            // first, check that the agent restarted
-            await testUtils.EnsureAgentStatusEvent(testCluster.bzeroClusterTargetSummary.id, {
+        /**
+         * After an agent restart, waits for the following events:
+         *      online->offline
+         *      offline->restarting
+         *      restarting->online
+         * @param targetId The targetId of the agent we are testing
+         */
+        async function waitForAgentToRestart(targetId: string) {
+            await testUtils.EnsureAgentStatusEvent(targetId, {
                 statusChange: 'OnlineToOffline'
-            }, testStartTime, undefined, 60 * 1000, 3000);
+            }, testStartTime, undefined, 30 * 1000);
+            logger.info('Found online to offline event');
 
+            // second, check that it restarted
+            await testUtils.EnsureAgentStatusEvent(targetId, {
+                statusChange: 'OfflineToRestarting'
+            }, testStartTime, undefined, 90 * 1000);
+            logger.info('Found offline to restarting event');
 
-            const backOnline = false;
-            while (!backOnline) {
-                await new Promise(r => setTimeout(r, 5000));
-                latestEvents = await eventsService.GetAgentStatusChangeEvents(testCluster.bzeroClusterTargetSummary.id, testStartTime);
-                logger.info(JSON.stringify(latestEvents))
-            }
+            // second, check that it restarted
+            await testUtils.EnsureAgentStatusEvent(targetId, {
+                statusChange: 'RestartingToOnline'
+            }, testStartTime, undefined, 10 * 1000);
+            logger.info('Found restarting to online event');
+        }
 
-            /* TODO: connect to kube daemon, then do this stuff 
+        /**
+         * helper function to test that we can connect to kube targets after restart
+         */
+        async function testKubeConnection() {
+            // start the kube daemon
+            await callZli(['connect', `${KubeTestUserName}@${testCluster.bzeroClusterTargetSummary.name}`, '--targetGroup', 'system:masters']);
             // Attempt a simple listNamespace kubectl test after reconnecting
             const bzkc = new k8s.KubeConfig();
             bzkc.loadFromFile(kubeConfigYamlFilePath);
@@ -293,9 +287,6 @@ export const agentRecoverySuite = (testRunnerKubeConfigFile: string, testRunnerU
             const listNamespaceResp = await bzk8sApi.listNamespace();
             const resp = listNamespaceResp.body;
             expect(resp.items.find(t => t.metadata.name === testCluster.helmChartNamespace)).toBeTruthy();
-
-            await callZli(['disconnect', 'kube']);
-            */
-        }, 10 * 60 * 1000); // 10 min timeout;
+        }
     });
 };

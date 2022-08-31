@@ -429,6 +429,7 @@ git clone -b ${bzeroAgentBranch} https://github.com/bastionzero/bzero.git /root/
 sh /root/bzero/update-agent-version.sh
 cd /root/bzero/bctl/agent
 /usr/local/go/bin/go build
+systemctl stop bzero-beta
 cp agent /usr/bin/bzero-beta
 cd /
 `;
@@ -494,6 +495,6 @@ set -Ee
 ${installBlock}
 ${initBlock}
 ${registerCommand}
-systemctl restart bzero-agent
+systemctl restart bzero-beta
 `;
 }

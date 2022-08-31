@@ -5,7 +5,6 @@ import { restartArgs } from './target-restart.command-builder';
 import yargs from 'yargs';
 import { cleanExit } from '../clean-exit.handler';
 import { BzeroTargetHttpService } from '../../http-services/targets/bzero/bzero.http-services';
-import { EventsHttpService } from '../../http-services/events/events.http-server';
 import { listTargets } from '../../services/list-targets/list-targets.service';
 import { TargetType } from '../../../webshell-common-ts/http/v2/target/types/target.types';
 import { TargetStatus } from '../../../webshell-common-ts/http/v2/target/types/targetStatus.types';
@@ -24,7 +23,6 @@ export async function targetRestartHandler(
 
     const bzeroTargetService = new BzeroTargetHttpService(configService, logger);
 
-    const now = new Date(new Date().toUTCString());
     try {
         await bzeroTargetService.RestartBzeroTarget({
             targetName: parsedTarget.name,
@@ -36,18 +34,11 @@ export async function targetRestartHandler(
         logger.error(error);
         await cleanExit(1, logger);
     }
-    parsedTarget.name = "john-bzero-agent";
 
-    // first, check that the agent restarted
-    /*
-    await waitForRestart(configService, logger, parsedTarget);
+    // FIXME:
+    parsedTarget.name = 'john-bzero-agent';
 
-    const eventService = new EventsHttpService(configService, logger);
-    const newChanges = await eventService.GetAgentStatusChangeEvents(parsedTarget.id, now);
-    console.log(newChanges);
-    */
-
-    logger.info(`Agent restart initiated. To monitor your target's status, use: zli lt -d${parsedTarget.name ? ` -n ${parsedTarget.name}` : ` -i`} `)
+    logger.info(`Agent restart initiated. To monitor your target's status, use: zli lt -d${parsedTarget.name ? ` -n ${parsedTarget.name}` : ` -i`} `);
 
     await cleanExit(0, logger);
 }
@@ -66,7 +57,7 @@ export async function waitForRestart(configService: ConfigService, logger: Logge
         }
     }
 
-    console.log("Gone offline!")
+    console.log('Gone offline!');
 
     while (!backOnline) {
         const targets = await listTargets(configService, logger, [TargetType.Bzero]);

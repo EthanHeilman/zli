@@ -57,6 +57,8 @@ import { dynamicAccessSuite } from './suites/dynamic-access';
 // of the CD pipeline in the AWS prod account it will be 'stage'
 const configName = envMap.configName;
 
+export const testStartTime = new Date();
+
 // Setup services used for running system tests
 export const loggerConfigService = new LoggerConfigService(configName, envMap.configDir);
 export const logger = new Logger(loggerConfigService, false, false, true);
@@ -285,9 +287,9 @@ if (SSM_ENABLED || BZERO_ENABLED || KUBE_ENABLED) {
 // These suites are based on testing allTargets use SSM_ENABLED or BZERO_ENABLED
 // environment variables to control which targets are created
 if(SSM_ENABLED || BZERO_ENABLED) {
-    //connectSuite();
-    //sessionRecordingSuite();
-    //sshSuite();
+    connectSuite();
+    sessionRecordingSuite();
+    sshSuite();
 
     if (IN_CI && NOT_USING_RUNNER) {
         // Only run group tests if we are in CI and talking to staging or dev
@@ -297,7 +299,7 @@ if(SSM_ENABLED || BZERO_ENABLED) {
 
 // BZero only test suites
 if(BZERO_ENABLED) {
-    //dynamicAccessSuite();
+    dynamicAccessSuite();
 }
 
 // Only run the agent container suite when we are running
@@ -354,7 +356,7 @@ if (API_ENABLED) {
     }
 }
 
-if (AGENT_RECOVERY_ENABLED && BZERO_ENABLED && process.env.TEST_RUNNER_KUBE_CONFIG) {
+if (AGENT_RECOVERY_ENABLED && BZERO_ENABLED && KUBE_ENABLED && process.env.TEST_RUNNER_KUBE_CONFIG) {
     logger.info('Running agent recovery tests');
     agentRecoverySuite(process.env.TEST_RUNNER_KUBE_CONFIG, process.env.TEST_RUNNER_UNIQUE_ID);
 } else {

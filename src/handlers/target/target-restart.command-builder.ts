@@ -7,5 +7,5 @@ export function targetRestartCmdBuilder(yargs: yargs.Argv<{}>): yargs.Argv<resta
         .positional('targetString', {
             type: 'string',
         })
-        .example('$0 target restart target-name/id', 'Restart the bzero agent on any uniquely named target')
+        .example('$0 target restart target-name/id', 'Restart the bzero agent on any uniquely named target');
 }

@@ -678,11 +678,11 @@ export class CliDriver
                 }
             )
             .command(
-                'kube', 
-                'Kubectl wrapper catch all', 
+                'kube',
+                'Kubectl wrapper catch all',
                 (yargs) => {
                     return yargs.example('$0 kube -- get pods', '');
-                }, 
+                },
                 async (argv: any) => {
                     // This expects that the kube command will go after the --
                     const listOfCommands = argv._.slice(1); // this removes the 'kube' part of 'zli kube -- ...'
