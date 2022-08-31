@@ -404,15 +404,15 @@ sudo yum install ${packageName} iperf3 -y
         // Install agent from source by cloning via git and compiling with go
         let installBlockGit: string;
         switch (packageManager) {
-            case 'apt':
-                installBlockGit = 'sudo apt update -y && sudo apt install -y git iperf3';
-                break;
-            case 'yum':
-                installBlockGit = 'sudo yum update -y && sudo yum install git iperf3 -y';
-                break;
-            default:
-                const _exhaustiveCheck: never = packageManager;
-                return _exhaustiveCheck;
+        case 'apt':
+            installBlockGit = 'sudo apt update -y && sudo apt install -y git iperf3';
+            break;
+        case 'yum':
+            installBlockGit = 'sudo yum update -y && sudo yum install git iperf3 -y';
+            break;
+        default:
+            const _exhaustiveCheck: never = packageManager;
+            return _exhaustiveCheck;
         }
 
         const installBlockCompileWithGo = String.raw`cd /
@@ -431,7 +431,7 @@ cd /root/bzero/bctl/agent
 cp agent /usr/bin/bzero
 cd /
 `;
-        installBlock = `${installBlockGit}\n${installBlockCompileWithGo}\nsystemctl restart bzero-agent`;
+        installBlock = `${installBlockGit}\n${installBlockCompileWithGo}`;
     }
         
 
@@ -449,7 +449,6 @@ cd /
         // Starts a python web server in background for web tests
         const pythonWebServerCmd = 'nohup python3 -m http.server > python-server.out 2> python-server.err < /dev/null &';
         const iperfCmd = `nohup iperf3 -s > /var/log/iperf.log 2>&1 &`;
-
 
         // Add a bzero custom user for connect/ssh tests
         // --shell options sets default shell as bash
@@ -494,5 +493,6 @@ set -Ee
 ${installBlock}
 ${initBlock}
 ${registerCommand}
+systemctl restart bzero-agent
 `;
 }
