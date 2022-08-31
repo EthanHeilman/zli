@@ -15,6 +15,8 @@ import { PolicyHttpService } from '../../../http-services/policy/policy.http-ser
 import { Subject } from '../../../../webshell-common-ts/http/v2/policy/types/subject.types';
 import { setupBackgroundDaemonMocks } from '../utils/connect-utils';
 
+const findPort = require('find-open-port');
+
 interface IperfUploadOutput {
     end: {
         sum_sent: SumSummary;
@@ -55,8 +57,6 @@ export const iperfSuite = () => {
 
         let testPassed = false;
 
-        const localDbPort = 6101;
-        const secondlocalDbPort = 6102;
         const iperfPort = 5201;
 
         // Set up the policy before all the tests
@@ -99,18 +99,11 @@ export const iperfSuite = () => {
 
 
         afterEach(async () => {
+            // Always cleanup db daemons
+            await callZli(['disconnect', 'db', '--silent']);
+
             // Check the daemon logs incase there is a test failure
             await testUtils.CheckDaemonLogs(testPassed, expect.getState().currentTestName);
-
-            // Always make sure our ports are free, else throw an error
-            try {
-                await testUtils.CheckPort(localDbPort);
-            } catch (e: any) {
-                // Always ensure we clean up any dangling connections if there are any errors
-                await callZli(['disconnect', 'db']);
-
-                throw e;
-            }
 
             // Reset test passed
             testPassed = false;
@@ -124,13 +117,14 @@ export const iperfSuite = () => {
                 const dbTargetService: DbTargetService = new DbTargetService(configService, logger);
                 const dbIperfVtName = `${doTarget.bzeroTarget.name}-db-iperf-upload-vt`;
 
+                const daemonLocalPort = await findPort();
                 await dbTargetService.CreateDbTarget({
                     targetName: dbIperfVtName,
                     proxyTargetId: doTarget.bzeroTarget.id,
                     remoteHost: 'localhost',
                     remotePort: { value: iperfPort },
                     localHost: 'localhost',
-                    localPort: { value: secondlocalDbPort },
+                    localPort: { value: daemonLocalPort },
                     environmentName: systemTestEnvName
                 });
 
@@ -144,7 +138,7 @@ export const iperfSuite = () => {
 
                 // -i pause n seconds between periodic throughput reports
                 // -t time in seconds to transmit for
-                const { stdout } = await pexec(`iperf3 -c 127.0.0.1 -p ${secondlocalDbPort} -i 1 -t 5 --json`);
+                const { stdout } = await pexec(`iperf3 -c 127.0.0.1 -p ${daemonLocalPort} -i 1 -t 5 --json`);
                 const iperfResult: IperfUploadOutput = JSON.parse(stdout);
 
                 expect(iperfResult.end.sum_sent.bits_per_second).toBeGreaterThan(6000000);
@@ -165,13 +159,14 @@ export const iperfSuite = () => {
                 const dbTargetService: DbTargetService = new DbTargetService(configService, logger);
                 const dbIperfVtName = `${doTarget.bzeroTarget.name}-db-iperf-download-vt`;
 
+                const daemonLocalPort = await findPort();
                 await dbTargetService.CreateDbTarget({
                     targetName: dbIperfVtName,
                     proxyTargetId: doTarget.bzeroTarget.id,
                     remoteHost: 'localhost',
                     remotePort: { value: iperfPort },
                     localHost: 'localhost',
-                    localPort: { value: localDbPort },
+                    localPort: { value: daemonLocalPort },
                     environmentName: systemTestEnvName
                 });
 
@@ -186,7 +181,7 @@ export const iperfSuite = () => {
                 // -i pause n seconds between periodic throughput reports
                 // -t time in seconds to transmit for
                 // -R reverse test (i.e. download)
-                const { stdout } = await pexec(`iperf3 -c 127.0.0.1 -p ${localDbPort} -i 1 -t 5 -R --json`);
+                const { stdout } = await pexec(`iperf3 -c 127.0.0.1 -p ${daemonLocalPort} -i 1 -t 5 -R --json`);
                 const iperfResult: IperfDownloadOutput = JSON.parse(stdout);
 
                 expect(iperfResult.end.sum_received.bits_per_second).toBeGreaterThan(5000000);

@@ -24,6 +24,8 @@ export const webSuite = () => {
     describe('web suite', () => {
         let policyService: PolicyHttpService;
         let testUtils: TestUtils;
+        let webTargetService: WebTargetService;
+
         let testPassed = false;
         let testStartTime: Date;
 
@@ -31,7 +33,6 @@ export const webSuite = () => {
         // connections
         let proxyPolicyID: string;
 
-        let localWebPort: number;
         const webserverRemotePort = 8000;
         const filePath = 'test.txt';
 
@@ -40,6 +41,7 @@ export const webSuite = () => {
             // Construct all http services needed to run tests
             policyService = new PolicyHttpService(configService, logger);
             testUtils = new TestUtils(configService, logger, loggerConfigService);
+            webTargetService = new WebTargetService(configService, logger);
 
             const currentUser: Subject = {
                 id: configService.me().id,
@@ -57,8 +59,6 @@ export const webSuite = () => {
                 environments: [environment],
                 targets: []
             })).id;
-
-            localWebPort = await findPort();
         }, 60 * 1000);
 
         beforeEach(() => {
@@ -76,18 +76,11 @@ export const webSuite = () => {
 
 
         afterEach(async () => {
+            // Always cleanup web daemons
+            await callZli(['disconnect', 'web', '--silent']);
+
             // Check the daemon logs incase there is a test failure
             await testUtils.CheckDaemonLogs(testPassed, expect.getState().currentTestName);
-
-            // Always make sure our ports are free, else throw an error
-            try {
-                await testUtils.CheckPort(localWebPort);
-            } catch (e: any) {
-                // Always ensure we clean up any dangling connections if there are any errors
-                await callZli(['disconnect', 'web']);
-
-                throw e;
-            }
 
             // Reset test passed
             testPassed = false;
@@ -98,7 +91,7 @@ export const webSuite = () => {
                 const doTarget = testTargets.get(testTarget) as DigitalOceanBZeroTarget;
 
                 // Create a new web virtual target
-                const webTargetService: WebTargetService = new WebTargetService(configService, logger);
+                const localWebPort = await findPort();
                 const webVtName = `${doTarget.bzeroTarget.name}-web-vt`;
 
                 const createWebTargetResponse = await webTargetService.CreateWebTarget({
@@ -150,7 +143,19 @@ export const webSuite = () => {
 
             it(`${testTarget.webCaseId}: web virtual target upload - ${testTarget.awsRegion} - ${getDOImageName(testTarget.dropletImage)}`, async () => {
                 const doTarget = testTargets.get(testTarget) as DigitalOceanBZeroTarget;
-                const webVtName = `${doTarget.bzeroTarget.name}-web-vt`;
+
+                const localWebPort = await findPort();
+                const webVtName = `${doTarget.bzeroTarget.name}-web-vt-upload`;
+
+                await webTargetService.CreateWebTarget({
+                    targetName: webVtName,
+                    proxyTargetId: doTarget.bzeroTarget.id,
+                    remoteHost: 'http://localhost',
+                    remotePort: { value: webserverRemotePort },
+                    localHost: 'localhost',
+                    localPort: { value: localWebPort },
+                    environmentName: systemTestEnvName
+                });
 
                 // Start the connection to the web virtual target
                 await callZli(['connect', webVtName, '--openBrowser=false']);
