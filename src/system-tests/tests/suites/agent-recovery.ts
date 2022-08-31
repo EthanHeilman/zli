@@ -115,7 +115,7 @@ export const agentRecoverySuite = (testRunnerKubeConfigFile: string, testRunnerU
             await callZli(['connect', `${KubeTestUserName}@${testCluster.bzeroClusterTargetSummary.name}`, '--targetGroup', 'system:masters']);
 
             await restartBastionAndWaitForAgentToReconnect(testCluster.bzeroClusterTargetSummary.id);
-            await testKubeConnection()
+            await testKubeConnection();
 
             await callZli(['disconnect', 'kube']);
         }, 10 * 60 * 1000); // 10 min timeout;
