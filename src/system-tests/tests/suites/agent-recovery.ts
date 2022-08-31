@@ -142,7 +142,9 @@ export const agentRecoverySuite = (testRunnerKubeConfigFile: string, testRunnerU
             10 * 60 * 1000); // 10 min timeout
         });
 
-        it('252823: kube agent bastion restart test', async () => {
+        it('252823: kube agent bastion restart test', async() => {
+            // start the kube daemon
+            await callZli(['connect', `${KubeTestUserName}@${testCluster.bzeroClusterTargetSummary.name}`, '--targetGroup', 'system:masters']);
             await restartBastionAndWaitForAgentToReconnect(testCluster.bzeroClusterTargetSummary.id);
             await testKubeConnection();
         }, 10 * 60 * 1000); // 10 min timeout;
@@ -200,6 +202,8 @@ export const agentRecoverySuite = (testRunnerKubeConfigFile: string, testRunnerU
 
             await waitForAgentToRestart(testCluster.bzeroClusterTargetSummary.id);
 
+            // start the kube daemon
+            await callZli(['connect', `${KubeTestUserName}@${testCluster.bzeroClusterTargetSummary.name}`, '--targetGroup', 'system:masters']);
             await testKubeConnection();
         }, 5 * 60 * 1000);
 
@@ -306,8 +310,6 @@ export const agentRecoverySuite = (testRunnerKubeConfigFile: string, testRunnerU
          * helper function to test that we can connect to kube targets after restart
          */
         async function testKubeConnection() {
-            // start the kube daemon
-            await callZli(['connect', `${KubeTestUserName}@${testCluster.bzeroClusterTargetSummary.name}`, '--targetGroup', 'system:masters']);
             // Attempt a simple listNamespace kubectl test after reconnecting
             const bzkc = new k8s.KubeConfig();
             bzkc.loadFromFile(kubeConfigYamlFilePath);
