@@ -97,7 +97,7 @@ export const dynamicAccessSuite = () => {
 
             // Delete the DAT target
             await dynamicAccessConfigService.DeleteDynamicAccessConfig(dynamicAccessId);
-        });
+        }, 60 * 1000);
 
         test(`3090: Connect to DAT target`, async () => {
             const exit = true;

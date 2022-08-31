@@ -100,6 +100,7 @@ export const dbSuite = () => {
         let policyService: PolicyHttpService;
         let dbDaemonManagementService: DaemonManagementService<DbConfig>;
         let testUtils: TestUtils;
+        let testStartTime: Date;
 
         // Proxy policy ID created for this entire suite in order to make DB
         // connections
@@ -144,6 +145,7 @@ export const dbSuite = () => {
         }, 60 * 1000);
 
         beforeEach(() => {
+            testStartTime = new Date();
             // Reset tracked state of created db targets
             createdDbTargets = [];
             setupBackgroundDaemonMocks();
@@ -242,7 +244,7 @@ export const dbSuite = () => {
                     environmentName: systemTestEnvName,
                     connectionEventType: eventType,
                     connectionId: daemon.connectionId
-                });
+                }, testStartTime);
             };
 
             /**

@@ -1,14 +1,15 @@
+import *  as fs from 'fs';
+
 import { ConfigService } from '../../../../src/services/config/config.service';
 import { Logger } from '../../../services/logger/logger.service';
 import { EventsHttpService } from '../../../../src/http-services/events/events.http-server';
-import { configService, testStartTime } from '../system-test';
+import { configService } from '../system-test';
 import { LoggerConfigService } from '../../../../src/services/logger/logger-config.service';
 import { SubjectType } from '../../../../webshell-common-ts/http/v2/common.types/subject.types';
 import { CommandEventDataMessage } from '../../../../webshell-common-ts/http/v2/event/types/command-event-data-message';
 import { ConnectionEventDataMessage } from '../../../../webshell-common-ts/http/v2/event/types/connection-event-data-message';
 import { EnvironmentHttpService } from '../../../../src/http-services/environment/environment.http-services';
-
-import *  as fs from 'fs';
+import { AgentStatusChangeData } from '../../../../webshell-common-ts/http/v2/event/types/agent-status-change-data.types';
 
 const pids = require('port-pid');
 
@@ -63,6 +64,42 @@ export class TestUtils {
     }
 
     /**
+     * Polls for agent status changes events until it finds a specific event or
+     * times out and throws an error
+     * @param targetId The target to search for
+     * @param partialEvent A partial expected event to search for. Any
+     * properties that are omitted from the partial event will default to
+     * expect.anything() instead
+     * @param startTime Optional start time to filter events
+     * @param endTime Optional end time to filter events
+     * @param timeout Max time to wait for the event before timing out
+     * @param retryInterval Time to wait in between polls to get new events
+     */
+
+    public async EnsureAgentStatusEvent(targetId: string, partialEvent: Partial<AgentStatusChangeData>, startTime?: Date, endTime?: Date, timeout: number = 25 * 100, retryInterval: number = 5 * 1000) {
+        const defaults: AgentStatusChangeData = {
+            statusChange: expect.anything(),
+            timeStamp: expect.anything(),
+            reason: expect.anything(),
+            agentPublicKey: expect.anything(),
+        };
+
+        const expectedEvent : AgentStatusChangeData = { ...defaults, ...partialEvent};
+        return await this.waitForExpect(
+            async () => {
+                const gotEvents = await this.eventsService.GetAgentStatusChangeEvents(targetId, startTime, endTime);
+
+                // Use arrayContaining, so that got value can contain extra
+                // elements. Include explicit generic constraint, so that jest
+                // prints the object if something does not match.
+                expect(gotEvents).toEqual<AgentStatusChangeData[]>(expect.arrayContaining([expectedEvent]));
+            },
+            timeout,
+            retryInterval
+        );
+    }
+
+    /**
      * Polls for connection events until it finds a specific event or hits a
      * timeout.
      * @param expectedEvent The event to match for in the array of polled
@@ -76,7 +113,7 @@ export class TestUtils {
      * @param retryInterval Time to wait in-between polls of the
      * GetConnectionsEvents() API
      */
-    public async EnsureConnectionEventCreated(partialEvent: Partial<ConnectionEventDataMessage>, timeout: number = 25 * 1000, retryInterval: number = SLEEP_TIME * 1000) : Promise<void>
+    public async EnsureConnectionEventCreated(partialEvent: Partial<ConnectionEventDataMessage>, startTime: Date, timeout: number = 25 * 1000, retryInterval: number = SLEEP_TIME * 1000) : Promise<void>
     {
         const defaultExpectedEnvironmentName =
         // If environmentId is specified and is not equal to the Guid.empty ID (used by SSM targets)
@@ -113,7 +150,7 @@ export class TestUtils {
         return await this.waitForExpect(
             async () => {
                 const gotEvents = await this.eventsService.GetConnectionEvents(
-                    testStartTime,
+                    startTime,
                     [configService.me().id],
                     partialEvent.targetId ? [partialEvent.targetId] : []
                 );
