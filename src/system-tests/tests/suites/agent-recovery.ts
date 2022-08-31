@@ -24,51 +24,24 @@ const kubeConfigYamlFilePath = `/tmp/bzero-agent-kubeconfig-${systemTestUniqueId
 // Create mapping object and function for test rails case IDs
 interface testRailsCaseIdMapping {
     agentRecoveryBastionRestart: string;
+    agentRestartByName: string;
+    agentRestartByEnv: string;
+    agentRestartById: string;
 }
 
-function fromTestTargetToBastionRestartCaseIdMapping(testTarget: TestTarget): testRailsCaseIdMapping {
+function fromTestTargetToCaseIdMapping(testTarget: TestTarget): testRailsCaseIdMapping {
     // agent recovery tests only run in CI and not in pipeline so for now we
     // only need to map a single bzero target
     switch (testTarget.dropletImage) {
-        case DigitalOceanDistroImage.BzeroVTUbuntuTestImage:
-            return {
-                agentRecoveryBastionRestart: '247517'
-            };
-        default:
-            throw new Error(`Unexpected distro image: ${testTarget.dropletImage}`);
-    }
-}
-
-function fromTestTargetToAgentRestartNameCaseIdMapping(testTarget: TestTarget): testRailsCaseIdMapping {
-    switch (testTarget.dropletImage) {
-        case DigitalOceanDistroImage.BzeroVTUbuntuTestImage:
-            return {
-                agentRecoveryBastionRestart: '258916'
-            };
-        default:
-            throw new Error(`Unexpected distro image: ${testTarget.dropletImage}`);
-    }
-}
-
-function fromTestTargetToAgentRestartEnvCaseIdMapping(testTarget: TestTarget): testRailsCaseIdMapping {
-    switch (testTarget.dropletImage) {
-        case DigitalOceanDistroImage.BzeroVTUbuntuTestImage:
-            return {
-                agentRecoveryBastionRestart: '258917'
-            };
-        default:
-            throw new Error(`Unexpected distro image: ${testTarget.dropletImage}`);
-    }
-}
-
-function fromTestTargetToAgentRestartIdCaseIdMapping(testTarget: TestTarget): testRailsCaseIdMapping {
-    switch (testTarget.dropletImage) {
-        case DigitalOceanDistroImage.BzeroVTUbuntuTestImage:
-            return {
-                agentRecoveryBastionRestart: '258918'
-            };
-        default:
-            throw new Error(`Unexpected distro image: ${testTarget.dropletImage}`);
+    case DigitalOceanDistroImage.BzeroVTUbuntuTestImage:
+        return {
+            agentRecoveryBastionRestart: '247517',
+            agentRestartByName: '258916',
+            agentRestartByEnv: '258917',
+            agentRestartById: '258918',
+        };
+    default:
+        throw new Error(`Unexpected distro image: ${testTarget.dropletImage}`);
     }
 }
 
@@ -124,35 +97,39 @@ export const agentRecoverySuite = (testRunnerKubeConfigFile: string, testRunnerU
             setupBackgroundDaemonMocks();
         });
 
-        // ensure we disconnect even in the case of failure
-        afterEach(async () => {
-            await callZli(['disconnect']);
-        });
-
         bzeroTestTargetsToRun.forEach(async (testTarget) => {
-            it(`${fromTestTargetToBastionRestartCaseIdMapping(testTarget).agentRecoveryBastionRestart}: bastion restart ${testTarget.awsRegion} - ${getDOImageName(testTarget.dropletImage)}`, async () => {
+            it(`${fromTestTargetToCaseIdMapping(testTarget).agentRecoveryBastionRestart}: bastion restart ${testTarget.awsRegion} - ${getDOImageName(testTarget.dropletImage)}`, async () => {
                 const doTarget = testTargets.get(testTarget);
                 const connectTarget = connectTestUtils.getConnectTarget(doTarget, testTarget.awsRegion);
 
                 await restartBastionAndWaitForAgentToReconnect(connectTarget.id);
-
                 // Run normal shell connect test to ensure that still works after reconnecting
                 await connectTestUtils.runShellConnectTest(testTarget, `bastion restart test - ${systemTestUniqueId}`, true);
             },
-                10 * 60 * 1000); // 10 min timeout
+            10 * 60 * 1000); // 10 min timeout
         });
 
-        it('252823: kube agent bastion restart test', async () => {
+        it('252823: kube agent bastion restart test', async() => {
             // Start the kube daemon
             await callZli(['connect', `${KubeTestUserName}@${testCluster.bzeroClusterTargetSummary.name}`, '--targetGroup', 'system:masters']);
 
             await restartBastionAndWaitForAgentToReconnect(testCluster.bzeroClusterTargetSummary.id);
-            await testKubeConnection();
+
+            // Attempt a simple listNamespace kubectl test after reconnecting
+            const bzkc = new k8s.KubeConfig();
+            bzkc.loadFromFile(kubeConfigYamlFilePath);
+            const bzk8sApi = bzkc.makeApiClient(k8s.CoreV1Api);
+
+            const listNamespaceResp = await bzk8sApi.listNamespace();
+            const resp = listNamespaceResp.body;
+            expect(resp.items.find(t => t.metadata.name === testCluster.helmChartNamespace)).toBeTruthy();
+
+            await callZli(['disconnect', 'kube']);
         }, 10 * 60 * 1000); // 10 min timeout;
 
         // adding a success case for connecting to bzero targets via ssh using .environment
         bzeroTestTargetsToRun.forEach(async (testTarget: TestTarget) => {
-            it(`${fromTestTargetToAgentRestartNameCaseIdMapping(testTarget)}: BZero Agent -- zli target restart <name>  - ${testTarget.awsRegion} - ${testTarget.installType} - ${testTarget.dropletImage}`, async () => {
+            it(`${fromTestTargetToCaseIdMapping(testTarget).agentRestartByName}: BZero Agent -- zli target restart <name>  - ${testTarget.awsRegion} - ${testTarget.installType} - ${testTarget.dropletImage}`, async () => {
                 const { targetName, targetId } = await getTargetInfo(testTarget);
                 await callZli(['target', 'restart', targetName]);
 
@@ -174,7 +151,7 @@ export const agentRecoverySuite = (testRunnerKubeConfigFile: string, testRunnerU
 
         // adding a success case for connecting to bzero targets via ssh using .environment
         bzeroTestTargetsToRun.forEach(async (testTarget: TestTarget) => {
-            it(`${fromTestTargetToAgentRestartEnvCaseIdMapping(testTarget)}: BZero Agent -- zli target restart <name.env>  - ${testTarget.awsRegion} - ${testTarget.installType} - ${testTarget.dropletImage}`, async () => {
+            it(`${fromTestTargetToCaseIdMapping(testTarget).agentRestartByEnv}: BZero Agent -- zli target restart <name.env>  - ${testTarget.awsRegion} - ${testTarget.installType} - ${testTarget.dropletImage}`, async () => {
                 const { targetName, targetId } = await getTargetInfo(testTarget);
                 await callZli(['target', 'restart', `${targetName}.${systemTestEnvName}`]);
 
@@ -187,7 +164,7 @@ export const agentRecoverySuite = (testRunnerKubeConfigFile: string, testRunnerU
 
         // adding a success case for connecting to bzero targets via ssh using .environment
         bzeroTestTargetsToRun.forEach(async (testTarget: TestTarget) => {
-            it(`${fromTestTargetToAgentRestartIdCaseIdMapping(testTarget)}: BZero Agent -- zli target restart <id>  - ${testTarget.awsRegion} - ${testTarget.installType} - ${testTarget.dropletImage}`, async () => {
+            it(`${fromTestTargetToCaseIdMapping(testTarget).agentRestartById}: BZero Agent -- zli target restart <id>  - ${testTarget.awsRegion} - ${testTarget.installType} - ${testTarget.dropletImage}`, async () => {
                 const { targetId } = await getTargetInfo(testTarget);
                 await callZli(['target', 'restart', `${targetId}`]);
 
