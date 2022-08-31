@@ -375,7 +375,6 @@ function getPackageManagerRegistrationScript(packageName: string, testTarget: SS
     let installBlock: string;
     const packageManager = getPackageManagerType(testTarget.dropletImage);
     const shouldBuildFromSource = packageName === 'bzero-beta' && bzeroAgentBranch;
-    const executableName = shouldBuildFromSource ? './root/bzero/bctl/agent/agent' : packageName;
 
     // Always install agent using the beta repo -- when building from source, we do this exclusively for the side-effect of
     // placing an executable in /usr/bin/bzero, which we will replace with what we build so. That will allow us to manage
@@ -444,7 +443,7 @@ cd /
         registerCommand = `${packageName} --serviceUrl ${configService.serviceUrl()} -registrationKey "${registrationApiKeySecret}" -envName "${envName}"`;
         break;
     case 'pm-bzero':
-        registerCommand = `${executableName} --serviceUrl ${configService.serviceUrl()} -registrationKey "${registrationApiKeySecret}" -environmentName "${envName}"`;
+        registerCommand = `${packageName} --serviceUrl ${configService.serviceUrl()} -registrationKey "${registrationApiKeySecret}" -environmentName "${envName}"`;
 
         // Common initialization for bzero targets
 
