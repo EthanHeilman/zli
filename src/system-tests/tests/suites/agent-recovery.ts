@@ -143,8 +143,9 @@ export const agentRecoverySuite = (testRunnerKubeConfigFile: string, testRunnerU
         });
 
         it('252823: kube agent bastion restart test', async() => {
-            // start the kube daemon
+            // Start the kube daemon
             await callZli(['connect', `${KubeTestUserName}@${testCluster.bzeroClusterTargetSummary.name}`, '--targetGroup', 'system:masters']);
+            
             await restartBastionAndWaitForAgentToReconnect(testCluster.bzeroClusterTargetSummary.id);
             await testKubeConnection();
         }, 10 * 60 * 1000); // 10 min timeout;
