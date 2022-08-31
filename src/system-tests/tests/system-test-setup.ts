@@ -431,7 +431,7 @@ cd /root/bzero/bctl/agent
 cp agent /usr/bin/bzero
 cd /
 `;
-        installBlock = `${installBlockGit}\n${installBlockCompileWithGo}\n${executableName} -w &`;
+        installBlock = `${installBlockGit}\n${installBlockCompileWithGo}\nsystemctl restart bzero-agent`;
     }
         
 
@@ -442,7 +442,7 @@ cd /
         registerCommand = `${packageName} --serviceUrl ${configService.serviceUrl()} -registrationKey "${registrationApiKeySecret}" -envName "${envName}"`;
         break;
     case 'pm-bzero':
-        registerCommand = `${executableName} --serviceUrl ${configService.serviceUrl()} -registrationKey "${registrationApiKeySecret}" -environmentName "${envName}" && systemctl restart bzero-agent`;
+        registerCommand = `${executableName} --serviceUrl ${configService.serviceUrl()} -registrationKey "${registrationApiKeySecret}" -environmentName "${envName}"`;
 
         // Common initialization for bzero targets
 
