@@ -132,7 +132,7 @@ export const agentRecoverySuite = (testRunnerKubeConfigFile: string, testRunnerU
                 const restart = latestEvents.filter(e => e.statusChange === 'OfflineToRestarting');
                 expect(restart.length).toEqual(1);
                 console.log(restart[0]);
-                expect(restart[0].reason).toContain(`received manual restart from user {IssuedBy:${configService.me().email}`);
+                expect(restart[0].reason).toContain(`received manual restart from user: {IssuedBy:${configService.me().email}`);
 
             }, 5 * 60 * 1000);
         });
@@ -142,7 +142,7 @@ export const agentRecoverySuite = (testRunnerKubeConfigFile: string, testRunnerU
             // FIXME: add case id!!
             it(`99999999979999: restart target by name with env - ${testTarget.awsRegion} - ${testTarget.installType} - ${testTarget.dropletImage}`, async () => {
                 const { targetName, targetId } = await getTargetInfo(testTarget);
-                await callZli(['target', 'restart', `${targetName}${systemTestEnvName}`]);
+                await callZli(['target', 'restart', `${targetName}.${systemTestEnvName}`]);
 
                 await waitForAgentToRestart(targetId);
 
