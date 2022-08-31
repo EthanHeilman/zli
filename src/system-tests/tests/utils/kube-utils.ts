@@ -1,5 +1,5 @@
 import * as k8s from '@kubernetes/client-node';
-import { Logger } from '../services/logger/logger.service';
+import { Logger } from '../../../services/logger/logger.service';
 
 export async function execOnPod(k8sExec: k8s.Exec, pod: k8s.V1Pod, containerName: string, command: string | string[], logger: Logger) {
     if(! pod || !pod.metadata || !pod.metadata.name || !pod.metadata.namespace) {
