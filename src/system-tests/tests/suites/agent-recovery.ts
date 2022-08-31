@@ -106,7 +106,7 @@ export const agentRecoverySuite = (testRunnerKubeConfigFile: string, testRunnerU
                 // Run normal shell connect test to ensure that still works after reconnecting
                 await connectTestUtils.runShellConnectTest(testTarget, `bastion restart test - ${systemTestUniqueId}`, true);
             },
-                10 * 60 * 1000); // 10 min timeout
+            10 * 60 * 1000); // 10 min timeout
         });
 
         it('252823: kube agent bastion restart test', async () => {
