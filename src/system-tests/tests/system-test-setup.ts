@@ -377,7 +377,9 @@ function getPackageManagerRegistrationScript(packageName: string, testTarget: SS
     const shouldBuildFromSource = packageName === 'bzero-beta' && bzeroAgentBranch;
     const executableName = shouldBuildFromSource ? './root/bzero/bctl/agent/agent' : packageName;
 
-    // Always install agent using the beta repo
+    // Always install agent using the beta repo -- when building from source, we do this exclusively for the side-effect of
+    // placing an executable in /usr/bin/bzero, which we will replace with what we build so. That will allow us to manage
+    // it with systemd, which is required for testing agent restart events
     switch (packageManager) {
     case 'apt':
         installBlock = String.raw`sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys E5C358E613982017
@@ -405,10 +407,10 @@ sudo yum install ${packageName} iperf3 -y
         let installBlockGit: string;
         switch (packageManager) {
         case 'apt':
-            installBlockGit = 'sudo apt update -y && sudo apt install -y git iperf3';
+            installBlockGit = 'sudo apt update -y && sudo apt install -y git';
             break;
         case 'yum':
-            installBlockGit = 'sudo yum update -y && sudo yum install git iperf3 -y';
+            installBlockGit = 'sudo yum update -y && sudo yum install git -y';
             break;
         default:
             const _exhaustiveCheck: never = packageManager;
@@ -428,12 +430,12 @@ git clone -b ${bzeroAgentBranch} https://github.com/bastionzero/bzero.git /root/
 sh /root/bzero/update-agent-version.sh
 cd /root/bzero/bctl/agent
 /usr/local/go/bin/go build
-cp agent /usr/bin/bzero
+cp agent /usr/bin/bzero-beta
 cd /
 `;
-        installBlock = `${installBlockGit}\n${installBlockCompileWithGo}`;
+        installBlock += `${installBlockGit}\n${installBlockCompileWithGo}`;
     }
-        
+
 
     let registerCommand: string;
     let initBlock: string = '';

@@ -105,7 +105,7 @@ export const agentRecoverySuite = (testRunnerKubeConfigFile: string, testRunnerU
                 10 * 60 * 1000); // 10 min timeout
         });
 
-        it('252823: kube agent bastion restart test', async() => {
+        it('252823: kube agent bastion restart test', async () => {
             // Start the kube daemon
             await callZli(['connect', `${KubeTestUserName}@${testCluster.bzeroClusterTargetSummary.name}`, '--targetGroup', 'system:masters']);
 
@@ -260,5 +260,42 @@ export const agentRecoverySuite = (testRunnerKubeConfigFile: string, testRunnerU
 
             }, 10 * 60 * 1000);
         });
+
+        it('252823999999: restart kube target by name', async () => {
+            // Start the kube daemon
+            await callZli(['target', 'restart', testCluster.bzeroClusterTargetSummary.name]);
+
+            await restartBastionAndWaitForAgentToReconnect(testCluster.bzeroClusterTargetSummary.id);
+
+            const eventsService = new EventsHttpService(configService, logger);
+            let latestEvents: AgentStatusChangeData[]
+
+            logger.info("going offline");
+            // first, check that the agent restarted
+            await testUtils.EnsureAgentStatusEvent(testCluster.bzeroClusterTargetSummary.id, {
+                statusChange: 'OnlineToOffline'
+            }, testStartTime, undefined, 60 * 1000, 3000);
+
+
+            const backOnline = false;
+            while (!backOnline) {
+                await new Promise(r => setTimeout(r, 5000));
+                latestEvents = await eventsService.GetAgentStatusChangeEvents(testCluster.bzeroClusterTargetSummary.id, testStartTime);
+                logger.info(JSON.stringify(latestEvents))
+            }
+
+            /* TODO: connect to kube daemon, then do this stuff 
+            // Attempt a simple listNamespace kubectl test after reconnecting
+            const bzkc = new k8s.KubeConfig();
+            bzkc.loadFromFile(kubeConfigYamlFilePath);
+            const bzk8sApi = bzkc.makeApiClient(k8s.CoreV1Api);
+
+            const listNamespaceResp = await bzk8sApi.listNamespace();
+            const resp = listNamespaceResp.body;
+            expect(resp.items.find(t => t.metadata.name === testCluster.helmChartNamespace)).toBeTruthy();
+
+            await callZli(['disconnect', 'kube']);
+            */
+        }, 10 * 60 * 1000); // 10 min timeout;
     });
 };
