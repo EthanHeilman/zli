@@ -35,9 +35,6 @@ export async function targetRestartHandler(
         await cleanExit(1, logger);
     }
 
-    // FIXME:
-    parsedTarget.name = 'john-bzero-agent';
-
     logger.info(`Agent restart initiated. To monitor your target's status, use: zli lt -d${parsedTarget.name ? ` -n ${parsedTarget.name}` : ` -i`} `);
 
     await cleanExit(0, logger);

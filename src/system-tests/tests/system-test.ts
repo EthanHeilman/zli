@@ -57,8 +57,6 @@ import { dynamicAccessSuite } from './suites/dynamic-access';
 // of the CD pipeline in the AWS prod account it will be 'stage'
 const configName = envMap.configName;
 
-export const testStartTime = new Date();
-
 // Setup services used for running system tests
 export const loggerConfigService = new LoggerConfigService(configName, envMap.configDir);
 export const logger = new Logger(loggerConfigService, false, false, true);
@@ -360,7 +358,7 @@ if (AGENT_RECOVERY_ENABLED && BZERO_ENABLED && KUBE_ENABLED && process.env.TEST_
     logger.info('Running agent recovery tests');
     agentRecoverySuite(process.env.TEST_RUNNER_KUBE_CONFIG, process.env.TEST_RUNNER_UNIQUE_ID);
 } else {
-    logger.info('Skipping agent recovery tests.');
+    logger.info('Skipping agent recovery tests: One of AGENT_RECOVERY_ENABLED, BZERO_ENABLED, KUBE_ENABLED, or TEST_RUNNER_KUBE_CONFIG is not set');
 }
 
 // Always run the version suite

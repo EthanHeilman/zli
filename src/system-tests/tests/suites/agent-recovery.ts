@@ -30,12 +30,12 @@ function fromTestTargetToCaseIdMapping(testTarget: TestTarget): testRailsCaseIdM
     // agent recovery tests only run in CI and not in pipeline so for now we
     // only need to map a single bzero target
     switch (testTarget.dropletImage) {
-        case DigitalOceanDistroImage.BzeroVTUbuntuTestImage:
-            return {
-                agentRecoveryBastionRestart: '247517'
-            };
-        default:
-            throw new Error(`Unexpected distro image: ${testTarget.dropletImage}`);
+    case DigitalOceanDistroImage.BzeroVTUbuntuTestImage:
+        return {
+            agentRecoveryBastionRestart: '247517'
+        };
+    default:
+        throw new Error(`Unexpected distro image: ${testTarget.dropletImage}`);
     }
 }
 
@@ -77,7 +77,7 @@ export const agentRecoverySuite = (testRunnerKubeConfigFile: string, testRunnerU
                 environments: [environment],
                 targets: [],
                 targetUsers: ConnectTestUtils.getPolicyTargetUsers(),
-                verbs: [{ type: VerbType.Shell },]
+                verbs: [{type: VerbType.Shell},]
             });
 
             // Generate kube yaml to use for kube agent restart test
@@ -237,10 +237,10 @@ export const agentRecoverySuite = (testRunnerKubeConfigFile: string, testRunnerU
         }
 
         async function getBastionPod(k8sApi: k8s.CoreV1Api, uniqueId: string) {
-            const resp = await getPodWithLabelSelector(k8sApi, 'default', { 'uniqueId': uniqueId, 'podType': 'bastion' });
+            const resp = await getPodWithLabelSelector(k8sApi, 'default', { 'uniqueId': uniqueId, 'podType': 'bastion'});
 
             const podCount = resp.body.items.length;
-            if (podCount != 1) {
+            if(podCount != 1) {
                 throw new Error(`Found ${podCount} bastion pods.`);
             }
 
