@@ -30,12 +30,12 @@ function fromTestTargetToBastionRestartCaseIdMapping(testTarget: TestTarget): te
     // agent recovery tests only run in CI and not in pipeline so for now we
     // only need to map a single bzero target
     switch (testTarget.dropletImage) {
-    case DigitalOceanDistroImage.BzeroVTUbuntuTestImage:
-        return {
-            agentRecoveryBastionRestart: '247517'
-        };
-    default:
-        throw new Error(`Unexpected distro image: ${testTarget.dropletImage}`);
+        case DigitalOceanDistroImage.BzeroVTUbuntuTestImage:
+            return {
+                agentRecoveryBastionRestart: '247517'
+            };
+        default:
+            throw new Error(`Unexpected distro image: ${testTarget.dropletImage}`);
     }
 }
 
@@ -110,7 +110,7 @@ export const agentRecoverySuite = (testRunnerKubeConfigFile: string, testRunnerU
                 environments: [environment],
                 targets: [],
                 targetUsers: ConnectTestUtils.getPolicyTargetUsers(),
-                verbs: [{type: VerbType.Shell},]
+                verbs: [{ type: VerbType.Shell },]
             });
 
             // Generate kube yaml to use for kube agent restart test
@@ -139,13 +139,13 @@ export const agentRecoverySuite = (testRunnerKubeConfigFile: string, testRunnerU
                 // Run normal shell connect test to ensure that still works after reconnecting
                 await connectTestUtils.runShellConnectTest(testTarget, `bastion restart test - ${systemTestUniqueId}`, true);
             },
-            10 * 60 * 1000); // 10 min timeout
+                10 * 60 * 1000); // 10 min timeout
         });
 
-        it('252823: kube agent bastion restart test', async() => {
+        it('252823: kube agent bastion restart test', async () => {
             // Start the kube daemon
             await callZli(['connect', `${KubeTestUserName}@${testCluster.bzeroClusterTargetSummary.name}`, '--targetGroup', 'system:masters']);
-            
+
             await restartBastionAndWaitForAgentToReconnect(testCluster.bzeroClusterTargetSummary.id);
             await testKubeConnection();
         }, 10 * 60 * 1000); // 10 min timeout;
@@ -167,7 +167,7 @@ export const agentRecoverySuite = (testRunnerKubeConfigFile: string, testRunnerU
                 const restart = latestEvents.filter(e => e.statusChange === 'OfflineToRestarting');
                 expect(restart.length).toEqual(1);
                 console.log(restart[0]);
-                expect(restart[0].reason).toContain(`received manual restart from user: {IssuedBy:${configService.me().email}`);
+                expect(restart[0].reason).toContain(`received manual restart from user: {RestartedBy:${configService.me().email}`);
 
             }, 5 * 60 * 1000);
         });
@@ -271,10 +271,10 @@ export const agentRecoverySuite = (testRunnerKubeConfigFile: string, testRunnerU
         }
 
         async function getBastionPod(k8sApi: k8s.CoreV1Api, uniqueId: string) {
-            const resp = await getPodWithLabelSelector(k8sApi, 'default', { 'uniqueId': uniqueId, 'podType': 'bastion'});
+            const resp = await getPodWithLabelSelector(k8sApi, 'default', { 'uniqueId': uniqueId, 'podType': 'bastion' });
 
             const podCount = resp.body.items.length;
-            if(podCount != 1) {
+            if (podCount != 1) {
                 throw new Error(`Found ${podCount} bastion pods.`);
             }
 
