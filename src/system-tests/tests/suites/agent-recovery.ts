@@ -115,15 +115,7 @@ export const agentRecoverySuite = (testRunnerKubeConfigFile: string, testRunnerU
             await callZli(['connect', `${KubeTestUserName}@${testCluster.bzeroClusterTargetSummary.name}`, '--targetGroup', 'system:masters']);
 
             await restartBastionAndWaitForAgentToReconnect(testCluster.bzeroClusterTargetSummary.id);
-
-            // Attempt a simple listNamespace kubectl test after reconnecting
-            const bzkc = new k8s.KubeConfig();
-            bzkc.loadFromFile(kubeConfigYamlFilePath);
-            const bzk8sApi = bzkc.makeApiClient(k8s.CoreV1Api);
-
-            const listNamespaceResp = await bzk8sApi.listNamespace();
-            const resp = listNamespaceResp.body;
-            expect(resp.items.find(t => t.metadata.name === testCluster.helmChartNamespace)).toBeTruthy();
+            await testKubeConnection()
 
             await callZli(['disconnect', 'kube']);
         }, 10 * 60 * 1000); // 10 min timeout;
