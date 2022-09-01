@@ -18,6 +18,9 @@ import { EventsHttpService } from '../../../http-services/events/events.http-ser
 import { TestTarget } from '../system-test.types';
 import { callZli } from '../utils/zli-utils';
 import { KubeTestUserName } from './kube';
+import { KubeHttpService } from '../../../http-services/targets/kube/kube.http-services';
+import { BzeroTargetHttpService } from '../../../http-services/targets/bzero/bzero.http-services';
+import { TargetStatus } from '../../../../webshell-common-ts/http/v2/target/types/targetStatus.types';
 
 const kubeConfigYamlFilePath = `/tmp/bzero-agent-kubeconfig-${systemTestUniqueId}.yml`;
 
@@ -54,11 +57,15 @@ export const agentRecoverySuite = (testRunnerKubeConfigFile: string, testRunnerU
         let connectionService: ConnectionHttpService;
         let connectTestUtils: ConnectTestUtils;
         let testStartTime: Date;
+        let kubeService: KubeHttpService;
+        let bzeroTargetService: BzeroTargetHttpService;
 
         beforeAll(async () => {
             policyService = new PolicyHttpService(configService, logger);
             testUtils = new TestUtils(configService, logger, loggerConfigService);
             connectionService = new ConnectionHttpService(configService, logger);
+            kubeService = new KubeHttpService(configService, logger);
+            bzeroTargetService = new BzeroTargetHttpService(configService, logger);
 
             // Setup the kube client from the test runner configuration
             const kc = new k8s.KubeConfig();
@@ -102,6 +109,9 @@ export const agentRecoverySuite = (testRunnerKubeConfigFile: string, testRunnerU
                 const doTarget = testTargets.get(testTarget);
                 const connectTarget = connectTestUtils.getConnectTarget(doTarget, testTarget.awsRegion);
 
+                // Wait for the target to come online in case its offline from a previous recovery test
+                await waitForBzeroTargetOnline(connectTarget.id);
+
                 await restartBastionAndWaitForAgentToReconnect(connectTarget.id);
 
                 // Run normal shell connect test to ensure that still works after reconnecting
@@ -111,6 +121,9 @@ export const agentRecoverySuite = (testRunnerKubeConfigFile: string, testRunnerU
         });
 
         it('252823: kube agent bastion restart test', async() => {
+            // Wait for the target to come online in case its offline from a previous recovery test
+            await waitForKubeTargetOnline(testCluster.bzeroClusterTargetSummary.id);
+
             // Start the kube daemon
             await callZli(['connect', `${KubeTestUserName}@${testCluster.bzeroClusterTargetSummary.name}`, '--targetGroup', 'system:masters']);
 
@@ -124,6 +137,10 @@ export const agentRecoverySuite = (testRunnerKubeConfigFile: string, testRunnerU
         bzeroTestTargetsToRun.forEach(async (testTarget: TestTarget) => {
             it(`${fromTestTargetToCaseIdMapping(testTarget).agentRestartByName}: BZero Agent -- zli target restart <name>  - ${testTarget.awsRegion} - ${testTarget.installType} - ${testTarget.dropletImage}`, async () => {
                 const { targetName, targetId } = await getTargetInfo(testTarget);
+
+                // Wait for the target to come online in case its offline from a previous recovery test
+                await waitForBzeroTargetOnline(targetId);
+
                 await callZli(['target', 'restart', targetName]);
 
                 await waitForAgentToRestart(targetId);
@@ -146,6 +163,10 @@ export const agentRecoverySuite = (testRunnerKubeConfigFile: string, testRunnerU
         bzeroTestTargetsToRun.forEach(async (testTarget: TestTarget) => {
             it(`${fromTestTargetToCaseIdMapping(testTarget).agentRestartByEnv}: BZero Agent -- zli target restart <name.env>  - ${testTarget.awsRegion} - ${testTarget.installType} - ${testTarget.dropletImage}`, async () => {
                 const { targetName, targetId } = await getTargetInfo(testTarget);
+
+                // Wait for the target to come online in case its offline from a previous recovery test
+                await waitForBzeroTargetOnline(targetId);
+
                 await callZli(['target', 'restart', `${targetName}.${systemTestEnvName}`]);
 
                 await waitForAgentToRestart(targetId);
@@ -169,6 +190,9 @@ export const agentRecoverySuite = (testRunnerKubeConfigFile: string, testRunnerU
         });
 
         it(`258919: Kube Agent -- zli target restart <name> `, async () => {
+            // Wait for the target to come online in case its offline from a previous recovery test
+            await waitForKubeTargetOnline(testCluster.bzeroClusterTargetSummary.id);
+
             await callZli(['target', 'restart', testCluster.bzeroClusterTargetSummary.name]);
 
             await waitForAgentToRestart(testCluster.bzeroClusterTargetSummary.id);
@@ -289,6 +313,20 @@ export const agentRecoverySuite = (testRunnerKubeConfigFile: string, testRunnerU
             const listNamespaceResp = await bzk8sApi.listNamespace();
             const resp = listNamespaceResp.body;
             expect(resp.items.find(t => t.metadata.name === testCluster.helmChartNamespace)).toBeTruthy();
+        }
+
+        async function waitForBzeroTargetOnline(targetId: string, timeout: number = 2 * 60 * 1000) {
+            await testUtils.waitForExpect(async () => {
+                const bzeroTarget = await bzeroTargetService.GetBzeroTarget(targetId);
+                expect(bzeroTarget.status == TargetStatus.Online);
+            }, timeout);
+        }
+
+        async function waitForKubeTargetOnline(targetId: string, timeout: number = 2 * 60 * 1000) {
+            await testUtils.waitForExpect(async () => {
+                const kubeTarget = await kubeService.GetKubeCluster(targetId);
+                expect(kubeTarget.status == TargetStatus.Online);
+            }, timeout);
         }
     });
 };
