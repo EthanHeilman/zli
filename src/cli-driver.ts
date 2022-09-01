@@ -165,7 +165,7 @@ export class CliDriver
         'register',
         'generate',
         'api-key',
-        'target', // TODO: needed here?
+        'target',
     ]);
 
     private GACommands: Set<string> = new Set([
@@ -182,7 +182,7 @@ export class CliDriver
         'ssh-proxy',
         'generate',
         'policy',
-        'target', // TODO: needed here?
+        'target',
     ]);
 
     private adminOnlyCommands: Set<string> = new Set([
