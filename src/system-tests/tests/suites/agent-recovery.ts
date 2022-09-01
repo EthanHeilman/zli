@@ -316,14 +316,14 @@ export const agentRecoverySuite = (testRunnerKubeConfigFile: string, testRunnerU
         }
 
         async function waitForBzeroTargetOnline(targetId: string, timeout: number = 2 * 60 * 1000) {
-            testUtils.waitForExpect(async () => {
+            await testUtils.waitForExpect(async () => {
                 const bzeroTarget = await bzeroTargetService.GetBzeroTarget(targetId);
                 expect(bzeroTarget.status == TargetStatus.Online);
             }, timeout);
         }
 
         async function waitForKubeTargetOnline(targetId: string, timeout: number = 2 * 60 * 1000) {
-            testUtils.waitForExpect(async () => {
+            await testUtils.waitForExpect(async () => {
                 const kubeTarget = await kubeService.GetKubeCluster(targetId);
                 expect(kubeTarget.status == TargetStatus.Online);
             }, timeout);
