@@ -189,7 +189,9 @@ export const sshSuite = () => {
             await expectTargetsInBzConfig(bzConfigContents, true);
 
             // expect the unique username not to appear in the bz-config
-            expect(bzConfigContents.includes(uniqueUser)).toBe(false);
+            // if more than one, they're all included commented out
+            expect(bzConfigContents.includes(ssmUser)).toBe(true);
+            expect(bzConfigContents.includes(uniqueUser)).toBe(true);
         }, 60 * 1000);
 
         test('2158: generate sshConfig without tunnel access', async () => {
@@ -218,15 +220,22 @@ export const sshSuite = () => {
 
             expect(tunnelsSpy).toHaveBeenCalled();
 
-            // expect user's config file to include the bz file
-            expectIncludeStmtInConfig(userConfigFile, bzSsmConfigFile);
+            // expect the include bz file statement to not exist in the user's config file
+            expectIncludeStmtInConfig(userConfigFile, bzSsmConfigFile, false);
 
-            const bzConfigContents = fs.readFileSync(bzSsmConfigFile).toString();
-            // expect none of the targets to appear in the bz-config
-            await expectTargetsInBzConfig(bzConfigContents, false);
+            // expect there to be an error because when there's no tunnel access
+            // the existing bz config file is deleted
+            let bzConfigFileErrorCode;
+            try {
+                fs.readFileSync(bzSsmConfigFile);
+            } catch (err) {
+                if (err.code === 'ENOENT') {
+                    bzConfigFileErrorCode = err.code;
+                }
+            }
 
-            // expect the unique username not to appear in the bz-config
-            expect(bzConfigContents.includes(uniqueUser)).toBe(false);
+            // expected bz config file to not exist
+            expect(bzConfigFileErrorCode).toEqual('ENOENT');
 
             testPassed = true;
 
