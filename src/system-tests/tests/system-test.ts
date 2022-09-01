@@ -277,6 +277,7 @@ beforeEach(async () => {
     mockCleanExit();
 });
 
+/*
 // Call list target suite anytime a target test is called
 if (SSM_ENABLED || BZERO_ENABLED || KUBE_ENABLED) {
     listTargetsSuite();
@@ -353,6 +354,7 @@ if (API_ENABLED) {
         logger.info('Skipping kube cluster REST API suite because kube cluster creation is disabled.');
     }
 }
+*/
 
 if (AGENT_RECOVERY_ENABLED && BZERO_ENABLED && KUBE_ENABLED && process.env.TEST_RUNNER_KUBE_CONFIG) {
     logger.info('Running agent recovery tests');

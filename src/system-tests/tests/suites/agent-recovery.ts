@@ -223,7 +223,7 @@ export const agentRecoverySuite = (testRunnerKubeConfigFile: string, testRunnerU
             // find a online->offline event for this agent
             await testUtils.EnsureAgentStatusEvent(targetId, {
                 statusChange: 'OnlineToOffline'
-            }, testStartTime, undefined, 2 * 60 * 1000);
+            }, testStartTime, undefined, 3 * 60 * 1000);
 
             logger.info('Found online to offline event');
 
