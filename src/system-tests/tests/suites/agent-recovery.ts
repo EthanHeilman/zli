@@ -38,7 +38,7 @@ function fromTestTargetToCaseIdMapping(testTarget: TestTarget): testRailsCaseIdM
 }
 
 export const agentRecoverySuite = (testRunnerKubeConfigFile: string, testRunnerUniqueId: string) => {
-    describe('Agent Recovery Suite', () => {
+    describe.skip('Agent Recovery Suite', () => {
         let k8sApi: k8s.CoreV1Api;
         let k8sExec: k8s.Exec;
         let policyService: PolicyHttpService;
