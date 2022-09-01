@@ -13,7 +13,53 @@ export function sshConfigMockSetup(): void {
 }
 
 // Expected BZ config file
-export const mockBzSshConfigContents: string = `
+export const mockBzSshConfigContents: string = `#********************************************************************************
+#
+# BastionZero auto-generated SSH configuration file
+#
+# This file is auto-generated based on your SSH policy as specified by the
+# administrator(s) of your BastionZero account.
+#
+# All SSH connections are secured through the BastionZero ZLI, ensuring you are secured
+# with our MrZAP (multi-roots of trust) protocol.
+#
+# This file includes the following:
+#
+# If you have a target access / shell policy, you may use SSH
+# to any host within that policy by using the format:
+#
+# ssh targetUser@bzero-targetHostname
+#
+# This will proxy the SSH connection through BastionZero as the 'bzero-' wildcard will
+# match the proxy entry below.
+#
+# BastionZero makes specific use of the %n and %s in our configuration statements
+# below. %n will pass and proxy the host name as the entry exists. %s will convert it to
+# lowercase. Please be cautious if changing these values.
+#
+# Users
+# -----
+# If your administrator has provided SSH access with more than one target user, the
+# full list has been provided in a comment under the host. To set a default simply
+# add the appropriate user line by copying and modifying the line. For example:
+#
+# # User postgres, centos, user1, ec2-user
+#
+# Becomes:
+#
+# # User postgres, centos, user1, ec2-user
+# User ec2-user
+#
+# Target Names
+# ------------
+# Each host name is formatted in two ways: 
+# 1. <target name> and
+# 2. <target name>.<environment name>
+# This allows you to connect based on environment name for targets that 
+# may share the same name.
+#
+#********************************************************************************
+
 Host test-target-name
     IdentityFile /test/sshKeyPath
     UserKnownHostsFile /test/knownHosts
@@ -39,5 +85,15 @@ export function getMockSshConfigContents(withBzSshPathOption: boolean): string {
     // Config path supplied by user
     const expectedBzConfigPathPassedByUser = path.join(tempDir, 'bzSshPath');
 
-    return `Include ${(!withBzSshPathOption) ? expectedBzConfigPathDefault : expectedBzConfigPathPassedByUser}\n\n`;
+    const includeStmtDes = `# Please read the config file below for additional information
+# regarding the use of the BastionZero SSH configuration file.
+`;
+    const includeStmt = `Include ${(!withBzSshPathOption) ? expectedBzConfigPathDefault : expectedBzConfigPathPassedByUser}\n\n`;
+
+    const note = `# Note: no changes, other than this insertion, have been made to your
+# existing configuration.
+#********************************************************************************\n
+`;
+
+    return includeStmtDes + includeStmt + note;
 }

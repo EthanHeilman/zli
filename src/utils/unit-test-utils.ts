@@ -43,11 +43,11 @@ import { randomUUID } from 'crypto';
 export function unitTestMockSetup(withCleanExit: boolean): void {
     // Always mock out the following services
     if (withCleanExit) {
-        jest.spyOn(CleanExitHandler, 'cleanExit').mockImplementationOnce(() => Promise.resolve());
+        jest.spyOn(CleanExitHandler, 'cleanExit').mockImplementation(() => Promise.resolve());
     }
-    jest.spyOn(middlewareHandler, 'oAuthMiddleware').mockImplementationOnce(async (_configService, _logger) => Promise.resolve());
-    jest.spyOn(middlewareHandler, 'bzCertValidationInfoMiddleware').mockImplementationOnce(async (_configService, _logger) => Promise.resolve());
-    jest.spyOn(GAService.prototype, 'TrackCliCommand').mockImplementationOnce(() => Promise.resolve());
+    jest.spyOn(middlewareHandler, 'oAuthMiddleware').mockImplementation(async (_configService, _logger) => Promise.resolve());
+    jest.spyOn(middlewareHandler, 'bzCertValidationInfoMiddleware').mockImplementation(async (_configService, _logger) => Promise.resolve());
+    jest.spyOn(GAService.prototype, 'TrackCliCommand').mockImplementation(() => Promise.resolve());
     jest.spyOn(EnvironmentHttpService.prototype, 'ListEnvironments').mockImplementation(async () => mockEnvList);
     jest.spyOn(ConfigService.prototype, 'me').mockImplementation(() => mockUserSummary);
 }
