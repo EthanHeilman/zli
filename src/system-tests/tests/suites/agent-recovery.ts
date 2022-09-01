@@ -133,7 +133,6 @@ export const agentRecoverySuite = (testRunnerKubeConfigFile: string, testRunnerU
             await callZli(['disconnect', 'kube']);
         }, 10 * 60 * 1000); // 10 min timeout;
 
-        // adding a success case for connecting to bzero targets via ssh using .environment
         bzeroTestTargetsToRun.forEach(async (testTarget: TestTarget) => {
             it(`${fromTestTargetToCaseIdMapping(testTarget).agentRestartByName}: BZero Agent -- zli target restart <name>  - ${testTarget.awsRegion} - ${testTarget.installType} - ${testTarget.dropletImage}`, async () => {
                 const { targetName, targetId } = await getTargetInfo(testTarget);
@@ -153,13 +152,11 @@ export const agentRecoverySuite = (testRunnerKubeConfigFile: string, testRunnerU
                 const latestEvents = await eventsService.GetAgentStatusChangeEvents(targetId, testStartTime);
                 const restart = latestEvents.filter(e => e.statusChange === 'OfflineToRestarting');
                 expect(restart.length).toEqual(1);
-                console.log(restart[0]);
                 expect(restart[0].reason).toContain(`received manual restart from user: {RestartedBy:${configService.me().email}`);
 
             }, 5 * 60 * 1000);
         });
 
-        // adding a success case for connecting to bzero targets via ssh using .environment
         bzeroTestTargetsToRun.forEach(async (testTarget: TestTarget) => {
             it(`${fromTestTargetToCaseIdMapping(testTarget).agentRestartByEnv}: BZero Agent -- zli target restart <name.env>  - ${testTarget.awsRegion} - ${testTarget.installType} - ${testTarget.dropletImage}`, async () => {
                 const { targetName, targetId } = await getTargetInfo(testTarget);
@@ -176,10 +173,13 @@ export const agentRecoverySuite = (testRunnerKubeConfigFile: string, testRunnerU
             }, 5 * 60 * 1000);
         });
 
-        // adding a success case for connecting to bzero targets via ssh using .environment
         bzeroTestTargetsToRun.forEach(async (testTarget: TestTarget) => {
             it(`${fromTestTargetToCaseIdMapping(testTarget).agentRestartById}: BZero Agent -- zli target restart <id>  - ${testTarget.awsRegion} - ${testTarget.installType} - ${testTarget.dropletImage}`, async () => {
                 const { targetId } = await getTargetInfo(testTarget);
+
+                // Wait for the target to come online in case its offline from a previous recovery test
+                await waitForBzeroTargetOnline(targetId);
+
                 await callZli(['target', 'restart', `${targetId}`]);
 
                 await waitForAgentToRestart(targetId);
@@ -200,6 +200,7 @@ export const agentRecoverySuite = (testRunnerKubeConfigFile: string, testRunnerU
             // start the kube daemon
             await callZli(['connect', `${KubeTestUserName}@${testCluster.bzeroClusterTargetSummary.name}`, '--targetGroup', 'system:masters']);
             await testKubeConnection();
+            await callZli(['disconnect', 'kube']);
         }, 5 * 60 * 1000);
 
         /**
@@ -316,17 +317,21 @@ export const agentRecoverySuite = (testRunnerKubeConfigFile: string, testRunnerU
         }
 
         async function waitForBzeroTargetOnline(targetId: string, timeout: number = 2 * 60 * 1000) {
+            logger.info(`${new Date()} -- waiting for bzero target ${targetId} to come online...`);
             await testUtils.waitForExpect(async () => {
                 const bzeroTarget = await bzeroTargetService.GetBzeroTarget(targetId);
                 expect(bzeroTarget.status == TargetStatus.Online);
             }, timeout);
+            logger.info(`${new Date()} -- ${targetId} is online`);
         }
 
         async function waitForKubeTargetOnline(targetId: string, timeout: number = 2 * 60 * 1000) {
+            logger.info(`${new Date()} -- waiting for kube target ${targetId} to come online...`);
             await testUtils.waitForExpect(async () => {
                 const kubeTarget = await kubeService.GetKubeCluster(targetId);
                 expect(kubeTarget.status == TargetStatus.Online);
             }, timeout);
+            logger.info(`${new Date()} -- ${targetId} is online`);
         }
     });
 };
