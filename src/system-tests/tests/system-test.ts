@@ -12,8 +12,6 @@ import { Logger } from '../../services/logger/logger.service';
 import { ConfigService } from '../../services/config/config.service';
 import { OAuthService } from '../../services/oauth/oauth.service';
 import { randomAlphaNumericString } from '../../utils/utils';
-import { connectSuite } from './suites/connect';
-import { sshSuite } from './suites/ssh';
 import { listTargetsSuite } from './suites/list-targets';
 import { versionSuite } from './suites/version';
 import { RegisteredDigitalOceanKubernetesCluster } from '../digital-ocean/digital-ocean-kube.service.types';
@@ -31,7 +29,6 @@ import { organizationSuite } from './suites/rest-api/organization';
 import { environmentsSuite } from './suites/rest-api/environments';
 import { policySuite } from './suites/rest-api/policies/policies';
 import { groupsSuite } from './suites/groups';
-import { sessionRecordingSuite } from './suites/session-recording';
 import { callZli, mockCleanExit } from './utils/zli-utils';
 import { UserHttpService } from '../../http-services/user/user.http-services';
 import { ssmTargetRestApiSuite } from './suites/rest-api/ssm-targets';
@@ -41,13 +38,17 @@ import { databaseTargetRestApiSuite } from './suites/rest-api/database-targets';
 import { webTargetRestApiSuite } from './suites/rest-api/web-targets';
 import { dynamicAccessConfigRestApiSuite } from './suites/rest-api/dynamic-access-configs';
 import { agentContainerSuite } from './suites/agent-container';
-import { dynamicAccessSuite } from './suites/dynamic-access';
 import { userRestApiSuite } from './suites/rest-api/users';
 import { spacesRestApiSuite } from './suites/rest-api/spaces';
 import { mfaSuite } from './suites/rest-api/mfa';
 import { eventsRestApiSuite } from './suites/rest-api/events';
 import { webSuite } from './suites/web';
 import { dbSuite } from './suites/db';
+import { agentRecoverySuite } from './suites/agent-recovery';
+import { connectSuite } from './suites/connect';
+import { sessionRecordingSuite } from './suites/session-recording';
+import { sshSuite } from './suites/ssh';
+import { dynamicAccessSuite } from './suites/dynamic-access';
 
 // Uses config name from ZLI_CONFIG_NAME environment variable (defaults to prod
 // if unset) This can be run against dev/stage/prod when running system tests
@@ -55,8 +56,6 @@ import { dbSuite } from './suites/db';
 // pipeline in the AWS dev account this will be 'dev' and when running as part
 // of the CD pipeline in the AWS prod account it will be 'stage'
 const configName = envMap.configName;
-
-export const testStartTime = new Date();
 
 // Setup services used for running system tests
 export const loggerConfigService = new LoggerConfigService(configName, envMap.configDir);
@@ -93,6 +92,7 @@ const VT_ENABLED = process.env.VT_ENABLED ? (process.env.VT_ENABLED === 'true') 
 const BZERO_ENABLED = process.env.BZERO_ENABLED ? (process.env.BZERO_ENABLED === 'true') : true;
 const SSM_ENABLED =  process.env.SSM_ENABLED ? (process.env.SSM_ENABLED === 'true') : true;
 const API_ENABLED = process.env.API_ENABLED ? (process.env.API_ENABLED === 'true') : true;
+const AGENT_RECOVERY_ENABLED = process.env.AGENT_RECOVERY_ENABLED ? (process.env.AGENT_RECOVERY_ENABLED === 'true') : true;
 export const IN_PIPELINE = process.env.IN_PIPELINE ? process.env.IN_PIPELINE === 'true' : false;;
 
 export const IN_CI = process.env.BZERO_IN_CI ? (process.env.BZERO_IN_CI === '1') : false;
@@ -306,11 +306,6 @@ if(IN_PIPELINE) {
     agentContainerSuite();
 }
 
-// BZero only test suites
-if(BZERO_ENABLED) {
-    dynamicAccessSuite();
-}
-
 if(KUBE_ENABLED) {
     kubeSuite();
 }
@@ -357,6 +352,13 @@ if (API_ENABLED) {
     } else {
         logger.info('Skipping kube cluster REST API suite because kube cluster creation is disabled.');
     }
+}
+
+if (AGENT_RECOVERY_ENABLED && BZERO_ENABLED && process.env.TEST_RUNNER_KUBE_CONFIG) {
+    logger.info('Running agent recovery tests');
+    agentRecoverySuite(process.env.TEST_RUNNER_KUBE_CONFIG, process.env.TEST_RUNNER_UNIQUE_ID);
+} else {
+    logger.info('Skipping agent recovery tests.');
 }
 
 // Always run the version suite

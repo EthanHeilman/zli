@@ -8,8 +8,18 @@ import { SshTargetsResponse } from '../../../webshell-common-ts/http/v2/policy-q
 import { buildSshConfigStrings } from './generate-ssh-proxy.handler';
 import { generateSshConfigArgs } from './generate-ssh-config.command-builder';
 
+// bound refers to star boundaries set for the comments
+const bound = '*'.repeat(80);
+const includeStmtDes = `# Please read the config file below for additional information
+# regarding the use of the BastionZero SSH configuration file.
+`;
+const note = `# Note: no changes, other than this insertion, have been made to your
+# existing configuration.
+#${bound}
+`;
+
 /**
- *  Generates an ssh config file based on tunnel targets the user has access to, then Includes it
+ * Generates an ssh config file based on tunnel targets the user has access to, then Includes it
  * in the user's existing ssh config file
  * @param configService {ConfigService}
  * @param logger {Logger}
@@ -19,25 +29,38 @@ export async function generateSshConfigHandler(argv: yargs.Arguments<generateSsh
     const policyQueryHttpService = new PolicyQueryHttpService(configService, logger);
     const sshTargets: SshTargetsResponse[] = await policyQueryHttpService.GetSshTargets();
 
-    // Build our ssh config file -- note that by using this function with 'true' we are chosing to add the prefix before our hostname token in the proxycommand
-    const { identityFile, knownHostsFile, proxyCommand, prefix } = await buildSshConfigStrings(configService, processName, logger, true);
-    // here we set it to false to get the special case of the wildcard proxyCommand, which shouldn't have a prefix
-    const { proxyCommand: proxyWithoutPrefix } = await buildSshConfigStrings(configService, processName, logger, false);
-    const bzConfigContentsFormatted = formatBzConfigContents(sshTargets, identityFile, knownHostsFile, proxyCommand, proxyWithoutPrefix, prefix);
+    // If current user has tunnel or file transfer access then create file
+    // Otherwise, raise error that user does not have correct access to any targets
+    if(sshTargets.length > 0) {
+        // Build our ssh config file -- note that by using this function with 'true' we are chosing to add the prefix before our hostname token in the proxycommand
+        const { identityFile, knownHostsFile, proxyCommand, prefix } = await buildSshConfigStrings(configService, processName, logger, true);
+        // here we set it to false to get the special case of the wildcard proxyCommand, which shouldn't have a prefix
+        const { proxyCommand: proxyWithoutPrefix } = await buildSshConfigStrings(configService, processName, logger, false);
+        const bzConfigContentsFormatted = formatBzConfigContents(sshTargets, identityFile, knownHostsFile, proxyCommand, proxyWithoutPrefix, prefix);
+        // Determine the user's ssh and bzero-ssh config path
+        const { userConfigPath, bzConfigPath } = getFilePaths(argv.mySshPath, argv.bzSshPath, prefix);
 
-    // Determine and write to the user's ssh and bzero-ssh config path
-    const { userConfigPath, bzConfigPath } = getFilePaths(argv.mySshPath, argv.bzSshPath, prefix);
-    fs.writeFileSync(bzConfigPath, bzConfigContentsFormatted);
+        // write to the user's ssh and bzero-ssh config path
+        fs.writeFileSync(bzConfigPath, bzConfigContentsFormatted);
 
-    // Link the ssh config path, with our new bzero-ssh config path
-    linkNewConfigFile(userConfigPath, bzConfigPath, logger);
+        // Link the ssh config path, with our new bzero-ssh config path
+        // Also include an introductory statement
+        linkNewConfigFile(userConfigPath, bzConfigPath, logger);
+        logger.info(`SSH configuration generated successfully! For a list of reachable targets, see ${bzConfigPath}`);
+    } else {
+        // Build our ssh config file -- note that by using this function with 'true' we are chosing to add the prefix before our hostname token in the proxycommand
+        const { prefix } = await buildSshConfigStrings(configService, processName, logger, true);
+        // Determine the user's ssh and bzero-ssh config path
+        const { userConfigPath, bzConfigPath } = getFilePaths(argv.mySshPath, argv.bzSshPath, prefix);
 
-    logger.info(`SSH configuration generated successfully! See ${bzConfigPath} for list of reachable targets`);
+        deleteBzConfigContents(userConfigPath, bzConfigPath, logger);
+        logger.info('You do not have tunnel or file transfer access to any targets. BZ SSH configuration file not generated.');
+    }
 }
 
 /**
- * use default filepaths unless user provided some at the CLI
- * @param mySshPath {string} path to the user's ssh config file
+ * Use default filepaths unless user provided some at the CLI
+ * @param userSshPath {string} path to the user's ssh config file
  * @param bzSshPath {string} path to the bz config file
  * @param configPrefix {string} assigns a prefix to the bz config filename based on runtime environment (e.g. dev, stage)
  * @returns {{userConfigPath: string, bzConfigPath: string}}
@@ -50,8 +73,8 @@ function getFilePaths(userSshPath: string, bzSshPath: string, configPrefix: stri
 }
 
 /**
- * given some config information, produces a valid SSH config string
- * @param tunnels {SshTargetsResponse[]} A list of targets the user can access over SSH tunnel
+ * Given some config information, produces a valid SSH config string
+ * @param sshTargets {SshTargetsResponse[]} A list of targets the user can access over SSH tunnel
  * @param identityFile {string} A path to the user's key file
  * @param knownHostsFile {string} A path to the user's known_hosts file
  * @param proxyCommand {string} A proxy command routing SSH requests to the ZLI
@@ -60,12 +83,67 @@ function getFilePaths(userSshPath: string, bzSshPath: string, configPrefix: stri
  * @returns {string} the bz config file contents
  */
 function formatBzConfigContents(sshTargets: SshTargetsResponse[], identityFile: string, knownHostsFile: string, proxyCommand: string, proxyWildcard: string, configPrefix: string): string {
-    let contents = ``;
+    let contents = `#${bound}
+#
+# BastionZero auto-generated SSH configuration file
+#
+# This file is auto-generated based on your SSH policy as specified by the
+# administrator(s) of your BastionZero account.
+#
+# All SSH connections are secured through the BastionZero ZLI, ensuring you are secured
+# with our MrZAP (multi-roots of trust) protocol.
+#
+# This file includes the following:
+#
+# If you have a target access / shell policy, you may use SSH
+# to any host within that policy by using the format:
+#
+# ssh targetUser@bzero-targetHostname
+#
+# This will proxy the SSH connection through BastionZero as the 'bzero-' wildcard will
+# match the proxy entry below.
+#
+# BastionZero makes specific use of the %n and %s in our configuration statements
+# below. %n will pass and proxy the host name as the entry exists. %s will convert it to
+# lowercase. Please be cautious if changing these values.
+#
+# Users
+# -----
+# If your administrator has provided SSH access with more than one target user, the
+# full list has been provided in a comment under the host. To set a default simply
+# add the appropriate user line by copying and modifying the line. For example:
+#
+# # User postgres, centos, user1, ec2-user
+#
+# Becomes:
+#
+# # User postgres, centos, user1, ec2-user
+# User ec2-user
+#
+# Target Names
+# ------------
+# Each host name is formatted in two ways: 
+# 1. <target name> and
+# 2. <target name>.<environment name>
+# This allows you to connect based on environment name for targets that 
+# may share the same name.
+#
+#${bound}
+`;
 
     // add per-target configs
-    for (const target of sshTargets) {
-        // only add username if there is exactly one -- otherwise, user must specify user@host
-        const user = target.targetUsers.length === 1 ? `User ${target.targetUsers[0].userName}` : ``;
+    for(const target of sshTargets) {
+        // add user names
+        let user = ``;
+        if(target.targetUsers.length === 1) {
+            user += `User ${target.targetUsers[0].userName}`;
+        } else if(target.targetUsers.length > 1) {
+            user += `# User `;
+            for(const targetUser of target.targetUsers) {
+                user += `${targetUser.userName} `;
+            }
+        }
+
         if(target.environmentName) {
             contents += `
 Host ${target.targetName} ${target.targetName}.${target.environmentName}`;
@@ -95,21 +173,22 @@ Host ${configPrefix}*
 
 /**
  * Attaches an 'Include path/to/bz-config' line to the user's ssh config file, if not there already
+ * Also adds an description for the include statement and a note at after the last include statement
  * @param userConfigFile {string} path of the user's config file
  * @param bzConfigFile {string} path of the BZ config file
  * @param logger {Logger}
  */
 function linkNewConfigFile(userConfigFile: string, bzConfigFile: string, logger: Logger) {
     const includeStmt = `Include ${bzConfigFile}`;
-    let configContents;
-    let userConfigExists = true;
 
+    let configContents: string;
+    let userConfigExists = true;
     try {
-        configContents = fs.readFileSync(userConfigFile);
+        configContents = fs.readFileSync(userConfigFile, 'utf-8');
     } catch (err) {
         if (err.code === 'ENOENT') {
             userConfigExists = false;
-            configContents = Buffer.from('');
+            configContents = '';
         } else {
             logger.error('Unable to read your ssh config file');
             throw err;
@@ -117,12 +196,79 @@ function linkNewConfigFile(userConfigFile: string, bzConfigFile: string, logger:
     }
 
     // if the config file doesn't exist or the include statement
-    // isn't present, prepend it to the file
+    // isn't present, prepend it to the file with a description
+    // append the note if the file does not already contain it
     if (!userConfigExists || !configContents.includes(includeStmt)) {
+        let includeContents = `${includeStmtDes}${includeStmt}\n\n`;
+        if(!configContents.includes(note)) {
+            includeContents += `${note}\n`;
+        }
+        configContents = includeContents + configContents;
+    } else if (configContents.includes(includeStmt)
+            && !configContents.includes(includeStmtDes)
+            && !configContents.includes(note)) {
+        // backwards compatibility for single include statement
+        configContents = configContents.replace(`${includeStmt}\n\n`, '');
+        configContents = `${includeStmtDes}${includeStmt}\n\n${note}\n` + configContents;
+    }
+
+    const fd = fs.openSync(userConfigFile, 'w+');
+    fs.writeFileSync(fd, configContents);
+    fs.close(fd, () => { });
+}
+
+/**
+ * Deletes the bz config file and removes its statement and description in user's config file
+ * Deletes the note if no include statements are left in the user's config file
+ * @param userConfigFile {string} path of the user's config file
+ * @param bzConfigFile {string} path of the BZ config file
+ * @param logger {Logger}
+ */
+function deleteBzConfigContents(userConfigFile: string, bzConfigFile: string, logger: Logger) {
+    const includeStmt = `Include ${bzConfigFile}`;
+    const includeStmtWithDes = `${includeStmtDes}${includeStmt}\n\n`;
+
+    let configContents: string;
+    try {
+        configContents = fs.readFileSync(userConfigFile, 'utf-8');
+    } catch (err) {
+        if (err.code === 'ENOENT') {
+            configContents = '';
+        } else {
+            logger.error('Unable to read your ssh config file');
+            throw err;
+        }
+    }
+
+    // the user has a config file, then remove the include statement
+    // and its description from the file
+    // if no bz include statements left, remove the note
+    if(userConfigFile) {
+        if(configContents.includes(includeStmtWithDes)) {
+            configContents = configContents.replace(includeStmtWithDes, '');
+        } else if(!configContents.includes(includeStmtDes) && configContents.includes(includeStmt)) {
+            // backwards compatibility for single include statement
+            configContents = configContents.replace(`${includeStmt}\n\n`, '');
+        } else if(!configContents.includes(includeStmt)) {
+            logger.info('No action has been taken.');
+        }
+
+        // only the note exists here and no include statements that we added
+        if(configContents.includes(note) && !configContents.includes('BastionZero SSH configuration')) {
+            configContents = configContents.replace(`${note}\n`, '');
+        }
+
         const fd = fs.openSync(userConfigFile, 'w+');
-        const buffer = Buffer.from(`${includeStmt}\n\n`);
-        fs.writeSync(fd, buffer, 0, buffer.length, 0);
-        fs.writeSync(fd, configContents, 0, configContents.length, buffer.length);
+        fs.writeFileSync(fd, configContents);
         fs.close(fd, () => { });
+    }
+
+    // delete the bz config file if it exists
+    try {
+        fs.unlinkSync(bzConfigFile);
+    } catch(err) {
+        if(err.code !== 'ENOENT') {
+            console.error(err);
+        }
     }
 }

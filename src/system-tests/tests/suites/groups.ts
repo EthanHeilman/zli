@@ -56,7 +56,7 @@ export const groupsSuite = () => {
         afterAll(async () => {
             // Search and delete our target connect policy
             await cleanupTargetConnectPolicies(systemTestPolicyTemplate.replace('$POLICY_TYPE', 'group-connect'));
-        });
+        }, 60 * 1000);
 
         // Called before each case
         beforeEach(() => {
