@@ -320,7 +320,7 @@ export const agentRecoverySuite = (testRunnerKubeConfigFile: string, testRunnerU
             logger.info(`${new Date()} -- waiting for bzero target ${targetId} to come online...`);
             await testUtils.waitForExpect(async () => {
                 const bzeroTarget = await bzeroTargetService.GetBzeroTarget(targetId);
-                expect(bzeroTarget.status).toBe(TargetStatus.Online)
+                expect(bzeroTarget.status).toBe(TargetStatus.Online);
             }, timeout);
             logger.info(`${new Date()} -- ${targetId} is online`);
         }
@@ -329,7 +329,7 @@ export const agentRecoverySuite = (testRunnerKubeConfigFile: string, testRunnerU
             logger.info(`${new Date()} -- waiting for kube target ${targetId} to come online...`);
             await testUtils.waitForExpect(async () => {
                 const kubeTarget = await kubeService.GetKubeCluster(targetId);
-                expect(kubeTarget.status).toBe(TargetStatus.Online)
+                expect(kubeTarget.status).toBe(TargetStatus.Online);
             }, timeout);
             logger.info(`${new Date()} -- ${targetId} is online`);
         }
