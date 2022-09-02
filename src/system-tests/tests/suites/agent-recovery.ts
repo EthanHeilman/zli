@@ -329,8 +329,6 @@ export const agentRecoverySuite = (testRunnerKubeConfigFile: string, testRunnerU
             logger.info(`${new Date()} -- waiting for kube target ${targetId} to come online...`);
             await testUtils.waitForExpect(async () => {
                 const kubeTarget = await kubeService.GetKubeCluster(targetId);
-                logger.info(`status is: ${kubeTarget.status} --- full object: ${JSON.stringify(kubeTarget)}`);
-                logger.info(`Online? ${kubeTarget.status == TargetStatus.Online} || ${kubeTarget.status === TargetStatus.Online}`)
                 expect(kubeTarget.status).toBe(TargetStatus.Online)
             }, timeout);
             logger.info(`${new Date()} -- ${targetId} is online`);
