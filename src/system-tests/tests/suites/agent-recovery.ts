@@ -124,10 +124,10 @@ export const agentRecoverySuite = (testRunnerKubeConfigFile: string, testRunnerU
             // Wait for the target to come online in case its offline from a previous recovery test
             await waitForKubeTargetOnline(testCluster.bzeroClusterTargetSummary.id);
 
-            await restartBastionAndWaitForAgentToReconnect(testCluster.bzeroClusterTargetSummary.id);
-
             // Start the kube daemon
             await callZli(['connect', `${KubeTestUserName}@${testCluster.bzeroClusterTargetSummary.name}`, '--targetGroup', 'system:masters']);
+
+            await restartBastionAndWaitForAgentToReconnect(testCluster.bzeroClusterTargetSummary.id);
             await testKubeConnection();
 
             await callZli(['disconnect', 'kube']);
