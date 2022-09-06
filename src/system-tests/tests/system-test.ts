@@ -354,11 +354,11 @@ if (API_ENABLED) {
     }
 }
 
-if (AGENT_RECOVERY_ENABLED && BZERO_ENABLED && process.env.TEST_RUNNER_KUBE_CONFIG) {
+if (AGENT_RECOVERY_ENABLED && BZERO_ENABLED && KUBE_ENABLED && process.env.TEST_RUNNER_KUBE_CONFIG) {
     logger.info('Running agent recovery tests');
     agentRecoverySuite(process.env.TEST_RUNNER_KUBE_CONFIG, process.env.TEST_RUNNER_UNIQUE_ID);
 } else {
-    logger.info('Skipping agent recovery tests.');
+    logger.info('Skipping agent recovery tests: One of AGENT_RECOVERY_ENABLED, BZERO_ENABLED, KUBE_ENABLED, or TEST_RUNNER_KUBE_CONFIG is not set');
 }
 
 // Always run the version suite
