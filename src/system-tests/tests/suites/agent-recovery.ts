@@ -131,79 +131,79 @@ export const agentRecoverySuite = (testRunnerKubeConfigFile: string, testRunnerU
             await callZli(['disconnect', 'kube']);
         }, 10 * 60 * 1000); // 10 min timeout;
 
-        bzeroTestTargetsToRun.forEach(async (testTarget: TestTarget) => {
-            it(`${fromTestTargetToCaseIdMapping(testTarget).agentRestartByName}: BZero Agent -- zli target restart <name>  - ${testTarget.awsRegion} - ${testTarget.installType} - ${testTarget.dropletImage}`, async () => {
-                const { targetName, targetId } = await getTargetInfo(testTarget);
+        // bzeroTestTargetsToRun.forEach(async (testTarget: TestTarget) => {
+        //     it(`${fromTestTargetToCaseIdMapping(testTarget).agentRestartByName}: BZero Agent -- zli target restart <name>  - ${testTarget.awsRegion} - ${testTarget.installType} - ${testTarget.dropletImage}`, async () => {
+        //         const { targetName, targetId } = await getTargetInfo(testTarget);
 
-                // Wait for the target to come online in case its offline from a previous recovery test
-                await waitForBzeroTargetOnline(targetId);
+        //         // Wait for the target to come online in case its offline from a previous recovery test
+        //         await waitForBzeroTargetOnline(targetId);
 
-                const restartTime = new Date();
-                await callZli(['target', 'restart', targetName]);
+        //         const restartTime = new Date();
+        //         await callZli(['target', 'restart', targetName]);
 
-                await waitForAgentToRestart(targetId, restartTime);
+        //         await waitForAgentToRestart(targetId, restartTime);
 
-                // check that we can still connect to the agent
-                await connectTestUtils.runShellConnectTest(testTarget, `zli target restart by name test - ${systemTestUniqueId}`, true);
+        //         // check that we can still connect to the agent
+        //         await connectTestUtils.runShellConnectTest(testTarget, `zli target restart by name test - ${systemTestUniqueId}`, true);
 
-                // finally, check that the restart was reported correctly
-                const eventsService = new EventsHttpService(configService, logger);
-                const latestEvents = await eventsService.GetAgentStatusChangeEvents(targetId, restartTime);
-                const restart = latestEvents.filter(e => e.statusChange === 'OfflineToRestarting');
-                expect(restart.length).toEqual(1);
-                expect(restart[0].reason).toContain(`received manual restart from user: {RestartedBy:${configService.me().email}`);
+        //         // finally, check that the restart was reported correctly
+        //         const eventsService = new EventsHttpService(configService, logger);
+        //         const latestEvents = await eventsService.GetAgentStatusChangeEvents(targetId, restartTime);
+        //         const restart = latestEvents.filter(e => e.statusChange === 'OfflineToRestarting');
+        //         expect(restart.length).toEqual(1);
+        //         expect(restart[0].reason).toContain(`received manual restart from user: {RestartedBy:${configService.me().email}`);
 
-            }, 5 * 60 * 1000);
-        });
+        //     }, 5 * 60 * 1000);
+        // });
 
-        bzeroTestTargetsToRun.forEach(async (testTarget: TestTarget) => {
-            it(`${fromTestTargetToCaseIdMapping(testTarget).agentRestartByEnv}: BZero Agent -- zli target restart <name.env>  - ${testTarget.awsRegion} - ${testTarget.installType} - ${testTarget.dropletImage}`, async () => {
-                const { targetName, targetId } = await getTargetInfo(testTarget);
+        // bzeroTestTargetsToRun.forEach(async (testTarget: TestTarget) => {
+        //     it(`${fromTestTargetToCaseIdMapping(testTarget).agentRestartByEnv}: BZero Agent -- zli target restart <name.env>  - ${testTarget.awsRegion} - ${testTarget.installType} - ${testTarget.dropletImage}`, async () => {
+        //         const { targetName, targetId } = await getTargetInfo(testTarget);
 
-                // Wait for the target to come online in case its offline from a previous recovery test
-                await waitForBzeroTargetOnline(targetId);
+        //         // Wait for the target to come online in case its offline from a previous recovery test
+        //         await waitForBzeroTargetOnline(targetId);
 
-                const restartTime = new Date();
-                await callZli(['target', 'restart', `${targetName}.${systemTestEnvName}`]);
+        //         const restartTime = new Date();
+        //         await callZli(['target', 'restart', `${targetName}.${systemTestEnvName}`]);
 
-                await waitForAgentToRestart(targetId, restartTime);
+        //         await waitForAgentToRestart(targetId, restartTime);
 
-                // check that we can still connect to the agent
-                await connectTestUtils.runShellConnectTest(testTarget, `zli target restart by name.env test - ${systemTestUniqueId}`, true);
-            }, 5 * 60 * 1000);
-        });
+        //         // check that we can still connect to the agent
+        //         await connectTestUtils.runShellConnectTest(testTarget, `zli target restart by name.env test - ${systemTestUniqueId}`, true);
+        //     }, 5 * 60 * 1000);
+        // });
 
-        bzeroTestTargetsToRun.forEach(async (testTarget: TestTarget) => {
-            it(`${fromTestTargetToCaseIdMapping(testTarget).agentRestartById}: BZero Agent -- zli target restart <id>  - ${testTarget.awsRegion} - ${testTarget.installType} - ${testTarget.dropletImage}`, async () => {
-                const { targetId } = await getTargetInfo(testTarget);
+        // bzeroTestTargetsToRun.forEach(async (testTarget: TestTarget) => {
+        //     it(`${fromTestTargetToCaseIdMapping(testTarget).agentRestartById}: BZero Agent -- zli target restart <id>  - ${testTarget.awsRegion} - ${testTarget.installType} - ${testTarget.dropletImage}`, async () => {
+        //         const { targetId } = await getTargetInfo(testTarget);
 
-                // Wait for the target to come online in case its offline from a previous recovery test
-                await waitForBzeroTargetOnline(targetId);
+        //         // Wait for the target to come online in case its offline from a previous recovery test
+        //         await waitForBzeroTargetOnline(targetId);
 
-                const restartTime = new Date();
-                await callZli(['target', 'restart', `${targetId}`]);
+        //         const restartTime = new Date();
+        //         await callZli(['target', 'restart', `${targetId}`]);
 
-                await waitForAgentToRestart(targetId, restartTime);
+        //         await waitForAgentToRestart(targetId, restartTime);
 
-                // check that we can still connect to the agent
-                await connectTestUtils.runShellConnectTest(testTarget, `zli target restart by id test - ${systemTestUniqueId}`, true);
-            }, 5 * 60 * 1000);
-        });
+        //         // check that we can still connect to the agent
+        //         await connectTestUtils.runShellConnectTest(testTarget, `zli target restart by id test - ${systemTestUniqueId}`, true);
+        //     }, 5 * 60 * 1000);
+        // });
 
-        it(`258919: Kube Agent -- zli target restart <name> `, async () => {
-            // Wait for the target to come online in case its offline from a previous recovery test
-            await waitForKubeTargetOnline(testCluster.bzeroClusterTargetSummary.id);
+        // it(`258919: Kube Agent -- zli target restart <name> `, async () => {
+        //     // Wait for the target to come online in case its offline from a previous recovery test
+        //     await waitForKubeTargetOnline(testCluster.bzeroClusterTargetSummary.id);
 
-            const restartTime = new Date();
-            await callZli(['target', 'restart', testCluster.bzeroClusterTargetSummary.name]);
+        //     const restartTime = new Date();
+        //     await callZli(['target', 'restart', testCluster.bzeroClusterTargetSummary.name]);
 
-            await waitForAgentToRestart(testCluster.bzeroClusterTargetSummary.id, restartTime);
+        //     await waitForAgentToRestart(testCluster.bzeroClusterTargetSummary.id, restartTime);
 
-            // start the kube daemon
-            await callZli(['connect', `${KubeTestUserName}@${testCluster.bzeroClusterTargetSummary.name}`, '--targetGroup', 'system:masters']);
-            await testKubeConnection();
-            await callZli(['disconnect', 'kube']);
-        }, 5 * 60 * 1000);
+        //     // start the kube daemon
+        //     await callZli(['connect', `${KubeTestUserName}@${testCluster.bzeroClusterTargetSummary.name}`, '--targetGroup', 'system:masters']);
+        //     await testKubeConnection();
+        //     await callZli(['disconnect', 'kube']);
+        // }, 5 * 60 * 1000);
 
         /**
          * Restarts bastion pod and then waits for agent online->offline and then offline->online events
