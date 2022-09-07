@@ -28,7 +28,7 @@ import { PolicyType } from '../webshell-common-ts/http/v2/policy/types/policy-ty
 // Handlers
 import { initMiddleware, oAuthMiddleware, fetchDataMiddleware, GATrackingMiddleware, initLoggerMiddleware, mixpanelTrackingMiddleware } from './handlers/middleware.handler';
 import { bzeroSshProxyHandler, ssmSshProxyHandler, SshTunnelParameters } from './handlers/ssh-proxy/ssh-proxy.handler';
-import { loginHandler } from './handlers/login/login.handler';
+import { loginHandler, loginServiceAccountHandler } from './handlers/login/login.handler';
 import { shellConnectHandler } from './handlers/connect/shell-connect.handler';
 import { listTargetsHandler } from './handlers/list-targets/list-targets.handler';
 import { configHandler } from './handlers/config.handler';
@@ -68,12 +68,14 @@ import { generateSshConfigHandler } from './handlers/generate/generate-ssh-confi
 import { sshProxyConfigHandler } from './handlers/generate/generate-ssh-proxy.handler';
 import { listUsersHandler } from './handlers/user/list-users.handler';
 
+import { serviceAccountsCmdBuilder } from './handlers/service-account/create-service-account.command-builder';
 
 // 3rd Party Modules
 import yargs from 'yargs/yargs';
 
 // Cmd builders
-import { loginCmdBuilder } from './handlers/login/login.command-builder';
+import { addGcpProjectCmdBuilder } from './handlers/service-account/add-gcp-project.command-builder';
+import { loginCmdBuilder, serviceAccountLoginCmdBuilder } from './handlers/login/login.command-builder';
 import { connectCmdBuilder } from './handlers/connect/connect.command-builder';
 import { statusCmdBuilder } from './handlers/status/status.command-builder';
 import { policyCmdBuilder } from './handlers/policy/policy.command-builder';
@@ -96,6 +98,10 @@ import { UserHttpService } from './http-services/user/user.http-services';
 import { generateSshConfigCmdBuilder } from './handlers/generate/generate-ssh-config.command-builder';
 import { createApiKeyCmdBuilder } from './handlers/api-key/create-api-key.command-builder';
 import { createApiKeyHandler } from './handlers/api-key/create-api-key.handler';
+import { createServiceAccount } from './handlers/service-account/create-service-account.handler';
+import { AddGcpProject } from './handlers/service-account/add-gcp-project.handler';
+
+
 
 export type EnvMap = Readonly<{
     configName: string;
@@ -235,10 +241,12 @@ export class CliDriver
                 this.keySplittingService = initResponse.keySplittingService;
             })
             .middleware(async (_) => {
+
                 if(!this.GACommands.has(baseCmd)) {
                     this.GAService = null;
                     return;
                 }
+                
 
                 // Attempt to re-get the token if we dont have it
                 if(! this.configService.GAToken()) {
@@ -302,11 +310,69 @@ export class CliDriver
 
                     if (loginResult) {
                         const me = loginResult.userSummary;
-                        this.logger.info(`Logged in as: ${me.email}, bzero-id:${me.id}, session-id:${this.configService.getSessionId()}`);
+                        this.logger.info(`Logged in as: ${me.email}, org-id:${me.organizationId}, bzero-id:${me.id}, session-id:${this.configService.getSessionId()}`);
                         await cleanExit(0, this.logger);
                     } else {
                         await cleanExit(1, this.logger);
                     }
+                }
+            )
+            .command(
+                'service-account-login',
+                'Login using a service account',
+                (yargs) => {
+                    return serviceAccountLoginCmdBuilder(yargs);
+                },
+                async (argv) => {
+
+                    const loginResult = await loginServiceAccountHandler(this.configService, this.logger, argv, this.keySplittingService);
+
+                    if (loginResult) {
+                        const me = loginResult.userSummary;
+                        this.logger.info(`Logged in as: ${me.email}, org-id:${me.organizationId}, bzero-id:${me.id}, session-id:${this.configService.getSessionId()}`);
+                        await cleanExit(0, this.logger);
+                    } else {
+                        await cleanExit(1, this.logger);
+                    }
+                }
+            ).command(
+                'create-service-account',
+                'Create a new service account',
+                (yargs) => {
+                    return serviceAccountsCmdBuilder(yargs);
+                },
+                async (argv) => {
+
+                    // const loginResult = await loginServiceAccountHandler(this.configService, this.logger, argv, this.keySplittingService);
+
+                    await createServiceAccount(this.configService, this.logger, argv);
+
+                    // if (loginResult) {
+                    //     const me = loginResult.userSummary;
+                    //     this.logger.info(`Logged in as: ${me.email}, org-id:${me.organizationId}, bzero-id:${me.id}, session-id:${this.configService.getSessionId()}`);
+                    //     await cleanExit(0, this.logger);
+                    // } else {
+                        await cleanExit(1, this.logger);
+                    // }
+                }
+            ).command(
+                'add-gcp-project',
+                'Add a gcp project for issuing service accounts',
+                (yargs) => {
+                    return addGcpProjectCmdBuilder(yargs);
+                },
+                async (argv) => {
+                    // const loginResult = await loginServiceAccountHandler(this.configService, this.logger, argv, this.keySplittingService);
+
+                    await AddGcpProject(this.configService, this.logger, argv);
+
+                    // if (loginResult) {
+                    //     const me = loginResult.userSummary;
+                    //     this.logger.info(`Logged in as: ${me.email}, org-id:${me.organizationId}, bzero-id:${me.id}, session-id:${this.configService.getSessionId()}`);
+                    //     await cleanExit(0, this.logger);
+                    // } else {
+                        await cleanExit(1, this.logger);
+                    // }
                 }
             )
             .command(
@@ -316,6 +382,7 @@ export class CliDriver
                     return connectCmdBuilder(yargs, this.targetTypeChoices);
                 },
                 async (argv) => {
+
                     const parsedTarget = await disambiguateTarget(argv.targetType, argv.targetString, this.logger, this.dynamicConfigs, this.ssmTargets, this.clusterTargets, this.bzeroTargets, this.envs, this.configService);
 
                     if (parsedTarget == undefined) {
@@ -789,6 +856,7 @@ Need help? https://cloud.bastionzero.com/support`)
 
     public run(argv: string[], isSystemTest?: boolean, callback?: (err: Error, argv: any, output: string) => void) {
         // @ts-ignore TS2589
+
         const { baseCmd, parsedArgv } = makeCaseInsensitive(argv);
         return this.getCliDriver(isSystemTest, baseCmd).parseAsync(parsedArgv, {}, callback);
     }
