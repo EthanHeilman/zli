@@ -25,7 +25,8 @@ import { initMiddleware, oAuthMiddleware, GATrackingMiddleware, initLoggerMiddle
 import { sshProxyHandler } from './handlers/ssh-proxy/ssh-proxy.handler';
 import { loginHandler } from './handlers/login/login.handler';
 import { listTargetsHandler } from './handlers/list-targets/list-targets.handler';
-import { configHandler } from './handlers/config.handler';
+import { configHandler } from './handlers/configure/config.handler';
+import { configDefaultTargetUserHandler } from './handlers/configure/config-default-targetuser.handler';
 import { logoutHandler } from './handlers/logout/logout.handler';
 import { connectHandler } from './handlers/connect/connect.handler';
 import { listConnectionsHandler } from './handlers/list-connections/list-connections.handler';
@@ -68,6 +69,7 @@ import yargs from 'yargs/yargs';
 // Cmd builders
 import { loginCmdBuilder } from './handlers/login/login.command-builder';
 import { connectCmdBuilder } from './handlers/connect/connect.command-builder';
+import { configDefaultTargetUserCommandBuilder } from './handlers/configure/config-default-targetuser.command-builder';
 import { listPoliciesCmdBuilder } from './handlers/policy/policy-list/policy-list.command-builder';
 import { describeClusterPolicyCmdBuilder } from './handlers/policy/policy-describe-cluster/describe-cluster-policy.command-builder';
 import { disconnectCmdBuilder } from './handlers/disconnect/disconnect.command-builder';
@@ -653,8 +655,23 @@ export class CliDriver
             )
             .command(
                 'configure',
-                'Returns config file path',
-                () => {},
+                'Retrieve paths for config file, zli logs and daemon logs. See help menu for setting defaults.',
+                (yargs) => {
+                    return yargs
+                        .example('$0 configure', 'Retrieve paths for config file, zli logs and daemon logs.')
+                        .command(
+                            'default-targetuser [targetUser]',
+                            'Set a local default target user for shell, ssh, and scp',
+                            (yargs) => {
+                                return configDefaultTargetUserCommandBuilder(yargs);
+                            },
+                            async (argv) => {
+                                await configDefaultTargetUserHandler(argv, this.configService, this.logger);
+                            }
+                        )
+                        .demandCommand(1, '')
+                        .strict();
+                },
                 async () => {
                     await configHandler(this.logger, this.configService, this.loggerConfigService);
                 }

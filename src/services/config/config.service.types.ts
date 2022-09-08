@@ -41,6 +41,10 @@ export interface KubeConfig extends BaseDaemonConfig {
     defaultTargetGroups: string[]
 }
 
+export interface ConnectConfig {
+    targetUser: string
+}
+
 export function getDefaultKubeConfig(): KubeConfig {
     return {
         type: 'kube',
@@ -75,5 +79,11 @@ export function getDefaultWebConfig(): WebConfig {
         localPort: null,
         localPid: null,
         name: null,
+    };
+}
+
+export function getDefaultConnectConfig(): ConnectConfig {
+    return {
+        targetUser: null
     };
 }

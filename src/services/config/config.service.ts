@@ -7,7 +7,7 @@ import { Observable, Subject } from 'rxjs';
 import { IdentityProvider } from '../../../webshell-common-ts/auth-service/auth.types';
 import { TokenHttpService } from '../../http-services/token/token.http-services';
 import { UserSummary } from '../../../webshell-common-ts/http/v2/user/types/user-summary.types';
-import { DaemonConfigs, DbConfig, getDefaultKubeConfig, getDefaultWebConfig, KubeConfig, WebConfig } from './config.service.types';
+import { DaemonConfigs, DbConfig, getDefaultKubeConfig, getDefaultWebConfig, getDefaultConnectConfig, KubeConfig, WebConfig, ConnectConfig } from './config.service.types';
 import { LEGACY_KEY_STRING } from '../../services/daemon-management/daemon-management.service';
 
 // refL: https://github.com/sindresorhus/conf/blob/master/test/index.test-d.ts#L5-L14
@@ -28,6 +28,7 @@ type BastionZeroConfigSchema = {
     keySplitting: KeySplittingConfigSchema,
     kubeConfig: KubeConfig
     webConfig: WebConfig,
+    connectConfig: ConnectConfig,
     dbDaemons: DaemonConfigs<DbConfig>
 };
 
@@ -80,6 +81,7 @@ export class ConfigService implements ConfigInterface {
                 keySplitting: getDefaultKeysplittingConfig(),
                 kubeConfig: getDefaultKubeConfig(),
                 webConfig: getDefaultWebConfig(),
+                connectConfig: getDefaultConnectConfig(),
                 dbDaemons: {}
             },
             accessPropertiesByDotNotation: true,
@@ -343,6 +345,10 @@ export class ConfigService implements ConfigInterface {
         return this.config.get('webConfig');
     }
 
+    public getConnectConfig() {
+        return this.config.get('connectConfig');
+    }
+
     public getBastionUrl() {
         return this.config.get('serviceUrl');
     }
@@ -353,6 +359,10 @@ export class ConfigService implements ConfigInterface {
 
     public setWebConfig(webConfig: WebConfig) {
         this.config.set('webConfig', webConfig);
+    }
+
+    public setConnectConfig(connectConfig: ConnectConfig) {
+        this.config.set('connectConfig', connectConfig);
     }
 
     public setDbDaemons(dbDaemons: DaemonConfigs<DbConfig>) {
