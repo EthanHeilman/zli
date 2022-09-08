@@ -95,7 +95,7 @@ function formatBzConfigContents(sshTargets: SshTargetsResponse[], identityFile: 
 #
 # This file includes the following:
 #
-# If you have a target access / shell policy, you may use SSH
+# If you have a target access / SSH policy, you may use SSH
 # to any host within that policy by using the format:
 #
 # ssh targetUser@bzero-targetHostname
