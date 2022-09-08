@@ -119,11 +119,8 @@ export const systemTestTags = process.env.SYSTEM_TEST_TAGS ? process.env.SYSTEM_
 
 // Set this environment variable to compile agent from specific remote branch
 export const bzeroAgentBranch = process.env.BZERO_AGENT_BRANCH;
-// Go version to use when compiling vt bzero agent
-// Reference: https://go.dev/dl/ (Linux section)
-export const goVersion = 'go1.17.7.linux-amd64';
 if (bzeroAgentBranch) {
-    logger.info(`BZERO_AGENT_BRANCH is set. Using specific branch for vt tests (agent): ${bzeroAgentBranch}. Go version: ${goVersion}`);
+    logger.info(`BZERO_AGENT_BRANCH is set. Using specific branch for vt tests (agent): ${bzeroAgentBranch}.`);
 }
 
 // URL of private DigitalOcean registry
@@ -354,11 +351,11 @@ if (API_ENABLED) {
     }
 }
 
-if (AGENT_RECOVERY_ENABLED && BZERO_ENABLED && process.env.TEST_RUNNER_KUBE_CONFIG) {
+if (AGENT_RECOVERY_ENABLED && BZERO_ENABLED && KUBE_ENABLED && process.env.TEST_RUNNER_KUBE_CONFIG) {
     logger.info('Running agent recovery tests');
     agentRecoverySuite(process.env.TEST_RUNNER_KUBE_CONFIG, process.env.TEST_RUNNER_UNIQUE_ID);
 } else {
-    logger.info('Skipping agent recovery tests.');
+    logger.info('Skipping agent recovery tests: One of AGENT_RECOVERY_ENABLED, BZERO_ENABLED, KUBE_ENABLED, or TEST_RUNNER_KUBE_CONFIG is not set');
 }
 
 // Always run the version suite

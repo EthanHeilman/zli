@@ -25,7 +25,8 @@ import { initMiddleware, oAuthMiddleware, GATrackingMiddleware, initLoggerMiddle
 import { sshProxyHandler } from './handlers/ssh-proxy/ssh-proxy.handler';
 import { loginHandler } from './handlers/login/login.handler';
 import { listTargetsHandler } from './handlers/list-targets/list-targets.handler';
-import { configHandler } from './handlers/config.handler';
+import { configHandler } from './handlers/configure/config.handler';
+import { configDefaultTargetUserHandler } from './handlers/configure/config-default-targetuser.handler';
 import { logoutHandler } from './handlers/logout/logout.handler';
 import { connectHandler } from './handlers/connect/connect.handler';
 import { listConnectionsHandler } from './handlers/list-connections/list-connections.handler';
@@ -60,7 +61,7 @@ import { listPoliciesHandler } from './handlers/policy/policy-list/list-policies
 import { generateKubeConfigHandler } from './handlers/generate/generate-kube-config.handler';
 import { generateSshConfigHandler } from './handlers/generate/generate-ssh-config.handler';
 import { sshProxyConfigHandler } from './handlers/generate/generate-ssh-proxy.handler';
-
+import { targetRestartHandler } from './handlers/target/target-restart.handler';
 
 // 3rd Party Modules
 import yargs from 'yargs/yargs';
@@ -68,6 +69,7 @@ import yargs from 'yargs/yargs';
 // Cmd builders
 import { loginCmdBuilder } from './handlers/login/login.command-builder';
 import { connectCmdBuilder } from './handlers/connect/connect.command-builder';
+import { configDefaultTargetUserCommandBuilder } from './handlers/configure/config-default-targetuser.command-builder';
 import { listPoliciesCmdBuilder } from './handlers/policy/policy-list/policy-list.command-builder';
 import { describeClusterPolicyCmdBuilder } from './handlers/policy/policy-describe-cluster/describe-cluster-policy.command-builder';
 import { disconnectCmdBuilder } from './handlers/disconnect/disconnect.command-builder';
@@ -97,6 +99,7 @@ import { generateSshConfigCmdBuilder } from './handlers/generate/generate-ssh-co
 import { createApiKeyCmdBuilder } from './handlers/api-key/create-api-key.command-builder';
 import { createApiKeyHandler } from './handlers/api-key/create-api-key.handler';
 import { listDaemonsCmdBuilder } from './handlers/list-daemons/list-daemons.command-builder';
+import { targetRestartCmdBuilder } from './handlers/target/target-restart.command-builder';
 
 export type EnvMap = Readonly<{
     configName: string;
@@ -144,6 +147,7 @@ export class CliDriver
         'refresh',
         'register',
         'api-key',
+        'target',
     ]);
 
     // use the following to shortcut middleware according to command
@@ -162,7 +166,8 @@ export class CliDriver
         'policy',
         'register',
         'generate',
-        'api-key'
+        'api-key',
+        'target',
     ]);
 
     private GACommands: Set<string> = new Set([
@@ -179,6 +184,7 @@ export class CliDriver
         'ssh-proxy',
         'generate',
         'policy',
+        'target',
     ]);
 
     private adminOnlyCommands: Set<string> = new Set([
@@ -649,8 +655,23 @@ export class CliDriver
             )
             .command(
                 'configure',
-                'Returns config file path',
-                () => {},
+                'Retrieve paths for config file, zli logs and daemon logs. See help menu for setting defaults.',
+                (yargs) => {
+                    return yargs
+                        .example('$0 configure', 'Retrieve paths for config file, zli logs and daemon logs.')
+                        .command(
+                            'default-targetuser [targetUser]',
+                            'Set a local default target user for shell, ssh, and scp',
+                            (yargs) => {
+                                return configDefaultTargetUserCommandBuilder(yargs);
+                            },
+                            async (argv) => {
+                                await configDefaultTargetUserHandler(argv, this.configService, this.logger);
+                            }
+                        )
+                        .demandCommand(1, '')
+                        .strict();
+                },
                 async () => {
                     await configHandler(this.logger, this.configService, this.loggerConfigService);
                 }
@@ -673,13 +694,18 @@ export class CliDriver
                     await logoutHandler(this.configService, this.logger);
                 }
             )
-            .command('kube', 'Kubectl wrapper catch all', (yargs) => {
-                return yargs.example('$0 kube -- get pods', '');
-            }, async (argv: any) => {
-                // This expects that the kube command will go after the --
-                const listOfCommands = argv._.slice(1); // this removes the 'kube' part of 'zli kube -- ...'
-                await bctlHandler(this.configService, this.logger, listOfCommands);
-            })
+            .command(
+                'kube',
+                'Kubectl wrapper catch all',
+                (yargs) => {
+                    return yargs.example('$0 kube -- get pods', '');
+                },
+                async (argv: any) => {
+                    // This expects that the kube command will go after the --
+                    const listOfCommands = argv._.slice(1); // this removes the 'kube' part of 'zli kube -- ...'
+                    await bctlHandler(this.configService, this.logger, listOfCommands);
+                }
+            )
             .command(
                 'refresh',
                 false,
@@ -715,6 +741,20 @@ export class CliDriver
                             async (argv) => await createApiKeyHandler(argv, this.logger, this.configService),
                         )
                         .demandCommand(1, 'api-key requires a sub-command. Specify --help for available options');
+                },
+            )
+            .command(
+                'target',
+                'Take administrative actions on bzero targets',
+                async (yargs) => {
+                    return yargs
+                        .command(
+                            'restart <targetString>',
+                            'Restart the bzero agent on a target',
+                            (yargs) => targetRestartCmdBuilder(yargs),
+                            async (argv) => await targetRestartHandler(argv, this.configService, this.logger),
+                        )
+                        .demandCommand(1, 'target requires a sub-command. Specify --help for available options');
                 },
             )
             .option('configName', {type: 'string', choices: ['prod', 'stage', 'dev'], default: envMap.configName, hidden: true})

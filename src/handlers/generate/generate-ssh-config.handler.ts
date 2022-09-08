@@ -36,7 +36,7 @@ export async function generateSshConfigHandler(argv: yargs.Arguments<generateSsh
         const { identityFile, knownHostsFile, proxyCommand, prefix } = await buildSshConfigStrings(configService, processName, logger, true);
         // here we set it to false to get the special case of the wildcard proxyCommand, which shouldn't have a prefix
         const { proxyCommand: proxyWithoutPrefix } = await buildSshConfigStrings(configService, processName, logger, false);
-        const bzConfigContentsFormatted = formatBzConfigContents(sshTargets, identityFile, knownHostsFile, proxyCommand, proxyWithoutPrefix, prefix);
+        const bzConfigContentsFormatted = formatBzConfigContents(configService, sshTargets, identityFile, knownHostsFile, proxyCommand, proxyWithoutPrefix, prefix);
         // Determine the user's ssh and bzero-ssh config path
         const { userConfigPath, bzConfigPath } = getFilePaths(argv.mySshPath, argv.bzSshPath, prefix);
 
@@ -82,7 +82,7 @@ function getFilePaths(userSshPath: string, bzSshPath: string, configPrefix: stri
  * @param configPrefix {string} assigns a prefix to the bz config filename based on runtime environment (e.g. dev, stage)
  * @returns {string} the bz config file contents
  */
-function formatBzConfigContents(sshTargets: SshTargetsResponse[], identityFile: string, knownHostsFile: string, proxyCommand: string, proxyWildcard: string, configPrefix: string): string {
+function formatBzConfigContents(configService: ConfigService, sshTargets: SshTargetsResponse[], identityFile: string, knownHostsFile: string, proxyCommand: string, proxyWildcard: string, configPrefix: string): string {
     let contents = `#${bound}
 #
 # BastionZero auto-generated SSH configuration file
@@ -95,7 +95,7 @@ function formatBzConfigContents(sshTargets: SshTargetsResponse[], identityFile: 
 #
 # This file includes the following:
 #
-# If you have a target access / shell policy, you may use SSH
+# If you have a target access / SSH policy, you may use SSH
 # to any host within that policy by using the format:
 #
 # ssh targetUser@bzero-targetHostname
@@ -142,6 +142,11 @@ function formatBzConfigContents(sshTargets: SshTargetsResponse[], identityFile: 
             for(const targetUser of target.targetUsers) {
                 user += `${targetUser.userName} `;
             }
+        }
+
+        // if a default user is set, then override the target user string
+        if(configService.getConnectConfig().targetUser) {
+            user = `User ${configService.getConnectConfig().targetUser}`;
         }
 
         if(target.environmentName) {

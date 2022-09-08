@@ -1,5 +1,5 @@
 import { DigitalOceanDropletSize } from '../digital-ocean/digital-ocean.types';
-import { allTargets,  bctlQuickstartVersion, bzeroAgentBranch, bzeroAgentVersion, bzeroKubeAgentImageName, configService, digitalOceanRegistry, doApiKey, goVersion, logger, resourceNamePrefix, systemTestEnvId, systemTestEnvName, systemTestEnvNameCluster, systemTestRegistrationApiKey, systemTestTags, systemTestUniqueId, testTargets } from './system-test';
+import { allTargets,  bctlQuickstartVersion, bzeroAgentBranch, bzeroAgentVersion, bzeroKubeAgentImageName, configService, digitalOceanRegistry, doApiKey, logger, resourceNamePrefix, systemTestEnvId, systemTestEnvName, systemTestEnvNameCluster, systemTestRegistrationApiKey, systemTestTags, systemTestUniqueId, testTargets } from './system-test';
 import { checkAllSettledPromise, stripTrailingSlash } from './utils/utils';
 import * as k8s from '@kubernetes/client-node';
 import { ClusterTargetStatusPollError, RegisteredDigitalOceanKubernetesCluster } from '../digital-ocean/digital-ocean-kube.service.types';
@@ -259,7 +259,7 @@ export async function createDOTestTargets() {
                 throw err;
             }
 
-            console.log(
+            logger.info(
                 `Successfully created DigitalOceanTarget:
                 \tAWS region: ${testTarget.awsRegion}
                 \tDigitalOcean region: ${testTarget.doRegion}
@@ -294,7 +294,7 @@ export async function createDOTestTargets() {
                 throw err;
             }
 
-            console.log(
+            logger.info(
                 `Successfully created DigitalOceanSSMTarget:
                 \tAWS region: ${testTarget.awsRegion}
                 \tDigitalOcean region: ${testTarget.doRegion}
@@ -375,64 +375,47 @@ function getPackageManagerRegistrationScript(packageName: string, testTarget: SS
     let installBlock: string;
     const packageManager = getPackageManagerType(testTarget.dropletImage);
     const shouldBuildFromSource = packageName === 'bzero-beta' && bzeroAgentBranch;
-    const executableName = shouldBuildFromSource ? './root/bzero/bctl/agent/agent' : packageName;
 
-    if (shouldBuildFromSource) {
-        // Install agent from source by cloning via git and compiling with go
-        let installBlockGit: string;
-        switch (packageManager) {
-        case 'apt':
-            installBlockGit = 'sudo apt update -y && sudo apt install -y git iperf3';
-            break;
-        case 'yum':
-            installBlockGit = 'sudo yum update -y && sudo yum install git iperf3 -y';
-            break;
-        default:
-            const _exhaustiveCheck: never = packageManager;
-            return _exhaustiveCheck;
-        }
-
-        const installBlockCompileWithGo = String.raw`cd /
-mkdir go-download && cd go-download
-wget https://go.dev/dl/${goVersion}.tar.gz
-sudo tar -xvf ${goVersion}.tar.gz
-sudo rm -rf /usr/local/go
-sudo mv go /usr/local
-export GOROOT=/usr/local/go
-export GOPATH=/root/go
-export GOCACHE=/root/.cache/go-build
-git clone -b ${bzeroAgentBranch} https://github.com/bastionzero/bzero.git /root/bzero
-sh /root/bzero/update-agent-version.sh
-cd /root/bzero/bctl/agent
-/usr/local/go/bin/go build
-cd /
-`;
-        installBlock = `${installBlockGit}\n${installBlockCompileWithGo}\n${executableName} -w &`;
-    } else {
-        // Install agent using the beta repo
-        switch (packageManager) {
-        case 'apt':
-            installBlock = String.raw`sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys E5C358E613982017
-sudo apt update -y
-sudo apt install -y software-properties-common iperf3
+    // Always install agent using the beta repo -- when building from source, we do this exclusively for the side-effect of
+    // placing an executable in /usr/bin/bzero, which we will replace with what we build. That will allow us to manage
+    // it with systemd, which is required for testing agent restart events
+    switch (packageManager) {
+    case 'apt':
+        installBlock = String.raw`sudo apt update -y
+sudo apt install -y software-properties-common
+sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys E5C358E613982017
 sudo add-apt-repository 'deb https://download-apt.bastionzero.com/beta/apt-repo stable main'
 sudo apt update -y
 sudo apt install ${packageName} -y
 `;
-            break;
-        case 'yum':
-            installBlock = String.raw`sudo yum-config-manager --add-repo https://download-yum.bastionzero.com/bastionzero-beta.repo
+        break;
+    case 'yum':
+        installBlock = String.raw`sudo yum-config-manager --add-repo https://download-yum.bastionzero.com/bastionzero-beta.repo
 sudo yum update -y
-sudo yum install ${packageName} iperf3 -y
+sudo yum install ${packageName} -y
 `;
-            break;
-        default:
-            // Compile-time exhaustive check
-            const _exhaustiveCheck: never = packageManager;
-            return _exhaustiveCheck;
-        }
+        break;
+    default:
+        // Compile-time exhaustive check
+        const _exhaustiveCheck: never = packageManager;
+        return _exhaustiveCheck;
     }
 
+    if (shouldBuildFromSource) {
+        const installBlockCompileWithGo = String.raw`cd /
+git clone -b ${bzeroAgentBranch} https://github.com/bastionzero/bzero.git /root/bzero
+export GOROOT=/usr/local/go
+export GOPATH=/root/go
+export GOCACHE=/root/.cache/go-build
+sh /root/bzero/update-agent-version.sh
+cd /root/bzero/bctl/agent
+/usr/local/go/bin/go build
+systemctl stop bzero-beta
+cp agent /usr/bin/bzero-beta
+cd /
+`;
+        installBlock += installBlockCompileWithGo;
+    }
 
     let registerCommand: string;
     let initBlock: string = '';
@@ -441,14 +424,13 @@ sudo yum install ${packageName} iperf3 -y
         registerCommand = `${packageName} --serviceUrl ${configService.serviceUrl()} -registrationKey "${registrationApiKeySecret}" -envName "${envName}"`;
         break;
     case 'pm-bzero':
-        registerCommand = `${executableName} --serviceUrl ${configService.serviceUrl()} -registrationKey "${registrationApiKeySecret}" -environmentName "${envName}"`;
+        registerCommand = `${packageName} --serviceUrl ${configService.serviceUrl()} -registrationKey "${registrationApiKeySecret}" -environmentName "${envName}"`;
 
         // Common initialization for bzero targets
 
         // Starts a python web server in background for web tests
         const pythonWebServerCmd = 'nohup python3 -m http.server > python-server.out 2> python-server.err < /dev/null &';
         const iperfCmd = `nohup iperf3 -s > /var/log/iperf.log 2>&1 &`;
-
 
         // Add a bzero custom user for connect/ssh tests
         // --shell options sets default shell as bash
@@ -459,33 +441,6 @@ sudo yum install ${packageName} iperf3 -y
 ${iperfCmd}
 ${createBzeroCustomerUserCmd}
 `;
-
-        switch (packageManager) {
-        // Start python web server and postgres database
-        case 'apt':
-            initBlock += String.raw`sudo sed 's/peer/trust/' /etc/postgresql/12/main/pg_hba.conf -i
-sudo sed 's/md5/trust/' /etc/postgresql/12/main/pg_hba.conf -i
-sudo systemctl restart postgresql
-`;
-            break;
-        case 'yum':
-            initBlock += String.raw`sudo /usr/pgsql-12/bin/postgresql-12-setup initdb
-sudo sed 's/peer/trust/' /var/lib/pgsql/12/data/pg_hba.conf -i
-sudo sed 's/ident/trust/' /var/lib/pgsql/12/data/pg_hba.conf -i
-sudo systemctl restart postgresql-12
-`;
-            break;
-        default:
-            // Compile-time exhaustive check
-            const _exhaustiveCheck: never = packageManager;
-            return _exhaustiveCheck;
-        }
-
-        break;
-    default:
-        // Compile-time exhaustive check
-        const _exhaustiveCheck: never = testTarget;
-        return _exhaustiveCheck;
     }
 
     return String.raw`#!/bin/bash
@@ -493,5 +448,6 @@ set -Ee
 ${installBlock}
 ${initBlock}
 ${registerCommand}
+systemctl restart bzero-beta
 `;
 }

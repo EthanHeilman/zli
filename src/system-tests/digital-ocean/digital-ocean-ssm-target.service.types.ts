@@ -18,11 +18,14 @@ export const DigitalOceanDistroImage = {
     // The image is built from al2_20211005.0-x86_64.
     // Find the image ID of custom images using: doctl compute image list-user
     AmazonLinux2: 102220395,
-    // This is a custom DigitalOcean droplet snapshot that exists on our
-    // account. This image is built from AL2 and it contains custom packages,
-    // such as postgres and python3, for usage in virtual target tests.
-    BzeroVTAL2TestImage: 102221344,
-    BzeroVTUbuntuTestImage: 103484721
+
+    // These are custom DigitalOcean droplet snapshot that exists on our
+    // account. These should be routinely rebuilt in order to keep packages
+    // up-to-date and to also rotate the aws credential used by the amazon
+    // cloudwatch agent on the snapshot to push agent logs to cloudwatch
+    // https://github.com/bastionzero/cwc-infra/wiki/System-Test-Digital-Ocean-Snapshots
+    BzeroVTAL2TestImage: 116429980,
+    BzeroVTUbuntuTestImage: 116083687
 } as const;
 export type DigitalOceanDistroImage = typeof DigitalOceanDistroImage[keyof typeof DigitalOceanDistroImage];
 

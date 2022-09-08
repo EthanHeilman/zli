@@ -23,7 +23,10 @@ export async function connectHandler(
     const connectionHttpService = new ConnectionHttpService(configService, logger);
 
     const parsedTarget = parseTargetString(argv.targetString);
-    const targetUser = parsedTarget.user;
+    let targetUser = parsedTarget.user;
+    if (!targetUser) {
+        targetUser = configService.getConnectConfig().targetUser;
+    }
 
     // If they have not passed targetGroups attempt to use the default ones
     // stored in case this is a kube connect

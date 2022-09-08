@@ -12,8 +12,7 @@ export function sshConfigMockSetup(): void {
     jest.spyOn(ConfigService.prototype, 'sshKnownHostsPath').mockImplementation(() => '/test/knownHosts');
 }
 
-// Expected BZ config file
-export const mockBzSshConfigContents: string = `#********************************************************************************
+const mockBzHelpMessage: string = `#********************************************************************************
 #
 # BastionZero auto-generated SSH configuration file
 #
@@ -25,7 +24,7 @@ export const mockBzSshConfigContents: string = `#*******************************
 #
 # This file includes the following:
 #
-# If you have a target access / shell policy, you may use SSH
+# If you have a target access / SSH policy, you may use SSH
 # to any host within that policy by using the format:
 #
 # ssh targetUser@bzero-targetHostname
@@ -59,12 +58,29 @@ export const mockBzSshConfigContents: string = `#*******************************
 # may share the same name.
 #
 #********************************************************************************
+`;
 
+// Expected BZ config file
+export const mockBzSshConfigContents: string = mockBzHelpMessage + `
 Host test-target-name
     IdentityFile /test/sshKeyPath
     UserKnownHostsFile /test/knownHosts
     ProxyCommand npm run start ssh-proxy --configName=test-config -s test-config-bzero-%n %r %p /test/sshKeyPath
     User test-user
+
+Host test-config-bzero-*
+    IdentityFile /test/sshKeyPath
+    UserKnownHostsFile /test/knownHosts
+    ProxyCommand npm run start ssh-proxy --configName=test-config -s %n %r %p /test/sshKeyPath
+`;
+
+// Expected BZ config file
+export const mockBzSshConfigContentsDefaultUser: string = mockBzHelpMessage + `
+Host test-target-name
+    IdentityFile /test/sshKeyPath
+    UserKnownHostsFile /test/knownHosts
+    ProxyCommand npm run start ssh-proxy --configName=test-config -s test-config-bzero-%n %r %p /test/sshKeyPath
+    User default-user
 
 Host test-config-bzero-*
     IdentityFile /test/sshKeyPath
