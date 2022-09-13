@@ -399,6 +399,7 @@ export function getBaseDaemonEnv(configService: ConfigService, loggerConfigServi
         'CONNECTION_ID': connectionId,
         'CONNECTION_SERVICE_URL': authDetails.connectionServiceUrl,
         'CONNECTION_SERVICE_AUTH_TOKEN': authDetails.authToken,
+        'DEBUG': loggerConfigService.debugMode()
     };
 }
 

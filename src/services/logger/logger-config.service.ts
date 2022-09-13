@@ -11,9 +11,11 @@ export type LoggerConfigSchema = {
 
 export class LoggerConfigService {
     private config: Conf<LoggerConfigSchema>;
+    private debugFlag: boolean;
 
-    constructor(configName: string, configDir?: string) {
+    constructor(configName: string, debug: boolean, configDir?: string) {
         const projectName = 'bastionzero-logger';
+        this.debugFlag = debug;
 
         // If a custom configDir append the projectName to the path to keep
         // consistent behavior with conf so that different projectName's wont
@@ -63,5 +65,9 @@ export class LoggerConfigService {
 
     public configPath(): string {
         return this.config.path;
+    }
+
+    public debugMode(): boolean {
+        return this.debugFlag;
     }
 }
