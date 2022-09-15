@@ -58,7 +58,7 @@ import { dynamicAccessSuite } from './suites/dynamic-access';
 const configName = envMap.configName;
 
 // Setup services used for running system tests
-export const loggerConfigService = new LoggerConfigService(configName, envMap.configDir);
+export const loggerConfigService = new LoggerConfigService(configName, false, envMap.configDir);
 export const logger = new Logger(loggerConfigService, false, false, true);
 export const configService = new ConfigService(configName, logger, envMap.configDir, true);
 

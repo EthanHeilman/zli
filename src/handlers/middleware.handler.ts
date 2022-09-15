@@ -44,7 +44,7 @@ export async function oAuthMiddleware(configService: ConfigService, logger: Logg
 
 export function initLoggerMiddleware(argv: any) {
     // Configure our logger
-    const loggerConfigService = new LoggerConfigService(<string> argv.configName, argv.configDir);
+    const loggerConfigService = new LoggerConfigService(<string> argv.configName, argv.debug, argv.configDir);
 
     const isSilent = isZliSilent(!!argv.silent, !!argv.json, !!argv.verbose);
     const logger = new Logger(loggerConfigService, !!argv.debug, isSilent, !!process.stdout.isTTY);
