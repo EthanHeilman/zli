@@ -13,20 +13,34 @@ import { Subject } from '../../../../webshell-common-ts/http/v2/policy/types/sub
 import { SubjectType } from '../../../../webshell-common-ts/http/v2/common.types/subject.types';
 import { Environment } from '../../../../webshell-common-ts/http/v2/policy/types/environment.types';
 import { VerbType } from '../../../../webshell-common-ts/http/v2/policy/types/verb-type.types';
-import { getTargetInfo } from '../utils/ssh-utils';
-import { EventsHttpService } from '../../../http-services/events/events.http-server';
 import { TestTarget } from '../system-test.types';
 import { callZli } from '../utils/zli-utils';
 import { KubeTestUserName } from './kube';
 import { KubeHttpService } from '../../../http-services/targets/kube/kube.http-services';
 import { BzeroTargetHttpService } from '../../../http-services/targets/bzero/bzero.http-services';
 import { TargetStatus } from '../../../../webshell-common-ts/http/v2/target/types/targetStatus.types';
+import { StatusHttpService } from '../../../http-services/status/status.http-service';
+import { BzeroAgentSummary } from '../../../../webshell-common-ts/http/v2/target/bzero/types/bzero-agent-summary.types';
+import { KubeClusterSummary } from '../../../../webshell-common-ts/http/v2/target/kube/types/kube-cluster-summary.types';
+import { EventsHttpService } from '../../../http-services/events/events.http-server';
+import { getTargetInfo } from '../utils/ssh-utils';
 
 const kubeConfigYamlFilePath = `/tmp/bzero-agent-kubeconfig-${systemTestUniqueId}.yml`;
+
+// Container and Systemd Service Names
+// https://github.com/bastionzero/cwc-infra/blob/7b17c303f4acec7553e05688958354c70a7444c1/Bzero-Common/bzero_common/utils.py#L58-L59
+const bastionContainer = 'bastion';
+const bastionService = 'bzero-server';
+const connectionOrchestratorContainer = 'connection-orchestrator';
+const connectionOrchestratorService = 'connection-orchestrator';
+const connectionNodeContainer = 'connection-node';
+const connectionNodeService = 'connection-node';
 
 // Create mapping object and function for test rails case IDs
 interface testRailsCaseIdMapping {
     agentRecoveryBastionRestart: string;
+    agentRecoveryConnectionOrchestratorRestart: string;
+    agentRecoveryConnectionNodeRestart: string;
     agentRestartByName: string;
     agentRestartByEnv: string;
     agentRestartById: string;
@@ -39,6 +53,8 @@ function fromTestTargetToCaseIdMapping(testTarget: TestTarget): testRailsCaseIdM
     case DigitalOceanDistroImage.BzeroVTUbuntuTestImage:
         return {
             agentRecoveryBastionRestart: '247517',
+            agentRecoveryConnectionOrchestratorRestart: 'replace-me',
+            agentRecoveryConnectionNodeRestart: 'replace-me',
             agentRestartByName: '258916',
             agentRestartByEnv: '258917',
             agentRestartById: '258918',
@@ -58,6 +74,7 @@ export const agentRecoverySuite = (testRunnerKubeConfigFile: string, testRunnerU
         let connectTestUtils: ConnectTestUtils;
         let kubeService: KubeHttpService;
         let bzeroTargetService: BzeroTargetHttpService;
+        let statusService: StatusHttpService;
 
         beforeAll(async () => {
             policyService = new PolicyHttpService(configService, logger);
@@ -65,6 +82,7 @@ export const agentRecoverySuite = (testRunnerKubeConfigFile: string, testRunnerU
             connectionService = new ConnectionHttpService(configService, logger);
             kubeService = new KubeHttpService(configService, logger);
             bzeroTargetService = new BzeroTargetHttpService(configService, logger);
+            statusService = new StatusHttpService(configService, logger);
 
             // Setup the kube client from the test runner configuration
             const kc = new k8s.KubeConfig();
@@ -110,13 +128,68 @@ export const agentRecoverySuite = (testRunnerKubeConfigFile: string, testRunnerU
                 // Wait for the target to come online in case its offline from a previous recovery test
                 await waitForBzeroTargetOnline(connectTarget.id);
 
-                await restartBastionAndWaitForAgentToReconnect(connectTarget.id);
+                // Restart bastion
+                const bastionPod = await getBastionPod(k8sApi, testRunnerUniqueId);
+                await restartService(bastionPod, bastionContainer, bastionService, 5 * 1000);
 
-                // Run normal shell connect test to ensure that still works after reconnecting
+                // Wait for bastion to come back online
+                await waitForBastionOnline();
+
+                // Run normal shell connect test to ensure that new connections can be made after bastion restarted
                 await connectTestUtils.runShellConnectTest(testTarget, `bastion restart test - ${systemTestUniqueId}`, true);
             },
-            10 * 60 * 1000); // 10 min timeout
+            3 * 60 * 1000); // 3 min timeout
         });
+
+        bzeroTestTargetsToRun.forEach(async (testTarget) => {
+            it(`${fromTestTargetToCaseIdMapping(testTarget).agentRecoveryConnectionOrchestratorRestart}: connection orchestrator restart ${testTarget.awsRegion} - ${getDOImageName(testTarget.dropletImage)}`, async () => {
+                const doTarget = testTargets.get(testTarget);
+                const connectTarget = connectTestUtils.getConnectTarget(doTarget, testTarget.awsRegion);
+
+                // Wait for the target to come online in case its offline from a previous recovery test
+                await waitForBzeroTargetOnline(connectTarget.id);
+
+                // Restart connection orchestrator
+                const connectionOrchestratorPod = await getConnectionOrchestratorPod(k8sApi, testRunnerUniqueId);
+                await restartService(connectionOrchestratorPod, connectionOrchestratorContainer, connectionOrchestratorService, 5 * 1000);
+
+                // Wait for connection orchestrator to come back online
+                await waitForConnectionOrchestratorOnline(connectTarget.awsRegion);
+
+                // Run normal shell connect test to ensure that new connections can be made after connection orchestrator restarted
+                await connectTestUtils.runShellConnectTest(testTarget, `connection orchestrator restart test - ${systemTestUniqueId}`, true);
+            },
+            3 * 60 * 1000); // 3 min timeout
+        });
+
+        // bzeroTestTargetsToRun.forEach(async (testTarget) => {
+        //     it(`${fromTestTargetToCaseIdMapping(testTarget).agentRecoveryConnectionNodeRestart}: connection node restart ${testTarget.awsRegion} - ${getDOImageName(testTarget.dropletImage)}`, async () => {
+        //         const doTarget = testTargets.get(testTarget);
+        //         const connectTarget = connectTestUtils.getConnectTarget(doTarget, testTarget.awsRegion);
+
+        //         // Wait for the target to come online in case its offline from a previous recovery test
+        //         const bzeroTarget = await waitForBzeroTargetOnline(connectTarget.id);
+
+        //         // Once target is online its control channel info should be
+        //         // populated in the bzeroTarget
+        //         expect(bzeroTarget.controlChannel).toBeDefined();
+        //         expect(bzeroTarget.controlChannel.controlChannelId).toBeDefined();
+        //         expect(bzeroTarget.controlChannel.connectionNodeId).toBeDefined();
+        //         expect(bzeroTarget.controlChannel.startTime).toBeDefined();
+
+        //         // Restart connection node that contains the agent control channel
+        //         const restartTime = new Date();
+        //         const connectionNodePod = await getConnectionNodePod(k8sApi, testRunnerUniqueId, bzeroTarget.controlChannel.connectionNodeId);
+        //         await restartService(connectionNodePod, connectionNodeContainer, connectionNodeService, 5 * 1000);
+
+        //         // Wait for the agent control channel to reconnect
+        //         await waitForAgentControlChannelToReconnect(connectTarget.id, restartTime);
+
+        //         // Run normal shell connect test to ensure that still works after control channel reconnects
+        //         await connectTestUtils.runShellConnectTest(testTarget, `connection node restart test - ${systemTestUniqueId}`, true);
+        //     },
+        //     10 * 60 * 1000); // 10 min timeout
+        // });
 
         it('252823: kube agent bastion restart test', async() => {
             // Wait for the target to come online in case its offline from a previous recovery test
@@ -125,144 +198,169 @@ export const agentRecoverySuite = (testRunnerKubeConfigFile: string, testRunnerU
             // Start the kube daemon
             await callZli(['connect', `${KubeTestUserName}@${testCluster.bzeroClusterTargetSummary.name}`, '--targetGroup', 'system:masters']);
 
-            await restartBastionAndWaitForAgentToReconnect(testCluster.bzeroClusterTargetSummary.id);
+            // Restart bastion
+            const bastionPod = await getBastionPod(k8sApi, testRunnerUniqueId);
+            await restartService(bastionPod, bastionContainer, bastionService, 5 * 1000);
+
+            // Wait for bastion to come back online
+            await waitForBastionOnline();
+
+            // Test the kube connection works after bastion comes back online
             await testKubeConnection();
 
             await callZli(['disconnect', 'kube']);
-        }, 10 * 60 * 1000); // 10 min timeout;
+        }, 3 * 60 * 1000); // 3 min timeout;
 
-        // bzeroTestTargetsToRun.forEach(async (testTarget: TestTarget) => {
-        //     it(`${fromTestTargetToCaseIdMapping(testTarget).agentRestartByName}: BZero Agent -- zli target restart <name>  - ${testTarget.awsRegion} - ${testTarget.installType} - ${testTarget.dropletImage}`, async () => {
-        //         const { targetName, targetId } = await getTargetInfo(testTarget);
-
-        //         // Wait for the target to come online in case its offline from a previous recovery test
-        //         await waitForBzeroTargetOnline(targetId);
-
-        //         const restartTime = new Date();
-        //         await callZli(['target', 'restart', targetName]);
-
-        //         await waitForAgentToRestart(targetId, restartTime);
-
-        //         // check that we can still connect to the agent
-        //         await connectTestUtils.runShellConnectTest(testTarget, `zli target restart by name test - ${systemTestUniqueId}`, true);
-
-        //         // finally, check that the restart was reported correctly
-        //         const eventsService = new EventsHttpService(configService, logger);
-        //         const latestEvents = await eventsService.GetAgentStatusChangeEvents(targetId, restartTime);
-        //         const restart = latestEvents.filter(e => e.statusChange === 'OfflineToRestarting');
-        //         expect(restart.length).toEqual(1);
-        //         expect(restart[0].reason).toContain(`received manual restart from user: {RestartedBy:${configService.me().email}`);
-
-        //     }, 5 * 60 * 1000);
-        // });
-
-        // bzeroTestTargetsToRun.forEach(async (testTarget: TestTarget) => {
-        //     it(`${fromTestTargetToCaseIdMapping(testTarget).agentRestartByEnv}: BZero Agent -- zli target restart <name.env>  - ${testTarget.awsRegion} - ${testTarget.installType} - ${testTarget.dropletImage}`, async () => {
-        //         const { targetName, targetId } = await getTargetInfo(testTarget);
-
-        //         // Wait for the target to come online in case its offline from a previous recovery test
-        //         await waitForBzeroTargetOnline(targetId);
-
-        //         const restartTime = new Date();
-        //         await callZli(['target', 'restart', `${targetName}.${systemTestEnvName}`]);
-
-        //         await waitForAgentToRestart(targetId, restartTime);
-
-        //         // check that we can still connect to the agent
-        //         await connectTestUtils.runShellConnectTest(testTarget, `zli target restart by name.env test - ${systemTestUniqueId}`, true);
-        //     }, 5 * 60 * 1000);
-        // });
-
-        // bzeroTestTargetsToRun.forEach(async (testTarget: TestTarget) => {
-        //     it(`${fromTestTargetToCaseIdMapping(testTarget).agentRestartById}: BZero Agent -- zli target restart <id>  - ${testTarget.awsRegion} - ${testTarget.installType} - ${testTarget.dropletImage}`, async () => {
-        //         const { targetId } = await getTargetInfo(testTarget);
-
-        //         // Wait for the target to come online in case its offline from a previous recovery test
-        //         await waitForBzeroTargetOnline(targetId);
-
-        //         const restartTime = new Date();
-        //         await callZli(['target', 'restart', `${targetId}`]);
-
-        //         await waitForAgentToRestart(targetId, restartTime);
-
-        //         // check that we can still connect to the agent
-        //         await connectTestUtils.runShellConnectTest(testTarget, `zli target restart by id test - ${systemTestUniqueId}`, true);
-        //     }, 5 * 60 * 1000);
-        // });
-
-        // it(`258919: Kube Agent -- zli target restart <name> `, async () => {
+        // it('252823: kube agent connection node restart test', async() => {
         //     // Wait for the target to come online in case its offline from a previous recovery test
-        //     await waitForKubeTargetOnline(testCluster.bzeroClusterTargetSummary.id);
+        //     const kubeTarget = await waitForKubeTargetOnline(testCluster.bzeroClusterTargetSummary.id);
 
-        //     const restartTime = new Date();
-        //     await callZli(['target', 'restart', testCluster.bzeroClusterTargetSummary.name]);
+        //     // Once target is online its control channel info should be
+        //     // populated
+        //     expect(kubeTarget.controlChannel).toBeDefined();
+        //     expect(kubeTarget.controlChannel.controlChannelId).toBeDefined();
+        //     expect(kubeTarget.controlChannel.connectionNodeId).toBeDefined();
+        //     expect(kubeTarget.controlChannel.startTime).toBeDefined();
 
-        //     await waitForAgentToRestart(testCluster.bzeroClusterTargetSummary.id, restartTime);
-
-        //     // start the kube daemon
+        //     // Start the kube daemon
         //     await callZli(['connect', `${KubeTestUserName}@${testCluster.bzeroClusterTargetSummary.name}`, '--targetGroup', 'system:masters']);
+
+        //     // Restart connection node that contains the agent control channel
+        //     const restartTime = new Date();
+        //     const connectionNodePod = await getConnectionNodePod(k8sApi, testRunnerUniqueId, kubeTarget.controlChannel.connectionNodeId);
+        //     await restartService(connectionNodePod, connectionNodeContainer, connectionNodeService, 5 * 1000);
+
+        //     // Wait for the agent control channel to reconnect
+        //     await waitForAgentControlChannelToReconnect(testCluster.bzeroClusterTargetSummary.id, restartTime);
+
+        //     // Test the kube connection still works after the control channel reconnects
         //     await testKubeConnection();
+
         //     await callZli(['disconnect', 'kube']);
-        // }, 5 * 60 * 1000);
+        // }, 3 * 60 * 1000); // 3 min timeout;
+
+        bzeroTestTargetsToRun.forEach(async (testTarget: TestTarget) => {
+            it(`${fromTestTargetToCaseIdMapping(testTarget).agentRestartByName}: BZero Agent -- zli target restart <name>  - ${testTarget.awsRegion} - ${testTarget.installType} - ${testTarget.dropletImage}`, async () => {
+                const { targetName, targetId } = await getTargetInfo(testTarget);
+
+                // Wait for the target to come online in case its offline from a previous recovery test
+                await waitForBzeroTargetOnline(targetId);
+
+                const restartTime = new Date();
+                await callZli(['target', 'restart', targetName]);
+
+                await waitForAgentToRestart(targetId, restartTime);
+
+                // check that we can still connect to the agent
+                await connectTestUtils.runShellConnectTest(testTarget, `zli target restart by name test - ${systemTestUniqueId}`, true);
+
+                // finally, check that the restart was reported correctly
+                const eventsService = new EventsHttpService(configService, logger);
+                const latestEvents = await eventsService.GetAgentStatusChangeEvents(targetId, restartTime);
+                const restart = latestEvents.filter(e => e.statusChange === 'OfflineToRestarting');
+                expect(restart.length).toEqual(1);
+                expect(restart[0].reason).toContain(`received manual restart from user: {RestartedBy:${configService.me().email}`);
+
+            }, 5 * 60 * 1000);
+        });
+
+        bzeroTestTargetsToRun.forEach(async (testTarget: TestTarget) => {
+            it(`${fromTestTargetToCaseIdMapping(testTarget).agentRestartByEnv}: BZero Agent -- zli target restart <name.env>  - ${testTarget.awsRegion} - ${testTarget.installType} - ${testTarget.dropletImage}`, async () => {
+                const { targetName, targetId } = await getTargetInfo(testTarget);
+
+                // Wait for the target to come online in case its offline from a previous recovery test
+                await waitForBzeroTargetOnline(targetId);
+
+                const restartTime = new Date();
+                await callZli(['target', 'restart', `${targetName}.${systemTestEnvName}`]);
+
+                await waitForAgentToRestart(targetId, restartTime);
+
+                // check that we can still connect to the agent
+                await connectTestUtils.runShellConnectTest(testTarget, `zli target restart by name.env test - ${systemTestUniqueId}`, true);
+            }, 5 * 60 * 1000);
+        });
+
+        bzeroTestTargetsToRun.forEach(async (testTarget: TestTarget) => {
+            it(`${fromTestTargetToCaseIdMapping(testTarget).agentRestartById}: BZero Agent -- zli target restart <id>  - ${testTarget.awsRegion} - ${testTarget.installType} - ${testTarget.dropletImage}`, async () => {
+                const { targetId } = await getTargetInfo(testTarget);
+
+                // Wait for the target to come online in case its offline from a previous recovery test
+                await waitForBzeroTargetOnline(targetId);
+
+                const restartTime = new Date();
+                await callZli(['target', 'restart', `${targetId}`]);
+
+                await waitForAgentToRestart(targetId, restartTime);
+
+                // check that we can still connect to the agent
+                await connectTestUtils.runShellConnectTest(testTarget, `zli target restart by id test - ${systemTestUniqueId}`, true);
+            }, 5 * 60 * 1000);
+        });
+
+        it(`258919: Kube Agent -- zli target restart <name> `, async () => {
+            // Wait for the target to come online in case its offline from a previous recovery test
+            await waitForKubeTargetOnline(testCluster.bzeroClusterTargetSummary.id);
+
+            const restartTime = new Date();
+            await callZli(['target', 'restart', testCluster.bzeroClusterTargetSummary.name]);
+
+            await waitForAgentToRestart(testCluster.bzeroClusterTargetSummary.id, restartTime);
+
+            // start the kube daemon
+            await callZli(['connect', `${KubeTestUserName}@${testCluster.bzeroClusterTargetSummary.name}`, '--targetGroup', 'system:masters']);
+            await testKubeConnection();
+            await callZli(['disconnect', 'kube']);
+        }, 5 * 60 * 1000);
+
+
+        async function restartService(pod: k8s.V1Pod, containerName: string, serviceName: string, timeBeforeRestart: number) {
+            logger.info(`stopping ${containerName} container`);
+
+            // In practice both the SIGKILL and the stop commands result in the
+            // same behavior because the systemctl service only runs the wrapper
+            // start.sh script which calls dotnet run. We would need to send a
+            // SIGKILL directly to the process to simulate a sudden crash
+            // https://serverfault.com/questions/936037/killing-systemd-service-with-and-without-systemctl
+            // const harshStopCommand = ['/usr/local/bin/systemctl', 'kill',
+            // '-s', 'SIGKILL', serviceName];
+
+            const gracefulStopCommand = ['/usr/local/bin/systemctl', 'stop', serviceName];
+            await execOnPod(k8sExec, pod, containerName, gracefulStopCommand, logger);
+
+            // Wait before restarting the service
+            logger.info(`waiting ${timeBeforeRestart/1000}s before restarting ${containerName}`);
+            await sleepTimeout(timeBeforeRestart);
+
+            // Start the systemd service on the container
+            logger.info('starting bastion container');
+            const startCommand = ['/usr/local/bin/systemctl', 'start', serviceName];
+            await execOnPod(k8sExec, pod, containerName, startCommand, logger);
+        }
 
         /**
-         * Restarts bastion pod and then waits for agent online->offline and then offline->online events
+         * Waits for agent online->offline and then offline->online events after
+         * the control channel connection is interrupted
          * @param targetId The targetId of the agent we are testing
+         * @param startTimeFilter The time to use as the start time filter so we
+         * dont find older events that are not related to the current test.
          */
-        async function restartBastionAndWaitForAgentToReconnect(targetId: string) {
-            const bastionPod = await getBastionPod(k8sApi, testRunnerUniqueId);
-            const bastionContainer = 'bastion';
-
-            // Stop the systemd service on the bastion container to simulate bastion going down temporarily
-            logger.info('stopping bastion container');
-
-            // In practice both the SIGKILL and the stop commands still
-            // result in agent going offline because of
-            // control-channel-disconnect- so the websocket is still closing
-            // normally and updating the status in the database. The harsh
-            // command is probably not working as intended because it only
-            // kills the start.sh script which calls dotnet run but not the
-            // actual Webshell.WebApp process itself.
-
-            // With CC -> CN changes we can instead refactor this to
-            // simulate a failure of the connection node pod by deleting the
-            // pod that contains the control channel and the offline event
-            // should happen immediately on bastion
-
-            // send a SIGKILL signal to simulate the bastion crashing
-            // instead of gracefully shutting down
-            // https://serverfault.com/questions/936037/killing-systemd-service-with-and-without-systemctl
-            // const harshStopCommand = ['/usr/local/bin/systemctl', 'kill', '-s', 'SIGKILL', 'bzero-server'];
-            const gracefulStopCommand = ['/usr/local/bin/systemctl', 'stop', 'bzero-server'];
-            const restartTime = new Date();
-            await execOnPod(k8sExec, bastionPod, bastionContainer, gracefulStopCommand, logger);
-
-            // Wait for 1 min before restarting bastion
-            logger.info('waiting 1 min before restarting bastion');
-            await sleepTimeout(1 * 60 * 1000);
-
-            // Start the systemd service on the bastion container
-            logger.info('starting bastion container');
-            const startCommand = ['/usr/local/bin/systemctl', 'start', 'bzero-server'];
-            await execOnPod(k8sExec, bastionPod, bastionContainer, startCommand, logger);
-
-            // Once bastion comes back online we should be able to query and
-            // find a online->offline event for this agent
+        async function waitForAgentControlChannelToReconnect(targetId: string, startTimeFilter: Date) {
+            // We should first find an online->offline event after the control channel disconnects
             await testUtils.EnsureAgentStatusEvent(targetId, {
                 statusChange: 'OnlineToOffline'
-            }, restartTime, undefined, 1 * 60 * 1000);
+            }, startTimeFilter, undefined, 1 * 60 * 1000);
 
             logger.info(`${new Date()} -- Found online to offline event`);
 
             // Then the agent should try and reconnect its control channel
-            // websocket to bastion which will move the agent back to
-            // online. We use a longer timeout here because while the
-            // bastion is down the agent goes into a reconnect loop with
-            // exponential backoff that will cause it to wait longer before
+            // websocket which will move the agent back to online. We use a
+            // longer timeout here because the agent goes into a reconnect loop
+            // with exponential backoff that will cause it to wait longer before
             // reconnecting
             await testUtils.EnsureAgentStatusEvent(targetId, {
                 statusChange: 'OfflineToOnline',
-            }, restartTime, undefined, 5 * 60 * 1000);
+            }, startTimeFilter, undefined, 5 * 60 * 1000);
 
             logger.info(`${new Date()} -- Found offline to online event`);
         }
@@ -270,12 +368,36 @@ export const agentRecoverySuite = (testRunnerKubeConfigFile: string, testRunnerU
         async function getBastionPod(k8sApi: k8s.CoreV1Api, uniqueId: string) {
             const resp = await getPodWithLabelSelector(k8sApi, 'default', { 'uniqueId': uniqueId, 'podType': 'bastion'});
 
+            // Should be exactly 1 bastion pod
             const podCount = resp.body.items.length;
             if(podCount != 1) {
                 throw new Error(`Found ${podCount} bastion pods.`);
             }
 
             return resp.body.items[0];
+        }
+
+        async function getConnectionOrchestratorPod(k8sApi: k8s.CoreV1Api, uniqueId: string) {
+            const resp = await getPodWithLabelSelector(k8sApi, 'connection-service', { 'uniqueId': uniqueId, 'podType': 'connection-orchestrator'});
+
+            // Should be exactly 1 connection orchestrator pod
+            const podCount = resp.body.items.length;
+            if(podCount != 1) {
+                throw new Error(`Found ${podCount} connection orchestrator pods.`);
+            }
+
+            return resp.body.items[0];
+        }
+
+        async function getConnectionNodePod(k8sApi: k8s.CoreV1Api, uniqueId: string, connectionNodeId: string) {
+            const resp = await getPodWithLabelSelector(k8sApi, 'connection-service', { 'uniqueId': uniqueId, 'podType': 'connection-node'});
+
+            const connectionNodePod = resp.body.items.find(p => p.metadata.name.includes(connectionNodeId));
+            if(! connectionNodePod) {
+                throw new Error(`Couldnt find connection node pod with id ${connectionNodeId}.`);
+            }
+
+            return connectionNodePod;
         }
 
         /**
@@ -319,21 +441,43 @@ export const agentRecoverySuite = (testRunnerKubeConfigFile: string, testRunnerU
         }
 
         async function waitForBzeroTargetOnline(targetId: string, timeout: number = 2 * 60 * 1000) {
+            let bzeroTarget: BzeroAgentSummary;
             logger.info(`${new Date()} -- waiting for bzero target ${targetId} to come online...`);
             await testUtils.waitForExpect(async () => {
-                const bzeroTarget = await bzeroTargetService.GetBzeroTarget(targetId);
+                bzeroTarget = await bzeroTargetService.GetBzeroTarget(targetId);
                 expect(bzeroTarget.status).toBe(TargetStatus.Online);
             }, timeout);
             logger.info(`${new Date()} -- ${targetId} is online`);
+
+            return bzeroTarget;
         }
 
         async function waitForKubeTargetOnline(targetId: string, timeout: number = 2 * 60 * 1000) {
+            let kubeTarget: KubeClusterSummary;
             logger.info(`${new Date()} -- waiting for kube target ${targetId} to come online...`);
             await testUtils.waitForExpect(async () => {
-                const kubeTarget = await kubeService.GetKubeCluster(targetId);
+                kubeTarget = await kubeService.GetKubeCluster(targetId);
                 expect(kubeTarget.status).toBe(TargetStatus.Online);
             }, timeout);
             logger.info(`${new Date()} -- ${targetId} is online`);
+
+            return kubeTarget;
+        }
+
+        async function waitForBastionOnline(timeout: number = 1 * 60 * 1000) {
+            logger.info(`${new Date()} -- waiting for bastion to come online`);
+            await testUtils.waitForExpect(async () => {
+                await statusService.BastionHealth();
+            }, timeout);
+            logger.info(`${new Date()} -- bastion online`);
+        }
+
+        async function waitForConnectionOrchestratorOnline(region: string, timeout: number = 1 * 60 * 1000) {
+            logger.info(`${new Date()} -- waiting for connection orchestrator to come online`);
+            await testUtils.waitForExpect(async () => {
+                await statusService.ConnectionOrchestratorHealth(region);
+            }, timeout);
+            logger.info(`${new Date()} -- connection orchestrator online`);
         }
     });
 };
