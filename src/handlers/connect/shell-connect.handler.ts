@@ -69,7 +69,20 @@ export async function shellConnectHandler(
             return 1;
         }
 
-        return startShellDaemon(configService, logger, loggerConfigService, connectionId, targetUser, agentPublicKey, authDetails, undefined);
+        const shellDaemonExitCode = await startShellDaemon(configService, logger, loggerConfigService, connectionId, targetUser, agentPublicKey, authDetails, undefined);
+
+        // If this is a normal daemon exit then assume the connection was closed
+        // by the user and we should therefore close the connection.
+        
+        // For shell attach/dettach flow we could use a different exit code to
+        // indicate that the user wants to detach from the shell instead so we
+        // dont close the connection
+        if(shellDaemonExitCode === 0) {
+            await connectionHttpService.CloseConnection(connectionId);
+        }
+
+        return shellDaemonExitCode;
+
     } else {
         throw new Error(`Unhandled target type ${targetType}`);
     }
