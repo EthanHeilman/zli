@@ -162,34 +162,34 @@ export const agentRecoverySuite = (testRunnerKubeConfigFile: string, testRunnerU
             3 * 60 * 1000); // 3 min timeout
         });
 
-        // bzeroTestTargetsToRun.forEach(async (testTarget) => {
-        //     it(`${fromTestTargetToCaseIdMapping(testTarget).agentRecoveryConnectionNodeRestart}: connection node restart ${testTarget.awsRegion} - ${getDOImageName(testTarget.dropletImage)}`, async () => {
-        //         const doTarget = testTargets.get(testTarget);
-        //         const connectTarget = connectTestUtils.getConnectTarget(doTarget, testTarget.awsRegion);
+        bzeroTestTargetsToRun.forEach(async (testTarget) => {
+            it(`${fromTestTargetToCaseIdMapping(testTarget).agentRecoveryConnectionNodeRestart}: connection node restart ${testTarget.awsRegion} - ${getDOImageName(testTarget.dropletImage)}`, async () => {
+                const doTarget = testTargets.get(testTarget);
+                const connectTarget = connectTestUtils.getConnectTarget(doTarget, testTarget.awsRegion);
 
-        //         // Wait for the target to come online in case its offline from a previous recovery test
-        //         const bzeroTarget = await waitForBzeroTargetOnline(connectTarget.id);
+                // Wait for the target to come online in case its offline from a previous recovery test
+                const bzeroTarget = await waitForBzeroTargetOnline(connectTarget.id);
 
-        //         // Once target is online its control channel info should be
-        //         // populated in the bzeroTarget
-        //         expect(bzeroTarget.controlChannel).toBeDefined();
-        //         expect(bzeroTarget.controlChannel.controlChannelId).toBeDefined();
-        //         expect(bzeroTarget.controlChannel.connectionNodeId).toBeDefined();
-        //         expect(bzeroTarget.controlChannel.startTime).toBeDefined();
+                // Once target is online its control channel info should be
+                // populated in the bzeroTarget
+                expect(bzeroTarget.controlChannel).toBeDefined();
+                expect(bzeroTarget.controlChannel.controlChannelId).toBeDefined();
+                expect(bzeroTarget.controlChannel.connectionNodeId).toBeDefined();
+                expect(bzeroTarget.controlChannel.startTime).toBeDefined();
 
-        //         // Restart connection node that contains the agent control channel
-        //         const restartTime = new Date();
-        //         const connectionNodePod = await getConnectionNodePod(k8sApi, testRunnerUniqueId, bzeroTarget.controlChannel.connectionNodeId);
-        //         await restartService(connectionNodePod, connectionNodeContainer, connectionNodeService, 5 * 1000);
+                // Restart connection node that contains the agent control channel
+                const restartTime = new Date();
+                const connectionNodePod = await getConnectionNodePod(k8sApi, testRunnerUniqueId, bzeroTarget.controlChannel.connectionNodeId);
+                await restartService(connectionNodePod, connectionNodeContainer, connectionNodeService, 5 * 1000);
 
-        //         // Wait for the agent control channel to reconnect
-        //         await waitForAgentControlChannelToReconnect(connectTarget.id, restartTime);
+                // Wait for the agent control channel to reconnect
+                await waitForAgentControlChannelToReconnect(connectTarget.id, restartTime);
 
-        //         // Run normal shell connect test to ensure that still works after control channel reconnects
-        //         await connectTestUtils.runShellConnectTest(testTarget, `connection node restart test - ${systemTestUniqueId}`, true);
-        //     },
-        //     10 * 60 * 1000); // 10 min timeout
-        // });
+                // Run normal shell connect test to ensure that still works after control channel reconnects
+                await connectTestUtils.runShellConnectTest(testTarget, `connection node restart test - ${systemTestUniqueId}`, true);
+            },
+            10 * 60 * 1000); // 10 min timeout
+        });
 
         it('252823: kube agent bastion restart test', async() => {
             // Wait for the target to come online in case its offline from a previous recovery test
@@ -211,33 +211,33 @@ export const agentRecoverySuite = (testRunnerKubeConfigFile: string, testRunnerU
             await callZli(['disconnect', 'kube']);
         }, 3 * 60 * 1000); // 3 min timeout;
 
-        // it('252823: kube agent connection node restart test', async() => {
-        //     // Wait for the target to come online in case its offline from a previous recovery test
-        //     const kubeTarget = await waitForKubeTargetOnline(testCluster.bzeroClusterTargetSummary.id);
+        it('252823: kube agent connection node restart test', async() => {
+            // Wait for the target to come online in case its offline from a previous recovery test
+            const kubeTarget = await waitForKubeTargetOnline(testCluster.bzeroClusterTargetSummary.id);
 
-        //     // Once target is online its control channel info should be
-        //     // populated
-        //     expect(kubeTarget.controlChannel).toBeDefined();
-        //     expect(kubeTarget.controlChannel.controlChannelId).toBeDefined();
-        //     expect(kubeTarget.controlChannel.connectionNodeId).toBeDefined();
-        //     expect(kubeTarget.controlChannel.startTime).toBeDefined();
+            // Once target is online its control channel info should be
+            // populated
+            expect(kubeTarget.controlChannel).toBeDefined();
+            expect(kubeTarget.controlChannel.controlChannelId).toBeDefined();
+            expect(kubeTarget.controlChannel.connectionNodeId).toBeDefined();
+            expect(kubeTarget.controlChannel.startTime).toBeDefined();
 
-        //     // Start the kube daemon
-        //     await callZli(['connect', `${KubeTestUserName}@${testCluster.bzeroClusterTargetSummary.name}`, '--targetGroup', 'system:masters']);
+            // Start the kube daemon
+            await callZli(['connect', `${KubeTestUserName}@${testCluster.bzeroClusterTargetSummary.name}`, '--targetGroup', 'system:masters']);
 
-        //     // Restart connection node that contains the agent control channel
-        //     const restartTime = new Date();
-        //     const connectionNodePod = await getConnectionNodePod(k8sApi, testRunnerUniqueId, kubeTarget.controlChannel.connectionNodeId);
-        //     await restartService(connectionNodePod, connectionNodeContainer, connectionNodeService, 5 * 1000);
+            // Restart connection node that contains the agent control channel
+            const restartTime = new Date();
+            const connectionNodePod = await getConnectionNodePod(k8sApi, testRunnerUniqueId, kubeTarget.controlChannel.connectionNodeId);
+            await restartService(connectionNodePod, connectionNodeContainer, connectionNodeService, 5 * 1000);
 
-        //     // Wait for the agent control channel to reconnect
-        //     await waitForAgentControlChannelToReconnect(testCluster.bzeroClusterTargetSummary.id, restartTime);
+            // Wait for the agent control channel to reconnect
+            await waitForAgentControlChannelToReconnect(testCluster.bzeroClusterTargetSummary.id, restartTime);
 
-        //     // Test the kube connection still works after the control channel reconnects
-        //     await testKubeConnection();
+            // Test the kube connection still works after the control channel reconnects
+            await testKubeConnection();
 
-        //     await callZli(['disconnect', 'kube']);
-        // }, 3 * 60 * 1000); // 3 min timeout;
+            await callZli(['disconnect', 'kube']);
+        }, 3 * 60 * 1000); // 3 min timeout;
 
         bzeroTestTargetsToRun.forEach(async (testTarget: TestTarget) => {
             it(`${fromTestTargetToCaseIdMapping(testTarget).agentRestartByName}: BZero Agent -- zli target restart <name>  - ${testTarget.awsRegion} - ${testTarget.installType} - ${testTarget.dropletImage}`, async () => {
@@ -349,7 +349,7 @@ export const agentRecoverySuite = (testRunnerKubeConfigFile: string, testRunnerU
             // We should first find an online->offline event after the control channel disconnects
             await testUtils.EnsureAgentStatusEvent(targetId, {
                 statusChange: 'OnlineToOffline'
-            }, startTimeFilter, undefined, 1 * 60 * 1000);
+            }, startTimeFilter, undefined, 5 * 60 * 1000);
 
             logger.info(`${new Date()} -- Found online to offline event`);
 
