@@ -26,7 +26,6 @@ export const webSuite = () => {
         let testUtils: TestUtils;
         let webTargetService: WebTargetService;
 
-        let testPassed = false;
         let testStartTime: Date;
 
         // Proxy policy ID created for this entire suite in order to make Web
@@ -78,12 +77,6 @@ export const webSuite = () => {
         afterEach(async () => {
             // Always cleanup web daemons
             await callZli(['disconnect', 'web', '--silent']);
-
-            // Check the daemon logs incase there is a test failure
-            await testUtils.CheckDaemonLogs(testPassed, expect.getState().currentTestName);
-
-            // Reset test passed
-            testPassed = false;
         });
 
         bzeroTestTargetsToRun.forEach(async (testTarget) => {
@@ -138,7 +131,7 @@ export const webSuite = () => {
                 await ensureConnectionEvent(ConnectionEventType.ClientDisconnect);
                 await ensureConnectionEvent(ConnectionEventType.Closed);
 
-                testPassed = true;
+    
             }, 60 * 1000);
 
             it(`${testTarget.webCaseId}: web virtual target upload - ${testTarget.awsRegion} - ${getDOImageName(testTarget.dropletImage)}`, async () => {
@@ -195,7 +188,7 @@ export const webSuite = () => {
                 // Disconnect
                 await callZli(['disconnect', 'web']);
 
-                testPassed = true;
+    
             }, 60 * 1000);
 
             it(`${testTarget.badWebCaseId}: web virtual target bad connect - ${testTarget.awsRegion} - ${getDOImageName(testTarget.dropletImage)}`, async () => {
@@ -228,7 +221,7 @@ export const webSuite = () => {
                 await expect(connectZli).rejects.toThrow(expectedErrorMessage);
 
                 // Reset our testPassed flag
-                testPassed = true;
+    
             }, 60 * 1000);
         });
     });

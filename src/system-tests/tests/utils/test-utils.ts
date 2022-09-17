@@ -1,5 +1,3 @@
-import *  as fs from 'fs';
-
 import { ConfigService } from '../../../../src/services/config/config.service';
 import { Logger } from '../../../services/logger/logger.service';
 import { EventsHttpService } from '../../../../src/http-services/events/events.http-server';
@@ -281,38 +279,6 @@ export class TestUtils {
         }
 
         return false;
-    }
-
-    /**
-     * Helper function to check if a test passed, and if not log the contents of the daemon logs
-     * @param {boolean} testPassed Boolean to indicate if the test passed or not
-     * @param {string} testName Test name to log incase of failure
-     */
-    public async CheckDaemonLogs(testPassed: boolean, testName: string) {
-        const daemonLogPath = this.loggerConfigService.daemonLogPath();
-        if (!fs.existsSync(daemonLogPath)) {
-            if (!testPassed) {
-                this.logger.warn(`No daemon logs found under ${daemonLogPath}`);
-            }
-            return;
-        };
-
-        if (!testPassed) {
-            // Print the logs from the daemon
-            try {
-                const daemonLogs = fs.readFileSync(daemonLogPath, 'utf8');
-                this.logger.error(`Test failed: ${testName}! Daemon logs:\n${daemonLogs}`);
-            } catch (err) {
-                this.logger.error(`Error reading logs from daemon log file: ${daemonLogPath}. Error: ${err}`);
-            }
-        }
-
-        // Always delete the daemon log file after each test
-        try {
-            fs.unlinkSync(daemonLogPath);
-        } catch(err) {
-            this.logger.error(`Error deleting daemon log file: ${daemonLogPath}. Error: ${err}`);
-        }
     }
 
     /**

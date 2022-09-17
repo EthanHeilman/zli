@@ -55,8 +55,6 @@ export const iperfSuite = () => {
         let policyService: PolicyHttpService;
         let testUtils: TestUtils;
 
-        let testPassed = false;
-
         const iperfPort = 5201;
 
         // Set up the policy before all the tests
@@ -101,12 +99,6 @@ export const iperfSuite = () => {
         afterEach(async () => {
             // Always cleanup db daemons
             await callZli(['disconnect', 'db', '--silent']);
-
-            // Check the daemon logs incase there is a test failure
-            await testUtils.CheckDaemonLogs(testPassed, expect.getState().currentTestName);
-
-            // Reset test passed
-            testPassed = false;
         });
 
         bzeroTestTargetsToRun.forEach(async (testTarget: TestTarget) => {
@@ -145,9 +137,6 @@ export const iperfSuite = () => {
 
                 // Disconnect
                 await callZli(['disconnect', 'db']);
-
-                // Reset our testPassed flag
-                testPassed = true;
             }, 60 * 1000);
         });
 
@@ -188,9 +177,6 @@ export const iperfSuite = () => {
 
                 // Disconnect
                 await callZli(['disconnect', 'db']);
-
-                // Reset our testPassed flag
-                testPassed = true;
             }, 60 * 1000);
         });
     });

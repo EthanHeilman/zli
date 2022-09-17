@@ -44,7 +44,6 @@ export const agentContainerSuite = () => {
         let connectionService: ConnectionHttpService;
         let testUtils: TestUtils;
         let connectTestUtils: ConnectTestUtils;
-        let testPassed = false;
         let sessionRecordingPolicy: SessionRecordingPolicySummary;
         let sessionRecordingService: SessionRecordingHttpService;
         let testContainerAgents = new Map<BzeroContainerTestTarget, ContainerBzeroTarget >();
@@ -112,10 +111,6 @@ export const agentContainerSuite = () => {
         // Called after each case
         afterEach(async () => {
             await connectTestUtils.cleanup();
-
-            // Check the daemon logs incase there is a test failure
-            await testUtils.CheckDaemonLogs(testPassed, expect.getState().currentTestName);
-            testPassed = false;
         });
 
         agentContainersToRun.forEach(async (targetInfo) => {
@@ -130,8 +125,6 @@ export const agentContainerSuite = () => {
                 const downloadedSessionRecording = await sessionRecordingService.GetSessionRecording(connectionId);
                 const messageFound = downloadedSessionRecording.includes(sessionRecordingTestMessage);
                 expect(messageFound).toEqual(true);
-
-                testPassed = true;
             }, 2 * 60 * 1000);
         });
     });

@@ -30,7 +30,6 @@ export const sessionRecordingSuite = () => {
         let targetConnectPolicy: TargetConnectPolicySummary;
         let sessionRecordingPolicy: SessionRecordingPolicySummary;
         let connectTestUtils: ConnectTestUtils;
-        let testPassed: boolean = false;
 
         const allTestConnections: string[] = [];
 
@@ -100,10 +99,6 @@ export const sessionRecordingSuite = () => {
 
         afterEach(async () => {
             await connectTestUtils.cleanup();
-
-            // Check the daemon logs incase there is a test failure
-            await testUtils.CheckDaemonLogs(testPassed, expect.getState().currentTestName);
-            testPassed = false;
         });
 
         allTargets.forEach(async (testTarget: TestTarget) => {
@@ -115,8 +110,6 @@ export const sessionRecordingSuite = () => {
                 const downloadedSessionRecording = await sessionRecordingService.GetSessionRecording(connectionId);
                 const messageFound = downloadedSessionRecording.includes(sessionRecordingTestMessage);
                 expect(messageFound).toEqual(true);
-
-                testPassed = true;
             }, 3 * 60 * 1000);
         });
 
@@ -125,8 +118,6 @@ export const sessionRecordingSuite = () => {
             // Using toBeGreaterThanOrEqual in case this suite is run in parallel with another one, which could
             // result in other recordings being created.
             expect(allRecordings.length).toBeGreaterThanOrEqual(allTestConnections.length);
-
-            testPassed= true;
         }, 15 * 1000);
 
         test('3044: Try to delete each session recording - should not delete because connections are open', async () => {
@@ -138,8 +129,6 @@ export const sessionRecordingSuite = () => {
             // Verify recordings still exist.
             const allRecordings = await sessionRecordingService.ListSessionRecordings();
             allTestConnections.forEach(connectionId => expect(allRecordings.find(recording => recording.connectionId === connectionId)).toBeDefined());
-
-            testPassed= true;
         }, 30 * 1000);
 
         test('3045: Delete each session recording - should succeed because connections are closed', async () => {
@@ -154,8 +143,6 @@ export const sessionRecordingSuite = () => {
             // Verify recordings no longer exist.
             const allRecordings = await sessionRecordingService.ListSessionRecordings();
             allTestConnections.forEach(connectionId => expect(allRecordings.find(recording => recording.connectionId === connectionId)).toBeUndefined());
-
-            testPassed= true;
         }, 30 * 1000);
     });
 };
