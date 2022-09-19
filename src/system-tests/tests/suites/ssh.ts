@@ -114,6 +114,10 @@ export const sshSuite = () => {
 
                 testPassed = true;
 
+                const pe = promisify(exec);
+                const { stdout: stdout2 } = await pe(`cat ${userConfigFile}`);
+                logger.error(stdout2);
+
             }, 60 * 1000);
         });
 
