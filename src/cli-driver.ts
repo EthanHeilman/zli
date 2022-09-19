@@ -661,7 +661,7 @@ export class CliDriver
                         .example('$0 configure', 'Retrieve paths for config file, zli logs and daemon logs.')
                         .command(
                             'default-targetuser [targetUser]',
-                            'Set a local default target user for shell, ssh, and scp',
+                            'Set a local default target user for shell, SSH, and SCP',
                             (yargs) => {
                                 return configDefaultTargetUserCommandBuilder(yargs);
                             },
