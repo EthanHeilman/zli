@@ -24,7 +24,6 @@ export const sshSuite = () => {
         let policyService: PolicyHttpService;
 
         const badTargetUser = 'bad-user';
-        const uniqueUser = `user-${systemTestUniqueId}`;
         let testUtils: TestUtils;
         let testPassed = false;
 
@@ -58,9 +57,15 @@ export const sshSuite = () => {
             testUtils = new TestUtils(configService, logger, loggerConfigService);
         });
 
+        beforeEach(async () => {
+            logger.error(`${configService.configPath()} -- ${configService.sshKeyPath()}`);
+            const pe = promisify(exec);
+            const { stdout } = await pe("whoami");
+            logger.error(stdout);
+        });
+
         afterEach(async () => {
             await cleanupTargetConnectPolicies(systemTestPolicyTemplate.replace('$POLICY_TYPE', 'target-connect'));
-
             await testUtils.CheckDaemonLogs(testPassed, expect.getState().currentTestName);
             testPassed = false;
         });
@@ -75,171 +80,6 @@ export const sshSuite = () => {
             removeIfExists(scpDownFile);
             removeIfExists(sftpBatchFile);
         });
-
-        test('2156: (SSM) generate sshConfig', async () => {
-            const currentUser: Subject = {
-                id: configService.me().id,
-                type: SubjectType.User
-            };
-            const environment: Environment = {
-                id: systemTestEnvId
-            };
-
-            // create our policy
-            await policyService.AddTargetConnectPolicy({
-                name: systemTestPolicyTemplate.replace('$POLICY_TYPE', 'target-connect'),
-                subjects: [currentUser],
-                groups: [],
-                description: `Target ssh policy created for system test: ${systemTestUniqueId}`,
-                environments: [environment],
-                targets: [],
-                targetUsers: [{ userName: ssmUser }],
-                verbs: [{ type: VerbType.Tunnel }]
-            });
-
-            const tunnelsSpy = jest.spyOn(PolicyQueryHttpService.prototype, 'GetSshTargets');
-            await callZli(['generate', 'sshConfig', '--mySshPath', userConfigFile, '--bzSshPath', bzSsmConfigFile]);
-
-            expect(tunnelsSpy).toHaveBeenCalled();
-
-            // expect user's config file to include the bz file
-            expectIncludeStmtInConfig(userConfigFile, bzSsmConfigFile);
-
-            const bzConfigContents = fs.readFileSync(bzSsmConfigFile).toString();
-            // expect all of the targets to appear in the bz-config
-            await expectTargetsInBzConfig(bzConfigContents, true);
-
-            testPassed = true;
-
-            // expect the default username to appear in the bz-config
-            expect(bzConfigContents.includes(ssmUser)).toBe(true);
-        }, 60 * 1000);
-
-        test('49582: (Bzero) generate sshConfig', async () => {
-            const currentUser: Subject = {
-                id: configService.me().id,
-                type: SubjectType.User
-            };
-            const environment: Environment = {
-                id: systemTestEnvId
-            };
-
-            // create our policy
-            await policyService.AddTargetConnectPolicy({
-                name: systemTestPolicyTemplate.replace('$POLICY_TYPE', 'target-connect'),
-                subjects: [currentUser],
-                groups: [],
-                description: `Target ssh policy created for system test: ${systemTestUniqueId}`,
-                environments: [environment],
-                targets: [],
-                targetUsers: [{ userName: bzeroTargetCustomUser }],
-                verbs: [{ type: VerbType.Tunnel }]
-            });
-
-            const tunnelsSpy = jest.spyOn(PolicyQueryHttpService.prototype, 'GetSshTargets');
-            await callZli(['generate', 'sshConfig', '--mySshPath', userConfigFile, '--bzSshPath', bzBzeroConfigFile]);
-
-            expect(tunnelsSpy).toHaveBeenCalled();
-
-            // expect user's config file to include the bz file
-            expectIncludeStmtInConfig(userConfigFile, bzBzeroConfigFile);
-
-            const bzConfigContents = fs.readFileSync(bzBzeroConfigFile).toString();
-            // expect all of the targets to appear in the bz-config
-            await expectTargetsInBzConfig(bzConfigContents, true);
-
-            testPassed = true;
-
-            // expect the default username to appear in the bz-config
-            expect(bzConfigContents.includes(bzeroTargetCustomUser)).toBe(true);
-
-        }, 60 * 1000);
-
-        test('2157: generate sshConfig with multiple users', async () => {
-            const currentUser: Subject = {
-                id: configService.me().id,
-                type: SubjectType.User
-            };
-            const environment: Environment = {
-                id: systemTestEnvId
-            };
-
-            //  create our policy
-            await policyService.AddTargetConnectPolicy({
-                name: systemTestPolicyTemplate.replace('$POLICY_TYPE', 'target-connect'),
-                subjects: [currentUser],
-                groups: [],
-                description: `Target ssh policy created for system test: ${systemTestUniqueId}`,
-                environments: [environment],
-                targets: [],
-                targetUsers: [{ userName: ssmUser }, { userName: uniqueUser }],
-                verbs: [{ type: VerbType.Tunnel }]
-            });
-
-            const tunnelsSpy = jest.spyOn(PolicyQueryHttpService.prototype, 'GetSshTargets');
-            await callZli(['generate', 'sshConfig', '--mySshPath', userConfigFile, '--bzSshPath', bzSsmConfigFile]);
-
-            expect(tunnelsSpy).toHaveBeenCalled();
-
-            // expect user's config file to include the bz file
-            expectIncludeStmtInConfig(userConfigFile, bzSsmConfigFile);
-
-            const bzConfigContents = fs.readFileSync(bzSsmConfigFile).toString();
-            // expect all of the targets to appear in the bz-config
-            await expectTargetsInBzConfig(bzConfigContents, true);
-
-            // expect the unique username not to appear in the bz-config
-            // if more than one, they're all included commented out
-            expect(bzConfigContents.includes(ssmUser)).toBe(true);
-            expect(bzConfigContents.includes(uniqueUser)).toBe(true);
-        }, 60 * 1000);
-
-        test('2158: generate sshConfig without tunnel access', async () => {
-            const currentUser: Subject = {
-                id: configService.me().id,
-                type: SubjectType.User
-            };
-            const environment: Environment = {
-                id: systemTestEnvId
-            };
-
-            // create our policy
-            await policyService.AddTargetConnectPolicy({
-                name: systemTestPolicyTemplate.replace('$POLICY_TYPE', 'target-connect'),
-                subjects: [currentUser],
-                groups: [],
-                description: `Target ssh policy created for system test: ${systemTestUniqueId}`,
-                environments: [environment],
-                targets: [],
-                targetUsers: [{ userName: uniqueUser }],
-                verbs: [{ type: VerbType.Shell }]
-            });
-
-            const tunnelsSpy = jest.spyOn(PolicyQueryHttpService.prototype, 'GetSshTargets');
-            await callZli(['generate', 'sshConfig', '--mySshPath', userConfigFile, '--bzSshPath', bzSsmConfigFile]);
-
-            expect(tunnelsSpy).toHaveBeenCalled();
-
-            // expect the include bz file statement to not exist in the user's config file
-            expectIncludeStmtInConfig(userConfigFile, bzSsmConfigFile, false);
-
-            // expect there to be an error because when there's no tunnel access
-            // the existing bz config file is deleted
-            let bzConfigFileErrorCode;
-            try {
-                fs.readFileSync(bzSsmConfigFile);
-            } catch (err) {
-                if (err.code === 'ENOENT') {
-                    bzConfigFileErrorCode = err.code;
-                }
-            }
-
-            // expected bz config file to not exist
-            expect(bzConfigFileErrorCode).toEqual('ENOENT');
-
-            testPassed = true;
-
-        }, 60 * 1000);
 
         allTargets.forEach(async (testTarget: TestTarget) => {
             it(`${testTarget.sshCaseId}: ssh tunnel - ${testTarget.awsRegion} - ${testTarget.installType} - ${testTarget.dropletImage}`, async () => {
