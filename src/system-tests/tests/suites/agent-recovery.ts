@@ -237,7 +237,7 @@ export const agentRecoverySuite = (testRunnerKubeConfigFile: string, testRunnerU
             await testKubeConnection();
 
             await callZli(['disconnect', 'kube']);
-        }, 3 * 60 * 1000); // 3 min timeout;
+        }, 10 * 60 * 1000); // 10 min timeout;
 
         bzeroTestTargetsToRun.forEach(async (testTarget: TestTarget) => {
             it(`${fromTestTargetToCaseIdMapping(testTarget).agentRestartByName}: BZero Agent -- zli target restart <name>  - ${testTarget.awsRegion} - ${testTarget.installType} - ${testTarget.dropletImage}`, async () => {
