@@ -4,9 +4,8 @@ import { DbTargetService } from '..../../../http-services/db-target/db-target.ht
 import { promisify } from 'util';
 import { exec } from 'child_process';
 
-import { configService, logger, loggerConfigService } from '../system-test';
+import { configService, logger } from '../system-test';
 import { DigitalOceanBZeroTarget, getDOImageName } from '../../digital-ocean/digital-ocean-ssm-target.service.types';
-import { TestUtils } from '../utils/test-utils';
 import { SubjectType } from '../../../../webshell-common-ts/http/v2/common.types/subject.types';
 import { Environment } from '../../../../webshell-common-ts/http/v2/policy/types/environment.types';
 import { bzeroTestTargetsToRun } from '../targets-to-run';
@@ -53,7 +52,6 @@ interface SumSentDownloadSummary {
 export const iperfSuite = () => {
     describe('Iperf suite', () => {
         let policyService: PolicyHttpService;
-        let testUtils: TestUtils;
 
         const iperfPort = 5201;
 
@@ -61,7 +59,6 @@ export const iperfSuite = () => {
         beforeAll(async () => {
             // Construct all http services needed to run tests
             policyService = new PolicyHttpService(configService, logger);
-            testUtils = new TestUtils(configService, logger, loggerConfigService);
 
             const currentUser: Subject = {
                 id: configService.me().id,

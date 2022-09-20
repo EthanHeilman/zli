@@ -15,7 +15,7 @@ export const logger = new Logger(loggerConfigService, false, false, true);
 // Our reporter implements only the onRunComplete lifecycle
 // function, run after all tests have completed
 export default class CustomReporter implements Pick<Reporter, 'onTestCaseResult'> {
-    
+
     async onTestCaseResult(test: Test, testCaseResult: TestCaseResult) {
         const testFailed = testCaseResult.status === 'failed';
         await this.checkDaemonLogs(!testFailed, testCaseResult.fullName);

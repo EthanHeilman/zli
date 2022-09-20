@@ -1,6 +1,6 @@
 import got, { Got } from 'got/dist/source';
-import { Logger } from "../../services/logger/logger.service";
-import { ConfigService } from "../../services/config/config.service";
+import { Logger } from '../../services/logger/logger.service';
+import { ConfigService } from '../../services/config/config.service';
 
 interface connectionServiceUrlResponse {
     connectionServiceUrl: string;
@@ -55,10 +55,10 @@ export class StatusHttpService {
             const resp: connectionServiceUrlResponse = await this.httpClient.get(`${this.configService.serviceUrl()}api/v2/connection-service/url`).json();
             this.connectionServiceUrl = new URL(resp.connectionServiceUrl);
         }
-        
+
         // Add AWS region to the host
         // https://sebby-connection-service.bastionzero.com => https://sebby-connection-service-us-east-1.bastionzero.com
-        let hostSplit = this.connectionServiceUrl.host.split('.');
+        const hostSplit = this.connectionServiceUrl.host.split('.');
         hostSplit[0] = `${hostSplit[0]}-${region}`;
 
         return new URL(`https://${hostSplit.join('.')}`);

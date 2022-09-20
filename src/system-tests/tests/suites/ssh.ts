@@ -3,10 +3,9 @@ import fs from 'fs';
 import * as CleanExitHandler from '../../../handlers/clean-exit.handler';
 import { promisify } from 'util';
 import { exec } from 'child_process';
-import { allTargets, configService, logger, systemTestEnvId, loggerConfigService, systemTestPolicyTemplate, systemTestUniqueId } from '../system-test';
+import { allTargets, configService, logger, systemTestEnvId, systemTestPolicyTemplate, systemTestUniqueId } from '../system-test';
 import { callZli } from '../utils/zli-utils';
 import { removeIfExists } from '../../../utils/utils';
-import { TestUtils } from '../utils/test-utils';
 import { bzeroTargetCustomUser } from '../system-test-setup';
 import { SubjectType } from '../../../../webshell-common-ts/http/v2/common.types/subject.types';
 import { Environment } from '../../../../webshell-common-ts/http/v2/policy/types/environment.types';
@@ -23,7 +22,6 @@ export const sshSuite = () => {
         let policyService: PolicyHttpService;
 
         const badTargetUser = 'bad-user';
-        let testUtils: TestUtils;
 
         const userConfigFile = path.join(
             process.env.HOME, '.ssh', 'test-config-user'
@@ -52,7 +50,6 @@ export const sshSuite = () => {
         beforeAll(() => {
             // Construct all http services needed to run tests
             policyService = new PolicyHttpService(configService, logger);
-            testUtils = new TestUtils(configService, logger, loggerConfigService);
         });
 
         afterEach(async () => {

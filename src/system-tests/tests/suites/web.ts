@@ -131,7 +131,7 @@ export const webSuite = () => {
                 await ensureConnectionEvent(ConnectionEventType.ClientDisconnect);
                 await ensureConnectionEvent(ConnectionEventType.Closed);
 
-    
+
             }, 60 * 1000);
 
             it(`${testTarget.webCaseId}: web virtual target upload - ${testTarget.awsRegion} - ${getDOImageName(testTarget.dropletImage)}`, async () => {
@@ -188,7 +188,7 @@ export const webSuite = () => {
                 // Disconnect
                 await callZli(['disconnect', 'web']);
 
-    
+
             }, 60 * 1000);
 
             it(`${testTarget.badWebCaseId}: web virtual target bad connect - ${testTarget.awsRegion} - ${getDOImageName(testTarget.dropletImage)}`, async () => {
@@ -221,7 +221,7 @@ export const webSuite = () => {
                 await expect(connectZli).rejects.toThrow(expectedErrorMessage);
 
                 // Reset our testPassed flag
-    
+
             }, 60 * 1000);
         });
     });
