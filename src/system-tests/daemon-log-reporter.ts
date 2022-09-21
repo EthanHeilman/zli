@@ -29,14 +29,14 @@ export default class CustomReporter implements Pick<Reporter, 'onTestCaseResult'
      */
     async checkDaemonLogs(testFailed: boolean, testName: string) {
         const daemonLogPath = loggerConfigService.daemonLogPath();
-        if (!fs.existsSync(daemonLogPath)) {
-            if (!testFailed) {
-                logger.warn(`No daemon logs found under ${daemonLogPath}. Skipping reporting daemon logs`);
-            }
-            return;
-        };
+        const daemonFileExists = fs.existsSync(daemonLogPath);
 
         if (testFailed) {
+            if (!daemonFileExists) {
+                logger.warn(`No daemon logs found under ${daemonLogPath}. Skipping reporting daemon logs`);
+                return;
+            };
+
             // Print the logs from the daemon
             try {
                 const daemonLogs = fs.readFileSync(daemonLogPath, 'utf8');
@@ -46,11 +46,13 @@ export default class CustomReporter implements Pick<Reporter, 'onTestCaseResult'
             }
         }
 
-        // Always delete the daemon log file after each test
-        try {
-            fs.unlinkSync(daemonLogPath);
-        } catch(err) {
-            logger.error(`Error deleting daemon log file: ${daemonLogPath}. Error: ${err}`);
+        // Always delete the daemon log file after each test if it exists
+        if(daemonFileExists) {
+            try {
+                fs.unlinkSync(daemonLogPath);
+            } catch(err) {
+                logger.error(`Error deleting daemon log file: ${daemonLogPath}. Error: ${err}`);
+            }
         }
     }
 }
