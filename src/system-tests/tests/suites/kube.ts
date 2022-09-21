@@ -31,25 +31,20 @@ export const kubeSuite = () => {
             testUtils = new TestUtils(configService, logger, loggerConfigService);
         });
 
-        beforeEach(() => {
+        beforeEach(async () => {
             testStartTime = new Date();
             setupBackgroundDaemonMocks();
-        });
-
-        afterAll(async () => {
-            // Also attempt to close the daemons to avoid any leaks in the tests
-            await callZli(['disconnect', 'kube']);
-        });
-
-        afterEach(async () => {
-            await callZli(['disconnect', 'kube']);
 
             // Always make sure our kube port is free, else throw an error
             const kubeConfig = configService.getKubeConfig();
-            if (kubeConfig.localPort !== null) {
+            if (kubeConfig.localPort) {
                 await testUtils.EnsurePortIsFree(kubeConfig.localPort, 30 * 1000);
             }
         }, 60 * 1000);
+
+        afterEach(async () => {
+            await callZli(['disconnect', 'kube']);
+        });
 
         const ensureConnectionEvent = async (eventType: ConnectionEventType) => {
             await testUtils.EnsureConnectionEventCreated({

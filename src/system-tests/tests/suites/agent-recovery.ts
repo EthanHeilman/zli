@@ -115,15 +115,13 @@ export const agentRecoverySuite = (testRunnerKubeConfigFile: string, testRunnerU
         });
 
         // Called before each case
-        beforeEach(() => {
+        beforeEach(async () => {
             connectTestUtils = new ConnectTestUtils(connectionService, testUtils);
             setupBackgroundDaemonMocks();
-        });
 
-        afterEach(async () => {
             // Always make sure our kube port is free, else throw an error
             const kubeConfig = configService.getKubeConfig();
-            if (kubeConfig.localPort !== null) {
+            if (kubeConfig.localPort) {
                 await testUtils.EnsurePortIsFree(kubeConfig.localPort, 30 * 1000);
             }
         }, 60 * 1000);
