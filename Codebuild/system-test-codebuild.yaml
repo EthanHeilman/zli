@@ -70,7 +70,6 @@ phases:
   build:
     commands:
       - echo Build started `date`
-      - codebuild-breakpoint
       - bzero-qa test -sys-tests
 reports:
   test-report:
