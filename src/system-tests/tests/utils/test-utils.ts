@@ -282,19 +282,22 @@ export class TestUtils {
     }
 
     /**
-     * Helper function to check if there are process' on a given port
+     * Helper function to check if there are process' on a given port and wait
+     * for the port to be free or timeout and error
      * @param {number} port Port to check
      */
-    public async CheckPort(port: number) {
-        const ports = new Promise<number[]>(async (resolve, _) => {
-            pids(port).then((pids: any) => {
-                resolve(pids.tcp);
+    public async EnsurePortIsFree(port: number, timeout = 30 * 1000) {
+        await this.waitForExpect(async () => {
+            const ports = new Promise<number[]>(async (resolve, _) => {
+                pids(port).then((pids: any) => {
+                    resolve(pids.tcp);
+                });
             });
-        });
-        const awaitedPorts = await ports;
-        if (awaitedPorts.length != 0) {
-            throw new Error(`There are currently processes using port ${port}: ${awaitedPorts}`);
-        }
+            const awaitedPorts = await ports;
+            if (awaitedPorts.length != 0) {
+                throw new Error(`There are currently processes using port ${port}: ${awaitedPorts}`);
+            }
+        }, timeout);
     }
 
     /**

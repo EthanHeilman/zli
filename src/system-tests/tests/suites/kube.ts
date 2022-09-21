@@ -42,14 +42,14 @@ export const kubeSuite = () => {
         });
 
         afterEach(async () => {
-            // Always make sure our ports are free, else throw an error
+            await callZli(['disconnect', 'kube']);
+
+            // Always make sure our kube port is free, else throw an error
             const kubeConfig = configService.getKubeConfig();
             if (kubeConfig.localPort !== null) {
-                await testUtils.CheckPort(kubeConfig.localPort);
+                await testUtils.EnsurePortIsFree(kubeConfig.localPort, 30 * 1000);
             }
-
-            await callZli(['disconnect', 'kube']);
-        }, 15 * 1000);
+        }, 60 * 1000);
 
         const ensureConnectionEvent = async (eventType: ConnectionEventType) => {
             await testUtils.EnsureConnectionEventCreated({

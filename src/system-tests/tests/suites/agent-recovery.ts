@@ -120,6 +120,14 @@ export const agentRecoverySuite = (testRunnerKubeConfigFile: string, testRunnerU
             setupBackgroundDaemonMocks();
         });
 
+        afterEach(async () => {
+            // Always make sure our kube port is free, else throw an error
+            const kubeConfig = configService.getKubeConfig();
+            if (kubeConfig.localPort !== null) {
+                await testUtils.EnsurePortIsFree(kubeConfig.localPort, 30 * 1000);
+            }
+        }, 60 * 1000);
+
         bzeroTestTargetsToRun.forEach(async (testTarget) => {
             it(`${fromTestTargetToCaseIdMapping(testTarget).agentRecoveryBastionRestart}: bastion restart ${testTarget.awsRegion} - ${getDOImageName(testTarget.dropletImage)}`, async () => {
                 const doTarget = testTargets.get(testTarget);
