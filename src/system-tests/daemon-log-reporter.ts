@@ -18,7 +18,7 @@ export default class CustomReporter implements Pick<Reporter, 'onTestCaseResult'
 
     async onTestCaseResult(test: Test, testCaseResult: TestCaseResult) {
         const testFailed = testCaseResult.status === 'failed';
-        await this.checkDaemonLogs(!testFailed, testCaseResult.fullName);
+        await this.checkDaemonLogs(testFailed, testCaseResult.fullName);
     }
 
     /**
