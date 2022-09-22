@@ -208,7 +208,7 @@ export const agentRecoverySuite = (testRunnerKubeConfigFile: string, testRunnerU
                 // Run normal shell connect test to ensure that still works after control channel reconnects
                 await connectTestUtils.runShellConnectTest(testTarget, `connection node restart test - ${systemTestUniqueId}`, true);
             },
-            10 * 60 * 1000); // 10 min timeout
+            15 * 60 * 1000); // 15 min timeout
         });
 
         it('252823: kube agent bastion restart test', async() => {
@@ -267,7 +267,7 @@ export const agentRecoverySuite = (testRunnerKubeConfigFile: string, testRunnerU
             await testKubeConnection();
 
             await callZli(['disconnect', 'kube']);
-        }, 10 * 60 * 1000); // 10 min timeout;
+        }, 15 * 60 * 1000); // 15 min timeout;
 
         bzeroTestTargetsToRun.forEach(async (testTarget: TestTarget) => {
             it(`${fromTestTargetToCaseIdMapping(testTarget).agentRestartByName}: BZero Agent -- zli target restart <name>  - ${testTarget.awsRegion} - ${testTarget.installType} - ${testTarget.dropletImage}`, async () => {
@@ -377,7 +377,7 @@ export const agentRecoverySuite = (testRunnerKubeConfigFile: string, testRunnerU
             // We should first find an online->offline event after the control channel disconnects
             await testUtils.EnsureAgentStatusEvent(targetId, {
                 statusChange: 'OnlineToOffline'
-            }, startTimeFilter, undefined, 5 * 60 * 1000);
+            }, startTimeFilter, undefined, 10 * 60 * 1000);
 
             logger.info(`${new Date()} -- Found online to offline event`);
         }
@@ -392,7 +392,7 @@ export const agentRecoverySuite = (testRunnerKubeConfigFile: string, testRunnerU
         async function waitForAgentOnlineEvent(targetId: string, startTimeFilter: Date) {
             await testUtils.EnsureAgentStatusEvent(targetId, {
                 statusChange: 'OfflineToOnline',
-            }, startTimeFilter, undefined, 5 * 60 * 1000);
+            }, startTimeFilter, undefined, 10 * 60 * 1000);
 
             logger.info(`${new Date()} -- Found offline to online event`);
         }
