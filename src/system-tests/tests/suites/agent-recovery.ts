@@ -134,13 +134,12 @@ export const agentRecoverySuite = (testRunnerKubeConfigFile: string, testRunnerU
                 // Wait for the target to come online in case its offline from a previous recovery test
                 await waitForBzeroTargetOnline(connectTarget.id);
 
-                // Restart bastion
+                // Stop bastion
                 const bastionPod = await getBastionPod(k8sApi, testRunnerUniqueId);
                 await stopService(bastionPod, bastionContainer, bastionService);
 
                 // Wait before restarting the service
                 await sleepTimeout(5 * 1000);
-
                 await startService(bastionPod, bastionContainer, bastionService);
 
                 // Wait for bastion to come back online
