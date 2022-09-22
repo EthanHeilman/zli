@@ -339,7 +339,7 @@ export const agentRecoverySuite = (testRunnerKubeConfigFile: string, testRunnerU
             await sleepTimeout(timeBeforeRestart);
 
             // Start the systemd service on the container
-            logger.info('starting bastion container');
+            logger.info(`starting ${containerName} container`);
             const startCommand = ['/usr/local/bin/systemctl', 'start', serviceName];
             await execOnPod(k8sExec, pod, containerName, startCommand, logger);
         }
