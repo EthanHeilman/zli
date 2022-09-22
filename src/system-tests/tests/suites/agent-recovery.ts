@@ -53,8 +53,8 @@ function fromTestTargetToCaseIdMapping(testTarget: TestTarget): testRailsCaseIdM
     case DigitalOceanDistroImage.BzeroVTUbuntuTestImage:
         return {
             agentRecoveryBastionRestart: '247517',
-            agentRecoveryConnectionOrchestratorRestart: 'replace-me',
-            agentRecoveryConnectionNodeRestart: 'replace-me',
+            agentRecoveryConnectionOrchestratorRestart: '326519',
+            agentRecoveryConnectionNodeRestart: '326520',
             agentRestartByName: '258916',
             agentRestartByEnv: '258917',
             agentRestartById: '258918',
@@ -217,7 +217,7 @@ export const agentRecoverySuite = (testRunnerKubeConfigFile: string, testRunnerU
             await callZli(['disconnect', 'kube']);
         }, 3 * 60 * 1000); // 3 min timeout;
 
-        it('252823: kube agent connection node restart test', async() => {
+        it('326521: kube agent connection node restart test', async() => {
             // Wait for the target to come online in case its offline from a previous recovery test
             const kubeTarget = await waitForKubeTargetOnline(testCluster.bzeroClusterTargetSummary.id);
 
