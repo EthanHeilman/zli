@@ -1,5 +1,7 @@
 # zli
 
+Garlic
+
 ## Bastionzero
 
 Bastionzero is a simple to use zero trust access SaaS for dynamic cloud environments. Bastionzero is the most secure way to lock down remote access to servers, containers, clusters, and VM’s in any cloud, public or private. For more information go to [Bastionzero](https://www.bastionzero.com).
