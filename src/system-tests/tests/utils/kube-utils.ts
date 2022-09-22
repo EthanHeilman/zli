@@ -6,12 +6,21 @@ export async function execOnPod(k8sExec: k8s.Exec, pod: k8s.V1Pod, containerName
         throw Error(`Cannot exec on pod without name/namespace metadata: ${JSON.stringify(pod, null, 2)}`);
     }
 
-    await k8sExec.exec(
-        pod.metadata.namespace, pod.metadata.name, containerName, command, process.stdout, process.stderr, null, false,
-        (status: k8s.V1Status) => {
-            logger.info(`Kube exec command "${command}": exited with status: ${JSON.stringify(status, null, 2)}`);
+    return new Promise<void>(async (res, rej) => {
+
+        try {
+            await k8sExec.exec(
+                pod.metadata.namespace, pod.metadata.name, containerName, command, process.stdout, process.stderr, null, false,
+                (status: k8s.V1Status) => {
+                    logger.info(`Kube exec command "${command}": exited with status: ${JSON.stringify(status, null, 2)}`);
+                    res();
+                }
+            );
+        } catch(err) {
+            rej(err);
         }
-    );
+    });
+
 }
 
 export async function deletePod(k8sApi: k8s.CoreV1Api, pod: k8s.V1Pod) {
