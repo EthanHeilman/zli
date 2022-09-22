@@ -186,7 +186,7 @@ export const agentRecoverySuite = (testRunnerKubeConfigFile: string, testRunnerU
                 // Restart connection node that contains the agent control channel
                 const restartTime = new Date();
                 const connectionNodePod = await getConnectionNodePod(k8sApi, testRunnerUniqueId, bzeroTarget.controlChannel.connectionNodeId);
-                await restartService(connectionNodePod, connectionNodeContainer, connectionNodeService, 5 * 1000);
+                await restartService(connectionNodePod, connectionNodeContainer, connectionNodeService, 30 * 1000);
 
                 // Wait for the agent control channel to reconnect
                 await waitForAgentControlChannelToReconnect(connectTarget.id, restartTime);
@@ -231,7 +231,7 @@ export const agentRecoverySuite = (testRunnerKubeConfigFile: string, testRunnerU
             // Restart connection node that contains the agent control channel
             const restartTime = new Date();
             const connectionNodePod = await getConnectionNodePod(k8sApi, testRunnerUniqueId, kubeTarget.controlChannel.connectionNodeId);
-            await restartService(connectionNodePod, connectionNodeContainer, connectionNodeService, 5 * 1000);
+            await restartService(connectionNodePod, connectionNodeContainer, connectionNodeService, 30 * 1000);
 
             // Wait for the agent control channel to reconnect
             await waitForAgentControlChannelToReconnect(testCluster.bzeroClusterTargetSummary.id, restartTime);
