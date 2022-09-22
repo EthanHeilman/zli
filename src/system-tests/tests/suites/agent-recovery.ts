@@ -228,9 +228,6 @@ export const agentRecoverySuite = (testRunnerKubeConfigFile: string, testRunnerU
             expect(kubeTarget.controlChannel.connectionNodeId).toBeDefined();
             expect(kubeTarget.controlChannel.startTime).toBeDefined();
 
-            // Start the kube daemon
-            await callZli(['connect', `${KubeTestUserName}@${testCluster.bzeroClusterTargetSummary.name}`, '--targetGroup', 'system:masters']);
-
             // Restart connection node that contains the agent control channel
             const restartTime = new Date();
             const connectionNodePod = await getConnectionNodePod(k8sApi, testRunnerUniqueId, kubeTarget.controlChannel.connectionNodeId);
@@ -238,6 +235,9 @@ export const agentRecoverySuite = (testRunnerKubeConfigFile: string, testRunnerU
 
             // Wait for the agent control channel to reconnect
             await waitForAgentControlChannelToReconnect(testCluster.bzeroClusterTargetSummary.id, restartTime);
+
+            // Start the kube daemon after the control channel is back online
+            await callZli(['connect', `${KubeTestUserName}@${testCluster.bzeroClusterTargetSummary.name}`, '--targetGroup', 'system:masters']);
 
             // Test the kube connection still works after the control channel reconnects
             await testKubeConnection();
