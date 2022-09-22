@@ -136,7 +136,12 @@ export const agentRecoverySuite = (testRunnerKubeConfigFile: string, testRunnerU
 
                 // Restart bastion
                 const bastionPod = await getBastionPod(k8sApi, testRunnerUniqueId);
-                await restartService(bastionPod, bastionContainer, bastionService, 5 * 1000);
+                await stopService(bastionPod, bastionContainer, bastionService);
+
+                // Wait before restarting the service
+                await sleepTimeout(5 * 1000);
+
+                await startService(bastionPod, bastionContainer, bastionService);
 
                 // Wait for bastion to come back online
                 await waitForBastionOnline();
@@ -155,9 +160,13 @@ export const agentRecoverySuite = (testRunnerKubeConfigFile: string, testRunnerU
                 // Wait for the target to come online in case its offline from a previous recovery test
                 await waitForBzeroTargetOnline(connectTarget.id);
 
-                // Restart connection orchestrator
+                // Stop the connection orchestrator
                 const connectionOrchestratorPod = await getConnectionOrchestratorPod(k8sApi, testRunnerUniqueId);
-                await restartService(connectionOrchestratorPod, connectionOrchestratorContainer, connectionOrchestratorService, 5 * 1000);
+                await stopService(connectionOrchestratorPod, connectionOrchestratorContainer, connectionOrchestratorService);
+
+                // Wait before restarting the service
+                await sleepTimeout(5 * 1000);
+                await startService(connectionOrchestratorPod, connectionOrchestratorContainer, connectionOrchestratorService);
 
                 // Wait for connection orchestrator to come back online
                 await waitForConnectionOrchestratorOnline(connectTarget.awsRegion);
@@ -183,13 +192,19 @@ export const agentRecoverySuite = (testRunnerKubeConfigFile: string, testRunnerU
                 expect(bzeroTarget.controlChannel.connectionNodeId).toBeDefined();
                 expect(bzeroTarget.controlChannel.startTime).toBeDefined();
 
-                // Restart connection node that contains the agent control channel
+                // Stop the connection node that contains the agent control channel
                 const restartTime = new Date();
                 const connectionNodePod = await getConnectionNodePod(k8sApi, testRunnerUniqueId, bzeroTarget.controlChannel.connectionNodeId);
-                await restartService(connectionNodePod, connectionNodeContainer, connectionNodeService, 30 * 1000);
+                await stopService(connectionNodePod, connectionNodeContainer, connectionNodeService);
+
+                // Wait for the agent control channel to disconnect
+                await waitForAgentOfflineEvent(connectTarget.id, restartTime);
+
+                // Restart the connection node that contains the agent control channel
+                await startService(connectionNodePod, connectionNodeContainer, connectionNodeService);
 
                 // Wait for the agent control channel to reconnect
-                await waitForAgentControlChannelToReconnect(connectTarget.id, restartTime);
+                await waitForAgentOnlineEvent(connectTarget.id, restartTime);
 
                 // Run normal shell connect test to ensure that still works after control channel reconnects
                 await connectTestUtils.runShellConnectTest(testTarget, `connection node restart test - ${systemTestUniqueId}`, true);
@@ -204,9 +219,13 @@ export const agentRecoverySuite = (testRunnerKubeConfigFile: string, testRunnerU
             // Start the kube daemon
             await callZli(['connect', `${KubeTestUserName}@${testCluster.bzeroClusterTargetSummary.name}`, '--targetGroup', 'system:masters']);
 
-            // Restart bastion
+            // Stop bastion
             const bastionPod = await getBastionPod(k8sApi, testRunnerUniqueId);
-            await restartService(bastionPod, bastionContainer, bastionService, 5 * 1000);
+            await stopService(bastionPod, bastionContainer, bastionService);
+
+            // Wait before restarting the service
+            await sleepTimeout(5 * 1000);
+            await startService(bastionPod, bastionContainer, bastionService);
 
             // Wait for bastion to come back online
             await waitForBastionOnline();
@@ -228,13 +247,19 @@ export const agentRecoverySuite = (testRunnerKubeConfigFile: string, testRunnerU
             expect(kubeTarget.controlChannel.connectionNodeId).toBeDefined();
             expect(kubeTarget.controlChannel.startTime).toBeDefined();
 
-            // Restart connection node that contains the agent control channel
+            // Stop the connection node that contains the agent control channel
             const restartTime = new Date();
             const connectionNodePod = await getConnectionNodePod(k8sApi, testRunnerUniqueId, kubeTarget.controlChannel.connectionNodeId);
-            await restartService(connectionNodePod, connectionNodeContainer, connectionNodeService, 30 * 1000);
+            await stopService(connectionNodePod, connectionNodeContainer, connectionNodeService);
+
+            // Wait for the agent control channel to disconnect
+            await waitForAgentOfflineEvent(testCluster.bzeroClusterTargetSummary.id, restartTime);
+
+            // Start the connection node
+            await startService(connectionNodePod, connectionNodeContainer, connectionNodeService);
 
             // Wait for the agent control channel to reconnect
-            await waitForAgentControlChannelToReconnect(testCluster.bzeroClusterTargetSummary.id, restartTime);
+            await waitForAgentOnlineEvent(testCluster.bzeroClusterTargetSummary.id, restartTime);
 
             // Start the kube daemon after the control channel is back online
             await callZli(['connect', `${KubeTestUserName}@${testCluster.bzeroClusterTargetSummary.name}`, '--targetGroup', 'system:masters']);
@@ -320,7 +345,7 @@ export const agentRecoverySuite = (testRunnerKubeConfigFile: string, testRunnerU
         }, 5 * 60 * 1000);
 
 
-        async function restartService(pod: k8s.V1Pod, containerName: string, serviceName: string, timeBeforeRestart: number) {
+        async function stopService(pod: k8s.V1Pod, containerName: string, serviceName: string) {
             logger.info(`stopping ${containerName} container`);
 
             // In practice both the SIGKILL and the stop commands result in the
@@ -333,11 +358,9 @@ export const agentRecoverySuite = (testRunnerKubeConfigFile: string, testRunnerU
 
             const gracefulStopCommand = ['/usr/local/bin/systemctl', 'stop', serviceName];
             await execOnPod(k8sExec, pod, containerName, gracefulStopCommand, logger);
+        }
 
-            // Wait before restarting the service
-            logger.info(`waiting ${timeBeforeRestart/1000}s before restarting ${containerName}`);
-            await sleepTimeout(timeBeforeRestart);
-
+        async function startService(pod: k8s.V1Pod, containerName: string, serviceName: string) {
             // Start the systemd service on the container
             logger.info(`starting ${containerName} container`);
             const startCommand = ['/usr/local/bin/systemctl', 'start', serviceName];
@@ -345,25 +368,29 @@ export const agentRecoverySuite = (testRunnerKubeConfigFile: string, testRunnerU
         }
 
         /**
-         * Waits for agent online->offline and then offline->online events after
-         * the control channel connection is interrupted
+         * Waits for agent online->offline event after the control channel
+         * connection is interrupted
          * @param targetId The targetId of the agent we are testing
          * @param startTimeFilter The time to use as the start time filter so we
          * dont find older events that are not related to the current test.
          */
-        async function waitForAgentControlChannelToReconnect(targetId: string, startTimeFilter: Date) {
+        async function waitForAgentOfflineEvent(targetId: string, startTimeFilter: Date) {
             // We should first find an online->offline event after the control channel disconnects
             await testUtils.EnsureAgentStatusEvent(targetId, {
                 statusChange: 'OnlineToOffline'
             }, startTimeFilter, undefined, 5 * 60 * 1000);
 
             logger.info(`${new Date()} -- Found online to offline event`);
+        }
 
-            // Then the agent should try and reconnect its control channel
-            // websocket which will move the agent back to online. We use a
-            // longer timeout here because the agent goes into a reconnect loop
-            // with exponential backoff that will cause it to wait longer before
-            // reconnecting
+        /**
+         * Waits for agent online->offline event after the control channel
+         * reconnects
+         * @param targetId The targetId of the agent we are testing
+         * @param startTimeFilter The time to use as the start time filter so we
+         * dont find older events that are not related to the current test.
+         */
+        async function waitForAgentOnlineEvent(targetId: string, startTimeFilter: Date) {
             await testUtils.EnsureAgentStatusEvent(targetId, {
                 statusChange: 'OfflineToOnline',
             }, startTimeFilter, undefined, 5 * 60 * 1000);
