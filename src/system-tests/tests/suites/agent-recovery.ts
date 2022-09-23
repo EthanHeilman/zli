@@ -202,6 +202,9 @@ export const agentRecoverySuite = (testRunnerKubeConfigFile: string, testRunnerU
                 // Restart the connection node that contains the agent control channel
                 await startService(connectionNodePod, connectionNodeContainer, connectionNodeService);
 
+                // Wait for connection node to be healthy again
+                await waitForConnectionNodeOnline(bzeroTarget.region, bzeroTarget.controlChannel.connectionNodeId);
+
                 // Wait for the agent control channel to reconnect
                 await waitForAgentOnlineEvent(connectTarget.id, restartTime);
 
@@ -256,6 +259,9 @@ export const agentRecoverySuite = (testRunnerKubeConfigFile: string, testRunnerU
 
             // Start the connection node
             await startService(connectionNodePod, connectionNodeContainer, connectionNodeService);
+
+            // Wait for connection node to be healthy again
+            await waitForConnectionNodeOnline(kubeTarget.region, kubeTarget.controlChannel.connectionNodeId);
 
             // Wait for the agent control channel to reconnect
             await waitForAgentOnlineEvent(testCluster.bzeroClusterTargetSummary.id, restartTime);
@@ -510,6 +516,14 @@ export const agentRecoverySuite = (testRunnerKubeConfigFile: string, testRunnerU
                 await statusService.ConnectionOrchestratorHealth(region);
             }, timeout);
             logger.info(`${new Date()} -- connection orchestrator online`);
+        }
+
+        async function waitForConnectionNodeOnline(region: string, connectionNodeId: string, timeout: number = 1 * 60 * 1000) {
+            logger.info(`${new Date()} -- waiting for connection node to come online`);
+            await testUtils.waitForExpect(async () => {
+                await statusService.ConnectionNodeHealth(region, connectionNodeId);
+            }, timeout);
+            logger.info(`${new Date()} -- connection node online`);
         }
     });
 };
