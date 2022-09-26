@@ -10,14 +10,14 @@ export function configDefaultTargetUserCommandBuilder(yargs : yargs.Argv<{}>) : 
             {
                 type: 'string',
                 demandOption: false,
-                description: 'Set a local default target user for shell, SSH, and SCP',
+                description: 'Sets a local default target user for shell, SSH, and SCP',
             }
         )
         .option('reset',
             {
                 type: 'boolean',
                 demandOption: false,
-                description: 'Reset the local default target user for shell, SSH, and SCP',
+                description: 'Resets the local default target user for shell, SSH, and SCP',
                 alias: 'r'
             }
         ).conflicts('targetUser', 'reset')

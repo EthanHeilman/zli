@@ -1017,9 +1017,9 @@ export function removeIfExists(file: string): void {
     }
 }
 
-export function isZliSilent(silent_flag: boolean, json_flag: boolean, verbose_flag: boolean) {
+export function isZliSilent(silent_flag: boolean, json_flag: boolean) {
     if(silent_flag) return true;
-    else if(json_flag && !verbose_flag) return true;
+    else if(json_flag) return true;
     return false;
 }
 

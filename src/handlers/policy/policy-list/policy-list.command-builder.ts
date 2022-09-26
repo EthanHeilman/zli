@@ -10,7 +10,8 @@ export function listPoliciesCmdBuilder (yargs : yargs.Argv<{}>, policyTypeChoice
                 type: 'string',
                 choices: policyTypeChoices,
                 alias: 't',
-                demandOption: false
+                demandOption: false,
+                description: 'Filters for a specific policy type'
             }
         )
         .option(
@@ -20,15 +21,7 @@ export function listPoliciesCmdBuilder (yargs : yargs.Argv<{}>, policyTypeChoice
                 default: false,
                 demandOption: false,
                 alias: 'j',
-            }
-        )
-        .option(
-            'verbose',
-            {
-                type: 'boolean',
-                default: false,
-                demandOption: false,
-                alias: 'v',
+                description: 'Formats the ouput in JSON format'
             }
         )
         .example('$0 policy list --json', 'List all policies, output as json, pipeable')

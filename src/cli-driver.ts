@@ -283,21 +283,72 @@ export class CliDriver
                 await bzCertValidationInfoMiddleware(this.keySplittingService, this.configService, this.logger);
             })
             .command(
-                'login',
-                'Login through your identity provider',
+                // This grouping hosts all api-key related commands
+                'api-key',
+                false,
+                async (yargs) => {
+                    return yargs
+                        .command(
+                            'create <name>',
+                            'Create an API key',
+                            (yargs) => createApiKeyCmdBuilder(yargs),
+                            async (argv) => await createApiKeyHandler(argv, this.logger, this.configService),
+                        )
+                        .demandCommand(1, 'api-key requires a sub-command. Specify --help for available options');
+                },
+            )
+            .command(
+                'attach <connectionId>',
+                'Attach to an open zli connection',
                 (yargs) => {
-                    return loginCmdBuilder(yargs);
+                    return attachCmdBuilder(yargs);
                 },
                 async (argv) => {
-                    const loginResult = await loginHandler(this.configService, this.logger, argv, this.keySplittingService);
-
-                    if (loginResult) {
-                        const me = loginResult.userSummary;
-                        this.logger.info(`Logged in as: ${me.email}, bzero-id:${me.id}, session-id:${this.configService.getSessionId()}`);
-                        await cleanExit(0, this.logger);
-                    } else {
+                    if (!isGuid(argv.connectionId)){
+                        this.logger.error(`Passed connection id ${argv.connectionId} is not a valid Guid`);
                         await cleanExit(1, this.logger);
                     }
+
+                    const exitCode = await attachHandler(this.configService, this.logger, this.loggerConfigService, argv.connectionId);
+                    await cleanExit(exitCode, this.logger);
+                }
+            )
+            .command(
+                'close [connectionId]',
+                'Close an open connection',
+                (yargs) => {
+                    return closeConnectionCmdBuilder(yargs);
+                },
+                async (argv) => {
+                    if (! argv.all && ! isGuid(argv.connectionId)){
+                        this.logger.error(`Passed connection id ${argv.connectionId} is not a valid Guid`);
+                        await cleanExit(1, this.logger);
+                    }
+                    await closeConnectionHandler(argv, this.configService, this.logger);
+                }
+            )
+            .completion('completion', 'Generate zli auto-completion script')
+            .command(
+                'configure',
+                'Retrieve paths for config file, zli logs and daemon logs. See help menu for setting defaults.',
+                (yargs) => {
+                    return yargs
+                        .example('$0 configure', 'Retrieve paths for config file, zli logs and daemon logs.')
+                        .command(
+                            'default-targetuser [targetUser]',
+                            'Set a local default target user for shell, SSH, and SCP',
+                            (yargs) => {
+                                return configDefaultTargetUserCommandBuilder(yargs);
+                            },
+                            async (argv) => {
+                                await configDefaultTargetUserHandler(argv, this.configService, this.logger);
+                            }
+                        )
+                        .demandCommand(1, '')
+                        .strict();
+                },
+                async () => {
+                    await configHandler(this.logger, this.configService, this.loggerConfigService);
                 }
             )
             .command(
@@ -312,17 +363,14 @@ export class CliDriver
                 }
             )
             .command(
-                'status [targetType]',
-                'List all daemons running on this machine',
+                'default-targetgroup',
+                'Update the default target group',
                 (yargs) => {
-                    return listDaemonsCmdBuilder(yargs);
+                    return defaultTargetGroupCmdBuilder(yargs);
                 },
                 async (argv) => {
-                    this.logger.warn('The status command is deprecated and will be removed soon, please use its equivalent \'zli list-daemons\'');
-                    await listDaemonsHandler(argv, this.configService, this.logger);
-                },
-                [],
-                true // deprecated = true
+                    await defaultTargetGroupHandler(this.configService, this.logger, argv);
+                }
             )
             .command(
                 'disconnect [targetType]',
@@ -332,16 +380,6 @@ export class CliDriver
                 },
                 async (argv) => {
                     await disconnectHandler(argv, this.configService, this.logger);
-                }
-            )
-            .command(
-                'default-targetgroup',
-                'Update the default target group',
-                (yargs) => {
-                    return defaultTargetGroupCmdBuilder(yargs);
-                },
-                async (argv) => {
-                    await defaultTargetGroupHandler(this.configService, this.logger, argv);
                 }
             )
             .command(
@@ -382,6 +420,74 @@ export class CliDriver
                         .demandCommand(1, '')
                         .strict();
                 },
+            )
+            .command(
+                'kube',
+                'Kubectl wrapper catch all',
+                (yargs) => {
+                    return yargs.example('$0 kube -- get pods', '');
+                },
+                async (argv: any) => {
+                    // This expects that the kube command will go after the --
+                    const listOfCommands = argv._.slice(1); // this removes the 'kube' part of 'zli kube -- ...'
+                    await bctlHandler(this.configService, this.logger, listOfCommands);
+                }
+            )
+            .command(
+                ['list-connections', 'lc'],
+                'List all open shell and db connections',
+                (yargs) => {
+                    return listConnectionsCmdBuilder(yargs);
+                },
+                async (argv) => {
+                    await listConnectionsHandler(argv, this.configService, this.logger);
+                }
+            )
+            .command(
+                ['list-daemons [targetType]', 'ld'],
+                'List all daemons running on this machine',
+                (yargs) => {
+                    return listDaemonsCmdBuilder(yargs);
+                },
+                async (argv) => {
+                    await listDaemonsHandler(argv, this.configService, this.logger);
+                }
+            )
+            .command(
+                ['list-targets', 'lt'],
+                'List all targets (filters available)',
+                (yargs) => {
+                    return listTargetsCmdBuilder(yargs, this.targetTypeChoices, this.targetStatusChoices);
+                },
+                async (argv) => {
+                    await listTargetsHandler(this.configService,this.logger, argv);
+                }
+            )
+            .command(
+                'login',
+                'Login through your identity provider',
+                (yargs) => {
+                    return loginCmdBuilder(yargs);
+                },
+                async (argv) => {
+                    const loginResult = await loginHandler(this.configService, this.logger, argv, this.keySplittingService);
+
+                    if (loginResult) {
+                        const me = loginResult.userSummary;
+                        this.logger.info(`Logged in as: ${me.email}, bzero-id:${me.id}, session-id:${this.configService.getSessionId()}`);
+                        await cleanExit(0, this.logger);
+                    } else {
+                        await cleanExit(1, this.logger);
+                    }
+                }
+            )
+            .command(
+                'logout',
+                'Deauthenticate the client',
+                () => {},
+                async () => {
+                    await logoutHandler(this.configService, this.logger);
+                }
             )
             .command(
                 ['policy'],
@@ -573,110 +679,6 @@ export class CliDriver
                 },
             )
             .command(
-                'attach <connectionId>',
-                'Attach to an open zli connection',
-                (yargs) => {
-                    return attachCmdBuilder(yargs);
-                },
-                async (argv) => {
-                    if (!isGuid(argv.connectionId)){
-                        this.logger.error(`Passed connection id ${argv.connectionId} is not a valid Guid`);
-                        await cleanExit(1, this.logger);
-                    }
-
-                    const exitCode = await attachHandler(this.configService, this.logger, this.loggerConfigService, argv.connectionId);
-                    await cleanExit(exitCode, this.logger);
-                }
-            )
-            .command(
-                'close [connectionId]',
-                'Close an open connection',
-                (yargs) => {
-                    return closeConnectionCmdBuilder(yargs);
-                },
-                async (argv) => {
-                    if (! argv.all && ! isGuid(argv.connectionId)){
-                        this.logger.error(`Passed connection id ${argv.connectionId} is not a valid Guid`);
-                        await cleanExit(1, this.logger);
-                    }
-                    await closeConnectionHandler(argv, this.configService, this.logger);
-                }
-            )
-            .command(
-                ['list-targets', 'lt'],
-                'List all targets (filters available)',
-                (yargs) => {
-                    return listTargetsCmdBuilder(yargs, this.targetTypeChoices, this.targetStatusChoices);
-                },
-                async (argv) => {
-                    await listTargetsHandler(this.configService,this.logger, argv);
-                }
-            )
-            .command(
-                ['list-connections', 'lc'],
-                'List all open shell and db connections',
-                (yargs) => {
-                    return listConnectionsCmdBuilder(yargs);
-                },
-                async (argv) => {
-                    await listConnectionsHandler(argv, this.configService, this.logger);
-                }
-            )
-            .command(
-                ['list-daemons [targetType]', 'ld'],
-                'List all daemons running on this machine',
-                (yargs) => {
-                    return listDaemonsCmdBuilder(yargs);
-                },
-                async (argv) => {
-                    await listDaemonsHandler(argv, this.configService, this.logger);
-                }
-            )
-            .command(
-                'ssh-proxy-config',
-                'Generate ssh configuration to be used with the ssh-proxy command',
-                () => {},
-                async () => {
-                    await sshProxyConfigHandler(this.configService, getZliRunCommand(), this.logger);
-                    this.logger.warn('The ssh-proxy-config command is deprecated and will be removed soon, please use its equivalent \'zli generate ssh-proxy\'');
-                },
-                [],
-                true // deprecated = true
-            )
-            .command(
-                'ssh-proxy <host> <user> <port> <identityFile>',
-                'ssh proxy command (run generate ssh-proxy command to generate configuration)',
-                (yargs) => {
-                    return sshProxyCmdBuilder(yargs);
-                },
-                async (argv) => {
-                    await sshProxyHandler(argv, this.configService, this.logger, this.keySplittingService, this.loggerConfigService);
-                }
-            )
-            .command(
-                'configure',
-                'Retrieve paths for config file, zli logs and daemon logs. See help menu for setting defaults.',
-                (yargs) => {
-                    return yargs
-                        .example('$0 configure', 'Retrieve paths for config file, zli logs and daemon logs.')
-                        .command(
-                            'default-targetuser [targetUser]',
-                            'Set a local default target user for shell, SSH, and SCP',
-                            (yargs) => {
-                                return configDefaultTargetUserCommandBuilder(yargs);
-                            },
-                            async (argv) => {
-                                await configDefaultTargetUserHandler(argv, this.configService, this.logger);
-                            }
-                        )
-                        .demandCommand(1, '')
-                        .strict();
-                },
-                async () => {
-                    await configHandler(this.logger, this.configService, this.loggerConfigService);
-                }
-            )
-            .command(
                 'quickstart',
                 'Start an interactive onboarding session to add your SSH hosts to BastionZero.',
                 (yargs) => {
@@ -684,26 +686,6 @@ export class CliDriver
                 },
                 async (argv) => {
                     await quickstartHandler(argv, this.logger, this.keySplittingService, this.configService);
-                }
-            )
-            .command(
-                'logout',
-                'Deauthenticate the client',
-                () => {},
-                async () => {
-                    await logoutHandler(this.configService, this.logger);
-                }
-            )
-            .command(
-                'kube',
-                'Kubectl wrapper catch all',
-                (yargs) => {
-                    return yargs.example('$0 kube -- get pods', '');
-                },
-                async (argv: any) => {
-                    // This expects that the kube command will go after the --
-                    const listOfCommands = argv._.slice(1); // this removes the 'kube' part of 'zli kube -- ...'
-                    await bctlHandler(this.configService, this.logger, listOfCommands);
                 }
             )
             .command(
@@ -729,19 +711,38 @@ export class CliDriver
                 }
             )
             .command(
-                // This grouping hosts all api-key related commands
-                'api-key',
-                false,
-                async (yargs) => {
-                    return yargs
-                        .command(
-                            'create <name>',
-                            'Create an API key',
-                            (yargs) => createApiKeyCmdBuilder(yargs),
-                            async (argv) => await createApiKeyHandler(argv, this.logger, this.configService),
-                        )
-                        .demandCommand(1, 'api-key requires a sub-command. Specify --help for available options');
+                'ssh-proxy-config',
+                'Generate ssh configuration to be used with the ssh-proxy command',
+                () => {},
+                async () => {
+                    await sshProxyConfigHandler(this.configService, getZliRunCommand(), this.logger);
+                    this.logger.warn('The ssh-proxy-config command is deprecated and will be removed soon, please use its equivalent \'zli generate ssh-proxy\'');
                 },
+                [],
+                true // deprecated = true
+            )
+            .command(
+                'ssh-proxy <host> <user> <port> <identityFile>',
+                'ssh proxy command (run generate ssh-proxy command to generate configuration)',
+                (yargs) => {
+                    return sshProxyCmdBuilder(yargs);
+                },
+                async (argv) => {
+                    await sshProxyHandler(argv, this.configService, this.logger, this.keySplittingService, this.loggerConfigService);
+                }
+            )
+            .command(
+                'status [targetType]',
+                'List all daemons running on this machine',
+                (yargs) => {
+                    return listDaemonsCmdBuilder(yargs);
+                },
+                async (argv) => {
+                    this.logger.warn('The status command is deprecated and will be removed soon, please use its equivalent \'zli list-daemons\'');
+                    await listDaemonsHandler(argv, this.configService, this.logger);
+                },
+                [],
+                true // deprecated = true
             )
             .command(
                 'target',

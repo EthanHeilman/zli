@@ -10,6 +10,7 @@ export function listDaemonsCmdBuilder (yargs : yargs.Argv<{}>) : yargs.Argv<list
             type: 'string',
             default: 'all',
             requiresArg: false,
+            description: 'Filters for a specific daemon type'
         })
         .example('$0 ld web', 'Filter for web daemons');
 }

@@ -9,6 +9,7 @@ yargs.Argv<defaultTargetGroupArgs> {
             {
                 type: 'array',
                 default: [],
+                description: 'Sets default Kubernetes RBAC groups'
             }
         )
         .example('$0 default-targetgroup --set system:masters', 'Set default target group to system:masters')

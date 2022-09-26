@@ -17,7 +17,8 @@ export function closeConnectionCmdBuilder(yargs : yargs.Argv<{}>) : yargs.Argv<c
             {
                 type: 'boolean',
                 demandOption: false,
-                alias: 'a'
+                alias: 'a',
+                description: 'Closes all connections'
             }
         )
         .option(

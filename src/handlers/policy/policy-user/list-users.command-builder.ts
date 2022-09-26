@@ -12,15 +12,7 @@ export function listUsersCmdBuilder(yargs: yargs.Argv<{}>) : yargs.Argv<listUser
                 default: false,
                 demandOption: false,
                 alias: 'j',
-            }
-        )
-        .option(
-            'verbose',
-            {
-                type: 'boolean',
-                default: false,
-                demandOption: false,
-                alias: 'v',
+                description: 'Formats the ouput in JSON format'
             }
         )
         .example('$0 policy users', 'List all users, as regular table output')
