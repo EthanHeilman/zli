@@ -3,10 +3,9 @@ import fs from 'fs';
 import * as CleanExitHandler from '../../../handlers/clean-exit.handler';
 import { promisify } from 'util';
 import { exec } from 'child_process';
-import { allTargets, configService, logger, systemTestEnvId, loggerConfigService, systemTestPolicyTemplate, systemTestUniqueId } from '../system-test';
+import { allTargets, configService, logger, systemTestEnvId, systemTestPolicyTemplate, systemTestUniqueId } from '../system-test';
 import { callZli } from '../utils/zli-utils';
 import { removeIfExists } from '../../../utils/utils';
-import { TestUtils } from '../utils/test-utils';
 import { bzeroTargetCustomUser } from '../system-test-setup';
 import { SubjectType } from '../../../../webshell-common-ts/http/v2/common.types/subject.types';
 import { Environment } from '../../../../webshell-common-ts/http/v2/policy/types/environment.types';
@@ -23,8 +22,6 @@ export const sshSuite = () => {
         let policyService: PolicyHttpService;
 
         const badTargetUser = 'bad-user';
-        let testUtils: TestUtils;
-        let testPassed = false;
 
         const userConfigFile = path.join(
             process.env.HOME, '.ssh', 'test-config-user'
@@ -53,14 +50,10 @@ export const sshSuite = () => {
         beforeAll(() => {
             // Construct all http services needed to run tests
             policyService = new PolicyHttpService(configService, logger);
-            testUtils = new TestUtils(configService, logger, loggerConfigService);
         });
 
         afterEach(async () => {
             await cleanupTargetConnectPolicies(systemTestPolicyTemplate.replace('$POLICY_TYPE', 'target-connect'));
-
-            await testUtils.CheckDaemonLogs(testPassed, expect.getState().currentTestName);
-            testPassed = false;
         });
 
         // Cleanup all policy after the tests
@@ -104,9 +97,6 @@ export const sshSuite = () => {
                 const pexec = promisify(exec);
                 const { stdout } = await pexec(command);
                 expect(stdout.trim()).toEqual('success');
-
-                testPassed = true;
-
             }, 60 * 1000);
         });
 
@@ -141,9 +131,6 @@ export const sshSuite = () => {
                 const pexec = promisify(exec);
                 const { stdout } = await pexec(command);
                 expect(stdout.trim()).toEqual('success');
-
-                testPassed = true;
-
             }, 60 * 1000);
         });
 
@@ -180,9 +167,6 @@ export const sshSuite = () => {
                 const connectPromise = callZli(['connect', `${userName}@${targetName}`]);
 
                 await expect(connectPromise).rejects.toThrow(expectedErrorMessage);
-
-                testPassed = true;
-
             }, 60 * 1000);
         });
 
@@ -226,9 +210,6 @@ export const sshSuite = () => {
                 expect(error).not.toEqual(undefined);
                 const stdError = error.stderr;
                 expect(stdError).toMatch(new RegExp(`You do not have permission to tunnel as targetUser: ${badTargetUser}.\nCurrent allowed users for you: ${bzeroTargetCustomUser},${ssmUser}`));
-
-                testPassed = true;
-
             }, 60 * 1000);
         });
 
@@ -273,9 +254,6 @@ export const sshSuite = () => {
 
                 // check that we got it back
                 expect(fs.readFileSync(scpDownFile).toString()).toEqual(fs.readFileSync(scpUpFile).toString());
-
-                testPassed = true;
-
             }, 60 * 1000);
         });
 
@@ -326,9 +304,6 @@ export const sshSuite = () => {
 
                 // check that we got it back
                 expect(fs.readFileSync(scpDownFile).toString()).toEqual(fs.readFileSync(scpUpFile).toString());
-
-                testPassed = true;
-
             }, 60 * 1000);
         });
 
@@ -367,9 +342,6 @@ export const sshSuite = () => {
                 } catch (err) {
                     expect(err.message).toContain('daemon error: unauthorized command: this user is only allowed to perform file transfer via scp or sftp, but received \'echo success\'');
                 }
-
-                testPassed = true;
-
             }, 60 * 1000);
         });
 
@@ -408,9 +380,6 @@ export const sshSuite = () => {
                 const pexec = promisify(exec);
                 const { stdout } = await pexec(command);
                 expect(stdout.trim()).toEqual('success');
-
-                testPassed = true;
-
             }, 60 * 1000);
         });
 
@@ -461,9 +430,6 @@ export const sshSuite = () => {
 
                 // check that we got it back
                 expect(fs.readFileSync(scpDownFile).toString()).toEqual(fs.readFileSync(scpUpFile).toString());
-
-                testPassed = true;
-
             }, 60 * 1000);
         });
     });

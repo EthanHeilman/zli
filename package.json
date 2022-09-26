@@ -1,6 +1,6 @@
 {
   "name": "@bastionzero/zli",
-  "version": "6.10.3",
+  "version": "6.11.0",
   "description": "BastionZero cli",
   "repository": {
     "type": "git",
@@ -36,6 +36,8 @@
   "author": "nabeelperson",
   "license": "Apache-2.0",
   "devDependencies": {
+    "@jest/reporters": "^27.5.1",
+    "@jest/test-result": "^27.5.1",
     "@kubernetes/client-node": "^0.16.1",
     "@types/humanize-duration": "^3.27.1",
     "@types/jest": "^27.5.0",

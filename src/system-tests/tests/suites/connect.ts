@@ -23,7 +23,6 @@ export const connectSuite = () => {
         let eventsService: EventsHttpService;
         let testUtils: TestUtils;
         let connectTestUtils: ConnectTestUtils;
-        let testPassed = false;
         let userLogFilterStartTime: Date;
         let testStartTime: Date;
 
@@ -74,16 +73,11 @@ export const connectSuite = () => {
         // Called after each case
         afterEach(async () => {
             await connectTestUtils.cleanup();
-
-            // Check the daemon logs incase there is a test failure
-            await testUtils.CheckDaemonLogs(testPassed, expect.getState().currentTestName);
-            testPassed = false;
         });
 
         allTargets.forEach(async (testTarget: TestTarget) => {
             it(`${testTarget.connectCaseId}: zli connect - ${testTarget.awsRegion} - ${testTarget.installType} - ${getDOImageName(testTarget.dropletImage)}`, async () => {
                 await connectTestUtils.runShellConnectTest(testTarget, `connect test - ${systemTestUniqueId}`, true);
-                testPassed = true;
             }, 2 * 60 * 1000);
 
             // TODO: Disable attach tests for bzero targets until attach
@@ -141,8 +135,6 @@ export const connectSuite = () => {
 
                 // After exiting we should see a client disconnected event
                 await connectTestUtils.ensureConnectionEvent(attachTarget, ConnectionEventType.ClientDisconnect, testStartTime);
-
-                testPassed = true;
             }, 4 * 60 * 1000); // Use a longer timeout on attach tests because they essentially run 2 back-to-back connect tests
 
             it(`${testTarget.closeCaseId}: zli close - ${testTarget.awsRegion} - ${testTarget.installType} - ${getDOImageName(testTarget.dropletImage)}`, async () => {
@@ -168,8 +160,6 @@ export const connectSuite = () => {
 
                 // Expect our close event now
                 await connectTestUtils.ensureConnectionEvent(connectTarget, ConnectionEventType.Closed, testStartTime);
-
-                testPassed = true;
             }, 2 * 60 * 1000);
         });
 
@@ -182,8 +172,6 @@ export const connectSuite = () => {
                 const connectPromise = callZli(['connect', `baduser@${connectTarget.name}`]);
 
                 await expect(connectPromise).rejects.toThrow('cleanExit was called');
-
-                testPassed = true;
             }, 60 * 1000);
         });
     });

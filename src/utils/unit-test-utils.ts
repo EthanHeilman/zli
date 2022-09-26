@@ -99,7 +99,8 @@ export const mockKubeSummaryList: KubeClusterSummary[] = [{
     name: 'test-cluster-name',
     type: TargetType.Cluster,
     agentVersion: 'test-version',
-    region: 'test-region'
+    region: 'test-region',
+    controlChannel: undefined
 }];
 
 export const mockTargetUser: TargetUser = {
@@ -152,7 +153,8 @@ export const mockBzeroSummaryList: BzeroAgentSummary[] = [{
     allowedTargetUsers: [mockTargetUser],
     allowedVerbs: [{
         type: VerbType.Shell
-    }]
+    }],
+    controlChannel: undefined
 }];
 
 export const mockDbSummaryList: DbTargetSummary[] = [{

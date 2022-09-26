@@ -17,7 +17,6 @@ export const groupsSuite = () => {
         let organizationService: OrganizationHttpService;
         let testUtils: TestUtils;
         let connectTestUtils: ConnectTestUtils;
-        let testPassed = false;
 
         // Set up the policy before all the tests
         beforeAll(async () => {
@@ -66,17 +65,12 @@ export const groupsSuite = () => {
         // Called after each case
         afterEach(async () => {
             await connectTestUtils.cleanup();
-
-            // Check the daemon logs incase there is a test failure
-            await testUtils.CheckDaemonLogs(testPassed, expect.getState().currentTestName);
-            testPassed = false;
         });
 
         // Attempt to make a connection to our ssm targets via our groups based policy
         allTargets.forEach(async (testTarget: TestTarget) => {
             it(`${testTarget.groupConnectCaseId}: zli group connect - ${testTarget.awsRegion} - ${testTarget.installType} - ${getDOImageName(testTarget.dropletImage)}`, async () => {
                 await connectTestUtils.runShellConnectTest(testTarget, `groups test - ${systemTestUniqueId}`, true);
-                testPassed = true;
             }, 2 * 60 * 1000);
         });
     });

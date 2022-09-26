@@ -276,6 +276,12 @@ beforeEach(async () => {
     // Spy on calls to cleanExit but dont call process.exit. Still throw an
     // exception if exitCode != 0 which will fail the test
     mockCleanExit();
+
+    logger.info(`${new Date()} -- before test: ${expect.getState().currentTestName}`);
+});
+
+afterEach(async () => {
+    logger.info(`${new Date()} -- after test: ${expect.getState().currentTestName}`);
 });
 
 // Call list target suite anytime a target test is called

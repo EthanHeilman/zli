@@ -26,7 +26,6 @@ export const dynamicAccessSuite = () => {
         let testUtils: TestUtils;
         let connectTestUtils: ConnectTestUtils;
         let dynamicAccessId: string;
-        let testPassed = false;
         let dynamicAccessTestTarget: DATBzeroTarget;
 
         // Set up the policy before all the tests
@@ -84,10 +83,6 @@ export const dynamicAccessSuite = () => {
         // Called after each case
         afterEach(async () => {
             await connectTestUtils.cleanup();
-
-            // Check the daemon logs incase there is a test failure
-            await testUtils.CheckDaemonLogs(testPassed, expect.getState().currentTestName);
-            testPassed = false;
         });
 
         // Cleanup all policy after the tests
@@ -109,8 +104,6 @@ export const dynamicAccessSuite = () => {
                 const datConnectionDetails = await connectionService.GetDATConnectionDetails(connectionId);
                 expect(datConnectionDetails.dynamicAccessTargetState).toBe(DynamicAccessTargetState.Stopped);
             });
-
-            testPassed = true;
         }, 2 * 60 * 1000);
     });
 };
