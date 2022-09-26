@@ -106,9 +106,6 @@ export const dbSuite = () => {
         // connections
         let proxyPolicyID: string;
 
-        // Used to report daemon logs if a test failed
-        let testPassed = false;
-
         // Track created db targets to cleanup after each test is complete
         let createdDbTargets: CreatedDbTargetDetails[];
 
@@ -157,11 +154,6 @@ export const dbSuite = () => {
 
             // Delete tracked db targets
             await Promise.all(createdDbTargets.map(target => dbTargetService.DeleteDbTarget(target.targetId)));
-
-            // Check the daemon logs incase there is a test failure
-            await testUtils.CheckDaemonLogs(testPassed, expect.getState().currentTestName);
-            // Reset test passed
-            testPassed = false;
         }, 60 * 1000);
 
         /**
@@ -494,9 +486,6 @@ export const dbSuite = () => {
                             () => callZli(['close', details.connectionId])
                         );
                     }));
-
-                    // Reset our testPassed flag
-                    testPassed = true;
                 }, 80 * 1000);
 
                 it(`${caseIds.listDbConnectionsViaListDaemons}: list db connections - ${testTarget.awsRegion} - ${getDOImageName(testTarget.dropletImage)} - zli ld`, async () => {
@@ -536,9 +525,6 @@ export const dbSuite = () => {
                     }, []);
 
                     expect(gotDbStatusesAsTuples).toEqual(expect.arrayContaining(expectedDbStatuses));
-
-                    // Reset our testPassed flag
-                    testPassed = true;
                 }, 80 * 1000);
 
                 it(`${caseIds.listDbConnectionsViaListConnections}: list db connections - ${testTarget.awsRegion} - ${getDOImageName(testTarget.dropletImage)} - zli lc`, async () => {
@@ -568,9 +554,6 @@ export const dbSuite = () => {
                     // elements (e.g. other RF users running system tests at the
                     // same time)
                     expect(gotDbConnectionInfos).toEqual(expect.arrayContaining(expectedDbConnectionInfos));
-
-                    // Reset our testPassed flag
-                    testPassed = true;
                 }, 80 * 1000);
 
                 it(`${caseIds.deletedDbTargetCloseDbConnection}: deleted db target should close db connection - ${testTarget.awsRegion} - ${getDOImageName(testTarget.dropletImage)}`, async () => {
@@ -588,9 +571,6 @@ export const dbSuite = () => {
                     const connectionDetails = (await connectionHttpService.ListDbConnections()).filter(c => c.id === connectedDbDaemonDetails.connectionId).pop();
                     expect(connectionDetails).toBeDefined();
                     expect(connectionDetails.state).toBe<ConnectionState>(ConnectionState.Closed);
-
-                    // Reset our testPassed flag
-                    testPassed = true;
                 }, 80 * 1000);
 
                 it(`${caseIds.closeSingleDbConnection}: close single db connection - ${testTarget.awsRegion} - ${getDOImageName(testTarget.dropletImage)} - zli close`, async () => {
@@ -651,9 +631,6 @@ export const dbSuite = () => {
                     // Check that we CANNOT connect and run SQL on the
                     // connection that closed
                     await expect(dbConnectAndExecuteSQL(connectionToClose.dbDaemonDetails.localPort)).rejects.toThrow();
-
-                    // Reset our testPassed flag
-                    testPassed = true;
                 }, 80 * 1000);
 
                 it(`${caseIds.closeMultipleDbConnectionsViaDisconnect}: close multiple db connections - ${testTarget.awsRegion} - ${getDOImageName(testTarget.dropletImage)} - zli disconnect db`, async () => {
@@ -683,9 +660,6 @@ export const dbSuite = () => {
                     await Promise.all(connectedDbDaemons.map(details =>
                         testUtils.waitForExpect(async () => expect(isRunning(details.dbDaemonDetails.localPid)).toBeFalse(), 5 * 1000)
                     ));
-
-                    // Reset our testPassed flag
-                    testPassed = true;
                 }, 80 * 1000);
 
                 it(`${caseIds.closeMultipleDbConnectionsViaCloseAll}: close multiple db connections - ${testTarget.awsRegion} - ${getDOImageName(testTarget.dropletImage)} - zli close -t db --all`, async () => {
@@ -715,9 +689,6 @@ export const dbSuite = () => {
                     await Promise.all(connectedDbDaemons.map(details =>
                         testUtils.waitForExpect(async () => expect(isRunning(details.dbDaemonDetails.localPid)).toBeFalse(), 5 * 1000)
                     ));
-
-                    // Reset our testPassed flag
-                    testPassed = true;
                 }, 80 * 1000);
 
                 it(`${caseIds.dbReconnectViaDbPool}: db virtual target connect - ${testTarget.awsRegion} - ${getDOImageName(testTarget.dropletImage)} - reconnect via db pool`, async () => {
@@ -795,9 +766,6 @@ export const dbSuite = () => {
                         // (once we killed the daemon), and the pool was forced
                         // to create a new client.
                         expect(numOfCreatedClients).toBe(2);
-
-                        // Reset our testPassed flag
-                        testPassed = true;
                     } finally {
                         await pool.end();
                     }
@@ -814,9 +782,6 @@ export const dbSuite = () => {
                         connectedDbDaemonDetails,
                         () => callZli(['disconnect', 'db'])
                     );
-
-                    // Reset our testPassed flag
-                    testPassed = true;
                 }, 60 * 1000);
             });
         });
@@ -851,9 +816,6 @@ export const dbSuite = () => {
                     const connectZli = callZli(['connect', dbVtName]);
 
                     await expect(connectZli).rejects.toThrow(expectedErrorMessage);
-
-                    // Reset our testPassed flag
-                    testPassed = true;
                 }, 60 * 1000);
             });
         });

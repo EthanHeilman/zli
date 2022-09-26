@@ -17,10 +17,10 @@ export async function configDefaultTargetUserHandler(argv: yargs.Arguments<confi
     let loggerStatement;
     if(argv.reset === undefined) {
         connectConfig = { targetUser: argv.targetUser };
-        loggerStatement = `Local default target user for shell, ssh, and scp set to ${argv.targetUser}. This has been saved to your config here: ${configService.configPath()}`;
+        loggerStatement = `Local default target user for shell, SSH, and SCP set to ${argv.targetUser}. This has been saved to your config here: ${configService.configPath()}`;
     } else {
         connectConfig = { targetUser: null };
-        loggerStatement = 'Local default target user for shell, ssh, and scp has been removed.';
+        loggerStatement = 'Local default target user for shell, SSH, and SCP has been removed.';
     }
     configService.setConnectConfig(connectConfig);
     logger.info(loggerStatement);

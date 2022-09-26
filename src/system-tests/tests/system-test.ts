@@ -197,6 +197,10 @@ beforeAll(async () => {
     configService.setSessionId('');
     configService.setSessionToken('');
 
+    // Reset ssh config key paths because these are different for the IdPLogin
+    // tests (run as ec2-user) which uploads the config that system test uses
+    configService.clearSshConfigPaths();
+
     // Force refresh ID token and access token because it is likely expired
     const newTokenSet = await oauthService.refresh();
     configService.setTokenSet(newTokenSet);
@@ -272,6 +276,12 @@ beforeEach(async () => {
     // Spy on calls to cleanExit but dont call process.exit. Still throw an
     // exception if exitCode != 0 which will fail the test
     mockCleanExit();
+
+    logger.info(`${new Date()} -- before test: ${expect.getState().currentTestName}`);
+});
+
+afterEach(async () => {
+    logger.info(`${new Date()} -- after test: ${expect.getState().currentTestName}`);
 });
 
 // Call list target suite anytime a target test is called

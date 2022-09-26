@@ -12,15 +12,7 @@ export function listGroupsCmdBuilder(yargs: yargs.Argv<{}>) : yargs.Argv<listGro
                 default: false,
                 demandOption: false,
                 alias: 'j',
-            }
-        )
-        .option(
-            'verbose',
-            {
-                type: 'boolean',
-                default: false,
-                demandOption: false,
-                alias: 'v',
+                description: 'Formats the ouput in JSON format'
             }
         )
         .example('$0 policy groups', 'List all groups, as regular table output')

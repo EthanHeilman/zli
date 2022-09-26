@@ -46,7 +46,7 @@ export function initLoggerMiddleware(argv: any) {
     // Configure our logger
     const loggerConfigService = new LoggerConfigService(<string> argv.configName, argv.debug, argv.configDir);
 
-    const isSilent = isZliSilent(!!argv.silent, !!argv.json, !!argv.verbose);
+    const isSilent = isZliSilent(!!argv.silent, !!argv.json);
     const logger = new Logger(loggerConfigService, !!argv.debug, isSilent, !!process.stdout.isTTY);
 
     // isTTY detects whether the process is being run with a text terminal

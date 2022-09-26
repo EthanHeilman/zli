@@ -4,9 +4,8 @@ import { DbTargetService } from '..../../../http-services/db-target/db-target.ht
 import { promisify } from 'util';
 import { exec } from 'child_process';
 
-import { configService, logger, loggerConfigService } from '../system-test';
+import { configService, logger } from '../system-test';
 import { DigitalOceanBZeroTarget, getDOImageName } from '../../digital-ocean/digital-ocean-ssm-target.service.types';
-import { TestUtils } from '../utils/test-utils';
 import { SubjectType } from '../../../../webshell-common-ts/http/v2/common.types/subject.types';
 import { Environment } from '../../../../webshell-common-ts/http/v2/policy/types/environment.types';
 import { bzeroTestTargetsToRun } from '../targets-to-run';
@@ -53,9 +52,6 @@ interface SumSentDownloadSummary {
 export const iperfSuite = () => {
     describe('Iperf suite', () => {
         let policyService: PolicyHttpService;
-        let testUtils: TestUtils;
-
-        let testPassed = false;
 
         const iperfPort = 5201;
 
@@ -63,7 +59,6 @@ export const iperfSuite = () => {
         beforeAll(async () => {
             // Construct all http services needed to run tests
             policyService = new PolicyHttpService(configService, logger);
-            testUtils = new TestUtils(configService, logger, loggerConfigService);
 
             const currentUser: Subject = {
                 id: configService.me().id,
@@ -101,12 +96,6 @@ export const iperfSuite = () => {
         afterEach(async () => {
             // Always cleanup db daemons
             await callZli(['disconnect', 'db', '--silent']);
-
-            // Check the daemon logs incase there is a test failure
-            await testUtils.CheckDaemonLogs(testPassed, expect.getState().currentTestName);
-
-            // Reset test passed
-            testPassed = false;
         });
 
         bzeroTestTargetsToRun.forEach(async (testTarget: TestTarget) => {
@@ -145,9 +134,6 @@ export const iperfSuite = () => {
 
                 // Disconnect
                 await callZli(['disconnect', 'db']);
-
-                // Reset our testPassed flag
-                testPassed = true;
             }, 60 * 1000);
         });
 
@@ -188,9 +174,6 @@ export const iperfSuite = () => {
 
                 // Disconnect
                 await callZli(['disconnect', 'db']);
-
-                // Reset our testPassed flag
-                testPassed = true;
             }, 60 * 1000);
         });
     });

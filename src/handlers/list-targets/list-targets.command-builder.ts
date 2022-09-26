@@ -70,7 +70,8 @@ export function listTargetsCmdBuilder(yargs: yargs.Argv<{}>, targetTypeChoices: 
                 type: 'boolean',
                 default: false,
                 demandOption: false,
-                alias: 'd'
+                alias: 'd',
+                description: 'Returns extra detail in the ouput'
             }
         )
         .option(
@@ -79,7 +80,8 @@ export function listTargetsCmdBuilder(yargs: yargs.Argv<{}>, targetTypeChoices: 
                 type: 'boolean',
                 default: false,
                 demandOption: false,
-                alias: 'i'
+                alias: 'i',
+                description: 'Displays the target\'s UUID in the ouput'
             }
         )
         .option(
@@ -89,15 +91,7 @@ export function listTargetsCmdBuilder(yargs: yargs.Argv<{}>, targetTypeChoices: 
                 default: false,
                 demandOption: false,
                 alias: 'j',
-            }
-        )
-        .option(
-            'verbose',
-            {
-                type: 'boolean',
-                default: false,
-                demandOption: false,
-                alias: 'v',
+                description: 'Formats the ouput in JSON format'
             }
         )
         .example('$0 lt -t ssm', 'List all SSM targets only')

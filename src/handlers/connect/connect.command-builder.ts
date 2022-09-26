@@ -14,20 +14,24 @@ export function connectCmdBuilder (yargs : yargs.Argv<{}>,targetTypeChoices : st
                 type: 'string',
                 choices: targetTypeChoices,
                 demandOption: false,
-                alias: 't'
+                alias: 't',
+                description: 'Specifies the type of target the connection is for'
             },
         ).option('customPort', {
             type: 'number',
             default: -1,
-            demandOption: false
+            demandOption: false,
+            description: 'Forces the bctl daemon to run on a specific port'
         }).option('targetGroup', {
             type: 'array',
             default: [],
-            demandOption: false
+            demandOption: false,
+            description: 'Specifies RBAC groups to impersonate as for Kubernetes connections'
         }).option('openBrowser', {
             type: 'boolean',
             default: true,
-            demandOption: false
+            demandOption: false,
+            description: 'Specifies whether to open browser for web connections'
         })
         .example('$0 connect target-user@target-name/id', 'Connect to any uniquely named target')
         .example('$0 connect target-user@target-name.environment-name', 'Connect to targets with the same name in different environment by environment name')

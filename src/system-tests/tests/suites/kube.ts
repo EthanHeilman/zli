@@ -23,7 +23,6 @@ export const kubeSuite = () => {
         let testUtils: TestUtils;
         let testStartTime: Date;
 
-        let testPassed = false;
         const kubeConfigYamlFilePath = `/tmp/bzero-agent-kubeconfig-${systemTestUniqueId}.yml`;
 
         beforeAll(() => {
@@ -32,34 +31,20 @@ export const kubeSuite = () => {
             testUtils = new TestUtils(configService, logger, loggerConfigService);
         });
 
-        beforeEach(() => {
+        beforeEach(async () => {
             testStartTime = new Date();
             setupBackgroundDaemonMocks();
-        });
 
-        afterAll(async () => {
-            // Also attempt to close the daemons to avoid any leaks in the tests
-            await callZli(['disconnect', 'kube']);
-        });
+            // Always make sure our kube port is free, else throw an error
+            const kubeConfig = configService.getKubeConfig();
+            if (kubeConfig.localPort) {
+                await testUtils.EnsurePortIsFree(kubeConfig.localPort, 30 * 1000);
+            }
+        }, 60 * 1000);
 
         afterEach(async () => {
-            // Check the daemon logs incase there is a test failure
-            await testUtils.CheckDaemonLogs(testPassed, expect.getState().currentTestName);
-
-            // Always make sure our ports are free, else throw an error
-            const kubeConfig = configService.getKubeConfig();
-            if (kubeConfig.localPort !== null) {
-                await testUtils.CheckPort(kubeConfig.localPort);
-            }
-
-            if (!testPassed) {
-                // If the test did not pass attempt to close the daemon
-                await callZli(['disconnect', 'kube']);
-            }
-
-            // Reset test passed
-            testPassed = false;
-        }, 15 * 1000);
+            await callZli(['disconnect', 'kube']);
+        });
 
         const ensureConnectionEvent = async (eventType: ConnectionEventType) => {
             await testUtils.EnsureConnectionEventCreated({
@@ -80,8 +65,6 @@ export const kubeSuite = () => {
 
             // Now ensure that the file exists
             expect(fs.existsSync(kubeConfigYamlFilePath));
-
-            testPassed = true;
         });
 
         // TODO: this needs to be fixed before it's ready to be added back in
@@ -171,8 +154,6 @@ export const kubeSuite = () => {
             const sleepTimeoutSeconds = 15;
             logger.info(`Sleeping ${sleepTimeoutSeconds} seconds to give time for agent to reconnect...`);
             await delay(1000 * sleepTimeoutSeconds);
-
-            testPassed = true;
         }, (180 * 1000) + (1000 * 4 * 60)); // 180s max for all the kube events + connection, and 4m for the test to remain online
 
 
@@ -227,7 +208,6 @@ export const kubeSuite = () => {
 
             // Ensure that we see a log of this under the kube logs
             expect(await testUtils.EnsureKubeEvent(doCluster.bzeroClusterTargetSummary.name, KubeTestUserName, ['system:masters'], 'N/A', ['/api/v1/namespaces'], []));
-            testPassed = true;
         }, 60 * 1000);
 
         test('2370: zli connect bad user - Kube REST API plugin - get namespaces', async () => {
@@ -242,8 +222,6 @@ export const kubeSuite = () => {
             const callZliPromise =  callZli(finalArgs); // expect this to exit with exit code 1
 
             await expect(callZliPromise).rejects.toThrow(expectedErrorMessage);
-
-            testPassed = true;
         }, 30 * 1000);
 
         test('2161: zli connect - Kube REST API plugin - multiple groups - %p', async () => {
@@ -290,7 +268,6 @@ export const kubeSuite = () => {
 
             // Ensure that we see a log of this under the kube logs
             expect(await testUtils.EnsureKubeEvent(doCluster.bzeroClusterTargetSummary.name, KubeTestUserName, KubeTestTargetGroups, 'N/A', ['/api/v1/namespaces'], []));
-            testPassed = true;
         }, 2 * 60 * 1000);
 
         test('2162: zli policy targetuser - add target user to policy', async () => {
@@ -309,7 +286,6 @@ export const kubeSuite = () => {
                     }
                 }
             }));
-            testPassed = true;
         }, 30 * 1000);
 
         test('2163: zli policy targetuser - delete target user from policy %p', async () => {
@@ -328,7 +304,6 @@ export const kubeSuite = () => {
                     }
                 }
             }) === undefined);
-            testPassed = true;
         }, 30 * 1000);
 
         test('2164: zli policy targetgroup - add target group to policy', async () => {
@@ -347,7 +322,6 @@ export const kubeSuite = () => {
                     }
                 }
             }));
-            testPassed = true;
         }, 30 * 1000);
 
         test('2165: zli policy targetgroup - delete target group from policy', async () => {
@@ -366,7 +340,6 @@ export const kubeSuite = () => {
                     }
                 }
             }) === undefined);
-            testPassed = true;
         }, 30 * 1000);
     });
 

@@ -21,15 +21,7 @@ yargs.Argv<listTargetGroupArgs> {
                 default: false,
                 demandOption: false,
                 alias: 'j',
-            }
-        )
-        .option(
-            'verbose',
-            {
-                type: 'boolean',
-                default: false,
-                demandOption: false,
-                alias: 'v',
+                description: 'Formats the ouput in JSON format'
             }
         )
         .example('$0 policy targetgroups cool-policy', 'List all target groups for the cool-policy policy, as regular table output')

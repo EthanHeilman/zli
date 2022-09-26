@@ -24,7 +24,8 @@ type BastionZeroConfigSchema = {
     sessionId: string,
     sessionToken: string,
     whoami: UserSummary,
-    sshKeyPath: string
+    sshKeyPath: string,
+    sshKnownHostsPath: string,
     keySplitting: KeySplittingConfigSchema,
     kubeConfig: KubeConfig
     webConfig: WebConfig,
@@ -78,6 +79,7 @@ export class ConfigService implements ConfigInterface {
                 sessionToken: undefined,
                 whoami: undefined,
                 sshKeyPath: undefined,
+                sshKnownHostsPath: undefined,
                 keySplitting: getDefaultKeysplittingConfig(),
                 kubeConfig: getDefaultKubeConfig(),
                 webConfig: getDefaultWebConfig(),
@@ -281,6 +283,11 @@ export class ConfigService implements ConfigInterface {
             this.config.set('sshKnownHostsPath', path.join(path.dirname(this.config.path), 'bastionzero-known_hosts'));
 
         return this.config.get('sshKnownHostsPath');
+    }
+
+    public clearSshConfigPaths() {
+        this.config.delete('sshKeyPath');
+        this.config.delete('sshKnownHostsPath');
     }
 
     public logout(): void

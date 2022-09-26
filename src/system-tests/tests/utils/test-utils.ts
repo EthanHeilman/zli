@@ -1,5 +1,3 @@
-import *  as fs from 'fs';
-
 import { ConfigService } from '../../../../src/services/config/config.service';
 import { Logger } from '../../../services/logger/logger.service';
 import { EventsHttpService } from '../../../../src/http-services/events/events.http-server';
@@ -284,51 +282,22 @@ export class TestUtils {
     }
 
     /**
-     * Helper function to check if a test passed, and if not log the contents of the daemon logs
-     * @param {boolean} testPassed Boolean to indicate if the test passed or not
-     * @param {string} testName Test name to log incase of failure
-     */
-    public async CheckDaemonLogs(testPassed: boolean, testName: string) {
-        const daemonLogPath = this.loggerConfigService.daemonLogPath();
-        if (!fs.existsSync(daemonLogPath)) {
-            if (!testPassed) {
-                this.logger.warn(`No daemon logs found under ${daemonLogPath}`);
-            }
-            return;
-        };
-
-        if (!testPassed) {
-            // Print the logs from the daemon
-            try {
-                const daemonLogs = fs.readFileSync(daemonLogPath, 'utf8');
-                this.logger.error(`Test failed: ${testName}! Daemon logs:\n${daemonLogs}`);
-            } catch (err) {
-                this.logger.error(`Error reading logs from daemon log file: ${daemonLogPath}. Error: ${err}`);
-            }
-        }
-
-        // Always delete the daemon log file after each test
-        try {
-            fs.unlinkSync(daemonLogPath);
-        } catch(err) {
-            this.logger.error(`Error deleting daemon log file: ${daemonLogPath}. Error: ${err}`);
-        }
-    }
-
-    /**
-     * Helper function to check if there are process' on a given port
+     * Helper function to check if there are process' on a given port and wait
+     * for the port to be free or timeout and error
      * @param {number} port Port to check
      */
-    public async CheckPort(port: number) {
-        const ports = new Promise<number[]>(async (resolve, _) => {
-            pids(port).then((pids: any) => {
-                resolve(pids.tcp);
+    public async EnsurePortIsFree(port: number, timeout = 30 * 1000) {
+        await this.waitForExpect(async () => {
+            const ports = new Promise<number[]>(async (resolve, _) => {
+                pids(port).then((pids: any) => {
+                    resolve(pids.tcp);
+                });
             });
-        });
-        const awaitedPorts = await ports;
-        if (awaitedPorts.length != 0) {
-            throw new Error(`There are currently processes using port ${port}: ${awaitedPorts}`);
-        }
+            const awaitedPorts = await ports;
+            if (awaitedPorts.length != 0) {
+                throw new Error(`There are currently processes using port ${port}: ${awaitedPorts}`);
+            }
+        }, timeout);
     }
 
     /**

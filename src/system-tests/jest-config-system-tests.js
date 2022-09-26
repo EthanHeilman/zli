@@ -1,4 +1,5 @@
 toExport = {
+    rootDir: './../', // zli/src
     roots: [
         "<rootDir>/system-tests/tests"
     ],
@@ -6,12 +7,12 @@ toExport = {
     transform: {
         "^.+\\.(ts|tsx)$": "ts-jest"
     },
-    rootDir: './../',
     globals: {
         Uint8Array: Uint8Array,
     },
     reporters: [
-        "default"
+        "default",
+        "<rootDir>/../dist/src/system-tests/daemon-log-reporter"
     ],
     setupFilesAfterEnv: ["jest-extended/all"],
     collectCoverage: true,
