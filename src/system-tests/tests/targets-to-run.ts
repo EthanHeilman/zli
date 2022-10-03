@@ -104,21 +104,6 @@ export const extraSsmTestTargetsToRun: TestTarget[] = [
         sessionRecordingCaseId: '4970',
         attachCaseId: '6493',
     },
-    {
-        installType: 'ad',
-        dropletImage: DigitalOceanDistroImage.Ubuntu20,
-        doRegion: defaultDigitalOceanRegion,
-        awsRegion: defaultAwsRegion,
-        connectCaseId: '2122',
-        closeCaseId: '3654',
-        badConnectCaseId: '2351',
-        sshCaseId: '2149',
-        sshBadUserCaseId: '2360',
-        sshConnectFailsCaseId: '84384',
-        groupConnectCaseId: '3093',
-        sessionRecordingCaseId: '4971',
-        attachCaseId: '6494',
-    },
     // new autodiscovery script (self-registration)
     {
         installType: 'pm',
@@ -193,6 +178,31 @@ export const extraBzeroTestTargetsToRun: TestTarget[] = [
         groupConnectCaseId: '6560',
         sessionRecordingCaseId: '6571',
         attachCaseId: '6562',
+    },
+    {
+        installType: 'ad-bzero',
+        dropletImage: DigitalOceanDistroImage.BzeroVTUbuntuTestImage,
+        doRegion: defaultDigitalOceanRegion,
+        awsRegion: defaultAwsRegion,
+        webCaseId: '352545',
+        iperfUpload: '352546',
+        iperfDownload: '352547',
+        badWebCaseId: '352548',
+        sshCaseId: '352555',
+        sshWithEnvCaseId: '352549',
+        sshByUuidCaseId: '352550',
+        sshBadUserCaseId: '352556',
+        sshConnectFailsCaseId: '352557',
+        sshTunnelFailsCaseId: '352551',
+        sshScpCaseId: '352552',
+        sshSftpCaseId: '352553',
+        sshScpByUuidCaseId: '352554',
+        connectCaseId: '352558',
+        closeCaseId: '352559',
+        badConnectCaseId: '352560',
+        groupConnectCaseId: '352561',
+        sessionRecordingCaseId: '352562',
+        attachCaseId: '352563'
     }
 ];
 
