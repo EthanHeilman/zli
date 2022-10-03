@@ -451,7 +451,8 @@ function getBzeroTargetSetupCommands(): string {
     // -m option will create a home directory with proper permissions
     const createBzeroCustomerUserCmd = `useradd ${bzeroTargetCustomUser} --shell /bin/bash -m`;
 
-    return String.raw`${pythonWebServerCmd}
+    return String.raw`
+${pythonWebServerCmd}
 ${iperfCmd}
 ${createBzeroCustomerUserCmd}
 `;
