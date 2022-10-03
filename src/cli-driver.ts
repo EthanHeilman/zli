@@ -704,10 +704,6 @@ export class CliDriver
                 async () => {
                     const userHttpService = new UserHttpService(this.configService, this.logger);
                     await userHttpService.Register();
-
-                    // Update me
-                    const me = await userHttpService.Me();
-                    this.configService.setMe(me);
                 }
             )
             .command(
