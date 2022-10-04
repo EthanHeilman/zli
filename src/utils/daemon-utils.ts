@@ -42,7 +42,7 @@ export function spawnDaemon(logger: Logger, loggerConfigService: LoggerConfigSer
             const options: cp.SpawnOptions = {
                 cwd: cwd,
                 env: { ...customEnv, ...process.env },
-                detached: true,
+                detached: false,
                 shell: true,
                 stdio: ['inherit', 'inherit', 'inherit'],
             };
