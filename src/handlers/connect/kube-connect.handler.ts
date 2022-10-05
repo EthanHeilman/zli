@@ -89,7 +89,7 @@ export async function startKubeDaemonHandler(
             await handleServerStart(loggerConfigService.daemonLogPath(), parseInt(daemonPort), kubeConfig.localHost);
 
             // Poll ready endpoint
-            logger.info('Waiting for daemon to become ready...');
+            logger.info('Waiting for kube daemon to become ready...');
             await pollDaemonReady(kubeConfig.localPort);
             logger.info(`Started kube daemon at ${kubeConfig.localHost}:${kubeConfig.localPort} for ${targetUser}@${clusterTarget.name}`);
             return 0;

@@ -7,8 +7,8 @@ import { listDaemonsArgs } from './list-daemons.command-builder';
 import yargs from 'yargs';
 import { killPortProcess } from '../../utils/daemon-utils';
 import chalk from 'chalk';
-import isRunning from 'is-running';
 import { newDbDaemonManagementService } from '../../services/daemon-management/daemon-management.service';
+import { ProcessManagerService } from '../../services/process-manager/process-manager.service';
 import { DaemonIsRunningStatus, DaemonQuitUnexpectedlyStatus, DaemonStatus } from '../../services/daemon-management/types/daemon-status.types';
 import { ILogger } from '../../../webshell-common-ts/logging/logging.types';
 import { DaemonConfig, DaemonConfigType } from '../../services/config/config.service.types';
@@ -38,6 +38,7 @@ async function webStatusHandler(
 ) {
     // First get the status from the config service
     const webConfig = configService.getWebConfig();
+    const processManager = new ProcessManagerService();
 
     if (webConfig['localPid'] == null) {
         // Always ensure nothing is using the localport
@@ -46,7 +47,7 @@ async function webStatusHandler(
         logger.warn('No web daemon running');
     } else {
         // Check if the pid is still alive
-        if (!isRunning(webConfig['localPid'])) {
+        if (!processManager.isProcessRunning(webConfig['localPid'])) {
             logger.error('The web daemon has quit unexpectedly.');
             webConfig['localPid'] = null;
 
@@ -142,6 +143,7 @@ async function kubeStatusHandler(
 ) {
     // First get the status from the config service
     const kubeConfig = configService.getKubeConfig();
+    const processManager = new ProcessManagerService();
 
     if (kubeConfig['localPid'] == null) {
         // Always ensure nothing is using the localport
@@ -150,7 +152,7 @@ async function kubeStatusHandler(
         logger.warn('No kube daemon running');
     } else {
         // Check if the pid is still alive
-        if (!isRunning(kubeConfig['localPid'])) {
+        if (!processManager.isProcessRunning(kubeConfig['localPid'])) {
             logger.error('The kube daemon has quit unexpectedly.');
             kubeConfig['localPid'] = null;
 

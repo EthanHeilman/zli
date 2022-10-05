@@ -1,4 +1,5 @@
 import { ConfigService } from '../services/config/config.service';
+import { ProcessManagerService } from '../services/process-manager/process-manager.service';
 import { Logger } from '../services/logger/logger.service';
 import { cleanExit } from './clean-exit.handler';
 import util from 'util';
@@ -6,7 +7,6 @@ import { spawn, exec } from 'child_process';
 
 const { v4: uuidv4 } = require('uuid');
 const execPromise = util.promisify(exec);
-const isRunning = require('is-running');
 
 
 export async function bctlHandler(configService: ConfigService, logger: Logger, listOfCommands: string[]) {
@@ -39,13 +39,14 @@ export async function bctlHandler(configService: ConfigService, logger: Logger, 
     kubeArgs = kubeArgs.concat(listOfCommands);
 
     const kubeCommandProcess = await spawn('kubectl', kubeArgs, { stdio: [process.stdin, process.stdout, process.stderr] });
+    const processManager = new ProcessManagerService();
 
     kubeCommandProcess.on('close', async (code: number) => {
         logger.debug(`Kube command process exited with code ${code}`);
 
         if (code != 0) {
             // Check if the daemon has quit
-            if (kubeConfig['localPid'] == null || !isRunning(kubeConfig['localPid'])) {
+            if (kubeConfig['localPid'] == null || !processManager.isProcessRunning(kubeConfig['localPid'])) {
                 logger.error('The Kube Daemon has quit unexpectedly.');
                 kubeConfig['localPid'] = null;
                 configService.setKubeConfig(kubeConfig);
