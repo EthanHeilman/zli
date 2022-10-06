@@ -18,6 +18,18 @@ export async function getAutodiscoveryScript(
     return scriptResponse.autodiscoveryScript;
 }
 
+export async function getBzeroBashAutodiscoveryScript(
+    logger: Logger,
+    configService: ConfigService,
+    environmentId: string,
+    scriptTargetNameOption: ScriptTargetNameOption
+): Promise<string> {
+    const autodiscoveryScriptHttpService = new AutoDiscoveryScriptHttpService(configService, logger);
+    const scriptResponse = await autodiscoveryScriptHttpService.GetBzeroBashAutodiscoveryScript(scriptTargetNameOption, environmentId);
+
+    return scriptResponse.autodiscoveryScript;
+}
+
 export async function getAnsibleAutodiscoveryScript(
     logger: Logger,
     configService: ConfigService,
@@ -26,6 +38,17 @@ export async function getAnsibleAutodiscoveryScript(
 ) {
     const autodiscoveryScriptHttpService = new AutoDiscoveryScriptHttpService(configService, logger);
     const scriptResponse = await autodiscoveryScriptHttpService.GetAnsibleAutodiscoveryScript(environmentId, agentVersion);
+
+    return scriptResponse.autodiscoveryScript;
+}
+
+export async function getBzeroAnsibleAutodiscoveryScript(
+    logger: Logger,
+    configService: ConfigService,
+    environmentId: string
+) {
+    const autodiscoveryScriptHttpService = new AutoDiscoveryScriptHttpService(configService, logger);
+    const scriptResponse = await autodiscoveryScriptHttpService.GetBzeroAnsibleAutodiscoveryScript(environmentId);
 
     return scriptResponse.autodiscoveryScript;
 }
@@ -58,6 +81,28 @@ export class AutoDiscoveryScriptHttpService extends HttpService {
             {
                 environmentId: environmentId,
                 agentVersion: agentVersion
+            });
+    }
+
+    public GetBzeroBashAutodiscoveryScript(
+        targetNameOption: ScriptTargetNameOption,
+        environmentId: string
+    ): Promise<ScriptResponse> {
+        return this.Get(
+            'bzero/bash',
+            {
+                targetNameOption: targetNameOption,
+                environmentId: environmentId
+            });
+    }
+
+    public GetBzeroAnsibleAutodiscoveryScript(
+        environmentId: string
+    ): Promise<ScriptResponse> {
+        return this.Get(
+            'bzero/ansible',
+            {
+                environmentId: environmentId
             });
     }
 }

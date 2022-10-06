@@ -39,6 +39,11 @@ export class UserHttpService extends HttpService
             this.configService.setSessionToken(cookiesDict['sessionToken'].value);
         }
 
+        // Update me section of the config in case this is a new login or any
+        // user information has changed since last login
+        const me = await this.Me();
+        this.configService.setMe(me);
+
         return resp;
     }
 

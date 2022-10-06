@@ -3,6 +3,12 @@ import fs from 'fs';
 import utils from 'util';
 import * as cp from 'child_process';
 
+import { execSync, spawn, ExecSyncOptions } from 'child_process';
+const pids = require('port-pid');
+const readLastLines = require('read-last-lines');
+const randtoken = require('rand-token');
+const findPort = require('find-open-port');
+
 import { cleanExit } from '../handlers/clean-exit.handler';
 import { Logger } from '../services/logger/logger.service';
 import { waitUntilUsedOnHost } from 'tcp-port-used';
@@ -12,13 +18,7 @@ import { ShellConnectionAuthDetails } from '../../webshell-common-ts/http/v2/con
 import { DAEMON_EXIT_CODES } from './daemon-exit-codes';
 import { check as checkTcpPort } from 'tcp-port-used';
 import { ILogger } from '../../webshell-common-ts/logging/logging.types';
-
-const { spawn } = require('child_process');
-const exec = require('child_process').execSync;
-const pids = require('port-pid');
-const readLastLines = require('read-last-lines');
-const randtoken = require('rand-token');
-const findPort = require('find-open-port');
+import { ProcessManagerService } from '../services/process-manager/process-manager.service';
 
 export const DAEMON_PATH : string = 'bzero/bctl/daemon/daemon';
 
@@ -42,9 +42,9 @@ export function spawnDaemon(logger: Logger, loggerConfigService: LoggerConfigSer
             const options: cp.SpawnOptions = {
                 cwd: cwd,
                 env: { ...customEnv, ...process.env },
-                detached: true,
+                detached: false,
                 shell: true,
-                stdio: ['inherit', 'inherit', 'inherit'],
+                stdio: 'inherit',
             };
 
             const daemonProcess = cp.spawn(path, args, options);
@@ -74,7 +74,7 @@ export async function spawnDaemonInBackground(logger: Logger, loggerConfigServic
         env: { ...customEnv, ...process.env },
         detached: true,
         shell: true,
-        stdio: ['ignore', 'ignore', 'ignore']
+        stdio: 'ignore',
     };
 
     const daemonProcess = await cp.spawn(daemonPath, args, options);
@@ -135,7 +135,6 @@ export function getAppExecPath() {
     }
 }
 
-
 /**
  * This function will generate a new cert to use for a daemon application (i.e. kube, web server)
  * @param {string} pathToConfig Path to our zli config
@@ -144,7 +143,7 @@ export function getAppExecPath() {
  * @returns Path to the key, path to the cert, path to the certificate signing request.
  */
 export async function generateNewCert(pathToConfig: string, name: string, configName: string ): Promise<string[]> {
-    const options = { stdio: ['ignore', 'ignore', 'ignore'] };
+    const options: ExecSyncOptions = { stdio: 'ignore' };
 
     // Create and save key/cert
     const createCertPromise = new Promise<string[]>(async (resolve, reject) => {
@@ -160,7 +159,7 @@ export async function generateNewCert(pathToConfig: string, name: string, config
 
         // Generate a new key
         try {
-            await exec(`openssl genrsa -out ${pathToKey}`, options);
+            execSync(`openssl genrsa -out ${pathToKey}`, options);
         } catch (e: any) {
             reject(e);
         }
@@ -169,7 +168,7 @@ export async function generateNewCert(pathToConfig: string, name: string, config
         // Ref: https://www.openssl.org/docs/man1.0.2/man1/openssl-req.html
         try {
             const pass = randtoken.generate(128);
-            await exec(`openssl req -sha256 -passin pass:${pass} -new -key ${pathToKey} -subj "/C=US/ST=Bastionzero/L=Boston/O=Dis/CN=bastionzero.com" -out ${pathToCsr}`, options);
+            execSync(`openssl req -sha256 -passin pass:${pass} -new -key ${pathToKey} -subj "/C=US/ST=Bastionzero/L=Boston/O=Dis/CN=bastionzero.com" -out ${pathToCsr}`, options);
         } catch (e: any) {
             reject(e);
         }
@@ -177,7 +176,7 @@ export async function generateNewCert(pathToConfig: string, name: string, config
         // Now generate the certificate
         // https://www.openssl.org/docs/man1.1.1/man1/x509.html
         try {
-            await exec(`openssl x509 -req -days 999 -in ${pathToCsr} -signkey ${pathToKey} -out ${pathToCert}`, options);
+            execSync(`openssl x509 -req -days 999 -in ${pathToCsr} -signkey ${pathToKey} -out ${pathToCert}`, options);
         } catch (e: any) {
             reject(e);
         }
@@ -203,13 +202,15 @@ export async function startDaemonInDebugMode(finalDaemonPath: string, cwd: strin
                 env: {...env, ...process.env},
                 shell: true,
                 detached: true,
-                stdio: 'inherit'
+                stdio: 'inherit',
             }
         );
 
+        const processManager = new ProcessManagerService();
+
         process.on('SIGINT', () => {
             // CNT+C Sent from the user, kill the daemon process, which will trigger an exit
-            killPid(daemonProcess.pid);
+            processManager.killProcess(daemonProcess.pid);
         });
 
         daemonProcess.on('exit', function () {
@@ -296,15 +297,21 @@ export async function killDaemon(localPid: number, logger: ILogger) {
     // TODO: CWC-2030 Remove this function once kube and web migrate to
     // DaemonManagementService
 
+    const processManager = new ProcessManagerService();
     // then kill the daemon
     if ( localPid != null) {
         // First try to kill the process
         try {
-            killPid(localPid.toString());
+            processManager.killProcess(localPid);
+            logger.debug('Waiting for daemon to shut down gracefully...');
+            await processManager.waitForProcess(localPid);
         } catch (err: any) {
             // If the daemon pid was killed, or doesn't exist, just continue
-            logger.warn(`Attempt to kill existing daemon failed. This is expected if the daemon has been killed already. Make sure no program is using pid: ${localPid}. Try running \`kill -2 ${localPid}\``);
-            logger.debug(`Error: ${err}`);
+            if (err.name == 'TIMEOUT') {
+                logger.warn(`Attempt to kill the daemon running on pid ${localPid} timed out. Consider running \`kill -9 ${localPid}\` to force kill it`);
+            } else {
+                logger.warn(`Attempt to kill the daemon running on pid ${localPid} failed: ${err}\nConsider running \`kill -9 ${localPid}\` to force kill it`);
+            }
         }
     }
 }
@@ -319,7 +326,7 @@ export async function killDaemon(localPid: number, logger: ILogger) {
 export async function killLocalPortAndPid(savedPid: number, localPort: number, logger: Logger) {
     // Check if we've already started a process
     if (savedPid != null) {
-        killDaemon(savedPid, logger);
+        await killDaemon(savedPid, logger);
     }
 
     // Also check if anything is using that local port
@@ -341,10 +348,11 @@ export async function killPortProcess(port: number, logger: Logger) {
     // Helper function to kill a process running on a given port (if it exists)
     try {
         const portPids = await getPidForPort(port);
+        const processManager = new ProcessManagerService();
 
         // Loop over all pids and kill
         portPids.forEach( (portPid: number) => {
-            killPid(portPid.toString());
+            processManager.killProcess(portPid);
         });
     } catch(err) {
         // Don't try to capture any errors incase the process has already been killed
@@ -365,15 +373,6 @@ async function getPidForPort(port: number): Promise<number[]> {
     });
     const awaitedPorts = await ports;
     return awaitedPorts;
-}
-
-export function killPid(pid: string) {
-    // Helper function to kill a process for a given pid
-    // Ignore output and do not show that to the user
-    // For unix based os we kill all processes based on group id by using kill -{signal} -{pid}
-    // https://stackoverflow.com/a/49842576/9186330
-    const options = { stdio: ['ignore', 'ignore', 'ignore'] };
-    exec(`kill -2 -${pid}`, options);
 }
 
 /**

@@ -18,8 +18,8 @@ import { Client, Pool } from 'pg';
 import { AddNewDbTargetRequest } from '../../../../webshell-common-ts/http/v2/target/db/requests/add-new-db-target.requests';
 import { ConnectionHttpService } from '../../../http-services/connection/connection.http-services';
 import { getMockResultValue } from '../utils/jest-utils';
-import isRunning from 'is-running';
 import { DaemonManagementService, newDbDaemonManagementService } from '../../../services/daemon-management/daemon-management.service';
+import { ProcessManagerService } from '../../../services/process-manager/process-manager.service';
 import { DbConnectionInfo } from '../../../../src/services/list-connections/list-connections.service.types';
 import { DaemonStatus } from '../../../services/daemon-management/types/daemon-status.types';
 import { mapToArrayTuples } from '../utils/utils';
@@ -99,6 +99,7 @@ export const dbSuite = () => {
         let connectionHttpService: ConnectionHttpService;
         let policyService: PolicyHttpService;
         let dbDaemonManagementService: DaemonManagementService<DbConfig>;
+        let processManager: ProcessManagerService;
         let testUtils: TestUtils;
         let testStartTime: Date;
 
@@ -115,6 +116,7 @@ export const dbSuite = () => {
             connectionHttpService = new ConnectionHttpService(configService, logger);
 
             dbDaemonManagementService = newDbDaemonManagementService(configService);
+            processManager = new ProcessManagerService();
             policyService = new PolicyHttpService(configService, logger);
             testUtils = new TestUtils(configService, logger, loggerConfigService);
 
@@ -433,7 +435,7 @@ export const dbSuite = () => {
                 await ensureDisconnectedEvents([connectedDbDaemon]);
 
                 // Expect the daemon process to stop running within 5 seconds
-                await testUtils.waitForExpect(async () => expect(isRunning(connectedDbDaemon.dbDaemonDetails.localPid)).toBeFalse(), 5 * 1000);
+                await testUtils.waitForExpect(async () => expect(processManager.isProcessRunning(connectedDbDaemon.dbDaemonDetails.localPid)).toBeFalse(), 5 * 1000);
             };
 
             bzeroTestTargetsToRun.forEach(async (testTarget: TestTarget) => {
@@ -658,7 +660,7 @@ export const dbSuite = () => {
 
                     // Assert that each daemon process has stopped running
                     await Promise.all(connectedDbDaemons.map(details =>
-                        testUtils.waitForExpect(async () => expect(isRunning(details.dbDaemonDetails.localPid)).toBeFalse(), 5 * 1000)
+                        testUtils.waitForExpect(async () => expect(processManager.isProcessRunning(details.dbDaemonDetails.localPid)).toBeFalse(), 5 * 1000)
                     ));
                 }, 80 * 1000);
 
@@ -687,7 +689,7 @@ export const dbSuite = () => {
 
                     // Assert that each daemon process has stopped running
                     await Promise.all(connectedDbDaemons.map(details =>
-                        testUtils.waitForExpect(async () => expect(isRunning(details.dbDaemonDetails.localPid)).toBeFalse(), 5 * 1000)
+                        testUtils.waitForExpect(async () => expect(processManager.isProcessRunning(details.dbDaemonDetails.localPid)).toBeFalse(), 5 * 1000)
                     ));
                 }, 80 * 1000);
 
@@ -747,7 +749,7 @@ export const dbSuite = () => {
 
                         // Close the connection which kills the db daemon server
                         await callZli(['close', connectedDbDaemonDetails.connectionId]);
-                        await testUtils.waitForExpect(async () => expect(isRunning(connectedDbDaemonDetails.dbDaemonDetails.localPid)).toBeFalse(), 5 * 1000);
+                        await testUtils.waitForExpect(async () => expect(processManager.isProcessRunning(connectedDbDaemonDetails.dbDaemonDetails.localPid)).toBeFalse(), 5 * 1000);
 
                         // Connect again on the same port
                         await connectAndEnsure(createdDbTargetDetails);

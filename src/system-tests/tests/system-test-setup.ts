@@ -6,10 +6,10 @@ import { ClusterTargetStatusPollError, RegisteredDigitalOceanKubernetesCluster }
 import { promisify } from 'util';
 import fs from 'fs';
 import { KubeBctlNamespace, KubeHelmQuickstartChartName, KubeTestTargetGroups, KubeTestUserName } from './suites/kube';
-import { SSMTestTargetAnsibleAutoDiscovery, SSMTestTargetSelfRegistrationAutoDiscovery, TestTarget, BzeroTestTarget } from './system-test.types';
+import { SSMTestTargetSelfRegistrationAutoDiscovery, TestTarget, BzeroTestTarget } from './system-test.types';
 import { BzeroTargetStatusPollError, DigitalOceanBZeroTarget, DigitalOceanSSMTarget, getDOImageName, getPackageManagerType, SsmTargetStatusPollError } from '../digital-ocean/digital-ocean-ssm-target.service.types';
 import { randomAlphaNumericString } from '../../utils/utils';
-import { getAnsibleAutodiscoveryScript, getAutodiscoveryScript } from '../../http-services/auto-discovery-script/auto-discovery-script.http-services';
+import { getAnsibleAutodiscoveryScript, getAutodiscoveryScript, getBzeroBashAutodiscoveryScript, getBzeroAnsibleAutodiscoveryScript } from '../../http-services/auto-discovery-script/auto-discovery-script.http-services';
 import { ScriptTargetNameOption } from '../../../webshell-common-ts/http/v2/autodiscovery-script/types/script-target-name-option.types';
 import { addRepo, install, MultiStringValue, SingleStringValue } from './utils/helm/helm-utils';
 import { ApiKeyHttpService } from '../../http-services/api-key/api-key.http-services';
@@ -217,6 +217,24 @@ export async function createDOTestTargets() {
             userDataScript = getPackageManagerRegistrationScript('bzero-beta', testTarget, systemTestEnvName, systemTestRegistrationApiKey.secret);
             dropletSizeToCreate = vtDropletSize;
             break;
+        case 'ad-bzero':
+            userDataScript = await getBzeroBashAutodiscoveryScript(logger, configService, systemTestEnvId, ScriptTargetNameOption.DigitalOceanMetadata);
+            // Add compile from source commands if a bzero branch is specified.
+            const stringToFind = 'install_bzero_agent';
+            let extraSetupCommands = '';
+            if (bzeroAgentBranch) {
+                extraSetupCommands = getCompileBzeroFromSourceCommands('bzero');
+            }
+            // Add the extra setup commands that are necessary for system tests to the autodiscovery script.
+            extraSetupCommands += getBzeroTargetSetupCommands();
+            const insertionIndex = userDataScript.indexOf(stringToFind) + stringToFind.length;
+            userDataScript = userDataScript.slice(0, insertionIndex) + extraSetupCommands + userDataScript.slice(insertionIndex);
+            dropletSizeToCreate = vtDropletSize;
+            break;
+        case 'as-bzero':
+            userDataScript = await getAnsibleUserDataScript(testTarget, systemTestEnvId, null);
+            dropletSizeToCreate = vtDropletSize;
+            break;
         default:
             // Compile-time exhaustive check
             const _exhaustiveCheck: never = testTarget;
@@ -269,7 +287,7 @@ export async function createDOTestTargets() {
                 \tSSM Target ID: ${digitalOceanSsmTarget.ssmTarget.id}`
             );
 
-        } else if(testTarget.installType === 'pm-bzero') {
+        } else if(testTarget.installType === 'pm-bzero' || testTarget.installType === 'ad-bzero' || testTarget.installType === 'as-bzero') {
             const digitalOceanBZeroTarget: DigitalOceanBZeroTarget = {  type: 'bzero', droplet: droplet, bzeroTarget: undefined};
             testTargets.set(testTarget, digitalOceanBZeroTarget);
 
@@ -279,10 +297,10 @@ export async function createDOTestTargets() {
                 // Set the bzeroTarget associated with this digital ocean droplet
                 digitalOceanBZeroTarget.bzeroTarget = bzeroTarget;
             } catch (err) {
-                // Catch special exception so that we can save ssmTarget reference
+                // Catch special exception so that we can save bzeroTarget reference
                 // for cleanup.
                 //
-                // SsmTargetStatusPollError is thrown if target reaches 'Error'
+                // BzeroTargetStatusPollError is thrown if target reaches 'Error'
                 // state, or if target is known but does not come online within the
                 // specified timeout.
                 if (err instanceof BzeroTargetStatusPollError) {
@@ -318,9 +336,16 @@ export async function createDOTestTargets() {
  * @param agentVersion Agent version to use
  * @returns User data script to run on droplet
  */
-async function getAnsibleUserDataScript(testTarget: SSMTestTargetAnsibleAutoDiscovery, environmentId: string, agentVersion: string): Promise<string> {
-    // First get our ansible user data script
-    const ansibleScript = await getAnsibleAutodiscoveryScript(logger, configService, environmentId, agentVersion);
+async function getAnsibleUserDataScript(testTarget: TestTarget, environmentId: string, agentVersion: string): Promise<string> {
+    // First get our ansible user data script and set up other needed commands
+    let ansibleScript: string;
+    let initBlock: string = '';
+    if (testTarget.installType === 'as') {
+        ansibleScript = await getAnsibleAutodiscoveryScript(logger, configService, environmentId, agentVersion);
+    } else if (testTarget.installType === 'as-bzero') {
+        ansibleScript = await getBzeroAnsibleAutodiscoveryScript(logger, configService, environmentId);
+        initBlock = getBzeroTargetSetupCommands();
+    }
 
     const packageManager = getPackageManagerType(testTarget.dropletImage);
 
@@ -349,7 +374,11 @@ sudo yum install ansible -y
 
     // Add localhost ansible_connection=local to /etc/ansible/hosts to ensure we match the `hosts: all`
     // Then call ansible-playbook
-    const ansibleInstall = String.raw`cat >playbook.yml <<EOL
+    // The bzero ansible script includes a '$' for parameterizing the yum repo path. Linux here documents allow
+    // for parameter substitution, too, but we don't want that behavior. Quoting or escaping the "limit string"
+    // at the head of a here document disables parameter substitution within its body.
+    // See https://tldp.org/LDP/abs/html/here-docs.html.
+    const ansibleInstall = String.raw`cat >playbook.yml <<"EOL"
 ${ansibleScript}
 EOL
 echo "localhost ansible_connection=local" | sudo tee /etc/ansible/hosts
@@ -358,6 +387,7 @@ sudo ansible-playbook playbook.yml
 
     return String.raw`#!/bin/bash
 set -Ee
+${initBlock}
 ${installBlock}
 ${ansibleInstall}
 `;
@@ -402,19 +432,7 @@ sudo yum install ${packageName} -y
     }
 
     if (shouldBuildFromSource) {
-        const installBlockCompileWithGo = String.raw`cd /
-git clone -b ${bzeroAgentBranch} https://github.com/bastionzero/bzero.git /root/bzero
-export GOROOT=/usr/local/go
-export GOPATH=/root/go
-export GOCACHE=/root/.cache/go-build
-sh /root/bzero/update-agent-version.sh
-cd /root/bzero/bctl/agent
-/usr/local/go/bin/go build
-systemctl stop bzero-beta
-cp agent /usr/bin/bzero-beta
-cd /
-`;
-        installBlock += installBlockCompileWithGo;
+        installBlock += getCompileBzeroFromSourceCommands('bzero-beta');
     }
 
     let registerCommand: string;
@@ -426,21 +444,8 @@ cd /
     case 'pm-bzero':
         registerCommand = `${packageName} --serviceUrl ${configService.serviceUrl()} -registrationKey "${registrationApiKeySecret}" -environmentName "${envName}"`;
 
-        // Common initialization for bzero targets
-
-        // Starts a python web server in background for web tests
-        const pythonWebServerCmd = 'nohup python3 -m http.server > python-server.out 2> python-server.err < /dev/null &';
-        const iperfCmd = `nohup iperf3 -s > /var/log/iperf.log 2>&1 &`;
-
-        // Add a bzero custom user for connect/ssh tests
-        // --shell options sets default shell as bash
-        // -m option will create a home directory with proper permissions
-        const createBzeroCustomerUserCmd = `useradd ${bzeroTargetCustomUser} --shell /bin/bash -m`;
-
-        initBlock = String.raw`${pythonWebServerCmd}
-${iperfCmd}
-${createBzeroCustomerUserCmd}
-`;
+        initBlock = getBzeroTargetSetupCommands();
+        break;
     }
 
     return String.raw`#!/bin/bash
@@ -448,6 +453,40 @@ set -Ee
 ${installBlock}
 ${initBlock}
 ${registerCommand}
-systemctl restart bzero-beta
+`;
+}
+
+// Common initialization for bzero targets
+function getBzeroTargetSetupCommands(): string {
+    // Starts a python web server in background for web tests
+    const pythonWebServerCmd = 'nohup python3 -m http.server > python-server.out 2> python-server.err < /dev/null &';
+    const iperfCmd = `nohup iperf3 -s > /var/log/iperf.log 2>&1 &`;
+
+    // Add a bzero custom user for connect/ssh tests
+    // --shell options sets default shell as bash
+    // -m option will create a home directory with proper permissions
+    const createBzeroCustomerUserCmd = `useradd ${bzeroTargetCustomUser} --shell /bin/bash -m`;
+
+    return String.raw`
+${pythonWebServerCmd}
+${iperfCmd}
+${createBzeroCustomerUserCmd}
+`;
+}
+
+function getCompileBzeroFromSourceCommands(packageName: 'bzero' | 'bzero-beta'): string {
+    return String.raw`
+cd /
+git clone -b ${bzeroAgentBranch} https://github.com/bastionzero/bzero.git /root/bzero
+export GOROOT=/usr/local/go
+export GOPATH=/root/go
+export GOCACHE=/root/.cache/go-build
+sh /root/bzero/update-agent-version.sh
+cd /root/bzero/bctl/agent
+/usr/local/go/bin/go build
+systemctl stop ${packageName}
+cp agent /usr/bin/${packageName}
+systemctl restart ${packageName}
+cd /
 `;
 }

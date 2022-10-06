@@ -106,16 +106,13 @@ export async function login(keySplittingService: KeySplittingService, configServ
         break;
     }
 
-    const me = await userHttpService.Me();
-    configService.setMe(me);
-
     // clear temporary SSH files
     removeIfExists(configService.sshKeyPath());
     removeIfExists(configService.sshKnownHostsPath());
 
     return {
         userRegisterResponse: registerResponse,
-        userSummary: me
+        userSummary: configService.me()
     };
 }
 
