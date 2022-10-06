@@ -203,6 +203,31 @@ export const extraBzeroTestTargetsToRun: TestTarget[] = [
         groupConnectCaseId: '352561',
         sessionRecordingCaseId: '352562',
         attachCaseId: '352563'
+    },
+    {
+        installType: 'as-bzero',
+        dropletImage: DigitalOceanDistroImage.BzeroVTUbuntuTestImage,
+        doRegion: defaultDigitalOceanRegion,
+        awsRegion: defaultAwsRegion,
+        webCaseId: '375558',
+        iperfUpload: '375559',
+        iperfDownload: '375560',
+        badWebCaseId: '375561',
+        sshCaseId: '375562',
+        sshWithEnvCaseId: '375563',
+        sshByUuidCaseId: '375564',
+        sshBadUserCaseId: '375565',
+        sshConnectFailsCaseId: '375566',
+        sshTunnelFailsCaseId: '375567',
+        sshScpCaseId: '375568',
+        sshSftpCaseId: '375569',
+        sshScpByUuidCaseId: '375570',
+        connectCaseId: '375571',
+        closeCaseId: '375572',
+        badConnectCaseId: '375573',
+        groupConnectCaseId: '375574',
+        sessionRecordingCaseId: '375575',
+        attachCaseId: '375576'
     }
 ];
 

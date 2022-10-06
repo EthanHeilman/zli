@@ -42,6 +42,17 @@ export async function getAnsibleAutodiscoveryScript(
     return scriptResponse.autodiscoveryScript;
 }
 
+export async function getBzeroAnsibleAutodiscoveryScript(
+    logger: Logger,
+    configService: ConfigService,
+    environmentId: string
+) {
+    const autodiscoveryScriptHttpService = new AutoDiscoveryScriptHttpService(configService, logger);
+    const scriptResponse = await autodiscoveryScriptHttpService.GetBzeroAnsibleAutodiscoveryScript(environmentId);
+
+    return scriptResponse.autodiscoveryScript;
+}
+
 export class AutoDiscoveryScriptHttpService extends HttpService {
     constructor(configService: ConfigService, logger: Logger) {
         super(configService, 'api/v2/autodiscovery-scripts', logger);
@@ -81,6 +92,16 @@ export class AutoDiscoveryScriptHttpService extends HttpService {
             'bzero/bash',
             {
                 targetNameOption: targetNameOption,
+                environmentId: environmentId
+            });
+    }
+
+    public GetBzeroAnsibleAutodiscoveryScript(
+        environmentId: string
+    ): Promise<ScriptResponse> {
+        return this.Get(
+            'bzero/ansible',
+            {
                 environmentId: environmentId
             });
     }

@@ -134,8 +134,8 @@ export class DigitalOceanSSMTargetService {
     }
 
     /**
-     * Polls the bastion until the SSM target is Online and the agent version is
-     * known.
+     * Polls the bastion until the Bzero target is Online and the agent version is known.
+     *
      * @param bzeroTargetName The name of the target to poll
      * @returns Information about the target
      */
@@ -144,7 +144,7 @@ export class DigitalOceanSSMTargetService {
         const retrier = new Retrier({
             limit: 60,
             delay: 1000 * 10,
-            stopRetryingIf: (reason: any) => reason instanceof SsmTargetStatusPollError && reason.ssmTarget.status === TargetStatus.Error
+            stopRetryingIf: (reason: any) => reason instanceof BzeroTargetStatusPollError && reason.bzeroTarget.status === TargetStatus.Error
         });
 
         // We don't know SSM target ID initially

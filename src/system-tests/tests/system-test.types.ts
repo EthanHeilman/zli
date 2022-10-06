@@ -58,6 +58,17 @@ export type BzeroTestTargetBashAutoDiscovery = BaseTarget & {
     awsRegion: string;
 };
 
+/**
+ * BzeroTestTargetAnsibleAutoDiscovery represents a bzero test target that should be
+ * registered using the Ansible autodiscovery script that is retrieved from the back end.
+ */
+export type BzeroTestTargetAnsibleAutoDiscovery = BaseTarget & {
+    installType: 'as-bzero';
+    dropletImage: DigitalOceanDistroImage;
+    doRegion: DigitalOceanRegion;
+    awsRegion: string;
+};
+
 // Hold our common TestRails caseIds
 interface BaseTarget {
     sshCaseId?: string // Zli - Ssh - Successful remote command execution
@@ -81,4 +92,4 @@ interface BaseTarget {
     sessionRecordingCaseId?: string;
 }
 
-export type TestTarget = SSMTestTargetAutoDiscovery | SSMTestTargetSelfRegistrationAutoDiscovery | SSMTestTargetAnsibleAutoDiscovery | BzeroTestTarget | BzeroTestTargetBashAutoDiscovery;
+export type TestTarget = SSMTestTargetAutoDiscovery | SSMTestTargetSelfRegistrationAutoDiscovery | SSMTestTargetAnsibleAutoDiscovery | BzeroTestTarget | BzeroTestTargetBashAutoDiscovery | BzeroTestTargetAnsibleAutoDiscovery;
