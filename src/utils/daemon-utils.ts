@@ -97,23 +97,25 @@ export async function handleServerStart(logPath: string, localPort: number, loca
         await waitUntilUsedOnHost(localPort, localHost, WAIT_UTIL_USED_ON_HOST_RETRY_TIME, WAIT_UNTIL_USED_ON_HOST_TIMEOUT).then(function() {
             resolve();
         }, function(err) {
+            let errMsg = `Error waiting for daemon to start on ${localHost}:${localPort}.\nwaitUntilUsedOnHost error: ${err}.`;
             if (fs.existsSync(logPath)) {
                 readLastLines.read(logPath, 1)
                     .then((line: string) => {
                         try {
                             const lastLog = JSON.parse(line);
-                            reject(`Error kept daemon from starting up correctly\n. waitUntilUsedOnHost error: ${err}. Last daemon log entry: ${lastLog.message}`);
+                            errMsg += `\nLast daemon log entry: ${lastLog.message}`;
+                            reject(errMsg);
                         }
                         catch(e) {
-                            reject(`Error parsing last line in log: ${e}`);
+                            errMsg += `\nError parsing last line in daemon log file: ${e}`;
+                            reject(errMsg);
                         }
                     });
             } else {
-                throw reject('Daemon failed to create log file');
+                errMsg += '\nDaemon failed to create log file';
+                throw reject(errMsg);
             }
         });
-    }).catch((e: any) => {
-        throw e;
     });
 }
 
@@ -305,6 +307,7 @@ export async function killDaemon(localPid: number, logger: ILogger) {
             processManager.killProcess(localPid);
             logger.debug('Waiting for daemon to shut down gracefully...');
             await processManager.waitForProcess(localPid);
+            logger.debug('daemon process killed.');
         } catch (err: any) {
             // If the daemon pid was killed, or doesn't exist, just continue
             if (err.name == 'TIMEOUT') {
