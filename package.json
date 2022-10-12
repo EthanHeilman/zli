@@ -1,6 +1,6 @@
 {
   "name": "@bastionzero/zli",
-  "version": "6.11.8",
+  "version": "6.11.9",
   "description": "BastionZero cli",
   "repository": {
     "type": "git",
@@ -115,9 +115,9 @@
     "semver": "^7.3.2",
     "sha3": "^2.1.4",
     "ssh-config": "^4.0.6",
-    "ssh2": "^1.4.0",
-    "ssh2-promise": "^1.0.1",
-    "sshpk": "^1.16.1",
+    "ssh2": "^1.10.0",
+    "ssh2-promise": "^1.0.3",
+    "sshpk": "^1.17.0",
     "tcp-port-used": "^1.0.2",
     "term-size": "^2.2.1",
     "tmp": "^0.2.1",

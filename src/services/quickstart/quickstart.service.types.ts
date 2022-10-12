@@ -1,5 +1,5 @@
 import SSHConfig from 'ssh2-promise/lib/sshConfig';
-import { SsmTargetSummary } from '../../../webshell-common-ts/http/v2/target/ssm/types/ssm-target-summary.types';
+import { BzeroAgentSummary } from '../../../webshell-common-ts/http/v2/target/bzero/types/bzero-agent-summary.types';
 
 // Interface types for SSHConfig parsing package
 export interface SSHHostConfig {
@@ -46,7 +46,7 @@ export interface RegistrableSSHHost {
  * BastionZero.
  */
 export interface RegisteredSSHHost {
-    targetSummary: SsmTargetSummary;
+    targetSummary: BzeroAgentSummary;
     sshHost: ValidSSHHost;
 }
 
@@ -97,4 +97,11 @@ export interface InvalidSSHHost {
      * incompleteValidSSHHost to be considered valid
      */
     parseErrors: SSHConfigParseError[]
+}
+
+export class BzeroAlreadyInstalledError extends Error {
+    constructor(message?: string) {
+        super(message);
+        this.name = 'BzeroAlreadyInstalledError';
+    }
 }

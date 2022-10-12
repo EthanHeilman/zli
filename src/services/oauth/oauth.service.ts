@@ -364,13 +364,7 @@ export class OAuthService implements IDisposable {
     public async getIdTokenAndExitOnError(): Promise<string> {
         let idToken: string;
         try {
-            idToken = await this.getIdToken();
-
-            // If the OIDC tokens are not expired but there is no sessionId/Token
-            // or the registration did not create/update properly a new set of sessionId/Token
-            if (!this.configService.getSessionId() || !this.configService.getSessionToken())
-                throw new UserNotLoggedInError();
-
+            idToken = await this.getIdTokenAndCheckSessionToken();
         } catch (e) {
             this.logger.debug(`Get id token error: ${e.message}`);
             if (e instanceof RefreshTokenError) {
@@ -387,6 +381,23 @@ export class OAuthService implements IDisposable {
                 this.configService.logout();
                 await cleanExit(1, this.logger);
             }
+        }
+
+        return idToken;
+    }
+
+    /**
+     * Get the current user's id_token. Refresh it if it has expired. And handle session ID
+     * or token not being set by treating it as if the user is not logged in.
+     * @returns The current user's id_token
+     */
+    public async getIdTokenAndCheckSessionToken(): Promise<string> {
+        const idToken = await this.getIdToken();
+
+        // If the OIDC tokens are not expired but there is no sessionId/Token
+        // or the registration did not create/update properly a new set of sessionId/Token
+        if (!this.configService.getSessionId() || !this.configService.getSessionToken()) {
+            throw new UserNotLoggedInError();
         }
 
         return idToken;

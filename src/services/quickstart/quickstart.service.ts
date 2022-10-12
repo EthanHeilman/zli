@@ -1,4 +1,14 @@
-import { SSHConfigHostBlock, ValidSSHHost, SSHHostConfig, SSHConfigParseError, InvalidSSHHost, ValidSSHHostAndConfig, RegistrableSSHHost, RegisteredSSHHost } from './quickstart-ssm.service.types';
+import {
+    SSHConfigHostBlock,
+    ValidSSHHost,
+    SSHHostConfig,
+    SSHConfigParseError,
+    InvalidSSHHost,
+    ValidSSHHostAndConfig,
+    RegistrableSSHHost,
+    RegisteredSSHHost,
+    BzeroAlreadyInstalledError
+} from './quickstart.service.types';
 import { ConfigService } from '../config/config.service';
 import { Logger } from '../logger/logger.service';
 import { readFile } from '../../utils/utils';
@@ -14,21 +24,21 @@ import { ConsoleWithTranscriptService } from '../consoleWithTranscript/consoleWi
 import { TranscriptMessage } from '../consoleWithTranscript/consoleWithTranscript.types';
 import ora from 'ora';
 import { EnvironmentHttpService } from '../../http-services/environment/environment.http-services';
-import { SsmTargetHttpService } from '../../http-services/targets/ssm/ssm-target.http-services';
-import { PolicyHttpService } from '../../../src/http-services/policy/policy.http-services';
+import { PolicyHttpService } from '../../http-services/policy/policy.http-services';
 import { Environment } from '../../../webshell-common-ts/http/v2/policy/types/environment.types';
 import { TargetUser } from '../../../webshell-common-ts/http/v2/policy/types/target-user.types';
 import { Verb } from '../../../webshell-common-ts/http/v2/policy/types/verb.types';
 import { VerbType } from '../../../webshell-common-ts/http/v2/policy/types/verb-type.types';
 import { TargetConnectPolicySummary } from '../../../webshell-common-ts/http/v2/policy/target-connect/types/target-connect-policy-summary.types';
-import { SsmTargetSummary } from '../../../webshell-common-ts/http/v2/target/ssm/types/ssm-target-summary.types';
 import { ScriptTargetNameOption } from '../../../webshell-common-ts/http/v2/autodiscovery-script/types/script-target-name-option.types';
-import { getAutodiscoveryScript } from '../..//http-services/auto-discovery-script/auto-discovery-script.http-services';
+import { getBzeroBashAutodiscoveryScript } from '../../http-services/auto-discovery-script/auto-discovery-script.http-services';
 import { TargetStatus } from '../../../webshell-common-ts/http/v2/target/types/targetStatus.types';
 import { Subject } from '../../../webshell-common-ts/http/v2/policy/types/subject.types';
 import { SubjectType } from '../../../webshell-common-ts/http/v2/common.types/subject.types';
+import { BzeroTargetHttpService } from '../../http-services/targets/bzero/bzero.http-services';
+import { BzeroAgentSummary } from '../../../webshell-common-ts/http/v2/target/bzero/types/bzero-agent-summary.types';
 
-export class QuickstartSsmService {
+export class QuickstartService {
     constructor(
         private logger: Logger,
         private consoleAndTranscript: ConsoleWithTranscriptService,
@@ -38,27 +48,57 @@ export class QuickstartSsmService {
     ) { }
 
     /**
-     * Polls the bastion until the SSM target is Online and the agent version is
+     * Polls the bastion until the bzero target is Online and the agent version is
      * known.
-     * @param ssmTargetId The ID of the target to poll
+     * @param bzeroTargetName The name of the target to poll
+     * @param targetsToExclude Targets that should be excluded when trying to find the target to poll. This should
+     *   be targets that existed before quickstart attempts the bzero installation.
      * @returns Information about the target
      */
-    private async pollSsmTargetOnline(ssmTargetId: string): Promise<SsmTargetSummary> {
+    private async pollBzeroTargetOnline(bzeroTargetName: string, targetsToExclude: BzeroAgentSummary[] = []): Promise<BzeroAgentSummary> {
+        let targetsToExcludeMap: {[id: string]: BzeroAgentSummary};
+        if (targetsToExclude.length > 0) {
+            targetsToExcludeMap = targetsToExclude.reduce((map, target) => ({...map, [target.id]: target}), {});
+        }
+
         // Try 60 times with a delay of 10 seconds between each attempt (10 min).
         const retrier = new Retrier({
             limit: 60,
             delay: 1000 * 10
         });
-        return retrier.resolve(() => new Promise<SsmTargetSummary>(async (resolve, reject) => {
-            try {
-                const ssmTargetHttpService = new SsmTargetHttpService(this.configService, this.logger);
 
-                const target = await ssmTargetHttpService.GetSsmTarget(ssmTargetId);
-                if (target.status === TargetStatus.Online && target.agentVersion !== '') {
-                    resolve(target);
+        const bzeroTargetHttpService = new BzeroTargetHttpService(this.configService, this.logger);
+        let targetId: string;
+
+        return retrier.resolve(() => new Promise<BzeroAgentSummary>(async (resolve, reject) => {
+            const checkTarget = (bzeroTarget: BzeroAgentSummary) => {
+                if (bzeroTarget.status === TargetStatus.Online) {
+                    resolve(bzeroTarget);
                 } else {
-                    this.logger.debug(`Target ${target.name} has status:${target.status.toString()} and agentVersion:${target.agentVersion}`);
-                    reject(`Target ${target.name} is not online`);
+                    this.logger.debug(`Target ${bzeroTarget.name} has status:${bzeroTarget.status.toString()} and agentVersion:${bzeroTarget.agentVersion}`);
+                    reject(`Target ${bzeroTarget.name} is not online.`);
+                }
+            };
+
+            try {
+                if (!targetId) {
+                    // Get all bzero targets and look for one with name matching bzeroTargetName.
+                    let bzeroTargets = await bzeroTargetHttpService.ListBzeroTargets();
+                    if (targetsToExcludeMap) {
+                        // Remove exluded targets from new list of targets.
+                        bzeroTargets = bzeroTargets.filter(target => !targetsToExcludeMap[target.id]);
+                    }
+
+                    const foundTarget = bzeroTargets.find(target => target.name === bzeroTargetName);
+                    if (foundTarget) {
+                        targetId = foundTarget.id;
+                        checkTarget(foundTarget);
+                    } else {
+                        throw new Error(`No target named ${bzeroTargetName} was found.`);
+                    }
+                } else {
+                    const bzeroTarget = await bzeroTargetHttpService.GetBzeroTarget(targetId);
+                    checkTarget(bzeroTarget);
                 }
             } catch (error) {
                 reject(error);
@@ -79,7 +119,7 @@ export class QuickstartSsmService {
             // NOTE: We don't handle the edge case where the executable name
             // has changed since the target was first registered. In this
             // edge case, the target will be registered again.
-            await sshConnection.exec(`bzero-ssm-agent --version`);
+            await sshConnection.exec(`bzero --version`);
         } catch {
             // exec() throws an error if the command fails to run (e.g. agent
             // binary not found)
@@ -109,23 +149,31 @@ export class QuickstartSsmService {
     public async addSSHHostToBastionZero(registrableHost: RegistrableSSHHost, spinner: ora.Ora): Promise<RegisteredSSHHost> {
         return new Promise<RegisteredSSHHost>(async (resolve, reject) => {
             try {
-                const ssmTargetId = await this.runAutodiscoveryOnSSHHost(registrableHost);
-                this.logger.debug(`Bastion assigned SSH host ${registrableHost.host.sshHost.name} with the following unique target id: ${ssmTargetId}`);
+                const bzeroTargetService = new BzeroTargetHttpService(this.configService, this.logger);
+                const preexistingBzeroTargets = await bzeroTargetService.ListBzeroTargets();
+                const targetName = await this.runAutodiscoveryOnSSHHost(registrableHost);
 
                 // Poll for "Online" status
-                const ssmTarget = await this.pollSsmTargetOnline(ssmTargetId);
+                const target = await this.pollBzeroTargetOnline(targetName, preexistingBzeroTargets);
+                this.logger.debug(`Bastion assigned SSH host ${registrableHost.host.sshHost.name} with the following unique target id: ${target.id}`);
 
                 // Add success message to current prefixText of the spinner and push to transcript
                 const successMsg = chalk.green(`✔ SSH host ${registrableHost.host.sshHost.name} successfully added to BastionZero!`);
                 this.consoleAndTranscript.pushToTranscript(successMsg);
                 spinner.prefixText = spinner.prefixText + successMsg + '\n';
 
-                resolve({ targetSummary: ssmTarget, sshHost: registrableHost.host.sshHost});
+                resolve({ targetSummary: target, sshHost: registrableHost.host.sshHost});
             } catch (error) {
                 // Add fail message to current prefixText of the spinner and push to transcript
-                const errMsg = chalk.red(`BastionZero is already installed on SSH host: ${registrableHost.host.sshHost.name}. This target will be skipped.`);
-                this.consoleAndTranscript.pushToTranscript(errMsg);
-                spinner.prefixText = spinner.prefixText + errMsg + '\n';
+                let errorMessage;
+                if (error instanceof BzeroAlreadyInstalledError) {
+                    errorMessage = chalk.red(`BastionZero is already installed on SSH host: ${registrableHost.host.sshHost.name}. This target will be skipped.`);
+                } else {
+                    errorMessage = chalk.red(`✖ Failed to add SSH host: ${registrableHost.host.sshHost.name} to BastionZero. ${error}`);
+                }
+
+                this.consoleAndTranscript.pushToTranscript(errorMessage);
+                spinner.prefixText = spinner.prefixText + errorMessage + '\n';
 
                 reject(error);
             }
@@ -140,9 +188,9 @@ export class QuickstartSsmService {
      * - A failure to receive the autodiscovery script from the Bastion
      * - A failure to start the autodiscovery script
      * - If the autodiscovery script returns a non-zero exit status code
-     * - A failure to parse the machine's SSM target ID
+     * - A failure to parse the machine's Bzero target ID
      * @param registrableSSHHost The SSH host to run the autodiscovery script on
-     * @returns The target ID of the newly registered host
+     * @returns The hostname, which is also the target name, of the newly registered host
      */
     private async runAutodiscoveryOnSSHHost(registrableSSHHost: RegistrableSSHHost): Promise<string> {
         const sshConfig = registrableSSHHost.host.config;
@@ -172,7 +220,7 @@ export class QuickstartSsmService {
                 // We don't want to register twice, so fail early
                 //
                 // NOTE: Instead of throwing an error, a better design would be
-                // to return the SSM target ID of the already registered target.
+                // to return the target ID of the already registered target.
                 // It improves the quickstart experience in the following ways:
                 // (1) User's SSH config for an already registered SSH host can
                 // have a new username => New policy will be created with new
@@ -184,13 +232,13 @@ export class QuickstartSsmService {
                 //
                 // We can't make this improvement right now as the agent doesn't
                 // know its own ID (we don't store it in the agent)
-                throw new Error('Agent is already installed');
+                throw new BzeroAlreadyInstalledError('Agent is already installed');
             }
 
             // Get autodiscovery script
             //
             // The registered target's name will match the Bash hostname of the target machine
-            const script = await getAutodiscoveryScript(this.logger, this.configService, registrableSSHHost.envId, ScriptTargetNameOption.BashHostName, 'latest');
+            const script = await getBzeroBashAutodiscoveryScript(this.logger, this.configService, registrableSSHHost.envId, ScriptTargetNameOption.BashHostName);
 
             // Run script on target
             const execAutodiscoveryScriptCmd = `bash << 'endmsg'\n${script}\nendmsg`;
@@ -199,30 +247,23 @@ export class QuickstartSsmService {
                     .then(socket => {
                         this.logger.debug(`Running autodiscovery script on host: ${hostName}`);
 
-                        // Store last printed message on stdout
-                        let lastOutput = '';
-
                         socket.on('data', (data: Buffer) => {
                             // Log stdout
                             const dataAsStr = data.toString();
                             this.logger.debug(`STDOUT: ${dataAsStr}`);
-                            lastOutput = dataAsStr;
                         });
-                        socket.on('close', (code: number) => {
+
+                        socket.on('close', async (code: number) => {
                             if (code == 0) {
                                 this.logger.debug(`Successfully executed autodiscovery script on host: ${hostName}`);
+                                // Get the actual hostname from the target since it could be different than what is defined
+                                // in the the SSH config file.
+                                const targetName = (await conn.exec('hostname')).trim(); // hostname includes newline so trim it
 
-                                // Regex expression looks for "Target Id:" and then
-                                // captures (saves a backwards reference) any
-                                // alphanumeric (+ underscore) characters
-                                const targetIdRegex = new RegExp('Target Id: ([\\w-]*)');
-                                const matches = targetIdRegex.exec(lastOutput);
-                                if (matches) {
-                                    // The result of the first capturing group is
-                                    // stored at index 1
-                                    resolve(matches[1].trim());
+                                if (targetName) {
+                                    resolve(targetName);
                                 } else {
-                                    reject(`Failed to find target ID in last message printed by stdout`);
+                                    reject(`Failed to find target name.`);
                                 }
                             } else {
                                 reject(`Failed to execute autodiscovery script. Error code: ${code}`);
@@ -235,8 +276,8 @@ export class QuickstartSsmService {
             });
 
             // Wait for the script to finish executing
-            const ssmTargetId = await execAutodiscoveryScript;
-            return ssmTargetId;
+            const targetName = await execAutodiscoveryScript;
+            return targetName;
         } finally {
             this.logger.debug(`Closing SSH connection with host: ${hostName}`);
             await conn.close();
@@ -522,7 +563,7 @@ export class QuickstartSsmService {
                 // environment id to use during registration
                 hosts.forEach(host => registrableSSHHosts.push({ host: host, envId: quickstartEnvId }));
             } catch (err) {
-                this.visualError(`Failed creating env for SSH username ${username}: ${err}`);
+                this.visualError(`Failed creating environment for SSH username ${username}: ${err}`);
                 continue;
             }
         }

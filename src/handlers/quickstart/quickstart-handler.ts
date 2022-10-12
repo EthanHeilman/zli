@@ -1,7 +1,7 @@
 import { ConfigService } from '../../services/config/config.service';
 import { Logger } from '../../services/logger/logger.service';
 import { cleanExit } from '../clean-exit.handler';
-import { QuickstartSsmService } from '../../services/quickstart/quickstart-ssm.service';
+import { QuickstartService } from '../../services/quickstart/quickstart.service';
 import { GAService } from '../../services/Tracking/google-analytics.service';
 import { MixpanelService } from '../../services/Tracking/mixpanel.service';
 import { readFile } from '../../utils/utils';
@@ -21,7 +21,7 @@ import { KeySplittingService } from '../../../webshell-common-ts/keysplitting.se
 import { EnvironmentHttpService } from '../../http-services/environment/environment.http-services';
 import { PolicyHttpService } from '../../../src/http-services/policy/policy.http-services';
 import { UserSummary } from '../../../webshell-common-ts/http/v2/user/types/user-summary.types';
-import { RegisteredSSHHost } from '../../../src/services/quickstart/quickstart-ssm.service.types';
+import { RegisteredSSHHost } from '../../services/quickstart/quickstart.service.types';
 
 const welcomeMessage = `Welcome to BastionZero and the journey to zero trust access via our multi root zero trust access protocol (MrZAP). We're excited to have you!\n
 Our quickstart installer is a fast and easy method for you to try BastionZero using your existing SSH configuration.
@@ -39,11 +39,11 @@ const tipsMessage = `While your target(s) are coming online, here are a few tips
   (1) To list all of your targets, use \`zli list-targets\` or \`zli lt\`
   (2) To connect to a target, use \`zli connect user@targetName\`
   (3) To see your policies, use \`zli policy\`
-\nView the zli manual at: https://bastionzero.freshdesk.com/support/solutions/articles/67000629821-zero-trust-command-line-interface-zli-manual
+\nView the zli manual at: https://docs.bastionzero.com/docs/zli-reference-manual
 \nIf you’re wondering what’s happening in the background -- We are using your SSH key to install the BastionZero agent onto your machine(s). These agents protect your hosts from unprivileged access, even from BastionZero, thanks to our Multi Root Zero Trust Access protocol. To learn more about the protocol, please take a look at: https://github.com/bastionzero/whitepapers/blob/main/mrzap/README.md`;
 
 function printFooterMessage(): void {
-    console.log('To see the full suite of capabilities that BastionZero offers, take a look at our documentation at: https://bastionzero.freshdesk.com/support/home');
+    console.log('To see the full suite of capabilities that BastionZero offers, take a look at our documentation at: https://docs.bastionzero.com/');
 }
 
 function getFirstName(userSummary: UserSummary): string | undefined {
@@ -139,8 +139,6 @@ export async function quickstartHandler(
 ) {
     await validateQuickstartArgs(argv);
 
-    const policyHttpService = new PolicyHttpService(configService, logger);
-    const envHttpService = new EnvironmentHttpService(configService, logger);
     const consoleWithTranscript = new ConsoleWithTranscriptService(chalk.magenta);
 
     // Callback on cancel prompt
@@ -154,8 +152,6 @@ export async function quickstartHandler(
     const onSubmitPrompt = (prompt: PromptObject, answer: any) => {
         consoleWithTranscript.pushToTranscript(`${prompt.message} ${answer}`);
     };
-
-    const quickstartService = new QuickstartSsmService(logger, consoleWithTranscript, configService, policyHttpService, envHttpService);
 
     // Clear console before we begin
     clearScreen();
@@ -178,7 +174,7 @@ export async function quickstartHandler(
     try {
         // Run standard oauth middleware logic that checks if user is logged in
         // and refreshes token if its expired.
-        await oauthService.getIdToken();
+        await oauthService.getIdTokenAndCheckSessionToken();
 
         await postSuccessLogin(configService.me(), (firstName) => {
             if (firstName) {
@@ -206,6 +202,12 @@ export async function quickstartHandler(
             await cleanExit(1, logger);
         }
     }
+
+    // These HTTP services must be constructed after login so they are initialized with the
+    // newest sessionId/sessionToken from the config service.
+    const policyHttpService = new PolicyHttpService(configService, logger);
+    const envHttpService = new EnvironmentHttpService(configService, logger);
+    const quickstartService = new QuickstartService(logger, consoleWithTranscript, configService, policyHttpService, envHttpService);
 
     // New step so clear screen
     clearScreen();
@@ -335,27 +337,27 @@ export async function quickstartHandler(
     spinner.text = '';
     spinner.stopAndPersist();
 
-    const ssmTargetsSuccessfullyAdded = autodiscoveryResults.reduce<RegisteredSSHHost[]>((acc, result) => result.status === 'fulfilled' ? [...acc, result.value] : acc, []);
+    const targetsSuccessfullyAdded = autodiscoveryResults.reduce<RegisteredSSHHost[]>((acc, result) => result.status === 'fulfilled' ? [...acc, result.value] : acc, []);
 
     // Exit early if all hosts failed
-    if (ssmTargetsSuccessfullyAdded.length == 0) {
+    if (targetsSuccessfullyAdded.length == 0) {
         consoleWithTranscript.log('Failed to add all selected hosts. Exiting out of quickstart...');
         await exitAndSaveTranscript(1, logger, consoleWithTranscript.getTranscript());
     }
 
     // Create policy for each unique username parsed from the SSH config
-    await quickstartService.createPolicyForUniqueUsernames(ssmTargetsSuccessfullyAdded);
+    await quickstartService.createPolicyForUniqueUsernames(targetsSuccessfullyAdded);
 
     // New step so clear again
     clearScreen();
 
-    const sshHostsSuccessfullyAddedPretty = ssmTargetsSuccessfullyAdded.map(target => target.sshHost.name).join(', ');
+    const sshHostsSuccessfullyAddedPretty = targetsSuccessfullyAdded.map(target => target.sshHost.name).join(', ');
     const successMessage = `Congratulations! You've secured access to your SSH host(s): ${sshHostsSuccessfullyAddedPretty} with MrZAP using BastionZero.\n
 Log into ${configService.getBastionUrl()} to see your environments, policies, and detailed logs.`;
     consoleWithTranscript.log(successMessage);
 
     consoleWithTranscript.log('Use `zli connect` to connect to your newly registered targets.');
-    for (const target of ssmTargetsSuccessfullyAdded) {
+    for (const target of targetsSuccessfullyAdded) {
         consoleWithTranscript.log(`\tzli connect ${target.sshHost.username}@${target.targetSummary.name}`);
     }
 
