@@ -63,8 +63,6 @@ export class HttpService {
                             await oauthService.refreshIdTokenAndSessionToken();
 
                             const storedAuthHeader = this.configService.getAuthHeader()
-                            this.logger.debug(`stored auth header: ${storedAuthHeader}`);
-
                             const updatedOptions = {
                                 headers: {
                                     Authorization: storedAuthHeader
