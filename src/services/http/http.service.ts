@@ -5,6 +5,7 @@ import FormData from 'form-data';
 import { Logger } from '../logger/logger.service';
 import { URLSearchParams } from 'url';
 import {Cookie, CookieJar} from 'tough-cookie';
+import { OAuthService } from '../oauth/oauth.service';
 
 export class HttpService {
     // ref for got: https://github.com/sindresorhus/got
@@ -22,20 +23,23 @@ export class HttpService {
         this.baseUrl = `${this.configService.serviceUrl()}${serviceRoute}`;
         this.cookieJar = new CookieJar();
 
-        const sessionId = this.configService.getSessionId();
-        if (sessionId) {
-            const sessionIdCookie = new Cookie({key: 'sessionId', value: sessionId, path: '/', secure: true, sameSite: 'Strict'});
-            this.cookieJar.setCookieSync(sessionIdCookie, this.baseUrl);
+        const setSessionTokenCookies = () => {
+            const sessionId = this.configService.getSessionId();
+            if (sessionId) {
+                const sessionIdCookie = new Cookie({ key: 'sessionId', value: sessionId, path: '/', secure: true, sameSite: 'Strict' });
+                this.cookieJar.setCookieSync(sessionIdCookie, this.baseUrl);
+            }
+
+            const sessionToken = this.configService.getSessionToken();
+            if (sessionToken) {
+                const sessionTokenCookie = new Cookie({ key: 'sessionToken', value: sessionToken, path: '/', secure: true, sameSite: 'Strict' });
+                this.cookieJar.setCookieSync(sessionTokenCookie, this.baseUrl);
+            }
         }
 
-        const sessionToken = this.configService.getSessionToken();
-        if (sessionToken) {
-            const sessionTokenCookie = new Cookie({key: 'sessionToken', value: sessionToken, path: '/', secure: true, sameSite: 'Strict'});
-            this.cookieJar.setCookieSync(sessionTokenCookie, this.baseUrl);
-        }
+        setSessionTokenCookies();
 
-
-        this.httpClient = got.extend({
+        const instance = got.extend({
             cookieJar: this.cookieJar,
             prefixUrl: this.baseUrl,
             // Remember to set headers before calling API
@@ -44,15 +48,56 @@ export class HttpService {
                     (options) => this.logger.trace(`Making request to: ${options.url}`)
                 ],
                 afterResponse: [
-                    (response, _) => {
+                    async (response, retryWithMergedOptions) => {
                         this.logger.trace(`Request completed to: ${response.url}`);
+
+
+                        // Unauthorized
+                        if (response.statusCode === 401) {
+                            this.logger.debug(`old id token: ${configService.getIdToken()}`)
+                            this.logger.debug('about to refresh')
+                            this.logger.debug(`Base URL: ${this.baseUrl}`);
+                            // Refresh!
+                            const oauthService = new OAuthService(this.configService, this.logger);
+                            const idToken = await oauthService.getIdTokenAndCheckSessionToken();
+
+                            this.logger.debug(`new id token: ${idToken}`);
+
+                            const storedAuthHeader = this.configService.getAuthHeader()
+                            this.logger.debug(`stored auth header: ${storedAuthHeader}`);
+
+                            const updatedOptions = {
+                                headers: {
+                                    Authorization: storedAuthHeader
+                                }
+                            }
+
+                            // Update the headers
+                            // this.httpClient = this.httpClient.extend(updatedOptions);
+
+                            // Save for further requests
+                            instance.defaults.options = got.mergeOptions(instance.defaults.options, updatedOptions);
+
+                            // And the session token cookies
+                            setSessionTokenCookies();
+
+                            // Make a new retry
+                            return retryWithMergedOptions(updatedOptions);
+                        }
+
                         return response;
                     }
                 ]
             },
-            timeout: 30000 // Timeout after 30 seconds
+            retry: {
+                limit: 1,
+            },
+            timeout: 30000, // Timeout after 30 seconds
+            mutableDefaults: true
             // throwHttpErrors: false // potentially do this if we want to check http without exceptions
         });
+
+        this.httpClient = instance
     }
 
     private setHeaders(extraHeaders? : Dictionary<string>) {
