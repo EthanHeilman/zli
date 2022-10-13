@@ -35,7 +35,7 @@ export class HttpService {
                 const sessionTokenCookie = new Cookie({ key: 'sessionToken', value: sessionToken, path: '/', secure: true, sameSite: 'Strict' });
                 this.cookieJar.setCookieSync(sessionTokenCookie, this.baseUrl);
             }
-        }
+        };
 
         setSessionTokenCookies();
 
@@ -50,7 +50,7 @@ export class HttpService {
                 afterResponse: [
                     async (response, retryWithMergedOptions) => {
                         this.logger.trace(`Request completed to: ${response.url}`);
-                        
+
                         // Skip retry if we are refreshing
                         if(response.url.endsWith('/users/register') || response.url.endsWith('/users/me')) {
                             return response;
@@ -62,12 +62,12 @@ export class HttpService {
                             const oauthService = new OAuthService(this.configService, this.logger);
                             await oauthService.refreshIdTokenAndSessionToken();
 
-                            const storedAuthHeader = this.configService.getAuthHeader()
+                            const storedAuthHeader = this.configService.getAuthHeader();
                             const updatedOptions = {
                                 headers: {
                                     Authorization: storedAuthHeader
                                 }
-                            }
+                            };
 
                             // Save for further requests
                             gotInstance.defaults.options = got.mergeOptions(gotInstance.defaults.options, updatedOptions);
