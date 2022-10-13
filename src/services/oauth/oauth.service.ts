@@ -328,31 +328,34 @@ export class OAuthService implements IDisposable {
         // Refresh if the token exists and has expired
         if (tokenSet) {
             if (!this.isAuthenticated()) {
-                this.logger.debug('Refreshing oauth token');
-
-                let newTokenSet: TokenSet;
-                try {
-                    newTokenSet = await this.refresh();
-                } catch (e) {
-                    this.logger.debug(`Refresh Token Error: ${e.message}`);
-                    if (e instanceof errors.RPError || e instanceof errors.OPError) {
-                        throw new RefreshTokenError();
-                    } else {
-                        throw e;
-                    }
-                }
-
-                this.configService.setTokenSet(newTokenSet);
-                this.logger.debug('Oauth token refreshed');
-
-                const userHttpService = new UserHttpService(this.configService, this.logger);
-                await userHttpService.Register();
+                await this.refreshIdTokenAndSessionToken();
             }
         } else {
             throw new UserNotLoggedInError();
         }
 
         return this.configService.getAuth();
+    }
+
+    public async refreshIdTokenAndSessionToken() {
+        this.logger.debug('Refreshing oauth token');
+        let newTokenSet: TokenSet;
+        try {
+            newTokenSet = await this.refresh();
+        } catch (e) {
+            this.logger.debug(`Refresh Token Error: ${e.message}`);
+            if (e instanceof errors.RPError || e instanceof errors.OPError) {
+                throw new RefreshTokenError();
+            } else {
+                throw e;
+            }
+        }
+
+        this.configService.setTokenSet(newTokenSet);
+        this.logger.debug('Oauth token refreshed');
+
+        const userHttpService = new UserHttpService(this.configService, this.logger);
+        await userHttpService.Register();
     }
 
     /**

@@ -265,7 +265,7 @@ export class CliDriver
             .middleware(async () => {
                 if(!this.oauthCommands.has(baseCmd))
                     return;
-                // await oAuthMiddleware(this.configService, this.logger);
+                await oAuthMiddleware(this.configService, this.logger);
             })
             .middleware(async (argv) => {
                 const isGenerateBash = argv._[0] == 'generate' && argv._[1] == 'bash';

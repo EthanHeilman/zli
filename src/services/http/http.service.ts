@@ -39,7 +39,7 @@ export class HttpService {
 
         setSessionTokenCookies();
 
-        const instance = got.extend({
+        this.httpClient = got.extend({
             cookieJar: this.cookieJar,
             prefixUrl: this.baseUrl,
             // Remember to set headers before calling API
@@ -50,18 +50,17 @@ export class HttpService {
                 afterResponse: [
                     async (response, retryWithMergedOptions) => {
                         this.logger.trace(`Request completed to: ${response.url}`);
-
+                        
+                        // Skip retry if we are refreshing
+                        if(response.url.endsWith('/users/register') || response.url.endsWith('/users/me')) {
+                            return response;
+                        }
 
                         // Unauthorized
                         if (response.statusCode === 401) {
-                            this.logger.debug(`old id token: ${configService.getIdToken()}`)
-                            this.logger.debug('about to refresh')
-                            this.logger.debug(`Base URL: ${this.baseUrl}`);
                             // Refresh!
                             const oauthService = new OAuthService(this.configService, this.logger);
-                            const idToken = await oauthService.getIdTokenAndCheckSessionToken();
-
-                            this.logger.debug(`new id token: ${idToken}`);
+                            await oauthService.refreshIdTokenAndSessionToken();
 
                             const storedAuthHeader = this.configService.getAuthHeader()
                             this.logger.debug(`stored auth header: ${storedAuthHeader}`);
@@ -72,11 +71,8 @@ export class HttpService {
                                 }
                             }
 
-                            // Update the headers
-                            // this.httpClient = this.httpClient.extend(updatedOptions);
-
                             // Save for further requests
-                            instance.defaults.options = got.mergeOptions(instance.defaults.options, updatedOptions);
+                            this.httpClient.defaults.options = got.mergeOptions(this.httpClient.defaults.options, updatedOptions);
 
                             // And the session token cookies
                             setSessionTokenCookies();
@@ -89,15 +85,11 @@ export class HttpService {
                     }
                 ]
             },
-            retry: {
-                limit: 1,
-            },
+            retry: { limit: 1}, // only retry once in case we need to refresh the id/session tokens
             timeout: 30000, // Timeout after 30 seconds
             mutableDefaults: true
             // throwHttpErrors: false // potentially do this if we want to check http without exceptions
         });
-
-        this.httpClient = instance
     }
 
     private setHeaders(extraHeaders? : Dictionary<string>) {
