@@ -39,7 +39,7 @@ export class HttpService {
 
         setSessionTokenCookies();
 
-        this.httpClient = got.extend({
+        const gotInstance = got.extend({
             cookieJar: this.cookieJar,
             prefixUrl: this.baseUrl,
             // Remember to set headers before calling API
@@ -70,7 +70,7 @@ export class HttpService {
                             }
 
                             // Save for further requests
-                            this.httpClient.defaults.options = got.mergeOptions(this.httpClient.defaults.options, updatedOptions);
+                            gotInstance.defaults.options = got.mergeOptions(gotInstance.defaults.options, updatedOptions);
 
                             // And the session token cookies
                             setSessionTokenCookies();
@@ -88,6 +88,8 @@ export class HttpService {
             mutableDefaults: true
             // throwHttpErrors: false // potentially do this if we want to check http without exceptions
         });
+
+        this.httpClient = gotInstance;
     }
 
     private setHeaders(extraHeaders? : Dictionary<string>) {
