@@ -22,26 +22,33 @@ export class HttpService {
         this.baseUrl = `${this.configService.serviceUrl()}${serviceRoute}`;
         this.cookieJar = new CookieJar();
 
-        const sessionId = this.configService.getSessionId();
-        if (sessionId) {
-            const sessionIdCookie = new Cookie({key: 'sessionId', value: sessionId, path: '/', secure: true, sameSite: 'Strict'});
-            this.cookieJar.setCookieSync(sessionIdCookie, this.baseUrl);
-        }
-
-        const sessionToken = this.configService.getSessionToken();
-        if (sessionToken) {
-            const sessionTokenCookie = new Cookie({key: 'sessionToken', value: sessionToken, path: '/', secure: true, sameSite: 'Strict'});
-            this.cookieJar.setCookieSync(sessionTokenCookie, this.baseUrl);
-        }
-
-
         this.httpClient = got.extend({
             cookieJar: this.cookieJar,
             prefixUrl: this.baseUrl,
             // Remember to set headers before calling API
             hooks: {
+                init: [
+                    (_) => {
+                        // Always update the sessionId/sessionToken cookies from
+                        // the config file in case they have changed from a
+                        // oauth.service.refresh()
+                        const sessionId = this.configService.getSessionId();
+                        if (sessionId) {
+                            const sessionIdCookie = new Cookie({key: 'sessionId', value: sessionId, path: '/', secure: true, sameSite: 'Strict'});
+                            this.cookieJar.setCookieSync(sessionIdCookie, this.baseUrl);
+                        }
+
+                        const sessionToken = this.configService.getSessionToken();
+                        if (sessionToken) {
+                            const sessionTokenCookie = new Cookie({key: 'sessionToken', value: sessionToken, path: '/', secure: true, sameSite: 'Strict'});
+                            this.cookieJar.setCookieSync(sessionTokenCookie, this.baseUrl);
+                        }
+                    }
+                ],
                 beforeRequest: [
-                    (options) => this.logger.trace(`Making request to: ${options.url}`)
+                    (options) => {
+                        this.logger.trace(`Making request to: ${options.url}`);
+                    }
                 ],
                 afterResponse: [
                     (response, _) => {
