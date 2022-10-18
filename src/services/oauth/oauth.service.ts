@@ -347,6 +347,10 @@ export class OAuthService implements IDisposable {
 
                 const userHttpService = new UserHttpService(this.configService, this.logger);
                 await userHttpService.Register();
+                // Update me section of the config in case this is a new login or any
+                // user information has changed since last login
+                const me = await userHttpService.Me();
+                this.configService.setMe(me);
             }
         } else {
             throw new UserNotLoggedInError();
