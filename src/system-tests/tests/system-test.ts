@@ -207,6 +207,10 @@ beforeAll(async () => {
     // Ask bastion for new session token
     const userHttpService = new UserHttpService(configService, logger);
     await userHttpService.Register();
+    // Update me section of the config in case this is a new login or any
+    // user information has changed since last login
+    const me = await userHttpService.Me();
+    configService.setMe(me);
 
     // Create a new api key that can be used for system tests
     [systemTestRESTApiKey, systemTestRegistrationApiKey] = await setupSystemTestApiKeys();

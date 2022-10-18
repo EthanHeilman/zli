@@ -106,6 +106,11 @@ export async function login(keySplittingService: KeySplittingService, configServ
         break;
     }
 
+    // Update me section of the config in case this is a new login or any
+    // user information has changed since last login
+    const me = await userHttpService.Me();
+    configService.setMe(me);
+
     // clear temporary SSH files
     removeIfExists(configService.sshKeyPath());
     removeIfExists(configService.sshKnownHostsPath());
