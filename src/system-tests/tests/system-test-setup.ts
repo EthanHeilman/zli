@@ -475,20 +475,56 @@ ${createBzeroCustomerUserCmd}
 }
 
 function getCompileBzeroFromSourceCommands(packageName: 'bzero' | 'bzero-beta'): string {
-    return String.raw`
-cd /
-git clone -b ${bzeroAgentBranch} https://github.com/bastionzero/bzero.git /root/bzero
-git clone ${taginfo} https://github.com/bastionzero/bzero.git /root/bzero
-git clone ${Commithash} https://github.com/bastionzero/bzero.git /root/bzero
-export GOROOT=/usr/local/go
-export GOPATH=/root/go
-export GOCACHE=/root/.cache/go-build
-sh /root/bzero/update-agent-version.sh
-cd /root/bzero/bctl/agent
-/usr/local/go/bin/go build
-systemctl stop ${packageName}
-cp agent /usr/bin/${packageName}
-systemctl restart ${packageName}
-cd /
-`;
+
+    if (bzeroAgentBranch){
+        return String.raw`
+        cd /
+        git clone -b ${bzeroAgentBranch} https://github.com/bastionzero/bzero.git /root/bzero
+        cd /root/bzero ; git reset --hard origin/${bzeroAgentBranch}'
+        export GOROOT=/usr/local/go
+        export GOPATH=/root/go
+        export GOCACHE=/root/.cache/go-build
+        sh /root/bzero/update-agent-version.sh
+        cd /root/bzero/bctl/agent
+        /usr/local/go/bin/go build
+        systemctl stop ${packageName}
+        cp agent /usr/bin/${packageName}
+        systemctl restart ${packageName}
+        cd /
+        `;
+    }
+    else if (taginfo){
+        return String.raw`
+        cd /
+        git clone -b ${taginfo} –single-branch https://github.com/bastionzero/bzero.git /root/bzero
+        cd /root/bzero ; git reset --hard ${taginfo}'
+        export GOROOT=/usr/local/go
+        export GOPATH=/root/go
+        export GOCACHE=/root/.cache/go-build
+        sh /root/bzero/update-agent-version.sh
+        cd /root/bzero/bctl/agent
+        /usr/local/go/bin/go build
+        systemctl stop ${packageName}
+        cp agent /usr/bin/${packageName}
+        systemctl restart ${packageName}
+        cd /
+        `;
+    }
+    else if (Commithash){
+        return String.raw`
+        cd /
+        git clone -b ${Commithash} https://github.com/bastionzero/bzero.git /root/bzero
+        cd /root/bzero ; git reset --hard ${Commithash}'
+        export GOROOT=/usr/local/go
+        export GOPATH=/root/go
+        export GOCACHE=/root/.cache/go-build
+        sh /root/bzero/update-agent-version.sh
+        cd /root/bzero/bctl/agent
+        /usr/local/go/bin/go build
+        systemctl stop ${packageName}
+        cp agent /usr/bin/${packageName}
+        systemctl restart ${packageName}
+        cd /
+        `;
+    }
 }

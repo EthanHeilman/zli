@@ -123,13 +123,13 @@ if (bzeroAgentBranch) {
     logger.info(`BZERO_AGENT_BRANCH is set. Using specific branch for vt tests (agent): ${bzeroAgentBranch}.`);
 }
 
-// Set this environment variable to compile agent from specific remote tag(verstion)
+// Set this environment variable to compile agent from specific remote tag(version)
 export const taginfo = process.env.TAGINFO;
 if (taginfo) {
     logger.info(`TAGINFO is set. Using specific tag for vt tests (agent): ${taginfo}.`);
 }
 
-// Set this environment variable to compile agent from specific remote tag(verstion)
+// Set this environment variable to compile agent from specific remote commit
 export const Commithash = process.env.COMMITHASH;
 if (Commithash) {
     logger.info(`COMMITHASH is set. Using specific commit for vt tests (agent): ${Commithash}.`);
