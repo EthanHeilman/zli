@@ -1,5 +1,5 @@
 import { DigitalOceanDropletSize } from '../digital-ocean/digital-ocean.types';
-import { allTargets,  bctlQuickstartVersion, bzeroAgentBranch, bzeroAgentVersion, bzeroKubeAgentImageName, configService, digitalOceanRegistry, doApiKey, logger, resourceNamePrefix, systemTestEnvId, systemTestEnvName, systemTestEnvNameCluster, systemTestRegistrationApiKey, systemTestTags, systemTestUniqueId, testTargets } from './system-test';
+import { allTargets,  bctlQuickstartVersion, bzeroAgentBranch, bzeroAgentVersion, bzeroKubeAgentImageName, configService, digitalOceanRegistry, doApiKey, logger, resourceNamePrefix, systemTestEnvId, systemTestEnvName, systemTestEnvNameCluster, systemTestRegistrationApiKey, systemTestTags, systemTestUniqueId, testTargets , taginfo, Commithash} from './system-test';
 import { checkAllSettledPromise, stripTrailingSlash } from './utils/utils';
 import * as k8s from '@kubernetes/client-node';
 import { ClusterTargetStatusPollError, RegisteredDigitalOceanKubernetesCluster } from '../digital-ocean/digital-ocean-kube.service.types';
@@ -478,6 +478,8 @@ function getCompileBzeroFromSourceCommands(packageName: 'bzero' | 'bzero-beta'):
     return String.raw`
 cd /
 git clone -b ${bzeroAgentBranch} https://github.com/bastionzero/bzero.git /root/bzero
+git clone ${taginfo} https://github.com/bastionzero/bzero.git /root/bzero
+git clone ${Commithash} https://github.com/bastionzero/bzero.git /root/bzero
 export GOROOT=/usr/local/go
 export GOPATH=/root/go
 export GOCACHE=/root/.cache/go-build
