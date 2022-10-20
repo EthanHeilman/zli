@@ -130,9 +130,9 @@ if (taginfo) {
 }
 
 // Set this environment variable to compile agent from specific remote commit
-export const Commithash = process.env.COMMITHASH;
-if (Commithash) {
-    logger.info(`COMMITHASH is set. Using specific commit for vt tests (agent): ${Commithash}.`);
+export const commitHash = process.env.COMMITHASH;
+if (commitHash) {
+    logger.info(`COMMITHASH is set. Using specific commit for vt tests (agent): ${commitHash}.`);
 }
 
 // URL of private DigitalOcean registry
