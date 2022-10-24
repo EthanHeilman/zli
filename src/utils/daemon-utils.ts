@@ -461,6 +461,10 @@ export function waitForDaemonProcessExit(logger: Logger, loggerConfigService: Lo
                     exitCode = 0;
                     break;
                 }
+                case DAEMON_EXIT_CODES.USER_NOT_FOUND: {
+                    logger.error('Failed to connect: the specified user does not exist on the target');
+                    break;
+                }
                 default: {
                     logger.error(`daemon process closed with nonzero exit code ${exitCode} -- for more details, see ${loggerConfigService.daemonLogPath()}`);
                     break;
