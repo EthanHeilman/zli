@@ -1,10 +1,11 @@
 import { DigitalOceanDropletSize } from '../digital-ocean/digital-ocean.types';
-import { allTargets,  bctlQuickstartVersion, bzeroAgentBranch, bzeroAgentVersion, bzeroKubeAgentImageName, configService, digitalOceanRegistry, doApiKey, logger, resourceNamePrefix, systemTestEnvId, systemTestEnvName, systemTestEnvNameCluster, systemTestRegistrationApiKey, systemTestTags, systemTestUniqueId, testTargets } from './system-test';
+import { allTargets,  bctlQuickstartVersion, chartsBranch, bzeroAgentBranch, bzeroAgentVersion, bzeroKubeAgentImageName, configService, digitalOceanRegistry, doApiKey, logger, resourceNamePrefix, systemTestEnvId, systemTestEnvName, systemTestEnvNameCluster, systemTestRegistrationApiKey, systemTestTags, systemTestUniqueId, testTargets } from './system-test';
 import { checkAllSettledPromise, stripTrailingSlash } from './utils/utils';
 import * as k8s from '@kubernetes/client-node';
 import { ClusterTargetStatusPollError, RegisteredDigitalOceanKubernetesCluster } from '../digital-ocean/digital-ocean-kube.service.types';
 import { promisify } from 'util';
 import fs from 'fs';
+import { exec } from 'child_process';
 import { KubeBctlNamespace, KubeHelmQuickstartChartName, KubeTestTargetGroups, KubeTestUserName } from './suites/kube';
 import { SSMTestTargetSelfRegistrationAutoDiscovery, TestTarget, BzeroTestTarget } from './system-test.types';
 import { BzeroTargetStatusPollError, DigitalOceanBZeroTarget, DigitalOceanSSMTarget, getDOImageName, getPackageManagerType, SsmTargetStatusPollError } from '../digital-ocean/digital-ocean-ssm-target.service.types';
@@ -136,11 +137,23 @@ export async function setupDOTestCluster(): Promise<RegisteredDigitalOceanKubern
     helmVariables['quickstartResources.limits.cpu'] = { value: '500m', type: 'single' };
     helmVariables['quickstartResources.requests.cpu'] = { value: '500m', type: 'single' };
 
-    // Ensure bastionzero helm chart repo is added
-    await addRepo(KubeBctlNamespace, 'https://bastionzero.github.io/charts/');
+    let helmChart = '';
+    // check if custom charts branch was specified
+    if(chartsBranch){
+        // clone the charts repo at the given branch
+        const cloneCommand = `git clone -b ${chartsBranch} https://github.com/bastionzero/charts.git`;
+        const pexec = promisify(exec);
+        await pexec(cloneCommand);
 
-    // install bastionzero helm chart
-    const helmChart = 'bastionzero/bctl-quickstart';
+        // install helm chart from custom branch
+        helmChart = './charts/charts/bctlquickstart';
+    } else {
+        // ensure bastionzero helm chart repo is added
+        await addRepo(KubeBctlNamespace, 'https://bastionzero.github.io/charts/');
+
+        // install bastionzero helm chart
+        helmChart = 'bastionzero/bctl-quickstart';
+    }
 
     try {
         await install(clusterToRegister.helmChartName, helmChart, kubeConfigPath, helmVariables, { namespace: clusterToRegister.helmChartNamespace, shouldCreateNamespace: !shouldUseCustomKubeAgent });

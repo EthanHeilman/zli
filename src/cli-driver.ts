@@ -62,6 +62,7 @@ import { generateKubeConfigHandler } from './handlers/generate/generate-kube-con
 import { generateSshConfigHandler } from './handlers/generate/generate-ssh-config.handler';
 import { sshProxyConfigHandler } from './handlers/generate/generate-ssh-proxy.handler';
 import { targetRestartHandler } from './handlers/target/target-restart.handler';
+import { sendLogsHandler } from './handlers/send-logs/send-logs.handler';
 
 // 3rd Party Modules
 import yargs from 'yargs/yargs';
@@ -100,6 +101,7 @@ import { createApiKeyCmdBuilder } from './handlers/api-key/create-api-key.comman
 import { createApiKeyHandler } from './handlers/api-key/create-api-key.handler';
 import { listDaemonsCmdBuilder } from './handlers/list-daemons/list-daemons.command-builder';
 import { targetRestartCmdBuilder } from './handlers/target/target-restart.command-builder';
+import { sendLogsCmdBuilder } from './handlers/send-logs/send-logs.command-builder';
 
 export type EnvMap = Readonly<{
     configName: string;
@@ -126,6 +128,7 @@ export class CliDriver
         'login',
         'connect',
         'status',
+        'send-logs',
         'disconnect',
         'default-targetgroup',
         'generate',
@@ -168,6 +171,7 @@ export class CliDriver
         'generate',
         'api-key',
         'target',
+        'send-logs',
     ]);
 
     private GACommands: Set<string> = new Set([
@@ -710,6 +714,16 @@ export class CliDriver
                     this.configService.setMe(me);
 
 
+                }
+            )
+            .command(
+                'send-logs',
+                'Send zli, daemon, and agent logs to BastionZero',
+                (yargs) => {
+                    return sendLogsCmdBuilder(yargs);
+                },
+                async (argv) => {
+                    await sendLogsHandler(argv, this.configService, this.loggerConfigService, this.logger);
                 }
             )
             .command(

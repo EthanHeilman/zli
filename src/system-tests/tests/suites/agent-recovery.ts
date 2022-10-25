@@ -170,6 +170,11 @@ export const agentRecoverySuite = (testRunnerKubeConfigFile: string, testRunnerU
                 // Wait for connection orchestrator to come back online
                 await waitForConnectionOrchestratorOnline(connectTarget.awsRegion);
 
+                // Give some time for the orchestrator to poll once at startup
+                // otherwise the orchestrator will have no available capacity
+                // and the connect test will fail
+                await sleepTimeout(5 * 1000);
+
                 // Run normal shell connect test to ensure that new connections can be made after connection orchestrator restarted
                 await connectTestUtils.runShellConnectTest(testTarget, `connection orchestrator restart test - ${systemTestUniqueId}`, true);
             },
