@@ -50,6 +50,7 @@ import { sessionRecordingSuite } from './suites/session-recording';
 import { sshSuite } from './suites/ssh';
 import { dynamicAccessSuite } from './suites/dynamic-access';
 import { sendLogsSuite } from './suites/send-logs';
+import { clearAllTimeouts } from './utils/test-utils';
 
 // Uses config name from ZLI_CONFIG_NAME environment variable (defaults to prod
 // if unset) This can be run against dev/stage/prod when running system tests
@@ -273,6 +274,10 @@ afterAll(async () => {
         const environmentService = new EnvironmentHttpService(configService, logger);
         await environmentService.DeleteEnvironment(systemTestEnvId);
     }
+
+    // Finally clear any leftover sleepTimeouts that may have been started by
+    // system tests so jest doesnt wait for them
+    clearAllTimeouts();
 }, 60 * 1000);
 
 beforeEach(async () => {
