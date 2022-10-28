@@ -63,8 +63,8 @@ export class LoggerConfigService {
         return this.config.get('daemonLogPath');
     }
 
-    public configPath(): string {
-        return this.config.path;
+    public configDir(): string {
+        return path.dirname(this.config.path);
     }
 
     public debugMode(): boolean {

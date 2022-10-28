@@ -90,6 +90,7 @@ interface BaseTarget {
     webCaseId?: string; // For our web test suite
     badWebCaseId?: string; // For out web negation tests
     sessionRecordingCaseId?: string;
+    sendLogsCaseId?: string; // Zli - Send Logs - Successfully send agent logs to BZ
 }
 
 export type TestTarget = SSMTestTargetAutoDiscovery | SSMTestTargetSelfRegistrationAutoDiscovery | SSMTestTargetAnsibleAutoDiscovery | BzeroTestTarget | BzeroTestTargetBashAutoDiscovery | BzeroTestTargetAnsibleAutoDiscovery;

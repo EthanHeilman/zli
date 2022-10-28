@@ -53,6 +53,7 @@ export const bzeroTestTargetsToRun: TestTarget[] = [
         groupConnectCaseId: '6561',
         sessionRecordingCaseId: '6572',
         attachCaseId: '6563',
+        sendLogsCaseId: '382476',
     }
 ];
 
@@ -178,6 +179,7 @@ export const extraBzeroTestTargetsToRun: TestTarget[] = [
         groupConnectCaseId: '6560',
         sessionRecordingCaseId: '6571',
         attachCaseId: '6562',
+        sendLogsCaseId: '382475'
     },
     {
         installType: 'ad-bzero',
@@ -202,7 +204,8 @@ export const extraBzeroTestTargetsToRun: TestTarget[] = [
         badConnectCaseId: '352560',
         groupConnectCaseId: '352561',
         sessionRecordingCaseId: '352562',
-        attachCaseId: '352563'
+        attachCaseId: '352563',
+        sendLogsCaseId: '382477'
     },
     {
         installType: 'as-bzero',
@@ -227,7 +230,8 @@ export const extraBzeroTestTargetsToRun: TestTarget[] = [
         badConnectCaseId: '375573',
         groupConnectCaseId: '375574',
         sessionRecordingCaseId: '375575',
-        attachCaseId: '375576'
+        attachCaseId: '375576',
+        sendLogsCaseId: '382478'
     }
 ];
 

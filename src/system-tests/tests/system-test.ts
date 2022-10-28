@@ -49,6 +49,7 @@ import { connectSuite } from './suites/connect';
 import { sessionRecordingSuite } from './suites/session-recording';
 import { sshSuite } from './suites/ssh';
 import { dynamicAccessSuite } from './suites/dynamic-access';
+import { sendLogsSuite } from './suites/send-logs';
 
 // Uses config name from ZLI_CONFIG_NAME environment variable (defaults to prod
 // if unset) This can be run against dev/stage/prod when running system tests
@@ -121,6 +122,12 @@ export const systemTestTags = process.env.SYSTEM_TEST_TAGS ? process.env.SYSTEM_
 export const bzeroAgentBranch = process.env.BZERO_AGENT_BRANCH;
 if (bzeroAgentBranch) {
     logger.info(`BZERO_AGENT_BRANCH is set. Using specific branch for vt tests (agent): ${bzeroAgentBranch}.`);
+}
+
+// Set this environment variable to get helm charts from specific remote branch
+export const chartsBranch = process.env.CHARTS_BRANCH;
+if (chartsBranch) {
+    logger.info(`CHARTS_BRANCH is set. Using specific branch for kube tests (helm): ${chartsBranch}.`);
 }
 
 // URL of private DigitalOcean registry
@@ -291,6 +298,12 @@ afterEach(async () => {
 // Call list target suite anytime a target test is called
 if (SSM_ENABLED || BZERO_ENABLED || KUBE_ENABLED) {
     listTargetsSuite();
+}
+
+// Call send logs suite if bzero and kube are both enabled
+// This suite covers both bzero and cluster agents
+if (BZERO_ENABLED && KUBE_ENABLED) {
+    sendLogsSuite();
 }
 
 // These suites are based on testing allTargets use SSM_ENABLED or BZERO_ENABLED
