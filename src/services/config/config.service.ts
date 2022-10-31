@@ -1,7 +1,7 @@
 import Conf from 'conf/dist/source';
 import { TokenSet, TokenSetParameters } from 'openid-client';
 import { Logger } from '../logger/logger.service';
-import { KeySplittingConfigSchema, ConfigInterface, getDefaultKeysplittingConfig } from '../../../webshell-common-ts/keysplitting.service/keysplitting.service.types';
+import { MrtapConfigSchema, ConfigInterface, getDefaultMrtapConfig } from '../../../webshell-common-ts/mrtap.service/mrtap.service.types';
 import path from 'path';
 import { Observable, Subject } from 'rxjs';
 import { IdentityProvider } from '../../../webshell-common-ts/auth-service/auth.types';
@@ -26,7 +26,7 @@ type BastionZeroConfigSchema = {
     whoami: UserSummary,
     sshKeyPath: string,
     sshKnownHostsPath: string,
-    keySplitting: KeySplittingConfigSchema,
+    mrtap: MrtapConfigSchema,
     kubeConfig: KubeConfig
     webConfig: WebConfig,
     connectConfig: ConnectConfig,
@@ -39,15 +39,15 @@ export class ConfigService implements ConfigInterface {
     private tokenHttpService: TokenHttpService;
     private logoutDetectedSubject: Subject<boolean> = new Subject<boolean>();
 
-    public logoutDetected : Observable<boolean> = this.logoutDetectedSubject.asObservable();
+    public logoutDetected: Observable<boolean> = this.logoutDetectedSubject.asObservable();
 
-    constructor(configName: string, private logger: Logger, configDir?: string, isSystemTest? : boolean) {
+    constructor(configName: string, private logger: Logger, configDir?: string, isSystemTest?: boolean) {
         const projectName = 'bastionzero-zli';
 
         // If a custom configDir append the projectName to the path to keep
         // consistent behavior with conf so that different projectName's wont
         // overlap and use the same configuration file.
-        if(configDir) {
+        if (configDir) {
             configDir = path.join(configDir, projectName);
         }
 
@@ -69,7 +69,7 @@ export class ConfigService implements ConfigInterface {
                 authUrl: undefined,
                 clientId: undefined,
                 clientSecret: undefined,
-                serviceUrl:  appName ? this.getServiceUrl(appName) : undefined,
+                serviceUrl: appName ? this.getServiceUrl(appName) : undefined,
                 tokenSet: undefined, // tokenSet.expires_in is Seconds
                 callbackListenerPort: 0, // if the port is 0, the oauth.service will ask the OS for available port
                 GAToken: undefined,
@@ -80,7 +80,7 @@ export class ConfigService implements ConfigInterface {
                 whoami: undefined,
                 sshKeyPath: undefined,
                 sshKnownHostsPath: undefined,
-                keySplitting: getDefaultKeysplittingConfig(),
+                mrtap: getDefaultMrtapConfig(),
                 kubeConfig: getDefaultKubeConfig(),
                 webConfig: getDefaultWebConfig(),
                 connectConfig: getDefaultConnectConfig(),
@@ -137,11 +137,17 @@ export class ConfigService implements ConfigInterface {
                         config.set('webConfig', webConfig);
                     }
                 },
+                // rename keysplitting -> MrTAP
+                '>=6.12.0': (config: Conf<BastionZeroConfigSchema>) => {
+                    const ksConfig: MrtapConfigSchema = config.get('keySplitting', getDefaultMrtapConfig());
+                    config.set('mrtap', ksConfig);
+                    config.delete('keySplitting' as any);
+                }
             },
             watch: watch
         });
 
-        if(configName == 'dev' && ! this.config.get('serviceUrl')) {
+        if (configName == 'dev' && !this.config.get('serviceUrl')) {
             logger.error(`Config not initialized (or is invalid) for dev environment: Must set serviceUrl in: ${this.config.path}`);
             process.exit(1);
         }
@@ -149,24 +155,24 @@ export class ConfigService implements ConfigInterface {
         this.tokenHttpService = new TokenHttpService(this, logger);
 
         this.config.onDidChange('tokenSet',
-            (newValue : TokenSetParameters, oldValue : TokenSetParameters) => {
+            (newValue: TokenSetParameters, oldValue: TokenSetParameters) => {
                 // If the change in the tokenSet is a logout
-                if (newValue === undefined && oldValue){
+                if (newValue === undefined && oldValue) {
                     this.logoutDetectedSubject.next(true);
                 }
             });
     }
 
-    public updateKeySplitting(data: KeySplittingConfigSchema): void {
-        this.config.set('keySplitting', data);
+    public updateMrtap(data: MrtapConfigSchema): void {
+        this.config.set('mrtap', data);
     }
 
-    public loadKeySplitting(): KeySplittingConfigSchema {
-        return this.config.get('keySplitting');
+    public loadMrtap(): MrtapConfigSchema {
+        return this.config.get('mrtap');
     }
 
-    public removeKeySplitting(): void {
-        this.config.delete('keySplitting');
+    public removeMrtap(): void {
+        this.config.delete('mrtap');
     }
 
     public getConfigName() {
@@ -253,12 +259,11 @@ export class ConfigService implements ConfigInterface {
     public setTokenSet(tokenSet: TokenSet): void {
         // TokenSet implements TokenSetParameters, makes saving it like
         // this safe to do.
-        if(tokenSet)
+        if (tokenSet)
             this.config.set('tokenSet', tokenSet);
     }
 
-    public me(): UserSummary
-    {
+    public me(): UserSummary {
         const whoami = this.config.get('whoami');
         if (whoami) {
             return whoami;
@@ -272,7 +277,7 @@ export class ConfigService implements ConfigInterface {
     }
 
     public sshKeyPath(): string {
-        if(! this.config.get('sshKeyPath'))
+        if (!this.config.get('sshKeyPath'))
             this.config.set('sshKeyPath', path.join(path.dirname(this.config.path), 'bzero-temp-key'));
 
         return this.config.get('sshKeyPath');
@@ -290,10 +295,9 @@ export class ConfigService implements ConfigInterface {
         this.config.delete('sshKnownHostsPath');
     }
 
-    public logout(): void
-    {
+    public logout(): void {
         this.config.delete('tokenSet');
-        this.config.delete('keySplitting');
+        this.config.delete('mrtap');
         this.config.delete('sessionToken');
     }
 
@@ -303,8 +307,7 @@ export class ConfigService implements ConfigInterface {
         this.config.set('GAToken', GAToken);
     }
 
-    public deleteSessionId(): void
-    {
+    public deleteSessionId(): void {
         this.config.delete('sessionId');
     }
 
@@ -325,12 +328,12 @@ export class ConfigService implements ConfigInterface {
             this.config.set('clientId', clientSecret.clientId);
             this.config.set('clientSecret', clientSecret.clientSecret);
             this.config.set('authUrl', this.getCommonAuthUrl(idp));
-        } else if(idp == IdentityProvider.Okta) {
-            if(! email)
+        } else if (idp == IdentityProvider.Okta) {
+            if (!email)
                 throw new Error('User email is required for logging in with okta');
 
             const oktaClientResponse = await this.tokenHttpService.getOktaClient(email);
-            if(! oktaClientResponse)
+            if (!oktaClientResponse)
                 throw new Error(`Unknown organization for email ${email}`);
 
             this.config.set('clientId', oktaClientResponse.clientId);
@@ -381,8 +384,7 @@ export class ConfigService implements ConfigInterface {
     }
 
     private getAppName(configName: string) {
-        switch(configName)
-        {
+        switch (configName) {
         case 'prod':
             return 'cloud';
         case 'stage':
@@ -400,8 +402,7 @@ export class ConfigService implements ConfigInterface {
     }
 
     private getCommonAuthUrl(idp: IdentityProvider) {
-        switch(idp)
-        {
+        switch (idp) {
         case IdentityProvider.Google:
             return 'https://accounts.google.com';
         case IdentityProvider.Microsoft:
@@ -412,8 +413,7 @@ export class ConfigService implements ConfigInterface {
     }
 
     private getAuthScopes(idp: IdentityProvider) {
-        switch(idp)
-        {
+        switch (idp) {
         case IdentityProvider.Google:
             return 'openid email profile';
         case IdentityProvider.Microsoft:

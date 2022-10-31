@@ -2,7 +2,7 @@ import { SemVer, lt, parse } from 'semver';
 import net from 'net';
 const { spawn } = require('child_process');
 
-import { KeySplittingService } from '../../../webshell-common-ts/keysplitting.service/keysplitting.service';
+import { MrtapService } from '../../../webshell-common-ts/mrtap.service/mrtap.service';
 import { ConfigService } from '../../services/config/config.service';
 import { Logger } from '../../services/logger/logger.service';
 import { SsmTunnelService } from '../../services/ssm-tunnel/ssm-tunnel.service';
@@ -24,7 +24,7 @@ export async function sshProxyHandler(
     argv: yargs.Arguments<sshProxyArg>,
     configService: ConfigService,
     logger: Logger,
-    keySplittingService: KeySplittingService,
+    mrtapService: MrtapService,
     loggerConfigService: LoggerConfigService
 ) {
     let prefix = 'bzero-';
@@ -71,7 +71,7 @@ export async function sshProxyHandler(
 
     switch (createUniversalConnectionResponse.targetType) {
     case TargetType.SsmTarget:
-        return await ssmSshProxyHandler(configService, logger, sshTunnelParameters, createUniversalConnectionResponse, keySplittingService);
+        return await ssmSshProxyHandler(configService, logger, sshTunnelParameters, createUniversalConnectionResponse, mrtapService);
     case TargetType.Bzero:
         // agentVersion will be null if this isn't a valid version (i.e if its "$AGENT_VERSION" string during development)
         const agentVersion = parse(createUniversalConnectionResponse.agentVersion);
@@ -95,8 +95,8 @@ export async function sshProxyHandler(
 /**
  * Launch an SSH tunnel session to an SSM target
  */
-async function ssmSshProxyHandler(configService: ConfigService, logger: Logger, sshTunnelParameters: SshTunnelParameters, createUniversalConnectionResponse: CreateUniversalConnectionResponse, keySplittingService: KeySplittingService) {
-    const ssmTunnelService = new SsmTunnelService(logger, configService, keySplittingService, true);
+async function ssmSshProxyHandler(configService: ConfigService, logger: Logger, sshTunnelParameters: SshTunnelParameters, createUniversalConnectionResponse: CreateUniversalConnectionResponse, mrtapService: MrtapService) {
+    const ssmTunnelService = new SsmTunnelService(logger, configService, mrtapService, true);
     ssmTunnelService.errors.subscribe(async errorMessage => {
         logger.error(errorMessage);
         await cleanExit(1, logger);

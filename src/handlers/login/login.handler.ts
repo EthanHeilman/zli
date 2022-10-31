@@ -1,7 +1,7 @@
 import { ConfigService } from '../../services/config/config.service';
 import { Logger } from '../../services/logger/logger.service';
 import { OAuthService } from '../../services/oauth/oauth.service';
-import { KeySplittingService } from '../../../webshell-common-ts/keysplitting.service/keysplitting.service';
+import { MrtapService } from '../../../webshell-common-ts/mrtap.service/mrtap.service';
 
 import qrcode from 'qrcode';
 import yargs from 'yargs';
@@ -45,21 +45,21 @@ function interactiveResetMfa(): Promise<string> {
     });
 }
 
-export async function login(keySplittingService: KeySplittingService, configService: ConfigService, logger: Logger, mfaToken?: string): Promise<LoginResult | undefined> {
+export async function login(mrtapService: MrtapService, configService: ConfigService, logger: Logger, mfaToken?: string): Promise<LoginResult | undefined> {
     // Clear previous log in info
     configService.logout();
-    await keySplittingService.generateKeysplittingLoginData();
+    await mrtapService.generateMrtapLoginData();
 
     // Can only create oauth service after loginSetup completes
     const oAuthService = new OAuthService(configService, logger);
     if (!oAuthService.isAuthenticated()) {
         // Create our Nonce
-        const nonce = keySplittingService.createNonce();
+        const nonce = mrtapService.createNonce();
 
         // Pass it in as we login
         await oAuthService.login((t) => {
             configService.setTokenSet(t);
-            keySplittingService.setInitialIdToken(configService.getAuth());
+            mrtapService.setInitialIdToken(configService.getAuth());
         }, nonce);
     }
 
@@ -121,7 +121,7 @@ export async function login(keySplittingService: KeySplittingService, configServ
     };
 }
 
-export async function loginHandler(configService: ConfigService, logger: Logger, argv: yargs.Arguments<loginArgs>, keySplittingService: KeySplittingService): Promise<LoginResult | undefined> {
+export async function loginHandler(configService: ConfigService, logger: Logger, argv: yargs.Arguments<loginArgs>, mrtapService: MrtapService): Promise<LoginResult | undefined> {
     logger.info('Login required, opening browser');
-    return login(keySplittingService, configService, logger, argv.mfa);
+    return login(mrtapService, configService, logger, argv.mfa);
 }

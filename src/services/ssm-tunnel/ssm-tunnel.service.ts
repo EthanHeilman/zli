@@ -6,8 +6,8 @@ import SshPK from 'sshpk';
 import async from 'async';
 import { Observable, Subject } from 'rxjs';
 
-import { KeySplittingService } from '../../../webshell-common-ts/keysplitting.service/keysplitting.service';
-import { SsmTargetInfo } from '../../../webshell-common-ts/keysplitting.service/keysplitting-types';
+import { MrtapService } from '../../../webshell-common-ts/mrtap.service/mrtap.service';
+import { SsmTargetInfo } from '../../../webshell-common-ts/mrtap.service/mrtap-types';
 
 import { Logger } from '../logger/logger.service';
 import { ConfigService } from '../config/config.service';
@@ -26,8 +26,8 @@ export class SsmTunnelService
     constructor(
         private logger: Logger,
         private configService: ConfigService,
-        private keySplittingService: KeySplittingService,
-        private keysplittingEnabled: boolean
+        private mrtapService: MrtapService,
+        private mrtapEnabled: boolean
     )
     {
         // https://caolan.github.io/async/v3/docs.html#queue
@@ -36,10 +36,10 @@ export class SsmTunnelService
             cb();
         });
 
-        if(keysplittingEnabled) {
-            this.logger.info('Keysplitting Enabled! Will attempt keysplitting on all agents that return agent version!');
+        if(mrtapEnabled) {
+            this.logger.info('MrTAP Enabled! Will attempt MrTAP on all agents that return agent version!');
         } else {
-            this.logger.info('Keysplitting Disabled!');
+            this.logger.info('MrTAP Disabled!');
         }
     }
 
@@ -56,7 +56,7 @@ export class SsmTunnelService
 
             this.ssmTunnelWebsocketService = new SsmTunnelWebsocketService(
                 this.logger,
-                this.keySplittingService,
+                this.mrtapService,
                 new ZliAuthConfigService(this.configService, this.logger),
                 target as SsmTargetInfo
             );
@@ -67,7 +67,7 @@ export class SsmTunnelService
             await this.setupEphemeralSshKey(identityFile);
             const pubKey = await this.extractPubKeyFromIdentityFile(identityFile);
 
-            await this.ssmTunnelWebsocketService.setupWebsocketTunnel(targetUser, port, pubKey, this.keysplittingEnabled);
+            await this.ssmTunnelWebsocketService.setupWebsocketTunnel(targetUser, port, pubKey, this.mrtapEnabled);
 
             return true;
         } catch(err) {

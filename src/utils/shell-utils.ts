@@ -118,7 +118,7 @@ export async function createAndRunShell(
                 // send the input to a function after a certain amount of time has passed
                 bufferFunction = setTimeout(() => {
                     // Loop over the array, and send it as chunks of 10000
-                    // Otherwise we get keysplitting/general errors if we try to send too much data
+                    // Otherwise we get MrTAP/general errors if we try to send too much data
                     const chunk = 10000;
                     for (let i = 0; i < inputBuffer.length; i += chunk) {
                         // Write the chunk
