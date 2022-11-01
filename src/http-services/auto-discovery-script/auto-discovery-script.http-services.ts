@@ -22,10 +22,11 @@ export async function getBzeroBashAutodiscoveryScript(
     logger: Logger,
     configService: ConfigService,
     environmentId: string,
-    scriptTargetNameOption: ScriptTargetNameOption
+    scriptTargetNameOption: ScriptTargetNameOption,
+    beta: boolean = false
 ): Promise<string> {
     const autodiscoveryScriptHttpService = new AutoDiscoveryScriptHttpService(configService, logger);
-    const scriptResponse = await autodiscoveryScriptHttpService.GetBzeroBashAutodiscoveryScript(scriptTargetNameOption, environmentId);
+    const scriptResponse = await autodiscoveryScriptHttpService.GetBzeroBashAutodiscoveryScript(scriptTargetNameOption, environmentId, beta);
 
     return scriptResponse.autodiscoveryScript;
 }
@@ -45,10 +46,11 @@ export async function getAnsibleAutodiscoveryScript(
 export async function getBzeroAnsibleAutodiscoveryScript(
     logger: Logger,
     configService: ConfigService,
-    environmentId: string
+    environmentId: string,
+    beta: boolean = false
 ) {
     const autodiscoveryScriptHttpService = new AutoDiscoveryScriptHttpService(configService, logger);
-    const scriptResponse = await autodiscoveryScriptHttpService.GetBzeroAnsibleAutodiscoveryScript(environmentId);
+    const scriptResponse = await autodiscoveryScriptHttpService.GetBzeroAnsibleAutodiscoveryScript(environmentId, beta);
 
     return scriptResponse.autodiscoveryScript;
 }
@@ -86,10 +88,11 @@ export class AutoDiscoveryScriptHttpService extends HttpService {
 
     public GetBzeroBashAutodiscoveryScript(
         targetNameOption: ScriptTargetNameOption,
-        environmentId: string
+        environmentId: string,
+        beta: boolean
     ): Promise<ScriptResponse> {
         return this.Get(
-            'bzero/bash',
+            beta ? 'bzero/bash/beta' : 'bzero/bash',
             {
                 targetNameOption: targetNameOption,
                 environmentId: environmentId
@@ -97,10 +100,11 @@ export class AutoDiscoveryScriptHttpService extends HttpService {
     }
 
     public GetBzeroAnsibleAutodiscoveryScript(
-        environmentId: string
+        environmentId: string,
+        beta: boolean
     ): Promise<ScriptResponse> {
         return this.Get(
-            'bzero/ansible',
+            beta ? 'bzero/ansible/beta' : 'bzero/ansible',
             {
                 environmentId: environmentId
             });

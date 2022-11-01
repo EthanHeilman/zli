@@ -20,7 +20,7 @@ jobs:
           # Skip session tagging (enabling this requires sts:TagSession iam permission)
           # https://github.com/aws-actions/configure-aws-credentials#session-tagging
           role-skip-session-tagging: true
-          role-duration-seconds: 3600
+          role-duration-seconds: 5400
 
       - name: Run CodeBuild
         uses: aws-actions/aws-codebuild-run-build@v1.0.4

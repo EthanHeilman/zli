@@ -231,12 +231,12 @@ export async function createDOTestTargets() {
             dropletSizeToCreate = vtDropletSize;
             break;
         case 'ad-bzero':
-            userDataScript = await getBzeroBashAutodiscoveryScript(logger, configService, systemTestEnvId, ScriptTargetNameOption.DigitalOceanMetadata);
+            userDataScript = await getBzeroBashAutodiscoveryScript(logger, configService, systemTestEnvId, ScriptTargetNameOption.DigitalOceanMetadata, true);
             // Add compile from source commands if a bzero branch is specified.
             const stringToFind = 'install_bzero_agent';
             let extraSetupCommands = '';
             if (bzeroAgentBranch) {
-                extraSetupCommands = getCompileBzeroFromSourceCommands('bzero');
+                extraSetupCommands = getCompileBzeroFromSourceCommands('bzero-beta');
             }
             // Add the extra setup commands that are necessary for system tests to the autodiscovery script.
             extraSetupCommands += getBzeroTargetSetupCommands();
@@ -356,7 +356,7 @@ async function getAnsibleUserDataScript(testTarget: TestTarget, environmentId: s
     if (testTarget.installType === 'as') {
         ansibleScript = await getAnsibleAutodiscoveryScript(logger, configService, environmentId, agentVersion);
     } else if (testTarget.installType === 'as-bzero') {
-        ansibleScript = await getBzeroAnsibleAutodiscoveryScript(logger, configService, environmentId);
+        ansibleScript = await getBzeroAnsibleAutodiscoveryScript(logger, configService, environmentId, true);
         initBlock = getBzeroTargetSetupCommands();
     }
 
