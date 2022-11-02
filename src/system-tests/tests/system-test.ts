@@ -117,22 +117,10 @@ if (IN_CI && NOT_USING_RUNNER) {
 
 export const systemTestTags = process.env.SYSTEM_TEST_TAGS ? process.env.SYSTEM_TEST_TAGS.split(',').filter(t => t != '') : ['system-tests'];
 
-// Set this environment variable to compile agent from specific remote branch
-export const bzeroAgentBranch = process.env.BZERO_AGENT_BRANCH;
-if (bzeroAgentBranch) {
-    logger.info(`BZERO_AGENT_BRANCH is set. Using specific branch for vt tests (agent): ${bzeroAgentBranch}.`);
-}
-
-// Set this environment variable to compile agent from specific remote tag(version)
-export const taginfo = process.env.TAGINFO;
-if (taginfo) {
-    logger.info(`TAGINFO is set. Using specific tag for vt tests (agent): ${taginfo}.`);
-}
-
-// Set this environment variable to compile agent from specific remote commit
-export const commitHash = process.env.COMMITHASH;
-if (commitHash) {
-    logger.info(`COMMITHASH is set. Using specific commit for vt tests (agent): ${commitHash}.`);
+// Set this environment variable to compile agent from specific remote branch or tag or commit
+export const bzeroAgentTreeIshIdentifier = process.env.BZERO_AGENT_TREEISHISDENTIFIER;
+if (bzeroAgentTreeIshIdentifier) {
+    logger.info(`BZERO_AGENT_TREEISHIDENTIFIER is set. Using specific branch for vt tests (agent): ${bzeroAgentTreeIshIdentifier}.`);
 }
 
 // URL of private DigitalOcean registry

@@ -1,5 +1,5 @@
 import { DigitalOceanDropletSize } from '../digital-ocean/digital-ocean.types';
-import { allTargets,  bctlQuickstartVersion, bzeroAgentBranch, bzeroAgentVersion, bzeroKubeAgentImageName, configService, digitalOceanRegistry, doApiKey, logger, resourceNamePrefix, systemTestEnvId, systemTestEnvName, systemTestEnvNameCluster, systemTestRegistrationApiKey, systemTestTags, systemTestUniqueId, testTargets , taginfo, commitHash} from './system-test';
+import { allTargets,  bctlQuickstartVersion, bzeroAgentVersion, bzeroKubeAgentImageName, configService, digitalOceanRegistry, doApiKey, logger, resourceNamePrefix, systemTestEnvId, systemTestEnvName, systemTestEnvNameCluster, systemTestRegistrationApiKey, systemTestTags, systemTestUniqueId, testTargets , bzeroAgentTreeIshIdentifier} from './system-test';
 import { checkAllSettledPromise, stripTrailingSlash } from './utils/utils';
 import * as k8s from '@kubernetes/client-node';
 import { ClusterTargetStatusPollError, RegisteredDigitalOceanKubernetesCluster } from '../digital-ocean/digital-ocean-kube.service.types';
@@ -222,7 +222,7 @@ export async function createDOTestTargets() {
             // Add compile from source commands if a bzero branch is specified.
             const stringToFind = 'install_bzero_agent';
             let extraSetupCommands = '';
-            if (bzeroAgentBranch) {
+            if (bzeroAgentTreeIshIdentifier) {
                 extraSetupCommands = getCompileBzeroFromSourceCommands('bzero');
             }
             // Add the extra setup commands that are necessary for system tests to the autodiscovery script.
@@ -404,7 +404,7 @@ ${ansibleInstall}
 function getPackageManagerRegistrationScript(packageName: string, testTarget: SSMTestTargetSelfRegistrationAutoDiscovery | BzeroTestTarget, envName: string, registrationApiKeySecret: string): string {
     let installBlock: string;
     const packageManager = getPackageManagerType(testTarget.dropletImage);
-    const shouldBuildFromSource = packageName === 'bzero-beta' && bzeroAgentBranch;
+    const shouldBuildFromSource = packageName === 'bzero-beta' && bzeroAgentTreeIshIdentifier;
 
     // Always install agent using the beta repo -- when building from source, we do this exclusively for the side-effect of
     // placing an executable in /usr/bin/bzero, which we will replace with what we build. That will allow us to manage
@@ -475,56 +475,19 @@ ${createBzeroCustomerUserCmd}
 }
 
 function getCompileBzeroFromSourceCommands(packageName: 'bzero' | 'bzero-beta'): string {
-
-    if (bzeroAgentBranch){
-        return String.raw`
-        cd /
-        git clone -b ${bzeroAgentBranch} https://github.com/bastionzero/bzero.git /root/bzero
-        cd /root/bzero ; git reset --hard origin/${bzeroAgentBranch}'
-        export GOROOT=/usr/local/go
-        export GOPATH=/root/go
-        export GOCACHE=/root/.cache/go-build
-        sh /root/bzero/update-agent-version.sh
-        cd /root/bzero/bctl/agent
-        /usr/local/go/bin/go build
-        systemctl stop ${packageName}
-        cp agent /usr/bin/${packageName}
-        systemctl restart ${packageName}
-        cd /
-        `;
-    }
-    else if (taginfo){
-        return String.raw`
-        cd /
-        git clone -b ${taginfo} –single-branch https://github.com/bastionzero/bzero.git /root/bzero
-        cd /root/bzero ; git reset --hard ${taginfo}'
-        export GOROOT=/usr/local/go
-        export GOPATH=/root/go
-        export GOCACHE=/root/.cache/go-build
-        sh /root/bzero/update-agent-version.sh
-        cd /root/bzero/bctl/agent
-        /usr/local/go/bin/go build
-        systemctl stop ${packageName}
-        cp agent /usr/bin/${packageName}
-        systemctl restart ${packageName}
-        cd /
-        `;
-    }
-    else if (commitHash){
-        return String.raw`
-        cd /
-        git clone -b ${commitHash} https://github.com/bastionzero/bzero.git /root/bzero
-        cd /root/bzero ; git reset --hard ${commitHash}'
-        export GOROOT=/usr/local/go
-        export GOPATH=/root/go
-        export GOCACHE=/root/.cache/go-build
-        sh /root/bzero/update-agent-version.sh
-        cd /root/bzero/bctl/agent
-        /usr/local/go/bin/go build
-        systemctl stop ${packageName}
-        cp agent /usr/bin/${packageName}
-        systemctl restart ${packageName}
-        cd /
-        `;
-    }
+    return String.raw`
+cd /
+git clone -b ${bzeroAgentTreeIshIdentifier} https://github.com/bastionzero/bzero.git /root/bzero
+cd /root/bzero ; git checkout ${bzeroAgentTreeIshIdentifier}'
+export GOROOT=/usr/local/go
+export GOPATH=/root/go
+export GOCACHE=/root/.cache/go-build
+sh /root/bzero/update-agent-version.sh
+cd /root/bzero/bctl/agent
+/usr/local/go/bin/go build
+systemctl stop ${packageName}
+cp agent /usr/bin/${packageName}
+systemctl restart ${packageName}
+cd /
+`;
 }
