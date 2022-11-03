@@ -718,7 +718,7 @@ export class CliDriver
             )
             .command(
                 'send-logs',
-                'Send zli, daemon, and agent logs to BastionZero',
+                'Send zli, daemon, and target logs to BastionZero',
                 (yargs) => {
                     return sendLogsCmdBuilder(yargs);
                 },

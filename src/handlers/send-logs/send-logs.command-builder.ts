@@ -11,7 +11,7 @@ export function sendLogsCmdBuilder(yargs : yargs.Argv<{}>) : yargs.Argv<sendLogs
                 type: 'string',
                 demandOption: false,
                 requiresArg: true,
-                description: 'Send only agent logs',
+                description: 'Send only target logs',
                 alias: 't'
             }
         )
@@ -20,7 +20,7 @@ export function sendLogsCmdBuilder(yargs : yargs.Argv<{}>) : yargs.Argv<sendLogs
                 type: 'string',
                 demandOption: false,
                 requiresArg: true,
-                description: 'Send zli, daemon, and agent logs',
+                description: 'Send zli, daemon, and target logs',
                 alias: 'a'
             }
         ).conflicts('target', 'all')
