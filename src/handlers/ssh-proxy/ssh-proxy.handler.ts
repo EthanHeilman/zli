@@ -34,8 +34,8 @@ export async function sshProxyHandler(
     }
 
     if (!argv.host.startsWith(prefix)) {
-        logger.error(`Invalid host provided: must have form ${prefix}<target>. Target must be either target id or name`);
-        await cleanExit(1, logger);
+        this.logger.error(`Invalid host provided: must have form ${prefix}<target>. Target must be either target id or name`);
+        await cleanExit(1, this.logger);
     }
 
     // modify argv to have the targetString and targetType params
@@ -43,13 +43,13 @@ export async function sshProxyHandler(
     const parsedTarget = parseTargetString(targetString);
     const targetUser = parsedTarget.user;
     if (!targetUser) {
-        logger.error('No user provided for ssh proxy');
-        await cleanExit(1, logger);
+        this.logger.error('No user provided for ssh proxy');
+        await cleanExit(1, this.logger);
     }
 
     if (argv.port < 1 || argv.port > 65535) {
-        logger.error(`Port ${argv.port} outside of port range [1-65535]`);
-        await cleanExit(1, logger);
+        this.logger.error(`Port ${argv.port} outside of port range [1-65535]`);
+        await cleanExit(1, this.logger);
     }
 
     const connectionHttpService = new ConnectionHttpService(configService, logger);
@@ -62,16 +62,11 @@ export async function sshProxyHandler(
         remotePort: argv.port
     });
 
-    const hostNames = [createUniversalConnectionResponse.targetName, argv.host];
-    if (parsedTarget.envName != undefined) {
-        hostNames.push(`${createUniversalConnectionResponse.targetName}.${parsedTarget.envName}`);
-    }
-
     const sshTunnelParameters: SshTunnelParameters = {
         port: argv.port,
         identityFile: argv.identityFile,
         targetUser: argv.user,
-        hostNames,
+        hostNames: [parsedTarget.name, argv.host]
     };
 
     switch (createUniversalConnectionResponse.targetType) {
