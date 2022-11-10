@@ -38,7 +38,7 @@ const loginMessage = `Below, when you press the key to continue a browser window
 const tipsMessage = `While your target(s) are coming online, here are a few tips to best utilize the zli:
   (1) To list all of your targets, use \`zli list-targets\` or \`zli lt\`
   (2) To connect to a target, use \`zli connect user@targetName\`
-  (3) To see your policies, use \`zli policy\`
+  (3) To see your policies, use \`zli policy list\`
 \nView the zli manual at: https://docs.bastionzero.com/docs/zli-reference-manual
 \nIf you’re wondering what’s happening in the background -- We are using your SSH key to install the BastionZero agent onto your machine(s). These agents protect your hosts from unprivileged access, even from BastionZero, thanks to our multi-root, trustless access protocol. To learn more about the protocol, please take a look at: https://github.com/bastionzero/whitepapers/blob/main/mrzap/README.md`;
 
