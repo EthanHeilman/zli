@@ -126,6 +126,10 @@ export const agentRecoverySuite = (testRunnerKubeConfigFile: string, testRunnerU
             }
         }, 60 * 1000);
 
+        afterEach(async () => {
+            await connectTestUtils.cleanup();
+        });
+
         bzeroTestTargetsToRun.forEach(async (testTarget) => {
             it(`${fromTestTargetToCaseIdMapping(testTarget).agentRecoveryBastionRestart}: bastion restart ${testTarget.awsRegion} - ${getDOImageName(testTarget.dropletImage)}`, async () => {
                 const doTarget = testTargets.get(testTarget);

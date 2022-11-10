@@ -20,7 +20,7 @@ const mockBzHelpMessage: string = `#********************************************
 # administrator(s) of your BastionZero account.
 #
 # All SSH connections are secured through the BastionZero ZLI, ensuring you are secured
-# with our MrZAP (multi-roots of trust) protocol.
+# with our multi-root, trustless access protocol (MrTAP).
 #
 # This file includes the following:
 #

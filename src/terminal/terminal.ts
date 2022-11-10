@@ -1,7 +1,7 @@
 import { Observable, Subject, Subscription } from 'rxjs';
-import { isAgentKeysplittingReady, SsmShellWebsocketService } from '../../webshell-common-ts/ssm-shell-websocket.service/ssm-shell-websocket.service';
+import { isAgentMrtapReady, SsmShellWebsocketService } from '../../webshell-common-ts/ssm-shell-websocket.service/ssm-shell-websocket.service';
 import { IDisposable } from '../../webshell-common-ts/utility/disposable';
-import { KeySplittingService } from '../../webshell-common-ts/keysplitting.service/keysplitting.service';
+import { MrtapService } from '../../webshell-common-ts/mrtap.service/mrtap.service';
 
 import { ConfigService } from '../services/config/config.service';
 import { ISsmShellWebsocketService, ShellEvent, ShellEventType, TerminalSize } from '../../webshell-common-ts/ssm-shell-websocket.service/ssm-shell-websocket.service.types';
@@ -50,14 +50,14 @@ export class SsmShellTerminal implements IDisposable
             const ssmTargetHttpService = new SsmTargetHttpService(this.configService, this.logger);
             const ssmTargetInfo = await ssmTargetHttpService.GetSsmTarget(targetId);
 
-            // Check the agent version is keysplitting compatible
+            // Check the agent version is MrTAP compatible
             this.checkAgentVersion(ssmTargetInfo);
 
             const connectionHttpService = new ConnectionHttpService(this.configService, this.logger);
             const shellConnectionAuthDetails = await connectionHttpService.GetShellConnectionAuthDetails(this.connectionSummary.id);
 
             return new SsmShellWebsocketService(
-                new KeySplittingService(this.configService, this.logger),
+                new MrtapService(this.configService, this.logger),
                 ssmTargetInfo,
                 this.logger,
                 new ZliAuthConfigService(this.configService, this.logger),
@@ -79,8 +79,8 @@ export class SsmShellTerminal implements IDisposable
             return;
         }
 
-        if (!isAgentKeysplittingReady(ssmTargetInfo.agentVersion)) {
-            throw new Error(`Agent version ${ssmTargetInfo.agentVersion} not compatible with keysplitting...`);
+        if (!isAgentMrtapReady(ssmTargetInfo.agentVersion)) {
+            throw new Error(`Agent version ${ssmTargetInfo.agentVersion} not compatible with MrTAP...`);
         }
     }
 

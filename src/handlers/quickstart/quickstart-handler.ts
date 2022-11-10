@@ -17,13 +17,13 @@ import chalk from 'chalk';
 import { TranscriptMessage } from '../../services/consoleWithTranscript/consoleWithTranscript.types';
 import ora from 'ora';
 import { login } from '../login/login.handler';
-import { KeySplittingService } from '../../../webshell-common-ts/keysplitting.service/keysplitting.service';
+import { MrtapService } from '../../../webshell-common-ts/mrtap.service/mrtap.service';
 import { EnvironmentHttpService } from '../../http-services/environment/environment.http-services';
 import { PolicyHttpService } from '../../../src/http-services/policy/policy.http-services';
 import { UserSummary } from '../../../webshell-common-ts/http/v2/user/types/user-summary.types';
 import { RegisteredSSHHost } from '../../services/quickstart/quickstart.service.types';
 
-const welcomeMessage = `Welcome to BastionZero and the journey to zero trust access via our multi root zero trust access protocol (MrZAP). We're excited to have you!\n
+const welcomeMessage = `Welcome to BastionZero and the journey to zero trust access via our multi-root, trustless access protocol (MrTAP). We're excited to have you!\n
 Our quickstart installer is a fast and easy method for you to try BastionZero using your existing SSH configuration.
 We will use the following information supplied by your SSH configuration file to onboard the targets:\n
 Host ${chalk.bold.yellowBright('your_host_name')}
@@ -38,9 +38,9 @@ const loginMessage = `Below, when you press the key to continue a browser window
 const tipsMessage = `While your target(s) are coming online, here are a few tips to best utilize the zli:
   (1) To list all of your targets, use \`zli list-targets\` or \`zli lt\`
   (2) To connect to a target, use \`zli connect user@targetName\`
-  (3) To see your policies, use \`zli policy\`
+  (3) To see your policies, use \`zli policy list\`
 \nView the zli manual at: https://docs.bastionzero.com/docs/zli-reference-manual
-\nIf you’re wondering what’s happening in the background -- We are using your SSH key to install the BastionZero agent onto your machine(s). These agents protect your hosts from unprivileged access, even from BastionZero, thanks to our Multi Root Zero Trust Access protocol. To learn more about the protocol, please take a look at: https://github.com/bastionzero/whitepapers/blob/main/mrzap/README.md`;
+\nIf you’re wondering what’s happening in the background -- We are using your SSH key to install the BastionZero agent onto your machine(s). These agents protect your hosts from unprivileged access, even from BastionZero, thanks to our multi-root, trustless access protocol. To learn more about the protocol, please take a look at: https://github.com/bastionzero/whitepapers/blob/main/mrzap/README.md`;
 
 function printFooterMessage(): void {
     console.log('To see the full suite of capabilities that BastionZero offers, take a look at our documentation at: https://docs.bastionzero.com/');
@@ -134,7 +134,7 @@ async function exitAndSaveTranscript(exitCode: number, logger: Logger, transcrip
 export async function quickstartHandler(
     argv: yargs.Arguments<quickstartArgs>,
     logger: Logger,
-    keysplittingService: KeySplittingService,
+    mrtapService: MrtapService,
     configService: ConfigService
 ) {
     await validateQuickstartArgs(argv);
@@ -190,7 +190,7 @@ export async function quickstartHandler(
         consoleWithTranscript.log(loginMessage);
         await waitForKeypress();
 
-        const loginResult = await login(keysplittingService, configService, logger);
+        const loginResult = await login(mrtapService, configService, logger);
         if (loginResult) {
             await postSuccessLogin(loginResult.userSummary, (firstName) => {
                 if (firstName) {
@@ -352,7 +352,7 @@ export async function quickstartHandler(
     clearScreen();
 
     const sshHostsSuccessfullyAddedPretty = targetsSuccessfullyAdded.map(target => target.sshHost.name).join(', ');
-    const successMessage = `Congratulations! You've secured access to your SSH host(s): ${sshHostsSuccessfullyAddedPretty} with MrZAP using BastionZero.\n
+    const successMessage = `Congratulations! You've secured access to your SSH host(s): ${sshHostsSuccessfullyAddedPretty} with MrTAP using BastionZero.\n
 Log into ${configService.getBastionUrl()} to see your environments, policies, and detailed logs.`;
     consoleWithTranscript.log(successMessage);
 

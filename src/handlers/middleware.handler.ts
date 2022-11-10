@@ -3,7 +3,7 @@ import { ConfigService } from '../services/config/config.service';
 import { version } from '../../package.json';
 import { oauthMiddleware } from '../middlewares/oauth-middleware';
 import { LoggerConfigService } from '../services/logger/logger-config.service';
-import { KeySplittingService } from '../../webshell-common-ts/keysplitting.service/keysplitting.service';
+import { MrtapService } from '../../webshell-common-ts/mrtap.service/mrtap.service';
 import { GAService } from '../services/Tracking/google-analytics.service';
 import { MixpanelService } from '../services/Tracking/mixpanel.service';
 import { isZliSilent } from '../utils/utils';
@@ -63,22 +63,22 @@ export async function initMiddleware(argv: any, logger : Logger, isSystemTest : 
     // Config init
     const configService = new ConfigService(<string>argv.configName, logger, argv.configDir, isSystemTest);
 
-    // KeySplittingService init
-    const keySplittingService = new KeySplittingService(configService, logger);
-    await keySplittingService.init();
+    // MrtapService init
+    const mrtapService = new MrtapService(configService, logger);
+    await mrtapService.init();
 
     return {
         configService: configService,
-        keySplittingService: keySplittingService
+        mrtapService: mrtapService
     };
 }
 
-export async function bzCertValidationInfoMiddleware(keySplittingService: KeySplittingService, configService: ConfigService, logger: Logger) {
-    const ksConfig = configService.loadKeySplitting();
+export async function bzCertValidationInfoMiddleware(mrtapService: MrtapService, configService: ConfigService, logger: Logger) {
+    const ksConfig = configService.loadMrtap();
     if( ! ksConfig.orgProvider) {
         // Update the Org BZCert Validation parameters
         const orgHttpService = new OrganizationHttpService(configService, logger);
         const orgBZCertValidationInfo = await orgHttpService.GetUserOrganizationBZCertValidationInfo();
-        keySplittingService.setOrgBZCertValidationInfo(orgBZCertValidationInfo);
+        mrtapService.setOrgBZCertValidationInfo(orgBZCertValidationInfo);
     }
 }

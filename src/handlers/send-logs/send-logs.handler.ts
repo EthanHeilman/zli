@@ -94,7 +94,7 @@ export async function sendLogsHandler(argv: yargs.Arguments<sendLogsArgs>, confi
                 envName: parsedTarget.envName,
                 uploadLogsRequestId: uploadLogsRequestId
             });
-            logger.info(`Requesting ${parsedTarget.name} to send agent logs to BastionZero!`);
+            logger.info(`Requesting ${parsedTarget.name} to send target logs to BastionZero!`);
             agentLogsSent = true;
         } catch (error) {
             logger.error(error);

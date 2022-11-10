@@ -14,7 +14,12 @@ const pids = require('port-pid');
 const EVENT_QUERY_TIME = 2;
 const SLEEP_TIME = 5;
 
-export const sleepTimeout = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+let allTimeouts: NodeJS.Timeout[] = [];
+export const sleepTimeout = (ms: number) => new Promise(resolve => allTimeouts.push(setTimeout(resolve, ms)));
+export const clearAllTimeouts = () => {
+    allTimeouts.forEach(id => clearTimeout(id));
+    allTimeouts = [];
+};
 
 /**
  * Class that contains our common testing functions that can be used across tests

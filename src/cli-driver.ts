@@ -9,7 +9,7 @@ import { ConfigService } from './services/config/config.service';
 import { checkVersionMiddleware } from './middlewares/check-version-middleware';
 import { Logger } from './services/logger/logger.service';
 import { LoggerConfigService } from './services/logger/logger-config.service';
-import { KeySplittingService } from '../webshell-common-ts/keysplitting.service/keysplitting.service';
+import { MrtapService } from '../webshell-common-ts/mrtap.service/mrtap.service';
 import { OAuthService } from './services/oauth/oauth.service';
 import { cleanExit } from './handlers/clean-exit.handler';
 import { GAService } from './services/Tracking/google-analytics.service';
@@ -117,7 +117,7 @@ export const envMap: EnvMap = {
 export class CliDriver
 {
     private configService: ConfigService;
-    private keySplittingService: KeySplittingService;
+    private mrtapService: MrtapService;
     private loggerConfigService: LoggerConfigService;
     private logger: Logger;
 
@@ -221,7 +221,7 @@ export class CliDriver
             .middleware(async (argv) => {
                 const initResponse = await initMiddleware(argv, this.logger, isSystemTest);
                 this.configService = initResponse.configService;
-                this.keySplittingService = initResponse.keySplittingService;
+                this.mrtapService = initResponse.mrtapService;
             })
             .middleware(async (argv) => {
                 if(argv['_'].length !== 0) {
@@ -278,13 +278,13 @@ export class CliDriver
                     await cleanExit(1, this.logger);
                 }
             })
-            // Middleware to ensure that BZCertValidation Info is set in the keysplitting config
+            // Middleware to ensure that BZCertValidation Info is set in the MrTAP config
             .middleware(async () => {
                 // Makes a Bastion API call so oauth middleware must have run
                 // first to ensure session token is set
                 if(!this.oauthCommands.has(baseCmd) || baseCmd === 'register')
                     return;
-                await bzCertValidationInfoMiddleware(this.keySplittingService, this.configService, this.logger);
+                await bzCertValidationInfoMiddleware(this.mrtapService, this.configService, this.logger);
             })
             .command(
                 // This grouping hosts all api-key related commands
@@ -474,7 +474,7 @@ export class CliDriver
                     return loginCmdBuilder(yargs);
                 },
                 async (argv) => {
-                    const loginResult = await loginHandler(this.configService, this.logger, argv, this.keySplittingService);
+                    const loginResult = await loginHandler(this.configService, this.logger, argv, this.mrtapService);
 
                     if (loginResult) {
                         const me = loginResult.userSummary;
@@ -689,7 +689,7 @@ export class CliDriver
                     return quickstartCmdBuilder(yargs);
                 },
                 async (argv) => {
-                    await quickstartHandler(argv, this.logger, this.keySplittingService, this.configService);
+                    await quickstartHandler(argv, this.logger, this.mrtapService, this.configService);
                 }
             )
             .command(
@@ -718,7 +718,7 @@ export class CliDriver
             )
             .command(
                 'send-logs',
-                'Send zli, daemon, and agent logs to BastionZero',
+                'Send zli, daemon, and target logs to BastionZero',
                 (yargs) => {
                     return sendLogsCmdBuilder(yargs);
                 },
@@ -744,7 +744,7 @@ export class CliDriver
                     return sshProxyCmdBuilder(yargs);
                 },
                 async (argv) => {
-                    await sshProxyHandler(argv, this.configService, this.logger, this.keySplittingService, this.loggerConfigService);
+                    await sshProxyHandler(argv, this.configService, this.logger, this.mrtapService, this.loggerConfigService);
                 }
             )
             .command(

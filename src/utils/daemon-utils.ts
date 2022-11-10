@@ -465,6 +465,10 @@ export function waitForDaemonProcessExit(logger: Logger, loggerConfigService: Lo
                     logger.error('Failed to connect: the specified user does not exist on the target');
                     break;
                 }
+                case DAEMON_EXIT_CODES.ZLI_CONFIG_ERROR: {
+                    logger.error('Error parsing zli config file. Please try logging in again with \'zli login\' to resolve this issue');
+                    break;
+                }
                 default: {
                     logger.error(`daemon process closed with nonzero exit code ${exitCode} -- for more details, see ${loggerConfigService.daemonLogPath()}`);
                     break;

@@ -346,6 +346,7 @@ export const mockUniversalConnectionRequest: CreateUniversalConnectionRequest = 
 export const mockUniversalConnectionResponse: CreateUniversalConnectionResponse = {
     connectionId: 'f11ae2c2-48a7-4a29-b306-8bc83da3c045',
     targetId: '9f728982-3691-4e71-9533-1892d5c65eb9',
+    targetName: 'bzero-ec2-test',
     targetType: TargetType.Bzero,
     targetUser: 'ec2-user',
     agentPublicKey: 'test-public-key',
