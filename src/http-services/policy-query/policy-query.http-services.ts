@@ -62,8 +62,6 @@ export class PolicyQueryHttpService extends HttpService
         targets.forEach(t => queryParams.append('targetIds', t));
 
         return this.Get('proxy', queryParams);
-
-
     }
 
     public GetSshTargets(): Promise<SshTargetsResponse[]> {
