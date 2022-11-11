@@ -153,6 +153,10 @@ export async function listTargetsPerType(
                 // Filter db targets based on assumed user policy
                 const policyQueryResponse = await policyQueryHttpService.ProxyPolicyQuery(dbTargetSummaries.map(t => t.id), TargetType.Db, userEmail);
                 dbTargetSummaries = dbTargetSummaries.filter(t => policyQueryResponse[t.id].allowed);
+                // Update set of allowed target users/verbs
+                dbTargetSummaries.forEach(t => {
+                    t.allowedTargetRoles = policyQueryResponse[t.id].allowedTargetRoles;
+                });
             }
 
             return dbTargetSummaries.map<TargetSummary>(dbTargetToTargetSummary);

@@ -310,7 +310,7 @@ export function getTableOfTargets(targets: TargetSummary[], envs: EnvironmentSum
 
     if(showDetail)
     {
-        header.push('Agent Version', 'Status', 'Target Users', 'Region');
+        header.push('Agent Version', 'Status', 'Target Users/Roles', 'Region');
         columnWidths.push(15, 9, 29, 18);
     }
 
@@ -332,7 +332,7 @@ export function getTableOfTargets(targets: TargetSummary[], envs: EnvironmentSum
         if(showDetail) {
             row.push(target.agentVersion);
             row.push(target.status || 'N/A'); // status is undefined for non-SSM targets
-            row.push(map(target.targetUsers).join(', \n') || 'N/A'); // targetUsers are undefined for now for non-cluster targets
+            row.push(map(target.targetUsers).join(', \n') || 'N/A');
             row.push(target.region);
         }
 
@@ -830,8 +830,8 @@ export function getTableOfProxyPolicies(
     serviceAccountMap : {[id: string]: ServiceAccountSummary}
 ) : string
 {
-    const header: string[] = ['Name', 'Type', 'Subject', 'Resource',];
-    const columnWidths = [24, 19, 26, 28];
+    const header: string[] = ['Name', 'Type', 'Subject', 'Resource', 'Target Roles'];
+    const columnWidths = [24, 19, 26, 28, 28];
 
     const table = new Table({ head: header, colWidths: columnWidths });
     proxyPolicies.forEach(p => {
@@ -862,6 +862,8 @@ export function getTableOfProxyPolicies(
         }
         formattedSubjects += formattedGroups;
 
+        const formattedTargetRoles = `Roles: ${p.targetRoles?.map(r => r.name).join(',\n')}`;
+
         // Translate the resource ids to human readable resources
         let formattedResource = '';
 
@@ -886,6 +888,7 @@ export function getTableOfProxyPolicies(
             p.type,
             formattedSubjects || 'N/A',
             formattedResource || 'N/A',
+            formattedTargetRoles || 'N/A',
         ];
         table.push(row);
     });
@@ -1091,7 +1094,7 @@ export function dbTargetToTargetSummary(dbTarget: DbTargetSummary): TargetSummar
         name: dbTarget.name,
         status: parseTargetStatus(dbTarget.status.toString()),
         environmentId: dbTarget.environmentId,
-        targetUsers: [],
+        targetUsers: dbTarget.allowedTargetRoles.map(r => r.name), // FIXME: arguable
         agentVersion: dbTarget.agentVersion,
         region: dbTarget.region
     };
