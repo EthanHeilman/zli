@@ -1,4 +1,4 @@
-import { loggerConfigService, configService, logger, testCluster } from '../system-test';
+import { configService, testCluster } from '../system-test';
 import { callZli } from '../utils/zli-utils';
 import { bzeroTestTargetsToRun } from '../targets-to-run';
 import { TestTarget } from '../system-test.types';
@@ -6,7 +6,6 @@ import { getTargetInfo } from '../utils/ssh-utils';
 import { S3 } from 'aws-sdk';
 import { Logger } from '../../../services/logger/logger.service';
 import { sleepTimeout } from '../utils/test-utils';
-import fs from 'fs';
 
 const s3 = new S3();
 
@@ -36,19 +35,6 @@ export const sendLogsSuite = () => {
 
         // build the bucket name
         const bucket = `bastionzero-${configService.getConfigName()}-customer-logs`;
-
-        beforeEach(() => {
-            if(!fs.existsSync(loggerConfigService.daemonLogPath())) {
-                // manually adding this file since CustomReporter deletes the daemon-dev file
-                const toWrite = 'Test message to write to file';
-                try {
-                    fs.writeFileSync(loggerConfigService.daemonLogPath(), `${toWrite}\n`);
-                } catch(err) {
-                    logger.error('Error creating daemon-dev file.');
-                    throw err;
-                }
-            }
-        });
 
         afterEach(async () => {
             jest.clearAllMocks();

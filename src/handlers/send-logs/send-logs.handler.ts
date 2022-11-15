@@ -38,7 +38,9 @@ export function getDates() {
 
 async function getFilteredLogContents(logger: Logger, zliLogFilePath: string, daemonLogFilePath: string) {
     let zliLogContents: string[];
-    let daemonLogContents: string[];
+    // initialize to empty array in case there are no daemon logs
+    // in which case, an empty zip entry is created for daemon logs
+    let daemonLogContents: string[] = [];
     try {
         zliLogContents = fs.readFileSync(zliLogFilePath, 'utf-8').split('\n');
     } catch (err) {
@@ -46,11 +48,13 @@ async function getFilteredLogContents(logger: Logger, zliLogFilePath: string, da
         await cleanExit(1, logger);
     }
 
-    try {
-        daemonLogContents = fs.readFileSync(daemonLogFilePath, 'utf-8').split('\n');
-    } catch (err) {
-        logger.error('Error reading local daemon log files');
-        await cleanExit(1, logger);
+    if(fs.existsSync(daemonLogFilePath)) {
+        try {
+            daemonLogContents = fs.readFileSync(daemonLogFilePath, 'utf-8').split('\n');
+        } catch (err) {
+            logger.error('Error reading local daemon log files');
+            await cleanExit(1, logger);
+        }
     }
 
     // get current date and previous date in appropriate formats
