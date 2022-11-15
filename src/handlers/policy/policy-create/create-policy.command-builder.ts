@@ -29,6 +29,7 @@ export interface createRecordingPolicyArgs extends baseCreatePolicyCmdBuilderArg
 export interface createProxyPolicyArgs extends baseCreatePolicyCmdBuilderArgs {
     targets: string[];
     environments: string[];
+    targetRoles: string[];
 }
 
 function baseCreatePolicyCmdBuilder(yargs: yargs.Argv<{}>, checkerFunc: (argv: baseCreatePolicyCmdBuilderArgs) => boolean) : yargs.Argv<baseCreatePolicyCmdBuilderArgs> {
@@ -213,6 +214,15 @@ export function createProxyPolicyCmdBuilder(yargs: yargs.Argv<{}>, checkerFunc: 
                 description: 'Environments the policy applies to'
             }
         )
+        .option('targetRoles',
+            {
+                type: 'string',
+                array: true,
+                demandOption: false,
+                requiresArg: true,
+                description: 'Allowed target roles for the policy -- only used by passwordless database connections; otherwise will be ignored'
+            }
+        )
         .conflicts('targets', 'environments')
-        .example('$0 policy create-proxy -n policy_name -u user@random.com -g Engineering Legal -t target1 target2', 'Create a new proxy policy with the specified args');
+        .example('$0 policy create-proxy -n policy_name -u user@random.com -g Engineering Legal -t target1 target2', 'Create a new proxy policy with the specified args')
 }

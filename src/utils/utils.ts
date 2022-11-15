@@ -1094,7 +1094,7 @@ export function dbTargetToTargetSummary(dbTarget: DbTargetSummary): TargetSummar
         name: dbTarget.name,
         status: parseTargetStatus(dbTarget.status.toString()),
         environmentId: dbTarget.environmentId,
-        targetUsers: dbTarget.allowedTargetRoles.map(r => r.name), // FIXME: arguable
+        targetUsers: dbTarget.allowedTargetRoles?.map(r => r.name),
         agentVersion: dbTarget.agentVersion,
         region: dbTarget.region
     };

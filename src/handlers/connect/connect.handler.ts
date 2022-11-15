@@ -48,6 +48,7 @@ export async function connectHandler(
             targetType: parseTargetType(argv.targetType)
         });
 
+        logger.warn(`I got it: ${JSON.stringify(createUniversalConnectionResponse)}`);
 
         mixpanelService.TrackNewConnection(createUniversalConnectionResponse.targetType);
 

@@ -14,6 +14,7 @@ import { Target } from '../../../../webshell-common-ts/http/v2/policy/types/targ
 import { SubjectHttpService } from '../../../../src/http-services/subject/subject.http-services';
 import { Dictionary } from 'lodash';
 import { TargetType } from '../../../../webshell-common-ts/http/v2/target/types/target.types';
+import { TargetRole } from '../../../../webshell-common-ts/http/v2/policy/types/target-role.types';
 
 export async function createProxyPolicyHandler(argv: yargs.Arguments<createProxyPolicyArgs>, configService: ConfigService,logger: Logger){
     const policyService = new PolicyHttpService(configService, logger);
@@ -59,6 +60,15 @@ export async function createProxyPolicyHandler(argv: yargs.Arguments<createProxy
         environments = await getEnvironmentByName(argv.environments, envHttpService, logger);
     }
 
+    // Process the target roles, if any, into TargetRole array
+    const targetRoles: TargetRole[] = [];
+    argv.targetRoles.forEach((tr) => {
+        const targetRole: TargetRole = {
+            name: tr
+        };
+        targetRoles.push(targetRole);
+    });
+
     // Send the ProxyPolicyCreateRequest to AddPolicy endpoint
     const proxyPolicy = await policyService.AddProxyPolicy({
         name: argv.name,
@@ -66,7 +76,8 @@ export async function createProxyPolicyHandler(argv: yargs.Arguments<createProxy
         groups: groups,
         targets: targets,
         environments: environments,
-        description: argv.description
+        description: argv.description,
+        targetRoles: targetRoles
     });
 
     logger.warn(`Successfully created a new Proxy Policy. Name: ${proxyPolicy.name} ID: ${proxyPolicy.id}`);
