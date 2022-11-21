@@ -1,4 +1,5 @@
 import * as k8s from '@kubernetes/client-node';
+import { KubeConfig } from '@kubernetes/client-node';
 import { Logger } from '../../../services/logger/logger.service';
 
 export async function execOnPod(k8sExec: k8s.Exec, pod: k8s.V1Pod, containerName: string, command: string | string[], logger: Logger) {
@@ -22,6 +23,14 @@ export async function execOnPod(k8sExec: k8s.Exec, pod: k8s.V1Pod, containerName
     });
 
 }
+
+// This function should be called after calling zli connect
+export function getKubeConfig(): KubeConfig {
+    const kc = new k8s.KubeConfig();
+    // Should see custom envvar for KUBECONFIG
+    kc.loadFromDefault();
+    return kc;
+};
 
 export async function deletePod(k8sApi: k8s.CoreV1Api, pod: k8s.V1Pod) {
     if(! pod || !pod.metadata || !pod.metadata.name || !pod.metadata.namespace) {

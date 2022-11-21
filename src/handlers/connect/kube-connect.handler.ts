@@ -7,10 +7,14 @@ import { Logger } from '../../services/logger/logger.service';
 import { cleanExit } from '../clean-exit.handler';
 import { LoggerConfigService } from '../../services/logger/logger-config.service';
 import { connectArgs } from './connect.command-builder';
-import { startDaemonInDebugMode, copyExecutableToLocalDir, handleServerStart, getBaseDaemonEnv, killLocalPortAndPid, spawnDaemonInBackground } from '../../utils/daemon-utils';
+import { startDaemonInDebugMode, copyExecutableToLocalDir, handleServerStart, getBaseDaemonEnv, spawnDaemonInBackground, checkIfPortAvailable } from '../../utils/daemon-utils';
 import { KubeHttpService } from '../../http-services/targets/kube/kube.http-services';
 import { CreateUniversalConnectionResponse } from '../../../webshell-common-ts/http/v2/connection/responses/create-universal-connection.response';
+import { findRunningDaemonWithPredicate, newKubeDaemonManagementService } from '../../services/daemon-management/daemon-management.service';
+import { KubeConfig } from '../../services/config/config.service.types';
+import { buildMapOfNamedKubeEntries, findMatchingKubeContext, generateKubeConfig, getKubeDaemonSecuritySettings, loadUserKubeConfig, updateUserKubeConfigWith } from '../../services/kube-management/kube-management.service';
 
+const findPort = require('find-open-port');
 
 export async function startKubeDaemonHandler(
     argv: yargs.Arguments<connectArgs>,
@@ -25,22 +29,49 @@ export async function startKubeDaemonHandler(
     const kubeService = new KubeHttpService(configService, logger);
     const clusterTarget = await kubeService.GetKubeCluster(targetId);
 
-    // Open up our zli kubeConfig
-    const kubeConfig = configService.getKubeConfig();
+    // Check if there is already a daemon running for this target+user
+    // combination and exit early if so. We don't want to allow the user to
+    // create another connection with same target+user combination because the
+    // new connection's context will be the same as the other connection and
+    // thus there is a conflict in the user's kube config.
+    const kubeDaemonManagementService = newKubeDaemonManagementService(configService);
+    const alreadyRunningDaemon = await findRunningDaemonWithPredicate(kubeDaemonManagementService, (d => d.config.targetCluster === clusterTarget.name && d.config.targetUser === targetUser));
+    if (alreadyRunningDaemon) {
+        // Find matching context name in user's config if possible. Follow
+        // similar semantics to stale filtering logic in kube-management.service
+        const userKubeConfig = await loadUserKubeConfig();
+        logger.debug(`Using user kube config located at: ${userKubeConfig.filePath}`);
+        let matchingContextName: string = undefined;
+        try {
+            const kubeConfigClusters = buildMapOfNamedKubeEntries(userKubeConfig.kubeConfig.clusters);
+            const matchingContextEntry = findMatchingKubeContext(configService, userKubeConfig.kubeConfig.contexts, kubeConfigClusters, alreadyRunningDaemon.config);
+            if (matchingContextEntry) {
+                matchingContextName = matchingContextEntry.name;
+            }
+        } catch (e) {
+            // A fatal error here shouldn't interrupt because finding the
+            // context is just for informational purposes
+            logger.debug(`Error finding running kube daemon's context: ${e}`);
+        }
 
-    // Make sure the user has created a kubeConfig before
-    if (kubeConfig.keyPath == null) {
-        logger.error('Please make sure you have created your kubeconfig before running connect. You can do this via "zli generate kubeConfig"');
-        return 1;
+        let errMsg = 'There is already a kube daemon running for this target and user';
+        if (matchingContextName) {
+            errMsg += ` with context: ${matchingContextName}`;
+        }
+        throw new Error(errMsg);
     }
 
-    // Check if we've already started a process
-    await killLocalPortAndPid(kubeConfig.localPid, kubeConfig.localPort, logger);
+    const kubeSecurityConfig = await getKubeDaemonSecuritySettings(configService, logger);
 
     // See if the user passed in a custom port
-    let daemonPort = kubeConfig.localPort.toString();
+    let daemonPort: number = undefined;
     if (argv.customPort != -1) {
-        daemonPort = argv.customPort.toString();
+        // Check if specified port is available otherwise exit
+        await checkIfPortAvailable(argv.customPort);
+        daemonPort = argv.customPort;
+    } else {
+        // Find available port
+        daemonPort = await findPort();
     }
 
     // Build our runtime config and cwd
@@ -49,11 +80,11 @@ export async function startKubeDaemonHandler(
         'TARGET_USER': targetUser,
         'TARGET_GROUPS': targetGroups.join(','),
         'TARGET_ID': clusterTarget.id,
-        'LOCAL_PORT': daemonPort,
+        'LOCAL_PORT': daemonPort.toString(),
         'LOCAL_HOST': 'localhost', // Currently kube does not support editing localhost
-        'LOCALHOST_TOKEN': kubeConfig.token,
-        'CERT_PATH': kubeConfig.certPath,
-        'KEY_PATH': kubeConfig.keyPath,
+        'LOCALHOST_TOKEN': kubeSecurityConfig.token,
+        'CERT_PATH': kubeSecurityConfig.certPath,
+        'KEY_PATH': kubeSecurityConfig.keyPath,
         'PLUGIN': 'kube',
     };
     const runtimeConfig = { ...baseEnv, ...pluginEnv };
@@ -76,25 +107,46 @@ export async function startKubeDaemonHandler(
         if (!argv.debug) {
             // If we are not debugging, start the go subprocess in the background
             const daemonProcess = await spawnDaemonInBackground(logger, loggerConfigService, cwd, finalDaemonPath, args, runtimeConfig);
-            // Now save the Pid so we can kill the process next time we start it
-            kubeConfig.localPid = daemonProcess.pid;
 
-            // Save the info about target user and group
-            kubeConfig.targetUser = targetUser;
-            kubeConfig.targetGroups = targetGroups;
-            kubeConfig.targetCluster = clusterTarget.name;
-            configService.setKubeConfig(kubeConfig);
+            // Generate kube config for this daemon
+            const generatedKubeConfig = generateKubeConfig(
+                configService,
+                clusterTarget.name,
+                targetUser,
+                daemonPort,
+                kubeSecurityConfig.token,
+                argv.namespace
+            );
+
+            // Update user's kube config
+            const userKubeConfigFilePath = await updateUserKubeConfigWith(generatedKubeConfig);
+
+            // Add to dictionary of kube daemons
+            const kubeConfig: KubeConfig = {
+                type: 'kube',
+                targetCluster: clusterTarget.name,
+                localHost: 'localhost',
+                localPort: daemonPort,
+                localPid: daemonProcess.pid,
+                targetUser: targetUser,
+                targetGroups: targetGroups,
+                defaultNamespace: argv.namespace
+            };
+            kubeDaemonManagementService.addDaemon(createUniversalConnectionResponse.connectionId, kubeConfig);
 
             // Wait for daemon HTTP server to be bound and running
-            await handleServerStart(loggerConfigService.daemonLogPath(), parseInt(daemonPort), kubeConfig.localHost);
+            await handleServerStart(loggerConfigService.daemonLogPath(), daemonPort, kubeConfig.localHost);
 
             // Poll ready endpoint
             logger.info('Waiting for kube daemon to become ready...');
             await pollDaemonReady(kubeConfig.localPort);
             logger.info(`Started kube daemon at ${kubeConfig.localHost}:${kubeConfig.localPort} for ${targetUser}@${clusterTarget.name}`);
+            logger.info(`\nAdding cluster credentials to kubeconfig file found in ${userKubeConfigFilePath}`);
+            logger.info(`Setting current-context to ${generatedKubeConfig.contexts[0].name}`);
+
             return 0;
         } else {
-            logger.warn(`Started kube daemon in debug mode at ${kubeConfig.localHost}:${kubeConfig.localPort} for ${targetUser}@${clusterTarget.name}`);
+            logger.warn(`Started kube daemon in debug mode at localhost:${daemonPort} for ${targetUser}@${clusterTarget.name}`);
             await startDaemonInDebugMode(finalDaemonPath, cwd, runtimeConfig, args);
             await cleanExit(0, logger);
         }
@@ -104,7 +156,7 @@ export async function startKubeDaemonHandler(
     }
 }
 
-function pollDaemonReady(daemonPort: number) : Promise<void> {
+function pollDaemonReady(daemonPort: number): Promise<void> {
     // 1 minutes
     const retrier = new Retrier({
         limit: 60,

@@ -4,6 +4,7 @@ export type DaemonStatusType = 'no_daemon_running' | 'daemon_quit_unexpectedly' 
 
 export interface BaseDaemonStatus<T extends DaemonConfig> {
     config: T;
+    connectionId: string | undefined;
     type: DaemonStatusType;
 }
 
@@ -41,7 +42,7 @@ export interface KubeDaemonRunningStatus {
     type: 'kube';
     targetCluster: string;
     targetUser: string;
-    targetGroup: string;
+    targetGroups: string;
     localUrl: string;
 }
 

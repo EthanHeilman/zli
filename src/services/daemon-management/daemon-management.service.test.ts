@@ -1,7 +1,7 @@
 import { randomUUID } from 'crypto';
 import { MockProxy, mock } from 'jest-mock-extended';
 import { mapToArrayTuples } from '../../utils/unit-test-utils';
-import { DaemonConfig, DaemonConfigs, getDefaultDbConfig } from '../config/config.service.types';
+import { DaemonConfig, DaemonConfigs, getDefaultDbConfig, getDefaultKubeConfig } from '../config/config.service.types';
 import { DaemonManagementService, DaemonStore, LEGACY_KEY_STRING, ProcessManager } from './daemon-management.service';
 import { DaemonStatus } from './types/daemon-status.types';
 import { DisconnectResult } from './types/disconnect-result.types';
@@ -367,6 +367,7 @@ const makeDaemonManagementServiceTests = <T extends DaemonConfig>(
                 expect(mapToArrayTuples(gotStatuses)).toMatchObject<Array<[string, DaemonStatus<T>]>>([
                     [connectionId, {
                         type: 'no_daemon_running',
+                        connectionId: connectionId,
                         config: newConfig
                     }]
                 ]);
@@ -404,3 +405,29 @@ const dbCaseIds : testRailsCaseIdMapping = {
     }
 };
 makeDaemonManagementServiceTests(getDefaultDbConfig, dbCaseIds);
+
+// Make tests for KubeDaemonManagementService
+const kubeCaseIds: testRailsCaseIdMapping = {
+    getDaemonConfigs: {
+        legacyConfigSchema: '493847',
+        newConfigSchema: '493848',
+        mixedConfigSchemas: '493849',
+        noConfigs: '493850',
+    },
+    addDaemonConfig: {
+        connectionIdDefined: '493851',
+        connectionIdNotDefined: '493852',
+    },
+    disconnectDaemons: {
+        noDaemons: '493853',
+        oneDaemonLocalPidNull: '493854',
+        oneDaemonNewConfigKillFails: '493855',
+        oneDaemonNewConfigKillSuccess: '493856',
+        oneDaemonLegacyConfigKillSuccess: '493857',
+        twoDaemonsNewConfigOneSuccessOneFail: '493858'
+    },
+    getDaemonStatuses: {
+        oneDaemonLocalPidNull: '493859'
+    }
+};
+makeDaemonManagementServiceTests(getDefaultKubeConfig, kubeCaseIds);

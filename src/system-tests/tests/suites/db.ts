@@ -1,7 +1,6 @@
 import { systemTestEnvId, systemTestEnvName, systemTestPolicyTemplate, systemTestUniqueId, testTargets } from '../system-test';
 import { callZli } from '../utils/zli-utils';
 import { DbTargetService } from '..../../../http-services/db-target/db-target.http-service';
-import * as CleanExitHandler from '../../../handlers/clean-exit.handler';
 import * as ListConnectionsService from '../../../services/list-connections/list-connections.service';
 
 import { configService, logger, loggerConfigService } from '../system-test';
@@ -22,7 +21,7 @@ import { DaemonManagementService, newDbDaemonManagementService } from '../../../
 import { ProcessManagerService } from '../../../services/process-manager/process-manager.service';
 import { DbConnectionInfo } from '../../../../src/services/list-connections/list-connections.service.types';
 import { DaemonStatus } from '../../../services/daemon-management/types/daemon-status.types';
-import { mapToArrayTuples } from '../utils/utils';
+import { getListOfAvailPorts, mapToArrayTuples } from '../utils/utils';
 import { ConnectionState } from '../../../../webshell-common-ts/http/v2/connection/types/connection-state.types';
 import { DbConfig } from '../../../services/config/config.service.types';
 import { setupBackgroundDaemonMocks } from '../utils/connect-utils';
@@ -214,13 +213,6 @@ export const dbSuite = () => {
             };
             const connectNumOfTimesWithoutCustomPort = async (target: CreatedDbTargetDetails, numOfConnections: number): Promise<ConnectedDbDaemonDetails[]> => {
                 return connectNumOfTimes(target, numOfConnections, Array(numOfConnections).fill(undefined));
-            };
-            const getListOfExpectedPorts = async (numOfExpectedPorts: number): Promise<number[]> => {
-                const expectedPorts: number[] = [];
-                for (let i = 0; i < numOfExpectedPorts; i++) {
-                    expectedPorts.push(await findPort());
-                }
-                return expectedPorts;
             };
 
             /**
@@ -498,7 +490,7 @@ export const dbSuite = () => {
 
                     // Connect to this DB target x number of times
                     const numOfConnections = 2;
-                    const expectedPorts = await getListOfExpectedPorts(numOfConnections);
+                    const expectedPorts = await getListOfAvailPorts(numOfConnections);
                     const connectedDbDaemons = await connectNumOfTimes(createdDbTargetDetails, numOfConnections, expectedPorts);
 
                     const getAllDaemonStatusesSpy = jest.spyOn(DaemonManagementService.prototype, 'getAllDaemonStatuses');
@@ -510,6 +502,7 @@ export const dbSuite = () => {
                     const expectedDbStatuses = connectedDbDaemons.reduce<[string, DaemonStatus<DbConfig>][]>((acc, el, i) => {
                         acc.push([el.connectionId, {
                             type: 'daemon_is_running',
+                            connectionId: el.connectionId,
                             config: {
                                 type: 'db',
                                 name: createdDbTargetDetails.targetName,
@@ -675,9 +668,8 @@ export const dbSuite = () => {
                     // Connect to this DB target x number of times
                     const numOfConnections = 2;
                     const connectedDbDaemons = await connectNumOfTimesWithoutCustomPort(createdDbTargetDetails, numOfConnections);
-                    // Must ensure connection events, so `zli disconnect`
-                    // results in ClientDisconnect events which are asserted
-                    // below
+                    // Must ensure connection events, so `zli close` results in
+                    // ClientDisconnect events which are asserted below
                     await ensureConnectedEvents(connectedDbDaemons);
 
                     // Close all DB connections
@@ -809,15 +801,10 @@ export const dbSuite = () => {
 
                     logger.info('Creating db target connection with db target + no policy');
 
-                    const expectedErrorMessage = 'Expected error';
-                    jest.spyOn(CleanExitHandler, 'cleanExit').mockImplementationOnce(() => {
-                        throw new Error(expectedErrorMessage);
-                    });
-
                     // Start the connection to the db virtual target
                     const connectZli = callZli(['connect', dbVtName]);
 
-                    await expect(connectZli).rejects.toThrow(expectedErrorMessage);
+                    await expect(connectZli).rejects.toThrow();
                 }, 60 * 1000);
             });
         });

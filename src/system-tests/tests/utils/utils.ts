@@ -1,3 +1,4 @@
+const findPort = require('find-open-port');
 
 /**
  * Removes a trailing slash from a url if it exists
@@ -36,3 +37,17 @@ export function mapToArrayTuples<K,V>(map: Map<K,V>): [K, V][] {
         return acc;
     }, []);
 }
+
+/**
+ * Get list of available ports
+ * @param numOfPorts Number of ports to find
+ */
+export async function getListOfAvailPorts(numOfPorts: number): Promise<number[]> {
+    const expectedPorts: number[] = [];
+    for (let i = 0; i < numOfPorts; i++) {
+        expectedPorts.push(await findPort());
+    }
+    return expectedPorts;
+};
+
+export const expectAnythingOrNothing = expect.toBeOneOf([expect.anything(), undefined, null]);

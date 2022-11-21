@@ -137,6 +137,12 @@ export function getAppExecPath() {
     }
 }
 
+export interface DaemonTLSCert {
+    pathToKey: string;
+    pathToCert: string;
+    pathToCsr: string;
+}
+
 /**
  * This function will generate a new cert to use for a daemon application (i.e. kube, web server)
  * @param {string} pathToConfig Path to our zli config
@@ -144,11 +150,11 @@ export function getAppExecPath() {
  * @param {string} configName  Dev, stage, prod
  * @returns Path to the key, path to the cert, path to the certificate signing request.
  */
-export async function generateNewCert(pathToConfig: string, name: string, configName: string ): Promise<string[]> {
+export async function generateNewCert(pathToConfig: string, name: string, configName: string): Promise<DaemonTLSCert> {
     const options: ExecSyncOptions = { stdio: 'ignore' };
 
     // Create and save key/cert
-    const createCertPromise = new Promise<string[]>(async (resolve, reject) => {
+    const createCertPromise = new Promise<DaemonTLSCert>(async (resolve, reject) => {
         // Only add the prefix for non-prod
         let prefix = '';
         if (configName !== 'prod') {
@@ -183,7 +189,11 @@ export async function generateNewCert(pathToConfig: string, name: string, config
             reject(e);
         }
 
-        resolve([pathToKey, pathToCert, pathToCsr]);
+        resolve({
+            pathToKey: pathToKey,
+            pathToCert: pathToCert,
+            pathToCsr: pathToCsr
+        });
     });
 
     return await createCertPromise;
@@ -333,14 +343,13 @@ export async function killLocalPortAndPid(savedPid: number, localPort: number, l
     }
 
     // Also check if anything is using that local port
-    await checkIfPortAvailable(localPort, logger);
+    await checkIfPortAvailable(localPort);
 }
 
-export async function checkIfPortAvailable(port: number, logger: Logger) {
+export async function checkIfPortAvailable(port: number) {
     const isPortInUse = await checkTcpPort(port, 'localhost');
     if (isPortInUse) {
-        logger.error(`It looks like an application is using port: ${port}`);
-        await cleanExit(1, logger);
+        throw new Error(`It looks like an application is using port: ${port}`);
     }
 }
 

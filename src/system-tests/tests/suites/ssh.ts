@@ -1,6 +1,5 @@
 import path from 'path';
 import fs from 'fs';
-import * as CleanExitHandler from '../../../handlers/clean-exit.handler';
 import { promisify } from 'util';
 import { exec } from 'child_process';
 import { allTargets, configService, logger, systemTestEnvId, systemTestPolicyTemplate, systemTestUniqueId } from '../system-test';
@@ -159,14 +158,10 @@ export const sshSuite = () => {
 
                 const { targetName, userName } = await getTargetInfo(testTarget);
 
-                const expectedErrorMessage = 'Expected error';
-                jest.spyOn(CleanExitHandler, 'cleanExit').mockImplementationOnce(() => {
-                    throw new Error(expectedErrorMessage);
-                });
                 // Call "zli connect"
                 const connectPromise = callZli(['connect', `${userName}@${targetName}`]);
 
-                await expect(connectPromise).rejects.toThrow(expectedErrorMessage);
+                await expect(connectPromise).rejects.toThrow();
             }, 60 * 1000);
         });
 

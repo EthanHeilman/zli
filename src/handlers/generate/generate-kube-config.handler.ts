@@ -1,178 +1,105 @@
-import util from 'util';
 import yargs from 'yargs';
 import { ConfigService } from '../../services/config/config.service';
 import { Logger } from '../../services/logger/logger.service';
-import { exec } from 'child_process';
 import { generateKubeConfigArgs } from './generate-kube.command-builder';
-import { cleanExit } from '../clean-exit.handler';
-import { generateNewCert } from '../../utils/daemon-utils';
-
-const path = require('path');
-const fs = require('fs');
-const tmp = require('tmp');
-const execPromise = util.promisify(exec);
-// Exporting for use during testing
-export const randtoken = require('rand-token');
-export const findPort = require('find-open-port');
+import k8s, { KubeConfig } from '@kubernetes/client-node';
+import { exportKubeConfigToYaml, updateKubeConfigWith, generateKubeConfig, getKubeDaemonSecuritySettings, mergeKubeConfig, updateUserKubeConfigWith, filterAndOverwriteUserKubeConfig, IFilterKubeConfigService } from '../../services/kube-management/kube-management.service';
+import { getAllRunningDaemons, IDaemonStatusRetriever, newKubeDaemonManagementService } from '../../services/daemon-management/daemon-management.service';
+import { KubeConfig as ZliKubeConfig, KubeDaemonSecurityConfig } from '../../services/config/config.service.types';
+import { ILogger } from '../../../webshell-common-ts/logging/logging.types';
+import { handleDisconnect, IDaemonDisconnector } from '../disconnect/disconnect.handler';
 
 export async function generateKubeConfigHandler(
     argv: yargs.Arguments<generateKubeConfigArgs>,
     configService: ConfigService,
     logger: Logger
 ) {
-    // Check if we already have generated a cert/key
-    let kubeConfig = configService.getKubeConfig();
+    // Check if we already have generated global security settings for kube
+    // daemons
+    const kubeSecurityConfig = await getKubeDaemonSecuritySettings(configService, logger, argv.force);
 
-    if (kubeConfig['keyPath'] == null) {
-        logger.info('No KubeConfig has been generated before, generating key and cert for local daemon...');
+    const kubeDaemonManagementService = newKubeDaemonManagementService(configService);
+    const generatedKubeConfigAsYaml = await handleGenerateKubeConfig(
+        argv,
+        kubeSecurityConfig,
+        kubeDaemonManagementService,
+        configService,
+        logger
+    );
 
-        // Create and save key/cert
-        try {
-            // Get the path of where we want to save
-            const pathToConfig = path.dirname(configService.configPath());
-            const configName = configService.getConfigName();
+    if (generatedKubeConfigAsYaml)
+        console.log(generatedKubeConfigAsYaml);
+}
 
-            const [pathToKey, pathToCert, pathToCsr] = await generateNewCert(pathToConfig, 'kube', configName);
+export interface IGenerateKubeConfigManagementService extends IDaemonDisconnector<ZliKubeConfig>, IDaemonStatusRetriever<ZliKubeConfig> {
+    getDaemonConfigs(): Map<string, ZliKubeConfig>;
+}
 
-            // Generate a token that can be used for auth
-            const token = randtoken.generate(128);
+/**
+ * Generate kube config
+ * @returns Generated kube config in YAML format, if arguments don't specify to
+ * write to disk. Otherwise, null
+ */
+export async function handleGenerateKubeConfig(
+    argv: generateKubeConfigArgs,
+    kubeSecurityConfig: KubeDaemonSecurityConfig,
+    managementService: IGenerateKubeConfigManagementService,
+    configService: IFilterKubeConfigService,
+    logger: ILogger
+) : Promise<string> {
 
-            // Find a local port to use for our daemon
-            const localPort = await findPort();
-
-            // Now save the path in the configService
-            kubeConfig = {
-                type: 'kube',
-                keyPath: pathToKey,
-                certPath: pathToCert,
-                csrPath: pathToCsr,
-                token: token,
-                localHost: 'localhost',
-                localPort: localPort,
-                localPid: null,
-                targetUser: null,
-                targetGroups: null,
-                targetCluster: null,
-                defaultTargetGroups: null
-            };
-            configService.setKubeConfig(kubeConfig);
-        } catch (e: any) {
-            logger.error(`Error creating cert for local daemon: ${e}`);
-            await cleanExit(1, logger);
+    // Disconnect any running daemons if force flag passed
+    if (argv.force) {
+        const runningDaemons = await getAllRunningDaemons(managementService);
+        if (runningDaemons.length > 0) {
+            logger.warn('Disconnecting your existing kube daemons due to generating new security settings. Please re-connect to your kube targets.');
+            await handleDisconnect(managementService, logger);
+            // Filter stale bzero entries from user's kube config
+            await filterAndOverwriteUserKubeConfig(configService, logger);
         }
     }
 
-    // See if the user passed in a custom port
-    let daemonPort = kubeConfig['localPort'].toString();
-    if (argv.customPort != -1) {
-        daemonPort = argv.customPort.toString();
+    const kubeDaemonConfigs = managementService.getDaemonConfigs();
+
+    // The master kube config to write to disk
+    let rollingKubeConfig: k8s.KubeConfig = new KubeConfig();
+
+    // Add to rolling config a context and cluster entry for every daemon config
+    // stored in our config.
+    for (const [_, kubeDaemonConfig] of kubeDaemonConfigs) {
+        const generatedKubeConfig = generateKubeConfig(
+            configService,
+            kubeDaemonConfig.targetCluster,
+            kubeDaemonConfig.targetUser,
+            kubeDaemonConfig.localPort,
+            kubeSecurityConfig.token,
+            kubeDaemonConfig.defaultNamespace
+        );
+
+        // Merge generated config with rolling config
+        rollingKubeConfig = mergeKubeConfig(rollingKubeConfig, generatedKubeConfig);
     }
 
-    // Determine if this is using the dev or stage config
-    const configName = configService.getConfigName();
-    let clusterName = 'bctl-agent';
-    let contextName = 'bzero-context';
-    let userName = configService.me()['email'];
+    // Note: If there are daemon configs, then current-context is set to the
+    // last target in that list (should be the last connected target)
 
-    // If this is dev or stage, add that appropriate flag
-    if (configName === 'dev' || configName === 'stage') {
-        clusterName += `-${configName}`;
-        userName += `-${configName}`;
-        contextName += `-${configName}`;
-    }
-
-    // Now generate a kubeConfig
-    const clientKubeConfig = `
-apiVersion: v1
-clusters:
-- cluster:
-    server: https://${kubeConfig['localHost']}:${daemonPort}
-    insecure-skip-tls-verify: true
-  name: ${clusterName}
-contexts:
-- context:
-    cluster: ${clusterName}
-    user: ${userName}
-  name: ${contextName}
-current-context: ${contextName}
-preferences: {}
-users:
-  - name: ${userName}
-    user:
-      token: "${kubeConfig['token']}"
-`;
+    // Following aws CLI update-kubeconfig semantics, we respect the following
+    // order when writing kube config to disk:
+    // (1): CLI argument (--outputFile)
+    // (2): KUBECONFIG environment variable
+    // (3): Default filepath in user's home directory (~/.kube/config)
+    // Source: https://github.com/aws/aws-cli/blob/e5422b70e90804480363a5a0b4893059e8798a44/awscli/examples/eks/update-kubeconfig/_description.rst
 
     // Show it to the user or write to file
     if (argv.outputFile) {
-        await util.promisify(fs.writeFile)(argv.outputFile, clientKubeConfig);
+        await updateKubeConfigWith(rollingKubeConfig, argv.outputFile);
+        return null;
     } else if (argv.update) {
-        try {
-            await flattenKubeConfig(clientKubeConfig, logger);
-        } catch (e: any) {
-            logger.error(`Error generating new kube config: ${e}`);
-            await cleanExit(1, logger);
-        }
+        await updateUserKubeConfigWith(rollingKubeConfig);
         logger.info('Updated existing kube config!');
+        return null;
     } else {
-        console.log(clientKubeConfig);
+        const rollingKubeConfigAsYAML = exportKubeConfigToYaml(rollingKubeConfig);
+        return rollingKubeConfigAsYAML;
     }
-}
-
-async function flattenKubeConfig(config: string, logger: Logger) {
-    // Helper function to flatten existing kubeConfig and new config
-
-    // Define our kubeConfigPath
-    // define our kube config dir (i.e. ~/.kube/config)
-    const kubeConfigDir = path.join(process.env.HOME, '/.kube/');
-
-    // Get the kube config path that the user is using, or use default
-    const kubeConfigPath = process.env.KUBECONFIG || path.join(kubeConfigDir, 'config');
-
-    // First ensure we have an existing config file
-    try {
-        if (!fs.existsSync(kubeConfigPath)) {
-            // Existing kubeConfig does not exist, just copy the config to the kubeConfigPath
-            fs.writeFileSync(kubeConfigPath, config);
-            return;
-        }
-    } catch (err) {
-        logger.error(`Error checking if existing KubeConfig file exists. Failed to check path: ${kubeConfigPath}`);
-        await cleanExit(1, logger);
-    }
-
-    // Wrap this code into a promise so we can await it
-    const flattenKubeConfigPromise = new Promise<void>(async (resolve, reject) => {
-        // First lets create a temp file to write to
-        tmp.file(async function _tempFileCreated(err: any, tempFilePath: string, fd: any, cleanupCallback: any) {
-            if (err) {
-                logger.error('Error creating temp file!');
-                reject();
-                return;
-            }
-
-            // Write out kube config to that file
-            fs.writeFileSync(tempFilePath, config);
-
-            // Create backup of kubeconfig
-            const backupFilePath = ( process.env.KUBECONFIG ? path.join(path.dirname(process.env.KUBECONFIG), 'config.bzero.bak') : path.join(kubeConfigDir, 'config.bzero.bak') );
-            fs.copyFileSync(kubeConfigPath, backupFilePath);
-
-            // Create our custom exec env
-            // We use the backupFilePath here, as we cannot merge the existing kubeConfigPath and pipe it to itself
-            // Ref: https://stackoverflow.com/questions/46184125/how-to-merge-kubectl-config-file-with-kube-config
-            // Order here also matters, we want the current context to come from our config, not the existing config
-            const execEnv = {
-                'KUBECONFIG': `${tempFilePath}:${backupFilePath}`,
-                'PATH': process.env.PATH // Incase the user installs kubectl not in `/usr/local/bin`
-            };
-
-            // Not attempt to merge the two
-            await execPromise(`kubectl config view --flatten > ${kubeConfigPath}`, { env: execEnv });
-
-            // Return, clean up the temp file and, resolve the promise
-            cleanupCallback();
-            resolve();
-        });
-    });
-    await flattenKubeConfigPromise;
 }

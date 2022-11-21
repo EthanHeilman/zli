@@ -31,34 +31,37 @@ export interface DbConfig extends BaseDaemonConfig {
 
 export interface KubeConfig extends BaseDaemonConfig {
     type: 'kube',
-    keyPath: string,
-    certPath: string,
-    csrPath: string,
-    token: string,
     targetUser: string,
     targetGroups: string[],
     targetCluster: string,
-    defaultTargetGroups: string[]
+    defaultNamespace?: string
 }
 
 export interface ConnectConfig {
     targetUser: string
 }
 
+export interface GlobalKubeConfig {
+    securitySettings: KubeDaemonSecurityConfig
+    defaultTargetGroups: string[]
+}
+
+export interface KubeDaemonSecurityConfig {
+    keyPath: string,
+    certPath: string,
+    csrPath: string,
+    token: string,
+}
+
 export function getDefaultKubeConfig(): KubeConfig {
     return {
         type: 'kube',
-        keyPath: null,
-        certPath: null,
-        csrPath: null,
-        token: null,
         localHost: null,
         localPort: null,
         localPid: null,
         targetUser: null,
         targetGroups: null,
-        targetCluster: null,
-        defaultTargetGroups: null,
+        targetCluster: null
     };
 }
 
@@ -85,5 +88,12 @@ export function getDefaultWebConfig(): WebConfig {
 export function getDefaultConnectConfig(): ConnectConfig {
     return {
         targetUser: null
+    };
+}
+
+export function getDefaultGlobalKubeConfig(): GlobalKubeConfig {
+    return {
+        securitySettings: null,
+        defaultTargetGroups: null
     };
 }

@@ -47,8 +47,7 @@ export function generateKubeYamlCmdBuilder(yargs: yargs.Argv<{}>) : yargs.Argv<g
 }
 
 export type generateKubeConfigArgs = generateKubeArgs
-& {customPort: number}
-& {update: boolean};
+& {update: boolean} & {force: boolean};
 
 export function generateKubeConfigCmdBuilder(yargs: yargs.Argv<{}>) : yargs.Argv<generateKubeConfigArgs> {
     return generateKubeCmdBuilder(yargs)
@@ -57,11 +56,10 @@ export function generateKubeConfigCmdBuilder(yargs: yargs.Argv<{}>) : yargs.Argv
             default: false,
             description: 'Updates the user\'s existing kubeconfig file'
         })
-        .option('customPort', {
-            type: 'number',
-            default: -1,
-            demandOption: false,
-            description: 'Configures custom port for bctl-agent-context to connect to bctl daemon'
+        .option('force', {
+            type: 'boolean',
+            default: false,
+            description: 'Force generates new Kube daemon security settings. WARNING: Disconnects any running Kube daemons'
         })
         .example('$0 generate kubeConfig', '')
         .example('$0 generate kubeConfig --update', 'Update existing kube config (defaults KUBECONFIG to $HOME/.kube/config)');

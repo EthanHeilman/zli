@@ -1,7 +1,6 @@
 import { systemTestEnvId, systemTestEnvName, systemTestPolicyTemplate, systemTestUniqueId, testTargets } from '../system-test';
 import { callZli } from '../utils/zli-utils';
 import got from 'got/dist/source';
-import * as CleanExitHandler from '../../../handlers/clean-exit.handler';
 import FormData from 'form-data';
 
 import { configService, logger, loggerConfigService } from '../system-test';
@@ -210,15 +209,10 @@ export const webSuite = () => {
 
                 logger.info('Creating web target connection with web target + no policy');
 
-                const expectedErrorMessage = 'Expected error';
-                jest.spyOn(CleanExitHandler, 'cleanExit').mockImplementationOnce(() => {
-                    throw new Error(expectedErrorMessage);
-                });
-
                 // Start the connection to the web virtual target
                 const connectZli = callZli(['connect', webVtName, '--openBrowser=false']);
 
-                await expect(connectZli).rejects.toThrow(expectedErrorMessage);
+                await expect(connectZli).rejects.toThrow();
 
                 // Reset our testPassed flag
 

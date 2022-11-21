@@ -4,7 +4,8 @@ import { cleanExit } from '../clean-exit.handler';
 import { ConnectionHttpService } from '../../http-services/connection/connection.http-services';
 import { closeConnectionArgs } from './close-connection.command-builder';
 import yargs from 'yargs';
-import { closeDbConnections, closeShellConnections } from '../../services/close-connections/close-connections.service';
+import { closeConnections, closeShellConnections } from '../../services/close-connections/close-connections.service';
+import { isError } from 'lodash';
 
 export async function closeConnectionHandler(
     argv: yargs.Arguments<closeConnectionArgs>,
@@ -17,7 +18,6 @@ export async function closeConnectionHandler(
             throw new Error('There is no cli session. Try creating a new connection to a target using the zli');
         }
     };
-    const handleDb = () => closeDbConnections(configService, logger);
 
     if (argv.all) {
         // Handle closing all connections
@@ -30,7 +30,11 @@ export async function closeConnectionHandler(
                 break;
             case 'db':
                 logger.info('Closing all db connections');
-                await handleDb();
+                await closeConnections(configService, logger, 'db');
+                break;
+            case 'kube':
+                logger.info('Closing all kube connections');
+                await closeConnections(configService, logger, 'kube');
                 break;
             default:
                 // Compile-time exhaustive check
@@ -39,8 +43,18 @@ export async function closeConnectionHandler(
             }
         } else {
             // Otherwise close all types of connections
-            logger.info('Closing all shell and db connections');
-            await Promise.all([handleDb(), handleShell()]);
+            logger.info('Closing all shell, db, and kube connections');
+
+            const results = await Promise.allSettled([
+                handleShell(),
+                closeConnections(configService, logger, 'db'),
+                closeConnections(configService, logger, 'kube'),
+            ]);
+            const allErrors = results.reduce<any[]>((acc, result) => result.status === 'rejected' ? [...acc, result.reason] : acc, []);
+            if (allErrors.length > 0) {
+                const messages = allErrors.reduce<string[]>((acc, err) => isError(err) ? [...acc, err.message] : acc, []);
+                throw new Error(`Failed closing at least one connection: ${messages.join(', ')}`);
+            }
         }
     } else {
         // Handle closing specific connection

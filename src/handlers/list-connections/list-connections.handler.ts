@@ -4,7 +4,7 @@ import { createTableWithWordWrap, toUpperCase } from '../../utils/utils';
 import { listConnectionsArgs } from './list-connections.command-builder';
 import yargs from 'yargs';
 import { ConnectionInfo } from '../../services/list-connections/list-connections.service.types';
-import { listOpenDbConnections, listOpenShellConnections } from '../../services/list-connections/list-connections.service';
+import { listOpenDbConnections, listOpenKubeConnections, listOpenShellConnections } from '../../services/list-connections/list-connections.service';
 import { cleanExit } from '../clean-exit.handler';
 
 export async function listConnectionsHandler(
@@ -12,7 +12,7 @@ export async function listConnectionsHandler(
     configService: ConfigService,
     logger: Logger
 ) {
-    const printTableOrJson = async <T extends NormalizedConnectionInfo>(type: 'shell' | 'db' | 'all', connections: T[]) => {
+    const printTableOrJson = async <T extends NormalizedConnectionInfo>(type: 'shell' | 'db' | 'kube' | 'all', connections: T[]) => {
         if (!!argv.json) {
             // json output
             console.log(JSON.stringify(connections));
@@ -41,6 +41,10 @@ export async function listConnectionsHandler(
             const openDbConnections = await listOpenDbConnections(configService, logger);
             await printTableOrJson('db', normalizeConnectionInfos(openDbConnections));
             break;
+        case 'kube':
+            const openKubeConnections = await listOpenKubeConnections(configService, logger);
+            await printTableOrJson('kube', normalizeConnectionInfos(openKubeConnections));
+            break;
         default:
             // Compile-time exhaustive check
             const exhaustiveCheck: never = argv.type;
@@ -50,11 +54,12 @@ export async function listConnectionsHandler(
         // If type option not provided, get all open connections
 
         // Get open shell and db connections concurrently
-        const [shellConnections, dbConnections] = await Promise.all([
+        const [shellConnections, dbConnections, kubeConnections] = await Promise.all([
             listOpenShellConnections(configService, logger),
-            listOpenDbConnections(configService, logger)
+            listOpenDbConnections(configService, logger),
+            listOpenKubeConnections(configService, logger)
         ]);
-        await printTableOrJson('all', normalizeConnectionInfos([...shellConnections, ...dbConnections]));
+        await printTableOrJson('all', normalizeConnectionInfos([...shellConnections, ...dbConnections, ...kubeConnections]));
     }
 
     await cleanExit(0, logger);
@@ -87,6 +92,9 @@ function normalizeConnectionInfos(connections: ConnectionInfo[]): NormalizedConn
             targetUser = 'N/A';
             break;
         case 'shell':
+            targetUser = conn.targetUser;
+            break;
+        case 'kube':
             targetUser = conn.targetUser;
             break;
         default:

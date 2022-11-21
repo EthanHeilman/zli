@@ -171,7 +171,7 @@ export const connectSuite = () => {
                 // Call "zli connect"
                 const connectPromise = callZli(['connect', `baduser@${connectTarget.name}`]);
 
-                await expect(connectPromise).rejects.toThrow('cleanExit was called');
+                await expect(connectPromise).rejects.toThrow();
             }, 60 * 1000);
         });
     });

@@ -11,7 +11,7 @@ import { dbConnectHandler } from './db-connect.handler';
 import { webConnectHandler } from './web-connect.handler';
 import { startKubeDaemonHandler } from './kube-connect.handler';
 import { MixpanelService } from '../../services/Tracking/mixpanel.service';
-import { cleanExit } from '../clean-exit.handler';
+import { CreateUniversalConnectionResponse } from '../../../webshell-common-ts/http/v2/connection/responses/create-universal-connection.response';
 
 export async function connectHandler(
     argv: yargs.Arguments<connectArgs>,
@@ -30,14 +30,15 @@ export async function connectHandler(
 
     // If they have not passed targetGroups attempt to use the default ones
     // stored in case this is a kube connect
-    const kubeConfig = configService.getKubeConfig();
-    if (argv.targetGroup.length == 0 && kubeConfig.defaultTargetGroups != null) {
-        argv.targetGroup = kubeConfig.defaultTargetGroups;
+    const kubeGlobalConfig = configService.getGlobalKubeConfig();
+    if (argv.targetGroup.length == 0 && kubeGlobalConfig.defaultTargetGroups != null) {
+        argv.targetGroup = kubeGlobalConfig.defaultTargetGroups;
     }
 
+    let createUniversalConnectionResponse: CreateUniversalConnectionResponse = undefined;
     try
     {
-        const createUniversalConnectionResponse = await connectionHttpService.CreateUniversalConnection({
+        createUniversalConnectionResponse = await connectionHttpService.CreateUniversalConnection({
             targetId: parsedTarget.id,
             targetName: parsedTarget.name,
             envId: parsedTarget.envId,
@@ -55,13 +56,13 @@ export async function connectHandler(
         case TargetType.SsmTarget:
         case TargetType.Bzero:
         case TargetType.DynamicAccessConfig:
-            return shellConnectHandler(createUniversalConnectionResponse.targetType, createUniversalConnectionResponse.targetUser, createUniversalConnectionResponse, configService, logger, loggerConfigService);
+            return await shellConnectHandler(createUniversalConnectionResponse.targetType, createUniversalConnectionResponse.targetUser, createUniversalConnectionResponse, configService, logger, loggerConfigService);
         case TargetType.Db:
-            return dbConnectHandler(argv, createUniversalConnectionResponse.targetId, createUniversalConnectionResponse, configService, logger, loggerConfigService);
+            return await dbConnectHandler(argv, createUniversalConnectionResponse.targetId, createUniversalConnectionResponse, configService, logger, loggerConfigService);
         case TargetType.Web:
-            return webConnectHandler(argv, createUniversalConnectionResponse.targetId, createUniversalConnectionResponse, configService, logger, loggerConfigService);
+            return await webConnectHandler(argv, createUniversalConnectionResponse.targetId, createUniversalConnectionResponse, configService, logger, loggerConfigService);
         case TargetType.Cluster:
-            return startKubeDaemonHandler(argv, createUniversalConnectionResponse.targetId, createUniversalConnectionResponse.targetUser, createUniversalConnectionResponse, configService, logger, loggerConfigService);
+            return await startKubeDaemonHandler(argv, createUniversalConnectionResponse.targetId, createUniversalConnectionResponse.targetUser, createUniversalConnectionResponse, configService, logger, loggerConfigService);
         default:
             logger.error(`Unhandled target type ${createUniversalConnectionResponse.targetType}`);
             return -1;
@@ -69,7 +70,11 @@ export async function connectHandler(
     }
     catch(err)
     {
-        logger.error(err);
-        await cleanExit(1, logger);
+        // Close connection if any error occurs in sub-handler
+        if (createUniversalConnectionResponse) {
+            await connectionHttpService.CloseConnection(createUniversalConnectionResponse.connectionId);
+        }
+
+        throw err;
     }
 }

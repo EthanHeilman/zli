@@ -32,7 +32,7 @@ export async function dbConnectHandler(
     }
 
     // Check if port is available otherwise exit
-    await checkIfPortAvailable(localPort, logger);
+    await checkIfPortAvailable(localPort);
 
     // Build our runtime config and cwd
     const baseEnv = getBaseDaemonEnv(configService, loggerConfigService, dbTarget.agentPublicKey, createUniversalConnectionResponse.connectionId, createUniversalConnectionResponse.connectionAuthDetails);

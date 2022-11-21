@@ -7,7 +7,7 @@ import { Observable, Subject } from 'rxjs';
 import { IdentityProvider } from '../../../webshell-common-ts/auth-service/auth.types';
 import { TokenHttpService } from '../../http-services/token/token.http-services';
 import { UserSummary } from '../../../webshell-common-ts/http/v2/user/types/user-summary.types';
-import { DaemonConfigs, DbConfig, getDefaultKubeConfig, getDefaultWebConfig, getDefaultConnectConfig, KubeConfig, WebConfig, ConnectConfig } from './config.service.types';
+import { DaemonConfigs, DbConfig, getDefaultWebConfig, getDefaultConnectConfig, KubeConfig, WebConfig, ConnectConfig, GlobalKubeConfig, getDefaultGlobalKubeConfig } from './config.service.types';
 import { LEGACY_KEY_STRING } from '../../services/daemon-management/daemon-management.service';
 
 // refL: https://github.com/sindresorhus/conf/blob/master/test/index.test-d.ts#L5-L14
@@ -27,10 +27,11 @@ type BastionZeroConfigSchema = {
     sshKeyPath: string,
     sshKnownHostsPath: string,
     mrtap: MrtapConfigSchema,
-    kubeConfig: KubeConfig
     webConfig: WebConfig,
     connectConfig: ConnectConfig,
+    globalKubeConfig: GlobalKubeConfig
     dbDaemons: DaemonConfigs<DbConfig>
+    kubeDaemons: DaemonConfigs<KubeConfig>
 };
 
 export class ConfigService implements ConfigInterface {
@@ -81,10 +82,11 @@ export class ConfigService implements ConfigInterface {
                 sshKeyPath: undefined,
                 sshKnownHostsPath: undefined,
                 mrtap: getDefaultMrtapConfig(),
-                kubeConfig: getDefaultKubeConfig(),
                 webConfig: getDefaultWebConfig(),
                 connectConfig: getDefaultConnectConfig(),
-                dbDaemons: {}
+                globalKubeConfig: getDefaultGlobalKubeConfig(),
+                dbDaemons: {},
+                kubeDaemons: {}
             },
             accessPropertiesByDotNotation: true,
             clearInvalidConfig: true,    // if config is invalid, delete
@@ -142,6 +144,70 @@ export class ConfigService implements ConfigInterface {
                     const ksConfig: MrtapConfigSchema = config.get('keySplitting', getDefaultMrtapConfig());
                     config.set('mrtap', ksConfig);
                     config.delete('keySplitting' as any);
+                },
+                // Migrate old kubeConfig to new kubeDaemons map + global kube
+                // settings
+                '>=6.13.0': (config: Conf<BastionZeroConfigSchema>) => {
+                    const legacyKubeConfig: any = config.get('kubeConfig', undefined);
+
+                    // Move over global fields that used to exist in legacy kube
+                    // config schema to new schema
+                    if (legacyKubeConfig) {
+                        // If all security related things are truthy, then
+                        // migrate them
+                        if (legacyKubeConfig.keyPath &&
+                            legacyKubeConfig.certPath &&
+                            legacyKubeConfig.csrPath &&
+                            legacyKubeConfig.token
+                        ) {
+                            const globalKubeConfig: GlobalKubeConfig = {
+                                securitySettings:
+                                {
+                                    keyPath: legacyKubeConfig.keyPath,
+                                    certPath: legacyKubeConfig.certPath,
+                                    csrPath: legacyKubeConfig.csrPath,
+                                    token: legacyKubeConfig.token,
+                                },
+                                defaultTargetGroups: legacyKubeConfig.defaultTargetGroups ? legacyKubeConfig.defaultTargetGroups : null,
+                            };
+                            config.set('globalKubeConfig', globalKubeConfig);
+                        } else {
+                            // Otherwise, if at least one security related field
+                            // is not truthy, then set to null. It will be
+                            // generated on the fly when needed again
+                            const globalKubeConfig: GlobalKubeConfig = {
+                                securitySettings: null,
+                                defaultTargetGroups: legacyKubeConfig.defaultTargetGroups ? legacyKubeConfig.defaultTargetGroups : null,
+                            };
+                            config.set('globalKubeConfig', globalKubeConfig);
+                        }
+
+                        // Migrate existing kube daemon to new kubeDaemonsMap
+
+                        // Add legacy db config to new schema which is a
+                        // dictionary keyed by connectionId.
+                        const initKubeDaemons: DaemonConfigs<KubeConfig> = {};
+
+                        // Only add legacy kube config to new map if it has
+                        // truthy fields
+                        if (legacyKubeConfig.localHost &&
+                            legacyKubeConfig.localPort &&
+                            legacyKubeConfig.localPid &&
+                            legacyKubeConfig.targetUser &&
+                            legacyKubeConfig.targetGroups &&
+                            legacyKubeConfig.targetCluster
+                        ) {
+                            // Use special LEGACY_KEY_STRING as a key, so that
+                            // DaemonManagementService() can interpret this
+                            // config as a legacy config with no connection ID
+                            initKubeDaemons[LEGACY_KEY_STRING] = legacyKubeConfig;
+                        }
+
+                        config.set('kubeDaemons', initKubeDaemons);
+
+                        // Delete old schema as we've migrated
+                        config.delete('kubeConfig' as any);
+                    }
                 }
             },
             watch: watch
@@ -347,8 +413,8 @@ export class ConfigService implements ConfigInterface {
         this.config.delete('whoami');
     }
 
-    public getKubeConfig() {
-        return this.config.get('kubeConfig');
+    public getGlobalKubeConfig() {
+        return this.config.get('globalKubeConfig');
     }
 
     public getWebConfig() {
@@ -363,10 +429,6 @@ export class ConfigService implements ConfigInterface {
         return this.config.get('serviceUrl');
     }
 
-    public setKubeConfig(kubeConfig: KubeConfig) {
-        this.config.set('kubeConfig', kubeConfig);
-    }
-
     public setWebConfig(webConfig: WebConfig) {
         this.config.set('webConfig', webConfig);
     }
@@ -375,12 +437,24 @@ export class ConfigService implements ConfigInterface {
         this.config.set('connectConfig', connectConfig);
     }
 
+    public setGlobalKubeConfig(globalKubeConfig: GlobalKubeConfig) {
+        this.config.set('globalKubeConfig', globalKubeConfig);
+    }
+
     public setDbDaemons(dbDaemons: DaemonConfigs<DbConfig>) {
         this.config.set('dbDaemons', dbDaemons);
     }
 
     public getDbDaemons(): DaemonConfigs<DbConfig> {
         return this.config.get('dbDaemons');
+    }
+
+    public setKubeDaemons(kubeDaemons: DaemonConfigs<KubeConfig>) {
+        this.config.set('kubeDaemons', kubeDaemons);
+    }
+
+    public getKubeDaemons(): DaemonConfigs<KubeConfig> {
+        return this.config.get('kubeDaemons');
     }
 
     private getAppName(configName: string) {

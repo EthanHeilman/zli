@@ -39,6 +39,7 @@ import * as CleanExitHandler from '../handlers/clean-exit.handler';
 import { JustInTimePolicySummary } from '../../webshell-common-ts/http/v2/policy/just-in-time/types/just-in-time-policy-summary.types';
 import { DbConnectionSummary } from '../../webshell-common-ts/http/v2/connection/types/db-connection-summary.types';
 import { randomUUID } from 'crypto';
+import { KubeConnectionSummary } from '../../webshell-common-ts/http/v2/connection/types/kube-connection-summary.types';
 
 export function unitTestMockSetup(withCleanExit: boolean): void {
     // Always mock out the following services
@@ -312,6 +313,18 @@ export const mockConnectionSummary: ShellConnectionSummary = {
     sessionRecording : false,
     inputRecording : false,
     subjectId : 'some-subject-id'
+};
+
+export const mockKubeConnectionSummary: KubeConnectionSummary = {
+    id: randomUUID(),
+    timeCreated: new Date(1998, 3, 5, 0, 0, 0, 0),
+    state: ConnectionState.Open,
+    targetId: 'some-target-id',
+    targetName: 'some-target-name',
+    targetType: TargetType.Cluster,
+    subjectId: 'some-subject-id',
+    targetUser: 'foo',
+    targetGroups: []
 };
 
 export const mockDbConnectionSummary: DbConnectionSummary = {

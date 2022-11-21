@@ -1,170 +1,343 @@
-import fs from 'fs';
-import mockArgv from 'mock-argv';
 import path from 'path';
-import { CliDriver } from '../../cli-driver';
-import { ConfigService } from '../../services/config/config.service';
-import { cleanConsoleLog, createTempDirectory, deleteDirectory, unitTestMockSetup } from '../../utils/unit-test-utils';
-import * as CleanExitHandler from '../clean-exit.handler';
-import * as DaemonUtils from '../../utils/daemon-utils';
-import * as KubeConfigMocks from './generate-kube-config.mock';
+import { ILogger } from '../../../webshell-common-ts/logging/logging.types';
+import { MockProxy, mock } from 'jest-mock-extended';
+import { IFilterKubeConfigService, loadKubeConfigFromString } from '../../services/kube-management/kube-management.service';
+import { handleGenerateKubeConfig, IGenerateKubeConfigManagementService } from './generate-kube-config.handler';
+import { Cluster, Context, KubeConfig, User } from '@kubernetes/client-node';
+import { KubeConfig as ZliKubeConfig, KubeDaemonSecurityConfig } from '../../services/config/config.service.types';
+import fc from 'fast-check';
+import { UserSummary } from '../../../webshell-common-ts/http/v2/user/types/user-summary.types';
+import { withDir } from 'tmp-promise';
+import { DaemonIsRunningStatus, DaemonStatus } from '../../services/daemon-management/types/daemon-status.types';
+
+function arbZliKubeConfig(): fc.Arbitrary<ZliKubeConfig> {
+    return fc.record({
+        type: fc.constant('kube'),
+        targetUser: fc.string({ minLength: 1 }),
+        targetGroups: fc.uniqueArray(fc.string()),
+        targetCluster: fc.string({ minLength: 1 }),
+        localPort: fc.integer({ min: 1, max: 65535 }),
+        localPid: fc.integer(),
+        localHost: fc.constant('localhost'),
+        defaultNamespace: fc.string()
+    }, {
+        requiredKeys: [
+            'type',
+            'targetUser',
+            'targetGroups',
+            'targetCluster',
+            'localPort',
+            'localPid',
+            'localHost']
+    }
+    );
+}
+
+function arbMapOfZliKubeConfigs(): fc.Arbitrary<Map<string, ZliKubeConfig>> {
+    // Create array of zli kube configs with unique target users. This is
+    // required otherwise expectation will think there is more than one config,
+    // but when context name is the same (due to target user being the same),
+    // the second one overwrites the other one
+    return fc.uniqueArray(arbZliKubeConfig(), { selector: (c) => c.targetUser, comparator: 'IsStrictlyEqual' })
+        .chain(zliKubeConfigs => fc.tuple(
+            fc.uniqueArray(fc.uuidV(4), {
+                minLength: zliKubeConfigs.length,
+                maxLength: zliKubeConfigs.length
+            }),
+            fc.constant(zliKubeConfigs)
+        ).map(([connectionIds, zliKubeConfigs]) => {
+            const result = new Map<string, ZliKubeConfig>();
+            connectionIds.forEach((id, i) => result.set(id, zliKubeConfigs[i]));
+            return result;
+        }
+        ));
+}
 
 describe('Generate kube config suite', () => {
-    // Temp directory to write files to
-    const tempDir = path.join(__dirname, 'temp-kube-config-test');
+    // Mocks
+    let loggerMock: MockProxy<ILogger>;
+    let kubeConfigServiceMock: MockProxy<IFilterKubeConfigService>;
+    let managementServiceMock: MockProxy<IGenerateKubeConfigManagementService>;
+
+    // Fakes
+    let fakeDaemonSecurityConfig: KubeDaemonSecurityConfig;
+
+    // Constants
+    const fakeUserEmail = 'foo@gmail.com';
+    // Used by non-PBT tests
+    const fakeDaemonConfig: ZliKubeConfig = { type: 'kube', targetUser: 'foo', targetGroups: [], targetCluster: 'my-cluster', localPort: 5002, localPid: 60433, localHost: 'localhost' };
+    const fakeDaemonMap = new Map<string, ZliKubeConfig>([
+        ['fake-connection-id', fakeDaemonConfig]
+    ]);
 
     beforeEach(() => {
-        jest.resetModules();
-        jest.clearAllMocks();
+        // Each test gets a fresh mock
+        loggerMock = mock<ILogger>();
+        kubeConfigServiceMock = mock<IFilterKubeConfigService>();
+        managementServiceMock = mock<IGenerateKubeConfigManagementService>();
+        // Sane defaults (can be overridden)
+        kubeConfigServiceMock.me.mockReturnValue({ email: fakeUserEmail } as UserSummary);
+        kubeConfigServiceMock.getKubeDaemons.mockReturnValue({});
+        managementServiceMock.getDaemonConfigs.mockReturnValue(fakeDaemonMap);
+        managementServiceMock.disconnectAllDaemons.mockResolvedValue(new Map());
 
-        // Set up necessary mocks
-        unitTestMockSetup(false);
-        KubeConfigMocks.kubeConfigMockSetup();
-
-        // nullify setKubeConfig so we don't overwrite the user's config
-        jest.spyOn(ConfigService.prototype, 'setKubeConfig').mockImplementation(jest.fn());
-    });
-
-    afterEach(() => {
-        jest.resetAllMocks();
-    });
-
-    afterAll(() => {
-        deleteDirectory(tempDir);
+        // Each test gets a fresh fake with sane defaults
+        fakeDaemonSecurityConfig = {
+            // The path fields are not used by the SUT
+            certPath: 'fakeCertPath',
+            csrPath: 'fakeCsrPath',
+            keyPath: 'fakeKeyPath',
+            token: 'fakeToken'
+        };
     });
 
     test('31623: Generate kube config', async () => {
-        // Create a deep copy to allow keyPath to be null
-        const testMockKubeConfig = JSON.parse(JSON.stringify(KubeConfigMocks.mockKubeConfig));
-        testMockKubeConfig['keyPath'] = null;
-        jest.spyOn(ConfigService.prototype, 'getKubeConfig').mockImplementation(() => testMockKubeConfig);
+        await fc.assert(
+            fc.asyncProperty(arbMapOfZliKubeConfigs(), async (kubeDaemonsMap) => {
+                managementServiceMock.getDaemonConfigs.mockReturnValue(kubeDaemonsMap);
 
-        // Listen to our generate kube config response
-        const logSpy = jest.spyOn(console, 'log');
+                // Generate without any options that trigger file I/O
+                const generatedKubeConfigAsYaml = await handleGenerateKubeConfig(
+                    { outputFile: undefined, update: false, force: false },
+                    fakeDaemonSecurityConfig,
+                    managementServiceMock,
+                    kubeConfigServiceMock,
+                    loggerMock
+                );
 
-        // Call the function
-        await mockArgv(['generate', 'kubeConfig'], async () => {
-            const driver = new CliDriver();
-            await driver.run(process.argv.slice(2), true);
+                // Generated config should still be parseable from YAML to kube
+                // config
+                const gotKubeConfig = loadKubeConfigFromString(generatedKubeConfigAsYaml);
+
+                // Build expectations for generated config
+                const expectedClusters: Cluster[] = [];
+                const expectedContexts: Context[] = [];
+                const expectedUsername = `bzero-${fakeUserEmail}`;
+                for (const [_, kubeDaemonConfig] of kubeDaemonsMap) {
+                    const expectedName = `bzero-${kubeDaemonConfig.targetUser}@${kubeDaemonConfig.targetCluster}`;
+                    expectedClusters.push({
+                        name: expectedName,
+                        server: `https://localhost:${kubeDaemonConfig.localPort}`,
+                        skipTLSVerify: true,
+                        caData: undefined,
+                        caFile: undefined
+                    });
+                    expectedContexts.push({
+                        name: expectedName,
+                        cluster: expectedName,
+                        user: expectedUsername,
+                        namespace: kubeDaemonConfig.defaultNamespace ? kubeDaemonConfig.defaultNamespace : undefined,
+                    });
+                }
+
+                const expectedUsers: User[] = kubeDaemonsMap.size > 0 ? [{ name: expectedUsername, token: fakeDaemonSecurityConfig.token }] : [];
+
+                expect(gotKubeConfig.clusters).toMatchObject(expectedClusters);
+                expect(gotKubeConfig.contexts).toMatchObject(expectedContexts);
+                expect(gotKubeConfig.users).toMatchObject(expectedUsers);
+                kubeDaemonsMap.size > 0 ?
+                    expect(gotKubeConfig.currentContext).toBe(expectedContexts[expectedContexts.length - 1].name)
+                    : expect(gotKubeConfig.currentContext).toBeUndefined();
+            })
+            , { numRuns: 5000, interruptAfterTimeLimit: 19 * 1000, markInterruptAsFailure: true });
+    }, 20 * 1000);
+
+    test('493843: Generate kube config with --force option and there are no running daemons or configs stored', async () => {
+        managementServiceMock.getDaemonConfigs.mockReturnValue(new Map());
+        managementServiceMock.getAllDaemonStatuses.mockResolvedValue(new Map());
+
+        // Generate with force flag
+        const generatedKubeConfigAsYaml = await handleGenerateKubeConfig(
+            { outputFile: undefined, update: false, force: true },
+            fakeDaemonSecurityConfig,
+            managementServiceMock,
+            kubeConfigServiceMock,
+            loggerMock
+        );
+
+        // Everything should be empty because there are no configs stored
+        const gotKubeConfig = loadKubeConfigFromString(generatedKubeConfigAsYaml);
+        expect(gotKubeConfig.clusters).toMatchObject([]);
+        expect(gotKubeConfig.contexts).toMatchObject([]);
+        expect(gotKubeConfig.users).toMatchObject([]);
+        expect(gotKubeConfig.currentContext).toBeUndefined();
+
+        // No running daemons, so disconnect should not be called
+        expect(managementServiceMock.disconnectAllDaemons).not.toHaveBeenCalled();
+    });
+
+    test('493844: Generate kube config with --force option and there are running daemons', async () => {
+        managementServiceMock.getDaemonConfigs.mockReturnValue(new Map());
+        managementServiceMock.getAllDaemonStatuses.mockResolvedValue(new Map<string, DaemonStatus<ZliKubeConfig>>([['foo', { type: 'daemon_is_running' } as DaemonIsRunningStatus<ZliKubeConfig>]]));
+
+        // Generate with force flag
+        const generatedKubeConfigAsYaml = await handleGenerateKubeConfig(
+            { outputFile: undefined, update: false, force: true },
+            fakeDaemonSecurityConfig,
+            managementServiceMock,
+            kubeConfigServiceMock,
+            loggerMock
+        );
+
+        // Everything should be empty because there are no configs stored
+        const gotKubeConfig = loadKubeConfigFromString(generatedKubeConfigAsYaml);
+        expect(gotKubeConfig.clusters).toMatchObject([]);
+        expect(gotKubeConfig.contexts).toMatchObject([]);
+        expect(gotKubeConfig.users).toMatchObject([]);
+        expect(gotKubeConfig.currentContext).toBeUndefined();
+
+        // There are running daemons, so disconnect should be called
+        expect(managementServiceMock.disconnectAllDaemons).toHaveBeenCalled();
+    });
+
+    test('31624: Generate kube config with --update option and file does not exist', async () => {
+        await withDir(async ({ path: tempDir }) => {
+            // Change KUBECONFIG path to point to testFile in this temp dir
+            const testFilePath = path.join(tempDir, 'test.yaml');
+            process.env.KUBECONFIG = testFilePath;
+
+            // Generate with update option set to true
+            const result = await handleGenerateKubeConfig(
+                { outputFile: undefined, update: true, force: false },
+                fakeDaemonSecurityConfig,
+                managementServiceMock,
+                kubeConfigServiceMock,
+                loggerMock
+            );
+
+            // If File I/O occurs, the function returns null
+            expect(result).toBeNull();
+
+            // Generated config should still be parseable from YAML to kube
+            // config. Use loadFromFile() to ensure file is created
+            const gotKubeConfig = new KubeConfig();
+            expect(() => gotKubeConfig.loadFromFile(testFilePath)).not.toThrow();
+
+            // Simple checks because PBT test has already checked these for
+            // correctness
+            expect(gotKubeConfig.clusters).toHaveLength(1);
+            expect(gotKubeConfig.contexts).toHaveLength(1);
+            expect(gotKubeConfig.users).toHaveLength(1);
+            expect(gotKubeConfig.currentContext).toBeDefined();
+        }, {
+            // Must set to true because the tempdir is dirty
+            unsafeCleanup: true
         });
-
-        const outputArgs = logSpy.mock.calls[0][0];
-        const cleanOutput = cleanConsoleLog(outputArgs);
-        expect(cleanOutput).toEqual(KubeConfigMocks.mockKubeConfigOutput);
     });
 
-    test('31624: Generate kube config with --update option', async () => {
-        // Mock kube config data
-        jest.spyOn(ConfigService.prototype, 'getKubeConfig').mockImplementation(() => KubeConfigMocks.mockKubeConfig);
+    test('493845: Generate kube config with --update option and file directory does not exist', async () => {
+        await withDir(async ({ path: tempDir }) => {
+            // Change KUBECONFIG path to point to testFile in this temp dir
+            const notExistDir = 'not-exist';
+            const testFilePath = path.join(tempDir, notExistDir, 'test.yaml');
+            process.env.KUBECONFIG = testFilePath;
 
-        // Create temp directory and testFile to update
-        const testFile = path.join(tempDir, 'test-config');
-        createTempDirectory(tempDir, [testFile], [KubeConfigMocks.mockConfigBeforeUpdate]);
+            // Generate with update option set to true
+            const result = await handleGenerateKubeConfig(
+                { outputFile: undefined, update: true, force: false },
+                fakeDaemonSecurityConfig,
+                managementServiceMock,
+                kubeConfigServiceMock,
+                loggerMock
+            );
 
-        // Change KUBECONFIG path to point to testFile
-        const originalKubeConfig = process.env.KUBECONFIG;
-        process.env.KUBECONFIG = testFile;
+            // If File I/O occurs, the function returns null
+            expect(result).toBeNull();
 
-        // Call the function
-        await mockArgv(['generate', 'kubeConfig', '--update'], async () => {
-            const driver = new CliDriver();
-            await driver.run(process.argv.slice(2), true);
+            // Generated config should still be parseable from YAML to kube
+            // config. Use loadFromFile() to ensure file is created
+            const gotKubeConfig = new KubeConfig();
+            expect(() => gotKubeConfig.loadFromFile(testFilePath)).not.toThrow();
+
+            // Simple checks because PBT test has already checked these for
+            // correctness
+            expect(gotKubeConfig.clusters).toHaveLength(1);
+            expect(gotKubeConfig.contexts).toHaveLength(1);
+            expect(gotKubeConfig.users).toHaveLength(1);
+            expect(gotKubeConfig.currentContext).toBeDefined();
+        }, {
+            // Must set to true because the tempdir is dirty
+            unsafeCleanup: true
         });
-
-        // Expect the flattened file after being updated
-        const updatedFile = fs.readFileSync(testFile, 'utf8');
-        expect(updatedFile).toEqual(KubeConfigMocks.mockConfigAfterUpdate);
-        process.env.KUBECONFIG = originalKubeConfig;
     });
 
-    test('31625: Generate kube config with --customPort option', async () => {
-        // Create a deep copy to allow keyPath to be null
-        const testMockKubeConfig = JSON.parse(JSON.stringify(KubeConfigMocks.mockKubeConfig));
-        testMockKubeConfig['keyPath'] = null;
-        jest.spyOn(ConfigService.prototype, 'getKubeConfig').mockImplementation(() => testMockKubeConfig);
+    test('493846: Generate kube config with --update option and file does exist', async () => {
+        await withDir(async ({ path: tempDir }) => {
+            // Change KUBECONFIG path to point to testFile in this temp dir
+            const testFilePath = path.join(tempDir, 'test.yaml');
+            process.env.KUBECONFIG = testFilePath;
 
-        // Listen to our generate kube config response
-        const logSpy = jest.spyOn(console, 'log');
+            // Write existing file
+            const existingConfig: ZliKubeConfig = { ...fakeDaemonConfig, targetUser: 'other-user' };
+            managementServiceMock.getDaemonConfigs.mockReturnValue(new Map<string, ZliKubeConfig>([['otherConnectionId', existingConfig]]));
+            await handleGenerateKubeConfig(
+                { outputFile: undefined, update: true, force: false },
+                fakeDaemonSecurityConfig,
+                managementServiceMock,
+                kubeConfigServiceMock,
+                loggerMock
+            );
 
-        // Call the function
-        await mockArgv(['generate', 'kubeConfig', '--customPort=5000'], async () => {
-            const driver = new CliDriver();
-            await driver.run(process.argv.slice(2), true);
+            // Generate with update option set to true
+            managementServiceMock.getDaemonConfigs.mockReturnValue(fakeDaemonMap);
+            const result = await handleGenerateKubeConfig(
+                { outputFile: undefined, update: true, force: false },
+                fakeDaemonSecurityConfig,
+                managementServiceMock,
+                kubeConfigServiceMock,
+                loggerMock
+            );
+
+            // If File I/O occurs, the function returns null
+            expect(result).toBeNull();
+
+            // Generated config should still be parseable from YAML to kube
+            // config. Use loadFromFile() to ensure file is created
+            const gotKubeConfig = new KubeConfig();
+            expect(() => gotKubeConfig.loadFromFile(testFilePath)).not.toThrow();
+
+            // Simple checks because PBT test has already checked these for
+            // correctness
+            expect(gotKubeConfig.clusters).toHaveLength(2);
+            expect(gotKubeConfig.contexts).toHaveLength(2);
+            expect(gotKubeConfig.users).toHaveLength(1);
+            expect(gotKubeConfig.currentContext).toBeDefined();
+        }, {
+            // Must set to true because the tempdir is dirty
+            unsafeCleanup: true
         });
-
-        const outputArgs = logSpy.mock.calls[0][0];
-        const cleanOutput = cleanConsoleLog(outputArgs);
-        expect(cleanOutput).toEqual(KubeConfigMocks.mockKubeConfigCustomPortOutput);
     });
 
-    test('31626: Generate kube config with --outputFile option', async () => {
-        // Mock kube config data
-        jest.spyOn(ConfigService.prototype, 'getKubeConfig').mockImplementation(() => KubeConfigMocks.mockKubeConfig);
+    test('31626: Generate kube config with --outputFile option and file does not exist', async () => {
+        await withDir(async ({ path: tempDir }) => {
+            const testFilePath = path.join(tempDir, 'test.yaml');
 
-        // Create temp dir and outputFile to write to
-        const outputFile = path.join(tempDir, 'test-file');
-        createTempDirectory(tempDir, [outputFile], ['']);
+            // Generate with outputFile option set to path above
+            const result = await handleGenerateKubeConfig(
+                { outputFile: testFilePath, update: false, force: false },
+                fakeDaemonSecurityConfig,
+                managementServiceMock,
+                kubeConfigServiceMock,
+                loggerMock
+            );
 
-        // Call the function
-        await mockArgv(['generate', 'kubeConfig', `--outputFile=${outputFile}`], async () => {
-            const driver = new CliDriver();
-            await driver.run(process.argv.slice(2), true);
+            // If File I/O occurs, the function returns null
+            expect(result).toBeNull();
+
+            // Generated config should still be parseable from YAML to kube
+            // config. Use loadFromFile() to ensure file is created
+            const gotKubeConfig = new KubeConfig();
+            expect(() => gotKubeConfig.loadFromFile(testFilePath)).not.toThrow();
+
+            // Simple checks because PBT test has already checked these for
+            // correctness
+            expect(gotKubeConfig.clusters).toHaveLength(1);
+            expect(gotKubeConfig.contexts).toHaveLength(1);
+            expect(gotKubeConfig.users).toHaveLength(1);
+            expect(gotKubeConfig.currentContext).toBeDefined();
+        }, {
+            // Must set to true because the tempdir is dirty
+            unsafeCleanup: true
         });
-
-        const outputFileContents = fs.readFileSync(outputFile, 'utf8');
-        expect(outputFileContents).toEqual(KubeConfigMocks.mockKubeConfigOutput);
-    });
-
-    test('31627: Error upon generating a new kube config', async () => {
-        // Create a deep copy to allow keyPath to be null
-        const testMockKubeConfig = JSON.parse(JSON.stringify(KubeConfigMocks.mockKubeConfig));
-        testMockKubeConfig['keyPath'] = null;
-        jest.spyOn(ConfigService.prototype, 'getKubeConfig').mockImplementation(() => testMockKubeConfig);
-
-        // Fail upon generating new cert
-        jest.spyOn(DaemonUtils, 'generateNewCert').mockImplementation(async () => Promise.reject());
-
-        const cleanExitSpy = jest.spyOn(CleanExitHandler, 'cleanExit').mockImplementation(async () => Promise.reject(Error('some-err')));
-
-        // Call the function
-        let err = undefined;
-        try {
-            await mockArgv(['generate', 'kubeConfig'], async () => {
-                const driver = new CliDriver();
-                await driver.run(process.argv.slice(2), true);
-            });
-        } catch (e) {
-            err = e;
-        }
-
-        expect(err).toBeDefined();
-        expect(cleanExitSpy).toHaveBeenCalledTimes(2);
-        expect(cleanExitSpy).toHaveBeenCalledWith(1, expect.anything());
-    });
-
-    test('31628: Error updating existing kube config', async () => {
-        // Mock kube config data
-        jest.spyOn(ConfigService.prototype, 'getKubeConfig').mockImplementation(() => KubeConfigMocks.mockKubeConfig);
-
-        // Nonexistent path causing error when attempting to write config to KUBECONFIG
-        const originalKubeConfig = process.env.KUBECONFIG;
-        process.env.KUBECONFIG = 'test/kube/config/faulty/path';
-
-        const cleanExitSpy = jest.spyOn(CleanExitHandler, 'cleanExit').mockImplementation(async () => Promise.reject(Error('some-err')));
-
-        // Call the function
-        let err = undefined;
-        try {
-            await mockArgv(['generate', 'kubeConfig', '--update'], async () => {
-                const driver = new CliDriver();
-                await driver.run(process.argv.slice(2), true);
-            });
-        } catch (e) {
-            err = e;
-        }
-
-        expect(err).toBeDefined();
-        expect(cleanExitSpy).toHaveBeenCalledTimes(3);
-        expect(cleanExitSpy).toHaveBeenNthCalledWith(3, 1, expect.anything());
-        process.env.KUBECONFIG = originalKubeConfig;
     });
 });

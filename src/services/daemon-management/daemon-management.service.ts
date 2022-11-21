@@ -1,6 +1,6 @@
-import { DaemonConfig, DaemonConfigs, DaemonConfigType, DbConfig, getDefaultDbConfig } from '../config/config.service.types';
+import { DaemonConfig, DaemonConfigs, DaemonConfigType, DbConfig, getDefaultDbConfig, getDefaultKubeConfig, KubeConfig } from '../config/config.service.types';
 import { ProcessManagerService } from '../process-manager/process-manager.service';
-import { DaemonRunningStatus, DaemonStatus } from './types/daemon-status.types';
+import { DaemonIsRunningStatus, DaemonRunningStatus, DaemonStatus } from './types/daemon-status.types';
 import { DisconnectResult } from './types/disconnect-result.types';
 
 export interface DaemonStore<T extends DaemonConfig> {
@@ -26,10 +26,6 @@ export const LEGACY_KEY_STRING: string = 'n/a';
  * (2) Forcibly kill the daemon.
 
  * (3) Provide daemon's status (e.g. daemon quit unexpectedly).
- *
- * Some type safety is achieved by mapping the JSON config type T (DaemonConfig)
- * to T2 (ManagedDaemonConfig) which is a union type that can be discriminated
- * based on the ManagedDaemonConfigType field.
  *
  * This class handles the legacy configuration (non-KV dictionary) and the new
  * configuration where daemon configs are stored in a dictionary keyed by their
@@ -97,71 +93,94 @@ export class DaemonManagementService<T extends DaemonConfig> {
         }
         this.daemonStore.setDaemons(daemons);
     }
+    /**
+     * Get status for daemon with specific connection ID
+     * @param connectionId Connection ID of the daemon to get status for
+     * @param shouldRemoveFromConfig Whether the daemon should be removed from
+     * the config if it is no longer running or quits unexpectedly. Defaults to
+     * true.
+     * @returns Daemon status if there is a daemon with provided connection ID.
+     * Throws an error if no daemon is found.
+     */
+    public async getDaemonStatus(connectionId: string | undefined, shouldRemoveFromConfig: boolean = true): Promise<DaemonStatus<T>> {
+        const daemonConfigs = this.getDaemonConfigs();
+        const foundDaemonConfig = daemonConfigs.get(connectionId);
+        if (!foundDaemonConfig) {
+            throw new Error(`There is no daemon with connection ID: ${connectionId}`);
+        }
+
+        return this.handleDaemonStatus(connectionId, foundDaemonConfig, shouldRemoveFromConfig);
+    }
+
+    private async handleDaemonStatus(connectionId: string, config: T, shouldRemoveFromConfig: boolean = true): Promise<DaemonStatus<T>> {
+        if (config.localPid == null) {
+            // Remove daemon from config, so we don't show it in status anymore
+            if (shouldRemoveFromConfig)
+                this.deleteDaemon(connectionId);
+
+            return { type: 'no_daemon_running', connectionId: connectionId, config: config };
+        } else {
+            // Check if the pid is still alive
+            if (!this.processManager.isProcessRunning(config.localPid)) {
+                // Remove daemon from config, so we don't show it in status
+                // anymore
+                if (shouldRemoveFromConfig)
+                    this.deleteDaemon(connectionId);
+
+                return { type: 'daemon_quit_unexpectedly', connectionId: connectionId, config: config };
+            }
+
+            // Add different result to map depending on the config type
+            const localUrl = `${config.localHost}:${config.localPort}`;
+            switch (config.type) {
+            case 'web':
+            case 'db':
+                return {
+                    type: 'daemon_is_running',
+                    connectionId: connectionId,
+                    config: config,
+                    status: {
+                        type: config.type,
+                        targetName: config.name,
+                        localUrl: localUrl
+                    } as Extract<DaemonRunningStatus, { type: T['type'] }>
+                };
+            case 'kube':
+                return {
+                    type: 'daemon_is_running',
+                    connectionId: connectionId,
+                    config: config,
+                    status: {
+                        type: config.type,
+                        localUrl: localUrl,
+                        targetCluster: config.targetCluster,
+                        targetUser: config.targetUser,
+                        targetGroups: config.targetGroups.join(','),
+                    } as Extract<DaemonRunningStatus, { type: T['type'] }>
+                };
+            default:
+                // Compile-time exhaustive check
+                const _exhaustiveCheck: never = config;
+                throw new Error(`Unhandled case: ${_exhaustiveCheck}`);
+            }
+        }
+    }
 
     /**
      * Get statuses for all daemons stored in the map
+     * @param shouldRemoveFromConfig Whether the daemon should be removed from
+     * the config if it is no longer running or quits unexpectedly. Defaults to
+     * true.
      * @returns A dictionary of results where the key is the connection ID or
      * undefined if there is no connection ID stored, and the value is the
      * daemon's status.
      */
-    public async getAllDaemonStatuses(): Promise<Map<string | undefined, DaemonStatus<T>>> {
+    public async getAllDaemonStatuses(shouldRemoveFromConfig: boolean = true): Promise<Map<string | undefined, DaemonStatus<T>>> {
         const resultMap: Map<string, DaemonStatus<T>> = new Map();
         const daemonConfigs = this.getDaemonConfigs();
         for (const [connectionId, config] of daemonConfigs) {
-            if (config.localPid == null) {
-                // Remove daemon from config, so we don't show it in status
-                // anymore
-                this.deleteDaemon(connectionId);
-
-                // Add result to map
-                resultMap.set(connectionId, { type: 'no_daemon_running', config: config });
-                continue;
-            } else {
-                // Check if the pid is still alive
-                if (!this.processManager.isProcessRunning(config.localPid)) {
-                    // Remove daemon from config, so we don't show it in status
-                    // anymore
-                    this.deleteDaemon(connectionId);
-
-                    // Add result to map
-                    resultMap.set(connectionId, { type: 'daemon_quit_unexpectedly', config: config });
-                    continue;
-                }
-
-                // Add different result to map depending on the config type
-                const localUrl = `${config.localHost}:${config.localPort}`;
-                switch (config.type) {
-                case 'web':
-                case 'db':
-                    resultMap.set(connectionId, {
-                        type: 'daemon_is_running',
-                        config: config,
-                        status: {
-                            type: config.type,
-                            targetName: config.name,
-                            localUrl: localUrl
-                        } as Extract<DaemonRunningStatus, { type: T['type'] }>
-                    });
-                    continue;
-                case 'kube':
-                    resultMap.set(connectionId, {
-                        type: 'daemon_is_running',
-                        config: config,
-                        status: {
-                            type: config.type,
-                            localUrl: localUrl,
-                            targetCluster: config.localHost,
-                            targetUser: config.targetUser,
-                            targetGroup: config.targetGroups.join(','),
-                        } as Extract<DaemonRunningStatus, { type: T['type'] }>
-                    });
-                    continue;
-                default:
-                    // Compile-time exhaustive check
-                    const _exhaustiveCheck: never = config;
-                    throw new Error(`Unhandled case: ${_exhaustiveCheck}`);
-                }
-            }
+            const statusResult = await this.handleDaemonStatus(connectionId, config, shouldRemoveFromConfig);
+            resultMap.set(connectionId, statusResult);
         }
 
         return resultMap;
@@ -236,5 +255,83 @@ export function newDbDaemonManagementService(
             setDaemons: (daemons: DaemonConfigs<DbConfig>) => dbDaemonStore.setDbDaemons(daemons),
             getDaemons: () => dbDaemonStore.getDbDaemons(),
         }
+    );
+}
+
+export interface KubeDaemonStore {
+    setKubeDaemons(kubeDaemons: DaemonConfigs<KubeConfig>): void;
+    getKubeDaemons(): DaemonConfigs<KubeConfig>;
+}
+
+export function newKubeDaemonManagementService(
+    kubeDaemonStore: KubeDaemonStore,
+    processManager?: ProcessManager
+): DaemonManagementService<KubeConfig> {
+    // Default implementation
+    if (!processManager) {
+        processManager = new ProcessManagerService();
+    }
+
+    return new DaemonManagementService(
+        getDefaultKubeConfig,
+        processManager,
+        // Construct a mapping from DbDaemonStore to DaemonStore
+        {
+            setDaemons: (daemons: DaemonConfigs<KubeConfig>) => kubeDaemonStore.setKubeDaemons(daemons),
+            getDaemons: () => kubeDaemonStore.getKubeDaemons(),
+        }
+    );
+}
+
+export interface IDaemonStatusRetriever<T extends DaemonConfig> {
+    getAllDaemonStatuses(shouldRemoveFromConfig?: boolean): Promise<Map<string, DaemonStatus<T>>>;
+}
+
+/**
+ * Finds a running daemon with a specific connection ID
+ * @param daemonManagementService  Daemon management service
+ * @param connectionId Connection ID to search for
+ * @returns If a matching daemon is found, returns DaemonIsRunningStatus.
+ * Otherwise, returns undefined if no matching daemon can be found.
+ */
+export async function findRunningDaemonWithConnectionID<T extends DaemonConfig>(
+    daemonManagementService: IDaemonStatusRetriever<T>,
+    connectionId: string
+): Promise<DaemonIsRunningStatus<T>> {
+    const daemonStatuses = await daemonManagementService.getAllDaemonStatuses(false);
+    for (const [foundConnectionId, result] of daemonStatuses) {
+        if (foundConnectionId === connectionId && result.type === 'daemon_is_running') {
+            return result;
+        }
+    }
+    return undefined;
+}
+
+/**
+ * Finds the first running daemon that matches the specified search predicate.
+ * @param daemonManagementService Daemon management service
+ * @param searchPredicate Search predicate to find a matching daemon
+ * @returns If a matching daemon is found, returns DaemonIsRunningStatus.
+ * Otherwise, returns undefined if no matching daeamon can be found.
+ */
+export async function findRunningDaemonWithPredicate<T extends DaemonConfig>(
+    daemonManagementService: IDaemonStatusRetriever<T>,
+    searchPredicate: (status: DaemonIsRunningStatus<T>) => boolean
+): Promise<DaemonIsRunningStatus<T>> {
+    const runningDaemons = await getAllRunningDaemons(daemonManagementService);
+    return runningDaemons.find(searchPredicate);
+}
+
+/**
+ * Find all running daemons
+ * @param daemonManagementService Daemon management service
+ * @returns List of running daemons
+ */
+export async function getAllRunningDaemons<T extends DaemonConfig>(
+    daemonManagementService: IDaemonStatusRetriever<T>
+): Promise<DaemonIsRunningStatus<T>[]> {
+    const daemonStatuses = await daemonManagementService.getAllDaemonStatuses(false);
+    return Array.from(daemonStatuses.values()).reduce<DaemonIsRunningStatus<T>[]>(
+        (acc, status) => status.type === 'daemon_is_running' ? [...acc, status] : acc, []
     );
 }

@@ -4,10 +4,11 @@ import { ConfigService } from '../../services/config/config.service';
 import { Logger } from '../../services/logger/logger.service';
 import { cleanExit } from '../clean-exit.handler';
 import { disconnectArgs } from './disconnect.command-builder';
-import { newDbDaemonManagementService } from '../../services/daemon-management/daemon-management.service';
+import { newDbDaemonManagementService, newKubeDaemonManagementService } from '../../services/daemon-management/daemon-management.service';
 import { DisconnectResult } from '../../services/daemon-management/types/disconnect-result.types';
 import { ILogger } from '../../../webshell-common-ts/logging/logging.types';
 import { DaemonConfig, DaemonConfigType } from '../../services/config/config.service.types';
+import { filterAndOverwriteUserKubeConfig } from '../../services/kube-management/kube-management.service';
 
 export async function disconnectHandler(
     argv: yargs.Arguments<disconnectArgs>,
@@ -18,19 +19,11 @@ export async function disconnectHandler(
     const targetType = argv.targetType;
 
     if (targetType == 'all' || targetType == 'kube') {
-        // Ensure nothing is using that localpid
-        const kubeConfig = configService.getKubeConfig();
+        const kubeDaemonManagementService = newKubeDaemonManagementService(configService);
+        await handleDisconnect(kubeDaemonManagementService, logger);
 
-        if (kubeConfig['localPid'] != null) {
-            await killDaemon(kubeConfig['localPid'], logger);
-
-            // Update the localPid
-            kubeConfig['localPid'] = null;
-            configService.setKubeConfig(kubeConfig);
-            logger.info('Killed local kube daemon!');
-        } else {
-            logger.warn('No kube daemon running');
-        }
+        // Filter stale bzero entries from user's kube config
+        await filterAndOverwriteUserKubeConfig(configService, logger);
     }
     if (targetType == 'all' || targetType == 'web') {
         // Ensure nothing is using that localpid
@@ -54,13 +47,13 @@ export async function disconnectHandler(
     await cleanExit(0, logger);
 }
 
-export interface IDaemonDisconnector {
-    disconnectAllDaemons(): Promise<Map<string, DisconnectResult<DaemonConfig>>>;
+export interface IDaemonDisconnector<T extends DaemonConfig> {
+    disconnectAllDaemons(): Promise<Map<string, DisconnectResult<T>>>;
     configType: DaemonConfigType;
 }
 
-export async function handleDisconnect(
-    daemonDisconnector: IDaemonDisconnector,
+export async function handleDisconnect<T extends DaemonConfig>(
+    daemonDisconnector: IDaemonDisconnector<T>,
     logger: ILogger
 ) {
     const disconnectResults = await daemonDisconnector.disconnectAllDaemons();

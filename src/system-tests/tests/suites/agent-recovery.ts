@@ -6,7 +6,7 @@ import { DigitalOceanDistroImage, getDOImageName } from '../../digital-ocean/dig
 import { sleepTimeout, TestUtils } from '../utils/test-utils';
 import { ConnectTestUtils, setupBackgroundDaemonMocks } from '../utils/connect-utils';
 import { bzeroTestTargetsToRun } from '../targets-to-run';
-import { execOnPod } from '../utils/kube-utils';
+import { execOnPod, getKubeConfig } from '../utils/kube-utils';
 import { getPodWithLabelSelector } from '../utils/kube-utils';
 import { PolicyHttpService } from '../../../http-services/policy/policy.http-services';
 import { Subject } from '../../../../webshell-common-ts/http/v2/policy/types/subject.types';
@@ -24,8 +24,8 @@ import { BzeroAgentSummary } from '../../../../webshell-common-ts/http/v2/target
 import { KubeClusterSummary } from '../../../../webshell-common-ts/http/v2/target/kube/types/kube-cluster-summary.types';
 import { EventsHttpService } from '../../../http-services/events/events.http-server';
 import { getTargetInfo } from '../utils/ssh-utils';
-
-const kubeConfigYamlFilePath = `/tmp/bzero-agent-kubeconfig-${systemTestUniqueId}.yml`;
+import { dir, DirectoryResult } from 'tmp-promise';
+import path from 'path';
 
 // Container and Systemd Service Names
 // https://github.com/bastionzero/cwc-infra/blob/7b17c303f4acec7553e05688958354c70a7444c1/Bzero-Common/bzero_common/utils.py#L58-L59
@@ -76,6 +76,10 @@ export const agentRecoverySuite = (testRunnerKubeConfigFile: string, testRunnerU
         let bzeroTargetService: BzeroTargetHttpService;
         let statusService: StatusHttpService;
 
+        // Temp directory to hold kubeconfig file, so that `zli connect` does
+        // not affect default kubeconfig of user/machine running system tests
+        let tempDir: DirectoryResult;
+
         beforeAll(async () => {
             policyService = new PolicyHttpService(configService, logger);
             testUtils = new TestUtils(configService, logger, loggerConfigService);
@@ -110,20 +114,23 @@ export const agentRecoverySuite = (testRunnerKubeConfigFile: string, testRunnerU
                 verbs: [{type: VerbType.Shell},]
             });
 
-            // Generate kube yaml to use for kube agent restart test
-            await callZli(['generate', 'kubeConfig', '-o', kubeConfigYamlFilePath]);
+            // Set unsafeCleanup because temp dir will contain files
+            tempDir = await dir({ unsafeCleanup: true });
+            const testFilePath = path.join(tempDir.path, 'test.yaml');
+
+            // Use this Kubeconfig for connect, disconnect, etc.
+            // kc.loadFromDefault() should also see this
+            process.env.KUBECONFIG = testFilePath;
+        });
+
+        afterAll(async () => {
+            await tempDir.cleanup();
         });
 
         // Called before each case
         beforeEach(async () => {
             connectTestUtils = new ConnectTestUtils(connectionService, testUtils);
             setupBackgroundDaemonMocks();
-
-            // Always make sure our kube port is free, else throw an error
-            const kubeConfig = configService.getKubeConfig();
-            if (kubeConfig.localPort) {
-                await testUtils.EnsurePortIsFree(kubeConfig.localPort, 30 * 1000);
-            }
         }, 60 * 1000);
 
         afterEach(async () => {
@@ -478,8 +485,7 @@ export const agentRecoverySuite = (testRunnerKubeConfigFile: string, testRunnerU
          */
         async function testKubeConnection() {
             // Attempt a simple listNamespace kubectl test after reconnecting
-            const bzkc = new k8s.KubeConfig();
-            bzkc.loadFromFile(kubeConfigYamlFilePath);
+            const bzkc = getKubeConfig();
             const bzk8sApi = bzkc.makeApiClient(k8s.CoreV1Api);
 
             const listNamespaceResp = await bzk8sApi.listNamespace();
