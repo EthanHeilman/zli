@@ -6,7 +6,7 @@ import { AddNewDbTargetRequest } from '../../../webshell-common-ts/http/v2/targe
 import { AddNewDbTargetResponse } from '../../../webshell-common-ts/http/v2/target/db/responses/add-new-db-target.responses';
 import { EditDbTargetRequest } from '../../../webshell-common-ts/http/v2/target/db/requests/edit-db-target.requests';
 
-export class DbTargetService extends HttpService
+export class DbTargetHttpService extends HttpService
 {
     constructor(configService: ConfigService, logger: Logger)
     {
@@ -14,7 +14,7 @@ export class DbTargetService extends HttpService
     }
 
     public ListDbTargets(): Promise<DbTargetSummary[]> {
-        return this.Get('', {});
+        return this.Get('');
     }
 
     public CreateDbTarget(request: AddNewDbTargetRequest): Promise<AddNewDbTargetResponse> {

@@ -16,6 +16,17 @@ export async function checkAllSettledPromise<T>(allSettledPromise: Promise<Promi
     }
 }
 
+export async function checkAllSettledPromiseRejected<T>(allSettledPromise: Promise<PromiseSettledResult<T>[]>) : Promise<void> {
+    const successPromiseResults = (await allSettledPromise).find(p => p.status === 'fulfilled');
+
+    if(successPromiseResults) {
+        const errMsg = `promise succeed when we expected it to be rejected. Value returned ${(successPromiseResults as PromiseFulfilledResult<T>).value}`;
+        console.log(errMsg);
+        throw(errMsg);
+    }
+}
+
+
 /**
  * Either runs or skips a test conditionally
  * @param condition boolean to indicate if test should be skipped

@@ -6,9 +6,11 @@ import path from 'path';
 import { Observable, Subject } from 'rxjs';
 import { IdentityProvider } from '../../../webshell-common-ts/auth-service/auth.types';
 import { TokenHttpService } from '../../http-services/token/token.http-services';
-import { UserSummary } from '../../../webshell-common-ts/http/v2/user/types/user-summary.types';
 import { DaemonConfigs, DbConfig, getDefaultWebConfig, getDefaultConnectConfig, KubeConfig, WebConfig, ConnectConfig, GlobalKubeConfig, getDefaultGlobalKubeConfig } from './config.service.types';
 import { LEGACY_KEY_STRING } from '../../services/daemon-management/daemon-management.service';
+import { SubjectSummary } from '../../../webshell-common-ts/http/v2/subject/types/subject-summary.types';
+import { SubjectType } from '../../../webshell-common-ts/http/v2/common.types/subject.types';
+import { customJsonParser, removeIfExists } from '../../../src/utils/utils';
 
 // refL: https://github.com/sindresorhus/conf/blob/master/test/index.test-d.ts#L5-L14
 type BastionZeroConfigSchema = {
@@ -23,7 +25,7 @@ type BastionZeroConfigSchema = {
     idp: IdentityProvider,
     sessionId: string,
     sessionToken: string,
-    whoami: UserSummary,
+    whoami: SubjectSummary,
     sshKeyPath: string,
     sshKnownHostsPath: string,
     mrtap: MrtapConfigSchema,
@@ -60,8 +62,10 @@ export class ConfigService implements ConfigInterface {
         const appName = this.getAppName(configName);
         this.configName = configName;
         this.config = new Conf<BastionZeroConfigSchema>({
+            // use a custom json deserialize function to convert date strings -> date objects
+            deserialize: customJsonParser,
             projectName: projectName,
-            configName: configName, // prod, stage, dev,
+            configName: configName, // prod, stage, dev or any other customly provided value
             // if unset will use system default config directory
             // a custom value is only passed for system tests
             // https://github.com/sindresorhus/conf#cwd
@@ -208,6 +212,13 @@ export class ConfigService implements ConfigInterface {
                         // Delete old schema as we've migrated
                         config.delete('kubeConfig' as any);
                     }
+                },
+                '>=6.14.0': (config: Conf<BastionZeroConfigSchema>) => {
+                    const currentSubject: SubjectSummary = config.get('whoami');
+                    if(currentSubject && !currentSubject.type) {
+                        currentSubject.type = SubjectType.User;
+                        config.set('whoami', currentSubject);
+                    }
                 }
             },
             watch: watch
@@ -329,16 +340,17 @@ export class ConfigService implements ConfigInterface {
             this.config.set('tokenSet', tokenSet);
     }
 
-    public me(): UserSummary {
+    public me(): SubjectSummary
+    {
         const whoami = this.config.get('whoami');
         if (whoami) {
             return whoami;
         } else {
-            throw new Error('User information is missing. You need to log in, please run \'zli login --help\'');
+            throw new Error('Subject information is missing. You need to log in, please run \'zli login --help\'');
         }
     }
 
-    public setMe(me: UserSummary): void {
+    public setMe(me: SubjectSummary): void {
         this.config.set('whoami', me);
     }
 
@@ -364,7 +376,11 @@ export class ConfigService implements ConfigInterface {
     public logout(): void {
         this.config.delete('tokenSet');
         this.config.delete('mrtap');
+        this.config.delete('sessionId');
         this.config.delete('sessionToken');
+        // clear temporary SSH identity file
+        removeIfExists(this.sshKeyPath());
+        removeIfExists(this.sshKnownHostsPath());
     }
 
     public async fetchGAToken() {
@@ -466,12 +482,11 @@ export class ConfigService implements ConfigInterface {
         case 'dev':
             return 'cloud-dev';
         default:
-            return undefined;
+            return configName;
         }
     }
 
     private getServiceUrl(appName: string) {
-
         return `https://${appName}.bastionzero.com/`;
     }
 

@@ -1,4 +1,3 @@
-import { SubjectType } from '../../../../webshell-common-ts/http/v2/common.types/subject.types';
 import { SessionRecordingPolicySummary } from '../../../../webshell-common-ts/http/v2/policy/session-recording/types/session-recording-policy-summary.types';
 import { TargetConnectPolicySummary } from '../../../../webshell-common-ts/http/v2/policy/target-connect/types/target-connect-policy-summary.types';
 import { Environment } from '../../../../webshell-common-ts/http/v2/policy/types/environment.types';
@@ -11,7 +10,6 @@ import {
     allTargets,
     configService,
     logger,
-    loggerConfigService,
     systemTestEnvId,
     systemTestPolicyTemplate,
     systemTestUniqueId
@@ -19,7 +17,10 @@ import {
 import { TestUtils } from '../utils/test-utils';
 import { ConnectionHttpService } from '../../../http-services/connection/connection.http-services';
 import { TestTarget } from '../system-test.types';
-import { ConnectTestUtils } from '../utils/connect-utils';
+import { ConnectTestResult, ConnectTestUtils } from '../utils/connect-utils';
+import { checkAllSettledPromise, checkAllSettledPromiseRejected, testIf } from '../utils/utils';
+import { runTestForTarget } from './connect';
+import * as CleanExitHandler from '../../../handlers/clean-exit.handler';
 
 export const sessionRecordingSuite = () => {
     describe('Session Recording Suite', () => {
@@ -31,17 +32,19 @@ export const sessionRecordingSuite = () => {
         let sessionRecordingPolicy: SessionRecordingPolicySummary;
         let connectTestUtils: ConnectTestUtils;
 
-        const allTestConnections: string[] = [];
+        const allTestConnectionResults: ConnectTestResult[] = [];
 
         beforeAll(async () => {
-            testUtils = new TestUtils(configService, logger, loggerConfigService);
+            testUtils = new TestUtils(configService, logger);
             sessionRecordingService = new SessionRecordingHttpService(configService, logger);
             policyService = new PolicyHttpService(configService, logger);
             connectionService = new ConnectionHttpService(configService, logger);
+            connectTestUtils = new ConnectTestUtils(connectionService, testUtils);
 
-            const currentUser: Subject = {
-                id: configService.me().id,
-                type: SubjectType.User
+            const me = configService.me();
+            const subjectEmail: Subject = {
+                id: me.id,
+                type: me.type
             };
             const environment: Environment = {
                 id: systemTestEnvId
@@ -50,7 +53,7 @@ export const sessionRecordingSuite = () => {
             targetConnectPolicy = await policyService.AddTargetConnectPolicy({
                 name: systemTestPolicyTemplate.replace('$POLICY_TYPE', 'target-connect'),
                 subjects: [
-                    currentUser
+                    subjectEmail
                 ],
                 groups: [],
                 description: `Target connect policy created for system test: ${systemTestUniqueId}`,
@@ -69,7 +72,7 @@ export const sessionRecordingSuite = () => {
                 name: systemTestPolicyTemplate.replace('$POLICY_TYPE', 'session-recording'),
                 groups: [],
                 subjects: [
-                    currentUser
+                    subjectEmail
                 ],
                 description: `Target connect policy created for system test: ${systemTestUniqueId}`,
                 recordInput: false
@@ -77,37 +80,27 @@ export const sessionRecordingSuite = () => {
         }, 60 * 1000);
 
         afterAll(async () => {
-            const allDeleteSessionRecordingPromises: Promise<void>[] = [];
-            allTestConnections.forEach(connectionId => allDeleteSessionRecordingPromises.push(sessionRecordingService.DeleteSessionRecording(connectionId)));
-            try {
-                // Using allSettled so that each of these clean-up requests is attempted even if one fails.
-                await Promise.allSettled([
-                    policyService.DeleteTargetConnectPolicy(targetConnectPolicy.id),
-                    policyService.DeleteSessionRecordingPolicy(sessionRecordingPolicy.id),
-                    allDeleteSessionRecordingPromises
-                ]);
-            } catch (error) {
-                // catching and ignoring errors here so that test running can continue
-            }
-
+            const allDeleteSessionRecordingPromises = allTestConnectionResults.map(connectTestResult => sessionRecordingService.DeleteSessionRecording(connectTestResult.connectionId));
+            // Using allSettled so that each of these clean-up requests is attempted even if one fails.
+            await checkAllSettledPromise(Promise.allSettled([
+                policyService.DeleteTargetConnectPolicy(targetConnectPolicy.id),
+                policyService.DeleteSessionRecordingPolicy(sessionRecordingPolicy.id),
+                allDeleteSessionRecordingPromises
+            ]));
             await connectTestUtils.cleanup();
         }, 60 * 1000);
 
-        beforeEach(() => {
-            connectTestUtils = new ConnectTestUtils(connectionService, testUtils);
-        });
-
-        afterEach(async () => {
-            await connectTestUtils.cleanup();
-        });
-
         allTargets.forEach(async (testTarget: TestTarget) => {
-            it(`${testTarget.sessionRecordingCaseId}: Connect to target and verify session is recorded (${testTarget.awsRegion} - ${testTarget.installType} - ${getDOImageName(testTarget.dropletImage)})`, async () => {
+            testIf(runTestForTarget(testTarget), `${testTarget.sessionRecordingCaseId}: Connect to target and verify session is recorded (${testTarget.awsRegion} - ${testTarget.installType} - ${getDOImageName(testTarget.dropletImage)})`, async () => {
                 const sessionRecordingTestMessage = `session recording test - ${systemTestUniqueId}`;
-                const connectionId = await connectTestUtils.runShellConnectTest(testTarget, sessionRecordingTestMessage, true);
+                // Dont close the connection so we can test deleting session
+                // recordings before connections are closed
+                const exit = false;
+                const connectTestResult = await connectTestUtils.runShellConnectTest(testTarget, sessionRecordingTestMessage, exit);
+                allTestConnectionResults.push(connectTestResult);
 
                 // Get session recording and verify the echo'd message is in the asciicast data.
-                const downloadedSessionRecording = await sessionRecordingService.GetSessionRecording(connectionId);
+                const downloadedSessionRecording = await sessionRecordingService.GetSessionRecording(connectTestResult.connectionId);
                 const messageFound = downloadedSessionRecording.includes(sessionRecordingTestMessage);
                 expect(messageFound).toEqual(true);
             }, 3 * 60 * 1000);
@@ -117,32 +110,35 @@ export const sessionRecordingSuite = () => {
             const allRecordings = await sessionRecordingService.ListSessionRecordings();
             // Using toBeGreaterThanOrEqual in case this suite is run in parallel with another one, which could
             // result in other recordings being created.
-            expect(allRecordings.length).toBeGreaterThanOrEqual(allTestConnections.length);
+            expect(allRecordings.length).toBeGreaterThanOrEqual(allTestConnectionResults.length);
         }, 15 * 1000);
 
         test('3044: Try to delete each session recording - should not delete because connections are open', async () => {
-            const deletePromises: Promise<void>[] = [];
-            allTestConnections.forEach((connectionId: string) => deletePromises.push(sessionRecordingService.DeleteSessionRecording(connectionId)));
-            const results = await Promise.allSettled(deletePromises);
-            expect(results.every(result => result.status === 'rejected')).toBe(true);
+            await checkAllSettledPromiseRejected(Promise.allSettled(
+                allTestConnectionResults.map((connectionTestResult) => sessionRecordingService.DeleteSessionRecording(connectionTestResult.connectionId))
+            ));
 
             // Verify recordings still exist.
             const allRecordings = await sessionRecordingService.ListSessionRecordings();
-            allTestConnections.forEach(connectionId => expect(allRecordings.find(recording => recording.connectionId === connectionId)).toBeDefined());
+            expect(allRecordings.map(s => s.connectionId)).toEqual(expect.arrayContaining(allTestConnectionResults.map(connectionTestResult => connectionTestResult.connectionId)));
         }, 30 * 1000);
 
         test('3045: Delete each session recording - should succeed because connections are closed', async () => {
-            const deletePromises: Promise<void>[] = [];
-            allTestConnections.forEach((connectionId: string) =>
-                deletePromises.push(connectionService.CloseConnection(connectionId).then(_ => sessionRecordingService.DeleteSessionRecording(connectionId)))
-            );
+            const cleanExitSpy = jest.spyOn(CleanExitHandler, 'cleanExit').mockImplementation(() => Promise.resolve());
+            await checkAllSettledPromise(Promise.allSettled(
+                allTestConnectionResults.map(async (connectionTestResult) => {
+                    await connectionService.CloseConnection(connectionTestResult.connectionId);
+                    await sessionRecordingService.DeleteSessionRecording(connectionTestResult.connectionId);
+                    await connectionTestResult.zliConnectPromise;
+                })
+            ));
 
-            const results = await Promise.allSettled(deletePromises);
-            expect(results.every(results => results.status === 'fulfilled')).toBe(true);
+            // cleanExit should be called for each connection we close
+            expect(cleanExitSpy).toBeCalledTimes(allTestConnectionResults.length);
 
             // Verify recordings no longer exist.
             const allRecordings = await sessionRecordingService.ListSessionRecordings();
-            allTestConnections.forEach(connectionId => expect(allRecordings.find(recording => recording.connectionId === connectionId)).toBeUndefined());
+            allTestConnectionResults.forEach(connectionRestResult => expect(allRecordings.find(recording => recording.connectionId === connectionRestResult.connectionId)).toBeUndefined());
         }, 30 * 1000);
     });
 };

@@ -5,7 +5,7 @@ import { LoggerConfigService } from '../../services/logger/logger-config.service
 import { handleServerStart, startDaemonInDebugMode, copyExecutableToLocalDir, getOrDefaultLocalhost, getOrDefaultLocalport, checkIfPortAvailable, spawnDaemonInBackground, getBaseDaemonEnv } from '../../utils/daemon-utils';
 import { connectArgs } from './connect.command-builder';
 import yargs from 'yargs';
-import { DbTargetService } from '../../http-services/db-target/db-target.http-service';
+import { DbTargetHttpService } from '../../http-services/db-target/db-target.http-service';
 import { CreateUniversalConnectionResponse } from '../../../webshell-common-ts/http/v2/connection/responses/create-universal-connection.response';
 import { DbConfig } from '../../services/config/config.service.types';
 import { newDbDaemonManagementService } from '../../services/daemon-management/daemon-management.service';
@@ -19,7 +19,7 @@ export async function dbConnectHandler(
     logger: Logger,
     loggerConfigService: LoggerConfigService
 ): Promise<number> {
-    const dbTargetService = new DbTargetService(configService, logger);
+    const dbTargetService = new DbTargetHttpService(configService, logger);
     const dbTarget = await dbTargetService.GetDbTarget(targetId);
 
     // Set our local host

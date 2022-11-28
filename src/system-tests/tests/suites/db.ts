@@ -1,12 +1,11 @@
 import { systemTestEnvId, systemTestEnvName, systemTestPolicyTemplate, systemTestUniqueId, testTargets } from '../system-test';
 import { callZli } from '../utils/zli-utils';
-import { DbTargetService } from '..../../../http-services/db-target/db-target.http-service';
+import { DbTargetHttpService } from '..../../../http-services/db-target/db-target.http-service';
 import * as ListConnectionsService from '../../../services/list-connections/list-connections.service';
 
-import { configService, logger, loggerConfigService } from '../system-test';
+import { configService, logger } from '../system-test';
 import { DigitalOceanBZeroTarget, DigitalOceanDistroImage, getDOImageName } from '../../digital-ocean/digital-ocean-ssm-target.service.types';
 import { TestUtils } from '../utils/test-utils';
-import { SubjectType } from '../../../../webshell-common-ts/http/v2/common.types/subject.types';
 import { Environment } from '../../../../webshell-common-ts/http/v2/policy/types/environment.types';
 import { ConnectionEventType } from '../../../../webshell-common-ts/http/v2/event/types/connection-event.types';
 import { bzeroTestTargetsToRun } from '../targets-to-run';
@@ -94,7 +93,7 @@ interface ConnectedDbDaemonDetails {
 export const dbSuite = () => {
     describe('db suite', () => {
         // Services
-        let dbTargetService: DbTargetService;
+        let dbTargetService: DbTargetHttpService;
         let connectionHttpService: ConnectionHttpService;
         let policyService: PolicyHttpService;
         let dbDaemonManagementService: DaemonManagementService<DbConfig>;
@@ -111,25 +110,26 @@ export const dbSuite = () => {
 
         beforeAll(async () => {
             // Construct all services needed to run tests
-            dbTargetService = new DbTargetService(configService, logger);
+            dbTargetService = new DbTargetHttpService(configService, logger);
             connectionHttpService = new ConnectionHttpService(configService, logger);
 
             dbDaemonManagementService = newDbDaemonManagementService(configService);
             processManager = new ProcessManagerService();
             policyService = new PolicyHttpService(configService, logger);
-            testUtils = new TestUtils(configService, logger, loggerConfigService);
+            testUtils = new TestUtils(configService, logger);
 
             // Set up the policy before all the tests
-            const currentUser: Subject = {
-                id: configService.me().id,
-                type: SubjectType.User
+            const me = configService.me();
+            const currentSubject: Subject = {
+                id: me.id,
+                type: me.type
             };
             const environment: Environment = {
                 id: systemTestEnvId
             };
             proxyPolicyID = (await policyService.AddProxyPolicy({
                 name: `${systemTestPolicyTemplate.replace('$POLICY_TYPE', 'proxy')}-db-suite`,
-                subjects: [currentUser],
+                subjects: [currentSubject],
                 groups: [],
                 description: `Proxy policy created for system test: ${systemTestUniqueId}`,
                 environments: [environment],

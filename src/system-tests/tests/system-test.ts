@@ -5,6 +5,8 @@ require('leaked-handles').set({
     debugSockets: true // pretty print tcp thrown exceptions.
 });
 
+import path from 'path';
+
 import { envMap } from '../../cli-driver';
 import { DigitalOceanBZeroTarget, DigitalOceanSSMTarget } from '../digital-ocean/digital-ocean-ssm-target.service.types';
 import { LoggerConfigService } from '../../services/logger/logger-config.service';
@@ -22,7 +24,7 @@ import { TestTarget } from './system-test.types';
 import { EnvironmentHttpService } from '../../http-services/environment/environment.http-services';
 import { iperfSuite } from './suites/iperf';
 import { extraSsmTestTargetsToRun, extraBzeroTestTargetsToRun, ssmTestTargetsToRun, bzeroTestTargetsToRun, initRegionalSSMTargetsTestConfig } from './targets-to-run';
-import { setupDOTestCluster, createDOTestTargets, setupSystemTestApiKeys } from './system-test-setup';
+import { setupDOTestCluster, createDOTestTargets, setupSystemTestApiKeys, createServiceAccount } from './system-test-setup';
 import { cleanupDOTestCluster, cleanupDOTestTargets, cleanupSystemTestApiKeys } from './system-test-cleanup';
 import { apiKeySuite } from './suites/rest-api/api-keys';
 import { organizationSuite } from './suites/rest-api/organization';
@@ -51,6 +53,12 @@ import { sshSuite } from './suites/ssh';
 import { dynamicAccessSuite } from './suites/dynamic-access';
 import { sendLogsSuite } from './suites/send-logs';
 import { clearAllTimeouts } from './utils/test-utils';
+import { SubjectHttpService } from '../../../src/http-services/subject/subject.http-services';
+import { serviceAccountRestApiSuite } from './suites/rest-api/service-accounts';
+import { serviceAccountSuite } from './suites/service-account';
+import { UserSummary } from '../../../webshell-common-ts/http/v2/user/types/user-summary.types';
+import { ServiceAccountSummary } from '../../../webshell-common-ts/http/v2/service-account/types/service-account-summary.types';
+import { ServiceAccountHttpService } from '../..//http-services/service-account/service-account.http-services';
 
 // Uses config name from ZLI_CONFIG_NAME environment variable (defaults to prod
 // if unset) This can be run against dev/stage/prod when running system tests
@@ -63,6 +71,24 @@ const configName = envMap.configName;
 export const loggerConfigService = new LoggerConfigService(configName, false, envMap.configDir);
 export const logger = new Logger(loggerConfigService, false, false, true);
 export const configService = new ConfigService(configName, logger, envMap.configDir, true);
+
+// This is the UserSummary for the user that is used to run system tests. When
+// RUN_AS_SERVICE account is enabled this will still be the user system tests
+// uses to initially create the SA before logging in as that SA. It is reused in
+// the userRestApiSuite.
+export let systemTestUser: UserSummary;
+
+// This is the ServiceAccountSummary for the SA created in system tests. This is
+// either created in global beforeAll when RUN_AS_SERVICE_ACCOUNT is true or by
+// the serviceAccountSuite when RUN_AS_SERVICE_ACCOUNT is false. In either case
+// its reused for the serviceAccountRestApiSuite.
+export let systemTestServiceAccount: ServiceAccountSummary;
+export function setSystemTestServiceAccount(serviceAccountSummary: ServiceAccountSummary) {
+    systemTestServiceAccount = serviceAccountSummary;
+}
+
+export const providerCredsPath = path.join(envMap.configDir, 'provider-file.json');
+export const bzeroCredsPath =  path.join(envMap.configDir, 'bzero-credentials.json');
 
 export const doApiKey = process.env.DO_API_KEY;
 if (!doApiKey) {
@@ -89,12 +115,14 @@ if (! bctlQuickstartVersion) {
     throw new Error('Must set the BCTL_QUICKSTART_VERSION environment variable');
 }
 
+export const RUN_AS_SERVICE_ACCOUNT = process.env.RUN_AS_SERVICE_ACCOUNT ? (process.env.RUN_AS_SERVICE_ACCOUNT === 'true') : false;
 export const KUBE_ENABLED = process.env.KUBE_ENABLED ? (process.env.KUBE_ENABLED === 'true') : true;
 const VT_ENABLED = process.env.VT_ENABLED ? (process.env.VT_ENABLED === 'true') : true;
 const BZERO_ENABLED = process.env.BZERO_ENABLED ? (process.env.BZERO_ENABLED === 'true') : true;
 const SSM_ENABLED =  process.env.SSM_ENABLED ? (process.env.SSM_ENABLED === 'true') : true;
 const API_ENABLED = process.env.API_ENABLED ? (process.env.API_ENABLED === 'true') : true;
 const AGENT_RECOVERY_ENABLED = process.env.AGENT_RECOVERY_ENABLED ? (process.env.AGENT_RECOVERY_ENABLED === 'true') : true;
+const SERVICE_ACCOUNT_ENABLED =  process.env.SERVICE_ACCOUNT_ENABLED ? (process.env.SERVICE_ACCOUNT_ENABLED === 'true') : true;
 export const IN_PIPELINE = process.env.IN_PIPELINE ? process.env.IN_PIPELINE === 'true' : false;;
 
 export const IN_CI = process.env.BZERO_IN_CI ? (process.env.BZERO_IN_CI === '1') : false;
@@ -217,8 +245,10 @@ beforeAll(async () => {
     await userHttpService.Register();
     // Update me section of the config in case this is a new login or any
     // user information has changed since last login
-    const me = await userHttpService.Me();
+    const subjectHttpService = new SubjectHttpService(configService, logger);
+    const me = await subjectHttpService.Me();
     configService.setMe(me);
+    systemTestUser = await userHttpService.Me();
 
     // Create a new api key that can be used for system tests
     [systemTestRESTApiKey, systemTestRegistrationApiKey] = await setupSystemTestApiKeys();
@@ -231,6 +261,17 @@ beforeAll(async () => {
         offlineCleanupTimeoutHours: 1
     });
     systemTestEnvId = createEnvResponse.id;
+
+    // A service account cannot add itself to targets, thus when running as one
+    // we need to firstly create it so the targets pick it up upon registration.
+    // Logging in before we create the DO cluster also means the SA will be the
+    // subject in the kube policy that gets created when installing via helm
+    if(RUN_AS_SERVICE_ACCOUNT){
+        await createServiceAccount();
+        await callZli(['service-account', 'login', '--providerCreds', providerCredsPath, '--bzeroCreds', bzeroCredsPath]);
+        const serviceAccountService = new ServiceAccountHttpService(configService, logger);
+        systemTestServiceAccount = await serviceAccountService.Me();
+    }
 
     await checkAllSettledPromise(Promise.allSettled([
         createDOTestTargets(),
@@ -300,6 +341,10 @@ afterEach(async () => {
     logger.info(`${new Date()} -- after test: ${expect.getState().currentTestName}`);
 });
 
+if (SERVICE_ACCOUNT_ENABLED && !RUN_AS_SERVICE_ACCOUNT) {
+    serviceAccountSuite();
+}
+
 // Call list target suite anytime a target test is called
 if (SSM_ENABLED || BZERO_ENABLED || KUBE_ENABLED) {
     listTargetsSuite();
@@ -355,6 +400,12 @@ if (API_ENABLED) {
     spacesRestApiSuite();
     mfaSuite();
     eventsRestApiSuite();
+
+    if (SERVICE_ACCOUNT_ENABLED) {
+        serviceAccountRestApiSuite();
+    } else {
+        logger.info('Skipping service account REST API suite because service account is disabled.');
+    }
 
     if (SSM_ENABLED) {
         // Since this suite modifies an SSM target name, we must be cautious if we parallelize test suite running because

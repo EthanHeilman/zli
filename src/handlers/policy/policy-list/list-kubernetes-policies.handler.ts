@@ -43,7 +43,7 @@ export async function listKubernetesPoliciesHandler(
             logger.info('There are no available Kubernetes policies');
         } else {
             // regular table output
-            return getTableOfKubernetesPolicies(kubernetesPolicies, policySubjectDisplayInfo.userMap, environmentMap, targetNameMap, policySubjectDisplayInfo.groupMap);
+            return getTableOfKubernetesPolicies(kubernetesPolicies, policySubjectDisplayInfo.userMap, environmentMap, targetNameMap, policySubjectDisplayInfo.groupMap, policySubjectDisplayInfo.serviceAccountMap);
         }
     }
 }

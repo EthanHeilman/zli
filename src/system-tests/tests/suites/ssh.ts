@@ -6,7 +6,6 @@ import { allTargets, configService, logger, systemTestEnvId, systemTestPolicyTem
 import { callZli } from '../utils/zli-utils';
 import { removeIfExists } from '../../../utils/utils';
 import { bzeroTargetCustomUser } from '../system-test-setup';
-import { SubjectType } from '../../../../webshell-common-ts/http/v2/common.types/subject.types';
 import { Environment } from '../../../../webshell-common-ts/http/v2/policy/types/environment.types';
 import { TestTarget } from '../system-test.types';
 import { cleanupTargetConnectPolicies } from '../system-test-cleanup';
@@ -15,6 +14,8 @@ import { Subject } from '../../../../webshell-common-ts/http/v2/policy/types/sub
 import { VerbType } from '../../../../webshell-common-ts/http/v2/policy/types/verb-type.types';
 import { ssmUser, getTargetInfo } from '../utils/ssh-utils';
 import { bzeroTestTargetsToRun } from '../targets-to-run';
+import { testIf } from '../utils/utils';
+import { runTestForTarget } from './connect';
 
 export const sshSuite = () => {
     describe('ssh suite', () => {
@@ -67,10 +68,10 @@ export const sshSuite = () => {
         });
 
         allTargets.forEach(async (testTarget: TestTarget) => {
-            it(`${testTarget.sshCaseId}: ssh tunnel - ${testTarget.awsRegion} - ${testTarget.installType} - ${testTarget.dropletImage}`, async () => {
-                const currentUser: Subject = {
+            testIf(runTestForTarget(testTarget), `${testTarget.sshCaseId}: ssh tunnel - ${testTarget.awsRegion} - ${testTarget.installType} - ${testTarget.dropletImage}`, async () => {
+                const currentSubject: Subject = {
                     id: configService.me().id,
-                    type: SubjectType.User
+                    type: configService.me().type
                 };
                 const environment: Environment = {
                     id: systemTestEnvId
@@ -79,7 +80,7 @@ export const sshSuite = () => {
                 // create our policy
                 await policyService.AddTargetConnectPolicy({
                     name: systemTestPolicyTemplate.replace('$POLICY_TYPE', 'target-connect'),
-                    subjects: [currentUser],
+                    subjects: [currentSubject],
                     groups: [],
                     description: `Target ssh policy created for system test: ${systemTestUniqueId}`,
                     environments: [environment],
@@ -102,9 +103,9 @@ export const sshSuite = () => {
         // adding a success case for connecting to bzero targets via ssh using .environment
         bzeroTestTargetsToRun.forEach(async (testTarget: TestTarget) => {
             it(`${testTarget.sshWithEnvCaseId}: ssh tunnel with env - ${testTarget.awsRegion} - ${testTarget.installType} - ${testTarget.dropletImage}`, async () => {
-                const currentUser: Subject = {
+                const currentSubject: Subject = {
                     id: configService.me().id,
-                    type: SubjectType.User
+                    type: configService.me().type
                 };
                 const environment: Environment = {
                     id: systemTestEnvId
@@ -113,7 +114,7 @@ export const sshSuite = () => {
                 // create our policy
                 await policyService.AddTargetConnectPolicy({
                     name: systemTestPolicyTemplate.replace('$POLICY_TYPE', 'target-connect'),
-                    subjects: [currentUser],
+                    subjects: [currentSubject],
                     groups: [],
                     description: `Target ssh policy created for system test: ${systemTestUniqueId}`,
                     environments: [environment],
@@ -134,11 +135,11 @@ export const sshSuite = () => {
         });
 
         allTargets.forEach(async (testTarget: TestTarget) => {
-            it(`${testTarget.sshConnectFailsCaseId}: connect fails with only tunnel policy - ${testTarget.awsRegion} - ${testTarget.installType} - ${testTarget.dropletImage}`, async () => {
+            testIf(runTestForTarget(testTarget), `${testTarget.sshConnectFailsCaseId}: connect fails with only tunnel policy - ${testTarget.awsRegion} - ${testTarget.installType} - ${testTarget.dropletImage}`, async () => {
 
-                const currentUser: Subject = {
+                const currentSubject: Subject = {
                     id: configService.me().id,
-                    type: SubjectType.User
+                    type: configService.me().type
                 };
                 const environment: Environment = {
                     id: systemTestEnvId
@@ -147,7 +148,7 @@ export const sshSuite = () => {
                 // create our policy
                 await policyService.AddTargetConnectPolicy({
                     name: systemTestPolicyTemplate.replace('$POLICY_TYPE', 'target-connect'),
-                    subjects: [currentUser],
+                    subjects: [currentSubject],
                     groups: [],
                     description: `Target ssh policy created for system test: ${systemTestUniqueId}`,
                     environments: [environment],
@@ -166,11 +167,11 @@ export const sshSuite = () => {
         });
 
         allTargets.forEach(async (testTarget: TestTarget) => {
-            it(`${testTarget.sshBadUserCaseId}: ssh tunnel bad user - ${testTarget.awsRegion} - ${testTarget.installType} - ${testTarget.dropletImage}`, async () => {
+            testIf(runTestForTarget(testTarget), `${testTarget.sshBadUserCaseId}: ssh tunnel bad user - ${testTarget.awsRegion} - ${testTarget.installType} - ${testTarget.dropletImage}`, async () => {
 
                 const currentUser: Subject = {
                     id: configService.me().id,
-                    type: SubjectType.User
+                    type: configService.me().type
                 };
                 const environment: Environment = {
                     id: systemTestEnvId
@@ -210,9 +211,9 @@ export const sshSuite = () => {
 
         bzeroTestTargetsToRun.forEach(async (testTarget: TestTarget) => {
             it(`${testTarget.sshScpCaseId}: scp - ${testTarget.awsRegion} - ${testTarget.installType} - ${testTarget.dropletImage}`, async () => {
-                const currentUser: Subject = {
+                const currentSubject: Subject = {
                     id: configService.me().id,
-                    type: SubjectType.User
+                    type: configService.me().type
                 };
                 const environment: Environment = {
                     id: systemTestEnvId
@@ -221,7 +222,7 @@ export const sshSuite = () => {
                 // create our policy
                 await policyService.AddTargetConnectPolicy({
                     name: systemTestPolicyTemplate.replace('$POLICY_TYPE', 'target-connect'),
-                    subjects: [currentUser],
+                    subjects: [currentSubject],
                     groups: [],
                     description: `Target file transfer policy created for system test: ${systemTestUniqueId}`,
                     environments: [environment],
@@ -254,9 +255,9 @@ export const sshSuite = () => {
 
         bzeroTestTargetsToRun.forEach(async (testTarget: TestTarget) => {
             it(`${testTarget.sshSftpCaseId}: sftp - ${testTarget.awsRegion} - ${testTarget.installType} - ${testTarget.dropletImage}`, async () => {
-                const currentUser: Subject = {
+                const currentSubject: Subject = {
                     id: configService.me().id,
-                    type: SubjectType.User
+                    type: configService.me().type
                 };
                 const environment: Environment = {
                     id: systemTestEnvId
@@ -265,7 +266,7 @@ export const sshSuite = () => {
                 // create our policy
                 await policyService.AddTargetConnectPolicy({
                     name: systemTestPolicyTemplate.replace('$POLICY_TYPE', 'target-connect'),
-                    subjects: [currentUser],
+                    subjects: [currentSubject],
                     groups: [],
                     description: `Target file transfer policy created for system test: ${systemTestUniqueId}`,
                     environments: [environment],
@@ -304,9 +305,9 @@ export const sshSuite = () => {
 
         bzeroTestTargetsToRun.forEach(async (testTarget: TestTarget) => {
             it(`${testTarget.sshTunnelFailsCaseId}: tunnel/exec fails when user only has file transfer access - ${testTarget.awsRegion} - ${testTarget.installType} - ${testTarget.dropletImage}`, async () => {
-                const currentUser: Subject = {
+                const currentSubject: Subject = {
                     id: configService.me().id,
-                    type: SubjectType.User
+                    type: configService.me().type
                 };
                 const environment: Environment = {
                     id: systemTestEnvId
@@ -315,7 +316,7 @@ export const sshSuite = () => {
                 // create our policy
                 await policyService.AddTargetConnectPolicy({
                     name: systemTestPolicyTemplate.replace('$POLICY_TYPE', 'target-connect'),
-                    subjects: [currentUser],
+                    subjects: [currentSubject],
                     groups: [],
                     description: `Target file transfer policy created for system test: ${systemTestUniqueId}`,
                     environments: [environment],
@@ -342,9 +343,9 @@ export const sshSuite = () => {
 
         bzeroTestTargetsToRun.forEach(async (testTarget: TestTarget) => {
             it(`${testTarget.sshByUuidCaseId}: ssh using id instead of name - ${testTarget.awsRegion} - ${testTarget.installType} - ${testTarget.dropletImage}`, async () => {
-                const currentUser: Subject = {
+                const currentSubject: Subject = {
                     id: configService.me().id,
-                    type: SubjectType.User
+                    type: configService.me().type
                 };
                 const environment: Environment = {
                     id: systemTestEnvId
@@ -353,7 +354,7 @@ export const sshSuite = () => {
                 // create our policy
                 await policyService.AddTargetConnectPolicy({
                     name: systemTestPolicyTemplate.replace('$POLICY_TYPE', 'target-connect'),
-                    subjects: [currentUser],
+                    subjects: [currentSubject],
                     groups: [],
                     description: `Target ssh policy created for system test: ${systemTestUniqueId}`,
                     environments: [environment],
@@ -380,9 +381,9 @@ export const sshSuite = () => {
 
         bzeroTestTargetsToRun.forEach(async (testTarget: TestTarget) => {
             it(`${testTarget.sshScpByUuidCaseId}: scp using id instead of name - ${testTarget.awsRegion} - ${testTarget.installType} - ${testTarget.dropletImage}`, async () => {
-                const currentUser: Subject = {
+                const currentSubject: Subject = {
                     id: configService.me().id,
-                    type: SubjectType.User
+                    type: configService.me().type
                 };
                 const environment: Environment = {
                     id: systemTestEnvId
@@ -391,7 +392,7 @@ export const sshSuite = () => {
                 // create our policy
                 await policyService.AddTargetConnectPolicy({
                     name: systemTestPolicyTemplate.replace('$POLICY_TYPE', 'target-connect'),
-                    subjects: [currentUser],
+                    subjects: [currentSubject],
                     groups: [],
                     description: `Target file transfer policy created for system test: ${systemTestUniqueId}`,
                     environments: [environment],

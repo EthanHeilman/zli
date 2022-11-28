@@ -3,10 +3,8 @@ import { ConfigService } from '../../../services/config/config.service';
 import { Logger } from '../../../services/logger/logger.service';
 import { cleanExit } from '../../clean-exit.handler';
 import { createClusterPolicyArgs } from './create-policy.command-builder';
-import { getUsersByEmail, getGroupsByName, getClustersByNameOrId, getEnvironmentByName } from '../../../utils/policy-utils';
+import { getGroupsByName, getEnvironmentByName, getSubjectsByEmail, checkAllIdentifiersExist, checkAllIdentifiersAreSingle, getTargetsByNameOrId } from '../../../utils/policy-utils';
 import { PolicyHttpService } from '../../../http-services/policy/policy.http-services';
-import { UserHttpService } from '../../../http-services/user/user.http-services';
-import { KubeHttpService } from '../../../http-services/targets/kube/kube.http-services';
 import { OrganizationHttpService } from '../../../http-services/organization/organization.http-services';
 import { EnvironmentHttpService } from '../../../http-services/environment/environment.http-services';
 import { Subject } from '../../../../webshell-common-ts/http/v2/policy/types/subject.types';
@@ -15,13 +13,16 @@ import { Environment } from '../../../../webshell-common-ts/http/v2/policy/types
 import { Cluster } from '../../../../webshell-common-ts/http/v2/policy/types/cluster.types';
 import { ClusterUser } from '../../../../webshell-common-ts/http/v2/policy/types/cluster-user.types';
 import { ClusterGroup } from '../../../../webshell-common-ts/http/v2/policy/types/cluster-group.types';
+import { SubjectHttpService } from '../../../../src/http-services/subject/subject.http-services';
+import { Target } from '../../../../webshell-common-ts/http/v2/policy/types/target.types';
+import { Dictionary } from 'lodash';
+import { TargetType } from '../../../../webshell-common-ts/http/v2/target/types/target.types';
 
 export async function createClusterPolicyHandler(argv: yargs.Arguments<createClusterPolicyArgs>, configService: ConfigService,logger: Logger){
     const policyService = new PolicyHttpService(configService, logger);
-    const userHttpService = new UserHttpService(configService, logger);
     const organizationHttpService = new OrganizationHttpService(configService, logger);
+    const subjectHttpService = new SubjectHttpService(configService, logger);
     const envHttpService = new EnvironmentHttpService(configService, logger);
-    const kubeHttpService = new KubeHttpService(configService, logger);
 
     // If a value is provided for neither then throw an error
     // Yargs will handle when a value is passed in for both
@@ -30,17 +31,31 @@ export async function createClusterPolicyHandler(argv: yargs.Arguments<createClu
         await cleanExit(1, logger);
     }
 
-    const users: Subject[] = await getUsersByEmail(argv.users, userHttpService, logger);
+    let subjectsEmails: string[];
+    if(argv.users) {
+        this.logger.warn('The users flag is deprecated and will be removed soon, please use its equivalent \'subjects\'');
+        subjectsEmails = argv.users;
+    } else
+        subjectsEmails = argv.subjects;
+    const subjects: Subject[] = await getSubjectsByEmail(subjectsEmails, subjectHttpService, logger);
     let groups: Group[] = [];
     if(argv.groups !== undefined) {
         groups = await getGroupsByName(argv.groups, organizationHttpService, logger);
     }
 
-    let clusters: Cluster[] = null;
+    let clustersIdentifierMap: Dictionary<Target[]> = {};
     let environments: Environment[] = null;
+    const clusters: Cluster[] = [];
 
     if(argv.clusters !== undefined) {
-        clusters = await getClustersByNameOrId(argv.clusters, kubeHttpService, logger);
+        clustersIdentifierMap = await getTargetsByNameOrId(configService, logger, [TargetType.Cluster]);
+        checkAllIdentifiersExist(logger, 'cluster', clustersIdentifierMap, argv.clusters);
+        checkAllIdentifiersAreSingle(logger, 'cluster', clustersIdentifierMap, argv.clusters);
+        for (const clusterIdentifier in clustersIdentifierMap) {
+            // Accessing this with [0] is safe because we have just checked above there is only a single target there
+            const target: Target = clustersIdentifierMap[clusterIdentifier][0];
+            clusters.push({id: target.id});
+        }
     } else {
         environments = await getEnvironmentByName(argv.environments, envHttpService, logger);
     }
@@ -70,7 +85,7 @@ export async function createClusterPolicyHandler(argv: yargs.Arguments<createClu
     // Send the KubernetesPolicyCreateRequest to AddPolicy endpoint
     const kubeClusterPolicy = await policyService.AddKubernetesPolicy({
         name: argv.name,
-        subjects: users,
+        subjects: subjects,
         groups: groups,
         clusters: clusters,
         environments: environments,

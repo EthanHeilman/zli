@@ -11,6 +11,8 @@ import { OrganizationHttpService } from '../../http-services/organization/organi
 import { UserSummary } from '../../../webshell-common-ts/http/v2/user/types/user-summary.types';
 import { GroupSummary } from '../../../webshell-common-ts/http/v2/organization/types/group-summary.types';
 import { SessionRecordingPolicySummary } from '../../../webshell-common-ts/http/v2/policy/session-recording/types/session-recording-policy-summary.types';
+import { ServiceAccountHttpService } from '../../../src/http-services/service-account/service-account.http-services';
+import { ServiceAccountSummary } from '../../../webshell-common-ts/http/v2/service-account/types/service-account-summary.types';
 
 export async function getPolicyFromName(policyName: string, policyHttpService: PolicyHttpService) :
 Promise<KubernetesPolicySummary | TargetConnectPolicySummary | ProxyPolicySummary | JustInTimePolicySummary | SessionRecordingPolicySummary> {
@@ -60,10 +62,12 @@ export async function getPolicySubjectDisplayInfo(
 ) {
     const userHttpService = new UserHttpService(configService, logger);
     const organizationHttpService = new OrganizationHttpService(configService, logger);
+    const serviceAccountHttpService = new ServiceAccountHttpService(configService, logger);
 
-    const [users, groups] = await Promise.all([
+    const [users, groups, serviceAccounts] = await Promise.all([
         userHttpService.ListUsers(),
-        organizationHttpService.ListGroups()
+        organizationHttpService.ListGroups(),
+        serviceAccountHttpService.ListServiceAccounts()
     ]);
 
     const userMap : { [id: string]: UserSummary } = {};
@@ -77,8 +81,16 @@ export async function getPolicySubjectDisplayInfo(
             groupMap[groupSummary.idPGroupId] = groupSummary;
         });
 
+    const serviceAccountMap : { [id: string]: ServiceAccountSummary } = {};
+    serviceAccounts
+        .filter(sa => sa.enabled)
+        .forEach(serviceAccountSummary => {
+            serviceAccountMap[serviceAccountSummary.id] = serviceAccountSummary;
+        });
+
     return {
         userMap: userMap,
-        groupMap: groupMap
+        groupMap: groupMap,
+        serviceAccountMap: serviceAccountMap
     };
 }

@@ -1,9 +1,6 @@
 import { ConfigService } from '../../../../src/services/config/config.service';
 import { Logger } from '../../../services/logger/logger.service';
 import { EventsHttpService } from '../../../../src/http-services/events/events.http-server';
-import { configService } from '../system-test';
-import { LoggerConfigService } from '../../../../src/services/logger/logger-config.service';
-import { SubjectType } from '../../../../webshell-common-ts/http/v2/common.types/subject.types';
 import { CommandEventDataMessage } from '../../../../webshell-common-ts/http/v2/event/types/command-event-data-message';
 import { ConnectionEventDataMessage } from '../../../../webshell-common-ts/http/v2/event/types/connection-event-data-message';
 import { EnvironmentHttpService } from '../../../../src/http-services/environment/environment.http-services';
@@ -25,15 +22,15 @@ export const clearAllTimeouts = () => {
  * Class that contains our common testing functions that can be used across tests
  */
 export class TestUtils {
-    eventsService: EventsHttpService;
-    loggerConfigService: LoggerConfigService;
     logger: Logger;
+    configService: ConfigService;
+    eventsService: EventsHttpService;
     environmentService: EnvironmentHttpService;
 
-    constructor(configService: ConfigService, logger: Logger, loggerConfigService: LoggerConfigService) {
-        this.eventsService = new EventsHttpService(configService, logger);
-        this.loggerConfigService = loggerConfigService;
+    constructor(configService: ConfigService, logger: Logger) {
         this.logger = logger;
+        this.configService = configService;
+        this.eventsService = new EventsHttpService(configService, logger);
         this.environmentService = new EnvironmentHttpService(configService, logger);
     };
 
@@ -46,13 +43,13 @@ export class TestUtils {
      * @param {string} command Command we are looking for
      */
     private async BuildCommandEvent(targetId: string, targetName: string, targetUser: string, targetType: string, targetEnvId: string, targetEnvName: string, command: string): Promise<CommandEventDataMessage> {
-        const me = configService.me();
+        const me = this.configService.me();
         const toReturn: CommandEventDataMessage = {
             id: expect.anything(),
             connectionId: expect.anything(),
             subjectId: me.id,
-            subjectType: SubjectType.User,
-            userName: me.email,
+            subjectType: me.type,
+            subjectName: me.email,
             organizationId: me.organizationId,
             targetId: targetId,
             targetType: targetType,
@@ -128,13 +125,13 @@ export class TestUtils {
         // otherwise the default expected environment name is 'n/a'
             : 'n/a';
 
-        const me = configService.me();
+        const me = this.configService.me();
         const defaults: ConnectionEventDataMessage = {
             id: expect.anything(),
             connectionId: expect.anything(),
             subjectId: me.id,
-            subjectType: SubjectType.User,
-            userName: me.email,
+            subjectType: me.type,
+            subjectName: me.email,
             organizationId: me.organizationId,
             sessionId: expect.anything(),
             sessionName: 'n/a',
@@ -154,7 +151,7 @@ export class TestUtils {
             async () => {
                 const gotEvents = await this.eventsService.GetConnectionEvents(
                     startTime,
-                    [configService.me().id],
+                    [this.configService.me().id],
                     partialEvent.targetId ? [partialEvent.targetId] : []
                 );
 
@@ -181,7 +178,7 @@ export class TestUtils {
         // Query for our events
         const startTimestamp = new Date();
         startTimestamp.setHours(startTimestamp.getHours() - EVENT_QUERY_TIME);
-        const commands = await this.eventsService.GetCommandEvent(startTimestamp, [configService.me().id]);
+        const commands = await this.eventsService.GetCommandEvent(startTimestamp, [this.configService.me().id]);
 
         const commandCreated = commands.find(event => {
             if (event.targetId == targetId && event.targetType == targetType) {
@@ -218,7 +215,7 @@ export class TestUtils {
      */
     public async EnsureKubeEvent(targetName: string, role: string, targetGroup: string[], kubeEnglishCommand: string, expectedEndpoints: string[], expectedExecs: string[]) {
         const kubeEvents = await this.eventsService.GetKubeEvents();
-        const me = configService.me();
+        const me = this.configService.me();
 
         const eventWindow = new Date();
         eventWindow.setHours(eventWindow.getHours() - EVENT_QUERY_TIME);
@@ -271,8 +268,8 @@ export class TestUtils {
      * @param {string} context Any expected context string or substring
      * @param {Date} startTime The searched events should be on or after this time. null indicates no filtering based on time.
      */
-    public async EnsureUserEventExists(serviceAction: string, allowed?: boolean, context?: string, startTime?: Date): Promise<boolean> {
-        const userEvents = await this.eventsService.GetUserEvents(startTime, [configService.me().id]);
+    public async EnsureSubjectEventExists(serviceAction: string, allowed?: boolean, context?: string, startTime?: Date): Promise<boolean> {
+        const userEvents = await this.eventsService.GetSubjectEvents(startTime, [this.configService.me().id]);
 
         for (let index = 0; index < userEvents.length; index++) {
             const event = userEvents[index];

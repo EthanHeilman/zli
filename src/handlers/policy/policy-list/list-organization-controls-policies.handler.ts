@@ -26,7 +26,7 @@ export async function listOrganizationControlsPoliciesHandler(
             logger.info('There are no available Organization Controls policies');
         } else {
             // regular table output
-            return getTableOfOrganizationControlPolicies(organizationControlPolicies, policySubjectDisplayInfo.userMap, policySubjectDisplayInfo.groupMap);
+            return getTableOfOrganizationControlPolicies(organizationControlPolicies, policySubjectDisplayInfo.userMap, policySubjectDisplayInfo.groupMap, policySubjectDisplayInfo.serviceAccountMap);
         }
     }
 }

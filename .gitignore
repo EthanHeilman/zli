@@ -355,3 +355,6 @@ coverage/
 coverage-system-tests/
 
 .vscode/
+
+# Ignore service accounts credentials
+bzero-credentials.json

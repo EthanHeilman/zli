@@ -1,4 +1,3 @@
-import { SubjectType } from '../../../../../../webshell-common-ts/http/v2/common.types/subject.types';
 import { ProxyPolicySummary } from '../../../../../../webshell-common-ts/http/v2/policy/proxy/types/proxy-policy-summary.types';
 import { PolicyType } from '../../../../../../webshell-common-ts/http/v2/policy/types/policy-type.types';
 import { Subject } from '../../../../../../webshell-common-ts/http/v2/policy/types/subject.types';
@@ -11,11 +10,6 @@ import { callZli } from '../../../utils/zli-utils';
 
 export const proxyPolicySuite = () => {
     describe('Proxy Policies Suite', () => {
-        const originalPolicyName = systemTestPolicyTemplate.replace('$POLICY_TYPE', 'proxy');
-        const currentUser: Subject = {
-            id: configService.me().id,
-            type: SubjectType.User
-        };
         let policyService: PolicyHttpService;
         let envHttpService: EnvironmentHttpService;
         let proxyPolicy: ProxyPolicySummary;
@@ -24,20 +18,26 @@ export const proxyPolicySuite = () => {
         beforeAll(() => {
             policyService = new PolicyHttpService(configService, logger);
             envHttpService = new EnvironmentHttpService(configService, logger);
+
+            const originalPolicyName = systemTestPolicyTemplate.replace('$POLICY_TYPE', 'proxy');
+            const currentSubject: Subject = {
+                id: configService.me().id,
+                type: configService.me().type
+            };
             expectedPolicySummary = {
-                id: expect.any('string'),
+                id: expect.any(String),
                 type: PolicyType.Proxy,
                 groups: [],
                 name: originalPolicyName,
                 subjects: [
-                    currentUser
+                    currentSubject
                 ],
                 environments: [
                     {
                         id: systemTestEnvId
                     }
                 ],
-                targets: null,
+                targets: [],
                 description: restApiPolicyDescriptionTemplate.replace('$POLICY_TYPE', 'proxy'),
                 timeExpires: null
             };
@@ -55,7 +55,7 @@ export const proxyPolicySuite = () => {
             const zliArgs = [
                 'policy', 'create-proxy',
                 '-n', expectedPolicySummary.name,
-                '-u', configService.me().email,
+                '-a', configService.me().email,
                 '-e', environment.name,
                 '-d', expectedPolicySummary.description
             ];

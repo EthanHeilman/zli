@@ -474,6 +474,10 @@ export function waitForDaemonProcessExit(logger: Logger, loggerConfigService: Lo
                     logger.error('Failed to connect: the specified user does not exist on the target');
                     break;
                 }
+                case DAEMON_EXIT_CODES.SERVICE_ACCOUNT_NOT_CONFIGURED: {
+                    logger.error('Failed to connect: this service account has not been configured on the target');
+                    break;
+                }
                 case DAEMON_EXIT_CODES.ZLI_CONFIG_ERROR: {
                     logger.error('Error parsing zli config file. Please try logging in again with \'zli login\' to resolve this issue');
                     break;

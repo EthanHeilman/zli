@@ -4,7 +4,6 @@ import fs from 'fs';
 
 import { MockProxy, mock } from 'jest-mock-extended';
 import { cloneDeep } from 'lodash';
-import { UserSummary } from '../../../webshell-common-ts/http/v2/user/types/user-summary.types';
 import yaml from 'yaml';
 import { filterKubeConfig, getKubeDaemonSecuritySettings, IFilterKubeConfigService, IFilterKubeDaemonManagementService, IKubeDaemonSecurityConfigService, loadKubeConfigFromFile, mergeKubeConfig } from './kube-management.service';
 import { ILogger } from '../../../webshell-common-ts/logging/logging.types';
@@ -13,6 +12,7 @@ import { GlobalKubeConfig, KubeDaemonSecurityConfig, KubeConfig as ZliKubeConfig
 import path from 'path';
 import { randomUUID } from 'crypto';
 import { DaemonIsRunningStatus, DaemonStatus } from '../daemon-management/types/daemon-status.types';
+import { SubjectSummary } from '../../../webshell-common-ts/http/v2/subject/types/subject-summary.types';
 
 function arbUser(): fc.Arbitrary<User> {
     const baseUser: { [K in keyof User]: fc.Arbitrary<User[K]> } = { name: fc.string() };
@@ -297,7 +297,7 @@ describe('filterKubeConfig suite', () => {
         mockKubeDaemonManagementService.getDaemonConfigs.mockReturnValue(new Map());
         mockKubeDaemonManagementService.getAllDaemonStatuses.mockResolvedValue(new Map());
 
-        mockConfig.me.mockReturnValue({ email: bzeroEmail } as UserSummary);
+        mockConfig.me.mockReturnValue({ email: bzeroEmail } as SubjectSummary);
     });
 
     const makeBzeroContextsAndClusters = (ports: number[]): [Context[], Cluster[]] => {

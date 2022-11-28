@@ -1,7 +1,7 @@
 import * as k8s from '@kubernetes/client-node';
 import { callZli } from '../utils/zli-utils';
 import { HttpError, V1Pod } from '@kubernetes/client-node';
-import { loggerConfigService, systemTestEnvNameCluster, systemTestPolicyTemplate, systemTestUniqueId, testCluster } from '../system-test';
+import { systemTestEnvNameCluster, systemTestPolicyTemplate, systemTestUniqueId, testCluster } from '../system-test';
 import { configService, logger } from '../system-test';
 import { TestUtils } from '../utils/test-utils';
 import { ConnectionEventType } from '../../../../webshell-common-ts/http/v2/event/types/connection-event.types';
@@ -17,7 +17,6 @@ import { DaemonManagementService, newKubeDaemonManagementService } from '../../.
 import { ProcessManagerService } from '../../../services/process-manager/process-manager.service';
 import { Subject } from '../../../../webshell-common-ts/http/v2/policy/types/subject.types';
 import { Environment } from '../../../../webshell-common-ts/http/v2/policy/types/environment.types';
-import { SubjectType } from '../../../../webshell-common-ts/http/v2/common.types/subject.types';
 import { ClusterUser } from '../../../../webshell-common-ts/http/v2/policy/types/cluster-user.types';
 import { expectAnythingOrNothing, getListOfAvailPorts, mapToArrayTuples } from '../utils/utils';
 import { DaemonStatus } from '../../../services/daemon-management/types/daemon-status.types';
@@ -66,7 +65,7 @@ export const kubeSuite = () => {
             // Construct all http services needed to run tests
             policyService = new PolicyHttpService(configService, logger);
             connectionHttpService = new ConnectionHttpService(configService, logger);
-            testUtils = new TestUtils(configService, logger, loggerConfigService);
+            testUtils = new TestUtils(configService, logger);
 
             processManager = new ProcessManagerService();
             kubeDaemonManagementService = newKubeDaemonManagementService(configService);
@@ -80,16 +79,17 @@ export const kubeSuite = () => {
             process.env.KUBECONFIG = testFilePath;
 
             // Set up the policy before all the tests
-            const currentUser: Subject = {
-                id: configService.me().id,
-                type: SubjectType.User
+            const me = configService.me();
+            const currentSubject: Subject = {
+                id: me.id,
+                type: me.type
             };
             const environment: Environment = {
                 id: testCluster.bzeroClusterTargetSummary.environmentId
             };
             kubePolicyID = (await policyService.AddKubernetesPolicy({
                 name: `${systemTestPolicyTemplate.replace('$POLICY_TYPE', 'kubernetes')}-kube-suite`,
-                subjects: [currentUser],
+                subjects: [currentSubject],
                 groups: [],
                 description: `Kube policy created for system test: ${systemTestUniqueId}`,
                 environments: [environment],

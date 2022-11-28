@@ -40,6 +40,8 @@ import { JustInTimePolicySummary } from '../../webshell-common-ts/http/v2/policy
 import { DbConnectionSummary } from '../../webshell-common-ts/http/v2/connection/types/db-connection-summary.types';
 import { randomUUID } from 'crypto';
 import { KubeConnectionSummary } from '../../webshell-common-ts/http/v2/connection/types/kube-connection-summary.types';
+import { SubjectSummary } from '../../webshell-common-ts/http/v2/subject/types/subject-summary.types';
+import { ServiceAccountSummary } from '../../webshell-common-ts/http/v2/service-account/types/service-account-summary.types';
 
 export function unitTestMockSetup(withCleanExit: boolean): void {
     // Always mock out the following services
@@ -50,7 +52,7 @@ export function unitTestMockSetup(withCleanExit: boolean): void {
     jest.spyOn(middlewareHandler, 'bzCertValidationInfoMiddleware').mockImplementation(async (_configService, _logger) => Promise.resolve());
     jest.spyOn(GAService.prototype, 'TrackCliCommand').mockImplementation(() => Promise.resolve());
     jest.spyOn(EnvironmentHttpService.prototype, 'ListEnvironments').mockImplementation(async () => mockEnvList);
-    jest.spyOn(ConfigService.prototype, 'me').mockImplementation(() => mockUserSummary);
+    jest.spyOn(ConfigService.prototype, 'me').mockImplementation(() => mockSubjectSummary);
 }
 
 export const mockEnv: EnvironmentSummary = {
@@ -75,6 +77,16 @@ export const mockEnvList: EnvironmentSummary[] = [
     mockEnv
 ];
 
+export const mockSubjectSummary: SubjectSummary = {
+    id: 'some-subject-id',
+    organizationId: 'test-org-id',
+    email: 'test-email',
+    isAdmin: true,
+    timeCreated: new Date(1998, 3, 5, 0, 0, 0, 0),
+    lastLogin: new Date(1998, 3, 5, 0, 0, 0, 0),
+    type: SubjectType.User
+};
+
 export const mockUserSummary: UserSummary = {
     id: 'some-subject-id',
     organizationId: 'test-org-id',
@@ -82,11 +94,29 @@ export const mockUserSummary: UserSummary = {
     email: 'test-email',
     isAdmin: true,
     timeCreated: new Date(1998, 3, 5, 0, 0, 0, 0),
-    lastLogin: new Date(1998, 3, 5, 0, 0, 0, 0),
+    lastLogin: new Date(1998, 3, 5, 0, 0, 0, 0)
 };
 
 export const mockUserSummaryList: UserSummary[] = [
     mockUserSummary,
+];
+
+export const mockServiceAccountSummary: ServiceAccountSummary = {
+    id: 'some-sa-id',
+    organizationId: 'test-org-id',
+    email: 'test-email',
+    externalId: 'test-external-id',
+    jwksUrl: 'test-jwks-url',
+    jwksUrlPattern: 'test-jwks-url-pattern',
+    isAdmin: false,
+    timeCreated: new Date(1998, 3, 5, 0, 0, 0, 0),
+    lastLogin: new Date(1998, 3, 5, 0, 0, 0, 0),
+    createdBy: 'some-subject-id',
+    enabled: true
+};
+
+export const mockServiceAccountSummaryList: ServiceAccountSummary[] = [
+    mockServiceAccountSummary,
 ];
 
 export const mockKubeSummaryList: KubeClusterSummary[] = [{

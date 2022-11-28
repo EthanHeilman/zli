@@ -4,4 +4,5 @@ export const enum DAEMON_EXIT_CODES {
     CANCELLED_BY_USER     = 3,
     USER_NOT_FOUND        = 4,
     ZLI_CONFIG_ERROR      = 5,
+    SERVICE_ACCOUNT_NOT_CONFIGURED      = 6,
 }

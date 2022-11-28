@@ -1,4 +1,3 @@
-import { SubjectType } from '../../../../../../webshell-common-ts/http/v2/common.types/subject.types';
 import { KubernetesPolicySummary } from '../../../../../../webshell-common-ts/http/v2/policy/kubernetes/types/kubernetes-policy-summary.types';
 import { PolicyType } from '../../../../../../webshell-common-ts/http/v2/policy/types/policy-type.types';
 import { Subject } from '../../../../../../webshell-common-ts/http/v2/policy/types/subject.types';
@@ -10,11 +9,6 @@ import { callZli } from '../../../utils/zli-utils';
 
 export const kubernetesPolicySuite = () => {
     describe('Kubernetes Policies Suite', () => {
-        const originalPolicyName = systemTestPolicyTemplate.replace('$POLICY_TYPE', 'kubernetes');
-        const currentUser: Subject = {
-            id: configService.me().id,
-            type: SubjectType.User
-        };
         let policyService: PolicyHttpService;
         let envHttpService: EnvironmentHttpService;
         let kubernetesPolicy: KubernetesPolicySummary;
@@ -23,20 +17,26 @@ export const kubernetesPolicySuite = () => {
         beforeAll(() => {
             policyService = new PolicyHttpService(configService, logger);
             envHttpService = new EnvironmentHttpService(configService, logger);
+
+            const originalPolicyName = systemTestPolicyTemplate.replace('$POLICY_TYPE', 'kubernetes');
+            const currentSubject: Subject = {
+                id: configService.me().id,
+                type: configService.me().type
+            };
             expectedPolicySummary = {
-                id: expect.any('string'),
+                id: expect.any(String),
                 type: PolicyType.Kubernetes,
                 groups: [],
                 name: originalPolicyName,
                 subjects: [
-                    currentUser
+                    currentSubject
                 ],
                 environments: [
                     {
                         id: systemTestEnvId
                     }
                 ],
-                clusters: null,
+                clusters: [],
                 clusterGroups: [
                     {
                         name: 'test-group'
@@ -64,7 +64,7 @@ export const kubernetesPolicySuite = () => {
             const zliArgs = [
                 'policy', 'create-cluster',
                 '-n', expectedPolicySummary.name,
-                '-u', configService.me().email,
+                '-a', configService.me().email,
                 '-e', environment.name,
                 '--targetUsers', 'test-user',
                 '--targetGroups', 'test-group',

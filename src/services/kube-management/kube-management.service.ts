@@ -11,9 +11,9 @@ import { KubeDaemonSecurityConfig } from '../config/config.service.types';
 import yaml from 'yaml';
 import { findRunningDaemonWithPredicate, IDaemonStatusRetriever, KubeDaemonStore, newKubeDaemonManagementService } from '../daemon-management/daemon-management.service';
 import { cloneDeep } from 'lodash';
-import { UserSummary } from '../../../webshell-common-ts/http/v2/user/types/user-summary.types';
 import { ILogger } from '../../../webshell-common-ts/logging/logging.types';
 import { newClusters, newContexts, newUsers } from '@kubernetes/client-node/dist/config_types';
+import { SubjectSummary } from '../../../webshell-common-ts/http/v2/subject/types/subject-summary.types';
 
 /**
  * NamedKubeEntry represents a named entry in a standard kubeconfig file, e.g.
@@ -34,7 +34,7 @@ export function exportKubeConfigToYaml(kubeConfig: k8s.KubeConfig): string {
 
 export interface IKubeConfigService {
     getConfigName(): string;
-    me(): UserSummary;
+    me(): SubjectSummary;
 }
 
 /**

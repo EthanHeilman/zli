@@ -14,6 +14,8 @@ import { parseIdpType, randomAlphaNumericString } from '../../utils/utils';
 import { check as checkTcpPort } from 'tcp-port-used';
 import { RefreshTokenError, UserNotLoggedInError } from './oauth.service.types';
 import { UserHttpService } from '../../../src/http-services/user/user.http-services';
+import { SubjectType } from '../../../webshell-common-ts/http/v2/common.types/subject.types';
+import { SubjectHttpService } from '../../../src/http-services/subject/subject.http-services';
 
 // Do not remove any of these, clients have integrations set up based on these!
 const callbackPorts: number[] = [49172, 51252, 58243, 59360, 62109];
@@ -328,6 +330,10 @@ export class OAuthService implements IDisposable {
         // Refresh if the token exists and has expired
         if (tokenSet) {
             if (!this.isAuthenticated()) {
+                if(this.configService.me().type === SubjectType.ServiceAccount){
+                    this.logger.error('Service account session has expired, please log in again.');
+                    await cleanExit(1, this.logger);
+                }
                 this.logger.debug('Refreshing oauth token');
 
                 let newTokenSet: TokenSet;
@@ -349,7 +355,8 @@ export class OAuthService implements IDisposable {
                 await userHttpService.Register();
                 // Update me section of the config in case this is a new login or any
                 // user information has changed since last login
-                const me = await userHttpService.Me();
+                const subjectHttpService = new SubjectHttpService(this.configService, this.logger);
+                const me = await subjectHttpService.Me();
                 this.configService.setMe(me);
             }
         } else {

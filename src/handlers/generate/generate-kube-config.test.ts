@@ -6,9 +6,10 @@ import { handleGenerateKubeConfig, IGenerateKubeConfigManagementService } from '
 import { Cluster, Context, KubeConfig, User } from '@kubernetes/client-node';
 import { KubeConfig as ZliKubeConfig, KubeDaemonSecurityConfig } from '../../services/config/config.service.types';
 import fc from 'fast-check';
-import { UserSummary } from '../../../webshell-common-ts/http/v2/user/types/user-summary.types';
 import { withDir } from 'tmp-promise';
 import { DaemonIsRunningStatus, DaemonStatus } from '../../services/daemon-management/types/daemon-status.types';
+import { SubjectSummary } from '../../../webshell-common-ts/http/v2/subject/types/subject-summary.types';
+import { SubjectType } from '../../../webshell-common-ts/http/v2/common.types/subject.types';
 
 function arbZliKubeConfig(): fc.Arbitrary<ZliKubeConfig> {
     return fc.record({
@@ -76,7 +77,7 @@ describe('Generate kube config suite', () => {
         kubeConfigServiceMock = mock<IFilterKubeConfigService>();
         managementServiceMock = mock<IGenerateKubeConfigManagementService>();
         // Sane defaults (can be overridden)
-        kubeConfigServiceMock.me.mockReturnValue({ email: fakeUserEmail } as UserSummary);
+        kubeConfigServiceMock.me.mockReturnValue({ email: fakeUserEmail, type: SubjectType.User } as SubjectSummary);
         kubeConfigServiceMock.getKubeDaemons.mockReturnValue({});
         managementServiceMock.getDaemonConfigs.mockReturnValue(fakeDaemonMap);
         managementServiceMock.disconnectAllDaemons.mockResolvedValue(new Map());

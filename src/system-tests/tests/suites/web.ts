@@ -3,11 +3,10 @@ import { callZli } from '../utils/zli-utils';
 import got from 'got/dist/source';
 import FormData from 'form-data';
 
-import { configService, logger, loggerConfigService } from '../system-test';
+import { configService, logger } from '../system-test';
 import { DigitalOceanBZeroTarget, getDOImageName } from '../../digital-ocean/digital-ocean-ssm-target.service.types';
-import { WebTargetService } from '../../../http-services/web-target/web-target.http-service';
+import { WebTargetHttpService } from '../../../http-services/web-target/web-target.http-service';
 import { TestUtils } from '../utils/test-utils';
-import { SubjectType } from '../../../../webshell-common-ts/http/v2/common.types/subject.types';
 import { Environment } from '../../../../webshell-common-ts/http/v2/policy/types/environment.types';
 import { ConnectionEventType } from '../../../../webshell-common-ts/http/v2/event/types/connection-event.types';
 import { bzeroTestTargetsToRun } from '../targets-to-run';
@@ -23,7 +22,7 @@ export const webSuite = () => {
     describe('web suite', () => {
         let policyService: PolicyHttpService;
         let testUtils: TestUtils;
-        let webTargetService: WebTargetService;
+        let webTargetService: WebTargetHttpService;
 
         let testStartTime: Date;
 
@@ -38,12 +37,13 @@ export const webSuite = () => {
         beforeAll(async () => {
             // Construct all http services needed to run tests
             policyService = new PolicyHttpService(configService, logger);
-            testUtils = new TestUtils(configService, logger, loggerConfigService);
-            webTargetService = new WebTargetService(configService, logger);
+            testUtils = new TestUtils(configService, logger);
+            webTargetService = new WebTargetHttpService(configService, logger);
 
-            const currentUser: Subject = {
-                id: configService.me().id,
-                type: SubjectType.User
+            const me = configService.me();
+            const currentSubject: Subject = {
+                id: me.id,
+                type: me.type
             };
             const environment: Environment = {
                 id: systemTestEnvId
@@ -51,7 +51,7 @@ export const webSuite = () => {
 
             proxyPolicyID = (await policyService.AddProxyPolicy({
                 name: `${systemTestPolicyTemplate.replace('$POLICY_TYPE', 'proxy')}-web-suite`,
-                subjects: [currentUser],
+                subjects: [currentSubject],
                 groups: [],
                 description: `Proxy policy created for system test: ${systemTestUniqueId}`,
                 environments: [environment],
@@ -194,7 +194,7 @@ export const webSuite = () => {
                 const doTarget = testTargets.get(testTarget) as DigitalOceanBZeroTarget;
 
                 // Create a new web virtual target
-                const webTargetService: WebTargetService = new WebTargetService(configService, logger);
+                const webTargetService: WebTargetHttpService = new WebTargetHttpService(configService, logger);
                 const webVtName = `${doTarget.bzeroTarget.name}-web-vt-no-policy`;
 
                 await webTargetService.CreateWebTarget({

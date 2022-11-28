@@ -5,16 +5,11 @@ import { PolicyType } from '../../../../../../webshell-common-ts/http/v2/policy/
 import { Subject } from '../../../../../../webshell-common-ts/http/v2/policy/types/subject.types';
 import { VerbType } from '../../../../../../webshell-common-ts/http/v2/policy/types/verb-type.types';
 import { PolicyHttpService } from '../../../../../http-services/policy/policy.http-services';
-import { configService, logger, systemTestEnvId, systemTestPolicyTemplate } from '../../../system-test';
+import { configService, logger, systemTestEnvId, systemTestPolicyTemplate, systemTestUser } from '../../../system-test';
 import { restApiPolicyDescriptionTemplate } from './policies';
 
 export const justInTimePolicySuite = () => {
     describe('Just In Time Policies Suite', () => {
-        const originalPolicyName = systemTestPolicyTemplate.replace('$POLICY_TYPE', 'jit');
-        const currentUser: Subject = {
-            id: configService.me().id,
-            type: SubjectType.User
-        };
         let policyService: PolicyHttpService;
         let jitPolicy: JustInTimePolicySummary;
         let jitChildPolicy: TargetConnectPolicySummary;
@@ -24,11 +19,19 @@ export const justInTimePolicySuite = () => {
             policyService = new PolicyHttpService(configService, logger);
 
             // Create a child policy we can use in the JIT policy
+            const originalPolicyName = systemTestPolicyTemplate.replace('$POLICY_TYPE', 'jit');
+
+            // using systemTestUser as subject because SAs are not allowed as
+            // subjects in JIT policies
+            const systemTestUserSubject: Subject = {
+                id: systemTestUser.id,
+                type: SubjectType.User
+            };
             jitChildPolicy = await policyService.AddTargetConnectPolicy({
                 groups: [],
                 name: 'jit-child-target-connect',
                 subjects: [
-                    currentUser
+                    systemTestUserSubject
                 ],
                 environments: [
                     {
@@ -49,12 +52,12 @@ export const justInTimePolicySuite = () => {
             });
 
             expectedPolicySummary = {
-                id: expect.any('string'),
+                id: expect.any(String),
                 type: PolicyType.JustInTime,
                 groups: [],
                 name: originalPolicyName,
                 subjects: [
-                    currentUser
+                    systemTestUserSubject
                 ],
                 childPolicies: [
                     {

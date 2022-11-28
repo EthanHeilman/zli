@@ -5,6 +5,7 @@ import FormData from 'form-data';
 import { Logger } from '../logger/logger.service';
 import { URLSearchParams } from 'url';
 import {Cookie, CookieJar} from 'tough-cookie';
+import { customJsonParser } from '../..//utils/utils';
 
 export class HttpService {
     // ref for got: https://github.com/sindresorhus/got
@@ -57,7 +58,8 @@ export class HttpService {
                     }
                 ]
             },
-            timeout: 30000 // Timeout after 30 seconds
+            timeout: 30000, // Timeout after 30 seconds
+            parseJson: customJsonParser
             // throwHttpErrors: false // potentially do this if we want to check http without exceptions
         });
     }
@@ -136,8 +138,7 @@ export class HttpService {
             const resp: TResp = await this.httpClient.get(
                 route,
                 {
-                    searchParams: queryParams,
-                    parseJson: text => JSON.parse(text)
+                    searchParams: queryParams
                 }
             ).json();
             return resp;
@@ -170,10 +171,7 @@ export class HttpService {
 
         try {
             const resp: TResp = await this.httpClient.delete(
-                route,
-                {
-                    parseJson: text => JSON.parse(text),
-                }
+                route
             ).json();
             return resp;
         } catch (error) {
@@ -189,8 +187,7 @@ export class HttpService {
             const resp: TResp = await this.httpClient.post(
                 route,
                 {
-                    json: body,
-                    parseJson: text => JSON.parse(text),
+                    json: body
                 }
             ).json();
             return resp;

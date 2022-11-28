@@ -26,7 +26,7 @@ export async function listSessionRecordingPoliciesHandler(
             logger.info('There are no available Session Recording policies');
         } else {
             // regular table output
-            return getTableOfSessionRecordingPolicies(sessionRecordingPolicies, policySubjectDisplayInfo.userMap, policySubjectDisplayInfo.groupMap);
+            return getTableOfSessionRecordingPolicies(sessionRecordingPolicies, policySubjectDisplayInfo.userMap, policySubjectDisplayInfo.groupMap, policySubjectDisplayInfo.serviceAccountMap);
         }
     }
 }

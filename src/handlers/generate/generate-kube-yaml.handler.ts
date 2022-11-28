@@ -31,12 +31,10 @@ export async function generateKubeYamlHandler(
 
     // Format our labels if they exist
     const labels: { [index: string]: string } = {};
-    if (argv.labels != []) {
-        for (const keyValueString of argv.labels) {
-            const key = keyValueString.split(':')[0];
-            const value = String(keyValueString.split(':')[1]);
-            labels[key] = value;
-        }
+    for (const keyValueString of argv.labels) {
+        const key = keyValueString.split(':')[0];
+        const value = String(keyValueString.split(':')[1]);
+        labels[key] = value;
     }
 
     // If environment has been passed, ensure it's a valid envId

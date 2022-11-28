@@ -6,7 +6,7 @@ import yargs from 'yargs';
 import open from 'open';
 import { handleServerStart, startDaemonInDebugMode, copyExecutableToLocalDir, getBaseDaemonEnv, getOrDefaultLocalhost, getOrDefaultLocalport, killLocalPortAndPid, spawnDaemonInBackground } from '../../utils/daemon-utils';
 import { connectArgs } from './connect.command-builder';
-import { WebTargetService } from '../../http-services/web-target/web-target.http-service';
+import { WebTargetHttpService } from '../../http-services/web-target/web-target.http-service';
 import { CreateUniversalConnectionResponse } from '../../../webshell-common-ts/http/v2/connection/responses/create-universal-connection.response';
 
 
@@ -18,7 +18,7 @@ export async function webConnectHandler(
     logger: Logger,
     loggerConfigService: LoggerConfigService
 ): Promise<number>{
-    const webTargetService = new WebTargetService(configService, logger);
+    const webTargetService = new WebTargetHttpService(configService, logger);
     const webTarget = await webTargetService.GetWebTarget(targetId);
 
     // Open up our zli dbConfig
