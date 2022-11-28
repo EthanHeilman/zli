@@ -178,7 +178,6 @@ export function parseTargetStatus(targetStatus: string) : TargetStatus {
 export function parseTargetString(targetString: string) : ParsedTargetString
 {
     // case sensitive check for [targetUser@]<targetId | targetName>[:targetPath]
-    // not sure if i need to modify this
     const pattern = /^([a-z_]([a-z0-9_-]{0,31}|[a-z0-9_-]{0,30}\$)@)?(([0-9A-Fa-f]{8}[-][0-9A-Fa-f]{4}[-][0-9A-Fa-f]{4}[-][0-9A-Fa-f]{4}[-][0-9A-Fa-f]{12})|([a-zA-Z0-9_.-]{1,255}))(:{1}|$)/;
 
     if(! pattern.test(targetString)) {
