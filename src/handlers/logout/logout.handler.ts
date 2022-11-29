@@ -1,12 +1,12 @@
 import { killDaemon } from '../../utils/daemon-utils';
 import { cleanExit } from '../clean-exit.handler';
-import { KubeConfig, WebConfig } from '../../services/config/config.service.types';
+import { DbConfig, KubeConfig, WebConfig } from '../../services/config/config.service.types';
 import { Logger } from '../../services/logger/logger.service';
 import { ConfigService } from '../../services/config/config.service';
 import { removeIfExists } from '../../utils/utils';
 import { ILogger } from '../../../webshell-common-ts/logging/logging.types';
 import { handleDisconnect, IDaemonDisconnector } from '../disconnect/disconnect.handler';
-import { newDbDaemonManagementService } from '../../services/daemon-management/daemon-management.service';
+import { newDbDaemonManagementService, newKubeDaemonManagementService } from '../../services/daemon-management/daemon-management.service';
 
 export async function logoutHandler(
     configService: ConfigService,
@@ -14,11 +14,18 @@ export async function logoutHandler(
 ) {
     // Stitch together dependencies for handleLogout
     const dbDaemonManagementService = newDbDaemonManagementService(configService);
+    const kubeDaemonManagementService = newKubeDaemonManagementService(configService);
     const fileRemover: IFileRemover = {
         removeFileIfExists: (filePath: string) => removeIfExists(filePath)
     };
 
-    await handleLogout(configService, dbDaemonManagementService, fileRemover, logger);
+    await handleLogout(
+        configService,
+        dbDaemonManagementService,
+        kubeDaemonManagementService,
+        fileRemover,
+        logger
+    );
     await cleanExit(0, logger);
 }
 
@@ -28,10 +35,8 @@ export interface ILogoutConfigService {
     sshKeyPath(): string;
     sshKnownHostsPath(): string;
 
-    // TODO: CWC-2030 These functions can be removed from the interface once
-    // kube+web migrate to the DaemonManagementService to handle disconnects
-    getKubeConfig(): KubeConfig;
-    setKubeConfig(config: KubeConfig): void;
+    // TODO: CWC-2030 These functions can be removed from the interface once web
+    //migrates to the DaemonManagementService to handle disconnects
     getWebConfig(): WebConfig;
     setWebConfig(config: WebConfig): void;
 }
@@ -42,7 +47,8 @@ export interface IFileRemover {
 
 export async function handleLogout(
     configService: ILogoutConfigService,
-    dbDaemonDisconnector: IDaemonDisconnector,
+    dbDaemonDisconnector: IDaemonDisconnector<DbConfig>,
+    kubeDaemonDisconnector: IDaemonDisconnector<KubeConfig>,
     fileRemover: IFileRemover,
     logger: ILogger
 ) {
@@ -57,12 +63,7 @@ export async function handleLogout(
 
     // Close any daemon connections, start with kube
     logger.info('Closing any existing Kube Connections');
-    const kubeConfig = configService.getKubeConfig();
-    killDaemon(kubeConfig['localPid'], logger);
-
-    // Update the localPid
-    kubeConfig['localPid'] = null;
-    configService.setKubeConfig(kubeConfig);
+    await handleDisconnect(kubeDaemonDisconnector, logger);
 
     // Then db
     logger.info('Closing any existing Db Connections');

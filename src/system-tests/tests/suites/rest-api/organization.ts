@@ -47,18 +47,18 @@ export const organizationSuite = () => {
             organizationService = new OrganizationHttpService(configService, logger);
         });
 
-        test('2263: Get users organization', async () => {
-            const userOrg = await organizationService.GetUserOrganization();
-            const userInfo = configService.me();
+        test('2263: Get user\'s organization', async () => {
+            const subjectOrg = await organizationService.GetUserOrganization();
+            const subjectInfo = configService.me();
 
             // Ensure that the orgId matches
             const toMatch: OrganizationSummary = {
-                id: userInfo.organizationId,
+                id: subjectInfo.organizationId,
                 name: expect.anything(),
                 isSingleUserOrganization: false, // System tests does not support single user orgs
                 timeCreated: expect.anything()
             };
-            expect(userOrg).toEqual(toMatch);
+            expect(subjectOrg).toEqual(toMatch);
         }, 15 * 1000);
 
         test('2264: Get org registration key settings', async () => {

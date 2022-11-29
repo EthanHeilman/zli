@@ -1,7 +1,6 @@
-import { configService, doApiKey, logger, loggerConfigService, resourceNamePrefix, systemTestEnvId, systemTestEnvName, systemTestPolicyTemplate, systemTestRegistrationApiKey, systemTestUniqueId, testCluster } from '../system-test';
+import { configService, doApiKey, logger, resourceNamePrefix, systemTestEnvId, systemTestEnvName, systemTestPolicyTemplate, systemTestRegistrationApiKey, systemTestUniqueId, testCluster } from '../system-test';
 import { ConnectionHttpService } from '../../../http-services/connection/connection.http-services';
 import { TestUtils } from '../utils/test-utils';
-import { SubjectType } from '../../../../webshell-common-ts/http/v2/common.types/subject.types';
 import { Environment } from '../../../../webshell-common-ts/http/v2/policy/types/environment.types';
 import { cleanupTargetConnectPolicies } from '../system-test-cleanup';
 import { PolicyHttpService } from '../../../http-services/policy/policy.http-services';
@@ -56,12 +55,13 @@ export const agentContainerSuite = () => {
             // Construct all http services needed to run tests
             policyService = new PolicyHttpService(configService, logger);
             connectionService = new ConnectionHttpService(configService, logger);
-            testUtils = new TestUtils(configService, logger, loggerConfigService);
+            testUtils = new TestUtils(configService, logger);
             sessionRecordingService = new SessionRecordingHttpService(configService, logger);
 
-            const currentUser: Subject = {
-                id: configService.me().id,
-                type: SubjectType.User
+            const me = configService.me();
+            const currentSubject: Subject = {
+                id: me.id,
+                type: me.type
             };
             const environment: Environment = {
                 id: systemTestEnvId
@@ -70,7 +70,7 @@ export const agentContainerSuite = () => {
             // Then create our targetConnect policy
             await policyService.AddTargetConnectPolicy({
                 name: systemTestPolicyTemplate.replace('$POLICY_TYPE', 'container-target-connect'),
-                subjects: [currentUser],
+                subjects: [currentSubject],
                 groups: [],
                 description: `Target connect policy created via containers for system test: ${systemTestUniqueId}`,
                 environments: [environment],
@@ -84,7 +84,7 @@ export const agentContainerSuite = () => {
                 name: systemTestPolicyTemplate.replace('$POLICY_TYPE', 'session-recording'),
                 groups: [],
                 subjects: [
-                    currentUser
+                    currentSubject
                 ],
                 description: `Target connect policy created for system test: ${systemTestUniqueId}`,
                 recordInput: false
@@ -119,10 +119,10 @@ export const agentContainerSuite = () => {
                 const testTarget = testContainerAgents.get(targetInfo);
 
                 const sessionRecordingTestMessage = `session recording test - ${systemTestUniqueId}`;
-                const connectionId = await connectTestUtils.runNonTestTargetShellConnectTest(testTarget, sessionRecordingTestMessage, true);
+                const connectionTestResult = await connectTestUtils.runNonTestTargetShellConnectTest(testTarget, sessionRecordingTestMessage, true);
 
                 // Get session recording and verify the echo'd message is in the asciicast data.
-                const downloadedSessionRecording = await sessionRecordingService.GetSessionRecording(connectionId);
+                const downloadedSessionRecording = await sessionRecordingService.GetSessionRecording(connectionTestResult.connectionId);
                 const messageFound = downloadedSessionRecording.includes(sessionRecordingTestMessage);
                 expect(messageFound).toEqual(true);
             }, 2 * 60 * 1000);

@@ -3,6 +3,7 @@ import yargs from 'yargs';
 export interface baseCreatePolicyCmdBuilderArgs {
     name: string;
     users: string[];
+    subjects: string[];
     groups: string[];
     description: string;
 }
@@ -30,7 +31,7 @@ export interface createProxyPolicyArgs extends baseCreatePolicyCmdBuilderArgs {
     environments: string[];
 }
 
-function baseCreatePolicyCmdBuilder(yargs: yargs.Argv<{}>) : yargs.Argv<baseCreatePolicyCmdBuilderArgs> {
+function baseCreatePolicyCmdBuilder(yargs: yargs.Argv<{}>, checkerFunc: (argv: baseCreatePolicyCmdBuilderArgs) => boolean) : yargs.Argv<baseCreatePolicyCmdBuilderArgs> {
     return yargs
         .option('name',
             {
@@ -45,12 +46,23 @@ function baseCreatePolicyCmdBuilder(yargs: yargs.Argv<{}>) : yargs.Argv<baseCrea
             {
                 type: 'string',
                 array: true,
-                demandOption: true,
+                demandOption: false,
                 requiresArg: true,
                 alias: 'u',
-                description: 'BastionZero users the policy applies to (SSO emails)'
+                description: 'BastionZero IdP users the policy applies to (SSO emails)'
             }
         )
+        .option('subjects',
+            {
+                type: 'string',
+                array: true,
+                demandOption: false,
+                requiresArg: true,
+                alias: 'a',
+                description: 'BastionZero subjects (IdP users and service accounts) the policy applies to (SSO emails)'
+            }
+        )
+        .conflicts('users', 'subjects')
         .option('groups',
             {
                 type: 'string',
@@ -70,11 +82,12 @@ function baseCreatePolicyCmdBuilder(yargs: yargs.Argv<{}>) : yargs.Argv<baseCrea
                 alias: 'd',
                 description: 'Policy description. Wrap this sentence in double quotes.'
             }
-        );
+        )
+        .check((argv) => checkerFunc(argv), false);
 }
 
-export function createClusterPolicyCmdBuilder(yargs: yargs.Argv<{}>) : yargs.Argv<createClusterPolicyArgs> {
-    return baseCreatePolicyCmdBuilder(yargs)
+export function createClusterPolicyCmdBuilder(yargs: yargs.Argv<{}>, checkerFunc: (argv: baseCreatePolicyCmdBuilderArgs) => boolean) : yargs.Argv<createClusterPolicyArgs> {
+    return baseCreatePolicyCmdBuilder(yargs, checkerFunc)
         .option('clusters',
             {
                 type: 'string',
@@ -117,8 +130,8 @@ export function createClusterPolicyCmdBuilder(yargs: yargs.Argv<{}>) : yargs.Arg
         .example('$0 policy create-cluster -n policy_name -u user@random.com -c test_cluster --targetUsers ec2-user', 'Create a new cluster policy with the specified args');
 }
 
-export function createTConnectPolicyCmdBuilder(yargs: yargs.Argv<{}>, verbTypeChoices: string[]) : yargs.Argv<createTConnectPolicyArgs> {
-    return baseCreatePolicyCmdBuilder(yargs)
+export function createTConnectPolicyCmdBuilder(yargs: yargs.Argv<{}>, verbTypeChoices: string[], checkerFunc: (argv: baseCreatePolicyCmdBuilderArgs) => boolean) : yargs.Argv<createTConnectPolicyArgs> {
+    return baseCreatePolicyCmdBuilder(yargs, checkerFunc)
         .option('targets',
             {
                 type: 'string',
@@ -163,8 +176,8 @@ export function createTConnectPolicyCmdBuilder(yargs: yargs.Argv<{}>, verbTypeCh
         .example('$0 policy create-tconnect -n policy_name -u user@random.com -t bzero-target --targetUsers ec2-user -v shell tunnel', 'Create a new target connect policy with the specified args');
 }
 
-export function createRecordingPolicyCmdBuilder(yargs: yargs.Argv<{}>) : yargs.Argv<createRecordingPolicyArgs> {
-    return baseCreatePolicyCmdBuilder(yargs)
+export function createRecordingPolicyCmdBuilder(yargs: yargs.Argv<{}>, checkerFunc: (argv: baseCreatePolicyCmdBuilderArgs) => boolean) : yargs.Argv<createRecordingPolicyArgs> {
+    return baseCreatePolicyCmdBuilder(yargs, checkerFunc)
         .option('recordInput',
             {
                 type: 'boolean',
@@ -178,8 +191,8 @@ export function createRecordingPolicyCmdBuilder(yargs: yargs.Argv<{}>) : yargs.A
         .example('$0 policy create-recording -n policy_name -u user@random.com -g Engineering Legal -r true', 'Create a new session recording policy with the specified args');
 }
 
-export function createProxyPolicyCmdBuilder(yargs: yargs.Argv<{}>) : yargs.Argv<createProxyPolicyArgs> {
-    return baseCreatePolicyCmdBuilder(yargs)
+export function createProxyPolicyCmdBuilder(yargs: yargs.Argv<{}>, checkerFunc: (argv: baseCreatePolicyCmdBuilderArgs) => boolean) : yargs.Argv<createProxyPolicyArgs> {
+    return baseCreatePolicyCmdBuilder(yargs, checkerFunc)
         .option('targets',
             {
                 type: 'string',

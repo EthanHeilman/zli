@@ -6,7 +6,7 @@ import { AddNewWebTargetRequest } from '../../../webshell-common-ts/http/v2/targ
 import { AddNewWebTargetResponse } from '../../../webshell-common-ts/http/v2/target/web/responses/add-new-web-target.responses';
 import { EditWebTargetRequest } from '../../../webshell-common-ts/http/v2/target/web/requests/edit-web-target.requests';
 
-export class WebTargetService extends HttpService
+export class WebTargetHttpService extends HttpService
 {
     constructor(configService: ConfigService, logger: Logger)
     {

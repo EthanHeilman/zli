@@ -12,7 +12,7 @@ export const spacesRestApiSuite = () => {
             connections: [],
             state: SpaceState.Active,
             terminalPreferences: '{}',
-            timeCreated: expect.any(String)
+            timeCreated: expect.any(Date)
         };
         let spacesService: SpaceHttpService;
         let testSpaceId: string;

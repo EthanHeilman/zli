@@ -1,4 +1,4 @@
-import { loggerConfigService, configService, logger, testCluster } from '../system-test';
+import { configService, testCluster } from '../system-test';
 import { callZli } from '../utils/zli-utils';
 import { bzeroTestTargetsToRun } from '../targets-to-run';
 import { TestTarget } from '../system-test.types';
@@ -6,7 +6,6 @@ import { getTargetInfo } from '../utils/ssh-utils';
 import { S3 } from 'aws-sdk';
 import { Logger } from '../../../services/logger/logger.service';
 import { sleepTimeout } from '../utils/test-utils';
-import fs from 'fs';
 
 const s3 = new S3();
 
@@ -22,32 +21,26 @@ async function getAllKeys(params: any,  allKeys: string[]) {
 }
 
 export const sendLogsSuite = () => {
+    let month: string;
+    let subjectEmail: string;
+    let emailDomain: string;
+    let bucket: string;
+
     describe('Send Logs Suite', () => {
-        // get full current month name for object prefix
-        const month = new Date().toLocaleString('default', { month: 'long' }) ;
+        beforeAll(() => {
+            // get full current month name for object prefix
+            month = new Date().toLocaleString('default', { month: 'long' }) ;
 
-        // get userEmail for object prefix
-        const userEmail = configService.me().email;
+            // get subjectEmail for object prefix
+            subjectEmail = configService.me().email;
 
-        // extract domain name from the email for object prefix
-        const startIndex = userEmail.indexOf('@');
-        const endIndex = userEmail.indexOf('.', startIndex);
-        const emailDomain = userEmail.substring(startIndex + 1, endIndex);
+            // extract domain name from the email for object prefix
+            const startIndex = subjectEmail.indexOf('@');
+            const endIndex = subjectEmail.indexOf('.', startIndex);
+            emailDomain = subjectEmail.substring(startIndex + 1, endIndex);
 
-        // build the bucket name
-        const bucket = `bastionzero-${configService.getConfigName()}-customer-logs`;
-
-        beforeEach(() => {
-            if(!fs.existsSync(loggerConfigService.daemonLogPath())) {
-                // manually adding this file since CustomReporter deletes the daemon-dev file
-                const toWrite = 'Test message to write to file';
-                try {
-                    fs.writeFileSync(loggerConfigService.daemonLogPath(), `${toWrite}\n`);
-                } catch(err) {
-                    logger.error('Error creating daemon-dev file.');
-                    throw err;
-                }
-            }
+            // build the bucket name
+            bucket = `bastionzero-${configService.getConfigName()}-customer-logs`;
         });
 
         afterEach(async () => {
@@ -67,10 +60,14 @@ export const sendLogsSuite = () => {
             // Waiting 10 seconds for bastion to upload the logs before querying
             await sleepTimeout(10 * 1000);
 
-            const objectPrefix = `${month}/${emailDomain}/${userEmail}/${generatedUuid}/`;
+            const objectPrefix = `${month}/${emailDomain}/${subjectEmail}/${generatedUuid}/`;
 
             const opts = { Bucket: bucket, Prefix: objectPrefix };
             const allKeys = await getAllKeys(opts, []);
+
+            if(allKeys.length != 1) {
+                throw new Error(`Found ${allKeys.length} logs in s3 bucket ${bucket} with prefix: ${objectPrefix}`);
+            }
 
             const objectKey = allKeys[0];
             const logType = 'zlidaemon.zip';
@@ -94,10 +91,14 @@ export const sendLogsSuite = () => {
                 // Waiting 10 seconds for agent to post the logs before querying
                 await sleepTimeout(10 * 1000);
 
-                const objectPrefix = `${month}/${emailDomain}/${userEmail}/${generatedUuid}/`;
+                const objectPrefix = `${month}/${emailDomain}/${subjectEmail}/${generatedUuid}/`;
 
                 const opts = { Bucket: bucket, Prefix: objectPrefix };
                 const allKeys = await getAllKeys(opts, []);
+
+                if(allKeys.length != 1) {
+                    throw new Error(`Found ${allKeys.length} logs in s3 bucket ${bucket} with prefix: ${objectPrefix}`);
+                }
 
                 const objectKey = allKeys[0];
                 const logType = 'agent.zip';
@@ -121,10 +122,14 @@ export const sendLogsSuite = () => {
             // Waiting 10 seconds for agent to post the logs before querying
             await sleepTimeout(10 * 1000);
 
-            const objectPrefix = `${month}/${emailDomain}/${userEmail}/${generatedUuid}/`;
+            const objectPrefix = `${month}/${emailDomain}/${subjectEmail}/${generatedUuid}/`;
 
             const opts = { Bucket: bucket, Prefix: objectPrefix };
             const allKeys = await getAllKeys(opts, []);
+
+            if(allKeys.length != 1) {
+                throw new Error(`Found ${allKeys.length} logs in s3 bucket ${bucket} with prefix: ${objectPrefix}`);
+            }
 
             const objectKey = allKeys[0];
             const logType = 'agent.zip';

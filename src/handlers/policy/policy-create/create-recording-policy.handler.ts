@@ -3,19 +3,25 @@ import { ConfigService } from '../../../services/config/config.service';
 import { Logger } from '../../../services/logger/logger.service';
 import { cleanExit } from '../../clean-exit.handler';
 import { createRecordingPolicyArgs } from './create-policy.command-builder';
-import { getUsersByEmail, getGroupsByName } from '../../../utils/policy-utils';
+import { getGroupsByName, getSubjectsByEmail } from '../../../utils/policy-utils';
 import { PolicyHttpService } from '../../../http-services/policy/policy.http-services';
-import { UserHttpService } from '../../../http-services/user/user.http-services';
 import { OrganizationHttpService } from '../../../http-services/organization/organization.http-services';
 import { Subject } from '../../../../webshell-common-ts/http/v2/policy/types/subject.types';
 import { Group } from '../../../../webshell-common-ts/http/v2/policy/types/group.types';
+import { SubjectHttpService } from '../../../../src/http-services/subject/subject.http-services';
 
 export async function createRecordingPolicyHandler(argv: yargs.Arguments<createRecordingPolicyArgs>, configService: ConfigService, logger: Logger){
     const policyService = new PolicyHttpService(configService, logger);
-    const userHttpService = new UserHttpService(configService, logger);
     const organizationHttpService = new OrganizationHttpService(configService, logger);
+    const subjectHttpService = new SubjectHttpService(configService, logger);
 
-    const users: Subject[] = await getUsersByEmail(argv.users, userHttpService, logger);
+    let subjectsEmails: string[];
+    if(argv.users) {
+        this.logger.warn('The users flag is deprecated and will be removed soon, please use its equivalent \'subjects\'');
+        subjectsEmails = argv.users;
+    } else
+        subjectsEmails = argv.subjects;
+    const subjects: Subject[] = await getSubjectsByEmail(subjectsEmails, subjectHttpService, logger);
     let groups: Group[] = [];
     if(argv.groups !== undefined) {
         groups = await getGroupsByName(argv.groups, organizationHttpService, logger);
@@ -24,7 +30,7 @@ export async function createRecordingPolicyHandler(argv: yargs.Arguments<createR
     // Send the SessionRecordingPolicyCreateRequest to AddPolicy endpoint
     const sessionRecordingPolicy = await policyService.AddSessionRecordingPolicy({
         name: argv.name,
-        subjects: users,
+        subjects: subjects,
         groups: groups,
         recordInput: argv.recordInput,
         description: argv.description

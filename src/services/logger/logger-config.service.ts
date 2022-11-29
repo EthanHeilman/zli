@@ -1,6 +1,5 @@
 import path from 'path';
 import Conf from 'conf/dist/source';
-import { error } from 'console';
 
 
 // All logs are written to a single file, ~~~forever~~~
@@ -51,7 +50,7 @@ export class LoggerConfigService {
         case 'dev':
             return path.join(path.dirname(this.config.path), `bastionzero-${configType}-dev.log`);
         default:
-            throw error('Unrecognized configName');
+            return path.join(path.dirname(this.config.path), `bastionzero-${configType}-${configName}.log`);
         }
     }
 

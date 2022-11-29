@@ -3,20 +3,36 @@ import { Logger } from '../../services/logger/logger.service';
 import { OAuthService } from '../../services/oauth/oauth.service';
 import { MrtapService } from '../../../webshell-common-ts/mrtap.service/mrtap.service';
 
+import jwt, { JwtHeader, SignOptions } from 'jsonwebtoken';
+import { TokenSet } from 'openid-client';
+
+import fs from 'fs';
 import qrcode from 'qrcode';
 import yargs from 'yargs';
 import { loginArgs } from './login.command-builder';
 import prompts, { PromptObject } from 'prompts';
 import { MfaHttpService } from '../../http-services/mfa/mfa.http-services';
 import { UserHttpService } from '../../http-services/user/user.http-services';
-import { UserSummary } from '../../../webshell-common-ts/http/v2/user/types/user-summary.types';
 import { MfaActionRequired } from '../../../webshell-common-ts/http/v2/mfa/types/mfa-action-required.types';
-import { UserRegisterResponse } from '../../../webshell-common-ts/http/v2/user/responses/user-register.responses';
-import { removeIfExists } from '../../utils/utils';
+import { ServiceAccountProviderCredentials } from './types/service-account-provider-credentials.types';
+import { ServiceAccountHttpService } from '../../http-services/service-account/service-account.http-services';
+import { LoginServiceAccountRequest } from '../../../webshell-common-ts/http/v2/service-account/requests/login-service-account.requests';
+import totp from 'totp-generator';
+import { cleanExit } from '../clean-exit.handler';
+import { ServiceAccountBzeroCredentials } from './types/service-account-bzero-credentials.types';
+import { ServiceAccountAccessToken } from './types/service-account-access-token.types';
+import { ServiceAccountIdToken } from './types/service-account-id-token.types';
+import { SubjectSummary } from '../../../webshell-common-ts/http/v2/subject/types/subject-summary.types';
+import { serviceAccountLoginArgs } from '../service-account/service-account-login.command-builder';
+import { SubjectHttpService } from '../../../src/http-services/subject/subject.http-services';
+import { GCPJwksURLPrefix, GCPTokenUri } from '../service-account/create-service-account.handler';
+
+const oneWeek : number = 60*60*24*7;
+const oneWeekFromNow : number = Math.floor(Date.now()/1000) + oneWeek;
+
 
 export interface LoginResult {
-    userSummary: UserSummary;
-    userRegisterResponse: UserRegisterResponse;
+    subjectSummary: SubjectSummary;
 }
 
 function interactiveTOTPMFA(): Promise<string | undefined> {
@@ -45,17 +61,19 @@ function interactiveResetMfa(): Promise<string> {
     });
 }
 
-export async function login(mrtapService: MrtapService, configService: ConfigService, logger: Logger, mfaToken?: string): Promise<LoginResult | undefined> {
+export async function loginUserHandler(configService: ConfigService, logger: Logger, mrtapService: MrtapService, argv: yargs.Arguments<loginArgs> = null): Promise<LoginResult | undefined> {
+    logger.info('Login required, opening browser');
+
     // Clear previous log in info
     configService.logout();
     await mrtapService.generateMrtapLoginData();
 
     // Can only create oauth service after loginSetup completes
     const oAuthService = new OAuthService(configService, logger);
+
     if (!oAuthService.isAuthenticated()) {
         // Create our Nonce
         const nonce = mrtapService.createNonce();
-
         // Pass it in as we login
         await oAuthService.login((t) => {
             configService.setTokenSet(t);
@@ -73,8 +91,8 @@ export async function login(mrtapService: MrtapService, configService: ConfigSer
     case MfaActionRequired.NONE:
         break;
     case MfaActionRequired.TOTP:
-        if (mfaToken) {
-            await mfaHttpService.VerifyMfaTotp(mfaToken);
+        if (argv?.mfa) {
+            await mfaHttpService.VerifyMfaTotp(argv?.mfa);
         } else {
             logger.info('MFA token required for this account');
             const token = await interactiveTOTPMFA();
@@ -105,23 +123,120 @@ export async function login(mrtapService: MrtapService, configService: ConfigSer
         logger.warn(`Unexpected MFA response ${registerResponse.mfaActionRequired}`);
         break;
     }
-
-    // Update me section of the config in case this is a new login or any
-    // user information has changed since last login
-    const me = await userHttpService.Me();
+    const subjectHttpService = new SubjectHttpService(configService, logger);
+    const me = await subjectHttpService.Me();
     configService.setMe(me);
 
-    // clear temporary SSH files
-    removeIfExists(configService.sshKeyPath());
-    removeIfExists(configService.sshKnownHostsPath());
-
     return {
-        userRegisterResponse: registerResponse,
-        userSummary: configService.me()
+        subjectSummary: me
     };
 }
 
-export async function loginHandler(configService: ConfigService, logger: Logger, argv: yargs.Arguments<loginArgs>, mrtapService: MrtapService): Promise<LoginResult | undefined> {
-    logger.info('Login required, opening browser');
-    return login(mrtapService, configService, logger, argv.mfa);
+export async function loginServiceAccountHandler(configService: ConfigService, logger: Logger, argv: yargs.Arguments<serviceAccountLoginArgs>, mrtapService: MrtapService): Promise<LoginResult | undefined> {
+    logger.info('Login required, reading service account credentials from files');
+
+    // Clear previous log in info
+    configService.logout();
+    await mrtapService.generateMrtapLoginData();
+
+    // Can only create oauth service after loginSetup completes
+    const oAuthService = new OAuthService(configService, logger);
+
+    let bzeroCredsFile: ServiceAccountBzeroCredentials = null;
+    if (!oAuthService.isAuthenticated()) {
+        // Create our Nonce
+        const nonce = mrtapService.createNonce();
+        const providerCredsFile = JSON.parse(fs.readFileSync(argv.providerCreds, 'utf-8')) as ServiceAccountProviderCredentials;
+        bzeroCredsFile = JSON.parse(fs.readFileSync(argv.bzeroCreds, 'utf-8')) as ServiceAccountBzeroCredentials;
+        const t = createGCPServiceAccountTokenSet(providerCredsFile, bzeroCredsFile, nonce, configService.serviceUrl());
+        configService.setTokenSet(t);
+        mrtapService.setInitialIdToken(configService.getAuth());
+    }
+
+    const serviceAccountHttpService = new ServiceAccountHttpService(configService, logger);
+    if(bzeroCredsFile == null)
+        bzeroCredsFile = JSON.parse(fs.readFileSync(argv.bzeroCreds, 'utf-8')) as ServiceAccountBzeroCredentials;
+    if(!bzeroCredsFile.mfa_secret) {
+        logger.error('Invalid mfa secret in the provided bz creds file');
+        await cleanExit(1, this.logger);
+        return;
+    }
+    const totpPasscode = totp(bzeroCredsFile.mfa_secret);
+    const req: LoginServiceAccountRequest = {
+        totpPasscode: totpPasscode
+    };
+    const serviceAccountSummary = await serviceAccountHttpService.LoginServiceAccount(req);
+    if(!serviceAccountSummary.enabled) {
+        this.logger.error(`Service account ${serviceAccountSummary.email} is not currently enabled.`);
+        await cleanExit(1, this.logger);
+    }
+    const subjectHttpService = new SubjectHttpService(configService, logger);
+    const me = await subjectHttpService.Me();
+    configService.setMe(me);
+
+    return {
+        subjectSummary: me
+    };
+}
+
+function createGCPServiceAccountTokenSet(providerCredsFile: ServiceAccountProviderCredentials, bzeroCredsFile: ServiceAccountBzeroCredentials, nonce: string, audience: string) : TokenSet {
+    const idToken: ServiceAccountIdToken = {
+        aud: audience,
+        azp: providerCredsFile.client_id,
+        email: providerCredsFile.client_email,
+        email_verified: true,
+        exp: oneWeekFromNow,
+        org_id: bzeroCredsFile.org_id,
+        iss: providerCredsFile.client_email,
+        nonce: nonce,
+        sub: providerCredsFile.client_id,
+        iat: Math.floor(Date.now()/1000)
+    };
+
+    const accessToken: ServiceAccountAccessToken = {
+        aud: audience,
+        azp: providerCredsFile.client_id,
+        email: providerCredsFile.client_email,
+        email_verified: true,
+        exp: oneWeekFromNow,
+        org_id: bzeroCredsFile.org_id,
+        iss: providerCredsFile.client_email,
+        nonce: nonce,
+        sub: providerCredsFile.client_id,
+        iat: Math.floor(Date.now()/1000),
+        type: 'Access Token'
+    };
+
+    let jwksURL: string;
+    // If this is a GCP service account
+    if(providerCredsFile.token_uri == GCPTokenUri)
+        jwksURL = GCPJwksURLPrefix + providerCredsFile.client_email;
+    else
+        jwksURL = providerCredsFile.jwksURL;
+
+    const JWTHeader: JwtHeader = {
+        alg: 'RS256',
+        kid: providerCredsFile.private_key_id,
+        jku: jwksURL,
+    };
+
+    const JWTOptions: SignOptions =
+    {
+        algorithm: 'RS256',
+        keyid: providerCredsFile.private_key_id,
+        header: JWTHeader
+    };
+
+    const signedIdToken = jwt.sign(idToken, providerCredsFile.private_key, JWTOptions);
+    const signedAccessToken = jwt.sign(accessToken, providerCredsFile.private_key, JWTOptions);
+
+    return new TokenSet({
+        access_token: signedAccessToken.toString(),
+        token_type: 'Bearer',
+        id_token: signedIdToken.toString(),
+        refresh_token: '',
+        expires_at: oneWeekFromNow,
+        session_state: '',
+        scope: ''
+    });
 }

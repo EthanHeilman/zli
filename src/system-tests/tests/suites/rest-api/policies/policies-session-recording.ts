@@ -1,4 +1,3 @@
-import { SubjectType } from '../../../../../../webshell-common-ts/http/v2/common.types/subject.types';
 import { SessionRecordingPolicySummary } from '../../../../../../webshell-common-ts/http/v2/policy/session-recording/types/session-recording-policy-summary.types';
 import { PolicyType } from '../../../../../../webshell-common-ts/http/v2/policy/types/policy-type.types';
 import { Subject } from '../../../../../../webshell-common-ts/http/v2/policy/types/subject.types';
@@ -9,28 +8,30 @@ import { callZli } from '../../../utils/zli-utils';
 
 export const sessionRecordingPolicySuite = () => {
     describe('Session Recording Policies Suite', () => {
-        const originalPolicyName = systemTestPolicyTemplate.replace('$POLICY_TYPE', 'session-recording');
-        const currentUser: Subject = {
-            id: configService.me().id,
-            type: SubjectType.User
-        };
-        const expectedPolicySummary: SessionRecordingPolicySummary = {
-            id: expect.any('string'),
-            type: PolicyType.SessionRecording,
-            groups: [],
-            name: originalPolicyName,
-            subjects: [
-                currentUser
-            ],
-            description: restApiPolicyDescriptionTemplate.replace('$POLICY_TYPE', 'session recording'),
-            recordInput: false,
-            timeExpires: null
-        };
         let policyService: PolicyHttpService;
         let sessionRecordingPolicy: SessionRecordingPolicySummary;
+        let expectedPolicySummary: SessionRecordingPolicySummary;
 
         beforeAll(() => {
             policyService = new PolicyHttpService(configService, logger);
+
+            const originalPolicyName = systemTestPolicyTemplate.replace('$POLICY_TYPE', 'session-recording');
+            const currentSubject: Subject = {
+                id: configService.me().id,
+                type: configService.me().type
+            };
+            expectedPolicySummary = {
+                id: expect.any(String),
+                type: PolicyType.SessionRecording,
+                groups: [],
+                name: originalPolicyName,
+                subjects: [
+                    currentSubject
+                ],
+                description: restApiPolicyDescriptionTemplate.replace('$POLICY_TYPE', 'session recording'),
+                recordInput: false,
+                timeExpires: null
+            };
         });
 
         afterAll(async () => {
@@ -43,7 +44,7 @@ export const sessionRecordingPolicySuite = () => {
             const zliArgs = [
                 'policy', 'create-recording',
                 '-n', expectedPolicySummary.name,
-                '-u', configService.me().email,
+                '-a', configService.me().email,
                 '-r', 'false',
                 '-d', expectedPolicySummary.description
             ];

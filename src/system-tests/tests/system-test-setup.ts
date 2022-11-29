@@ -1,5 +1,5 @@
 import { DigitalOceanDropletSize } from '../digital-ocean/digital-ocean.types';
-import { allTargets,  bctlQuickstartVersion, chartsBranch, bzeroAgentBranch, bzeroAgentVersion, bzeroKubeAgentImageName, configService, digitalOceanRegistry, doApiKey, logger, resourceNamePrefix, systemTestEnvId, systemTestEnvName, systemTestEnvNameCluster, systemTestRegistrationApiKey, systemTestTags, systemTestUniqueId, testTargets } from './system-test';
+import { allTargets,  bctlQuickstartVersion, chartsBranch, bzeroAgentBranch, bzeroAgentVersion, bzeroKubeAgentImageName, configService, digitalOceanRegistry, doApiKey, logger, resourceNamePrefix, systemTestEnvId, systemTestEnvName, systemTestEnvNameCluster, systemTestRegistrationApiKey, systemTestTags, systemTestUniqueId, testTargets, providerCredsPath, bzeroCredsPath } from './system-test';
 import { checkAllSettledPromise, stripTrailingSlash } from './utils/utils';
 import * as k8s from '@kubernetes/client-node';
 import { ClusterTargetStatusPollError, RegisteredDigitalOceanKubernetesCluster } from '../digital-ocean/digital-ocean-kube.service.types';
@@ -9,7 +9,6 @@ import { exec } from 'child_process';
 import { KubeBctlNamespace, KubeHelmQuickstartChartName, KubeTestTargetGroups, KubeTestUserName } from './suites/kube';
 import { SSMTestTargetSelfRegistrationAutoDiscovery, TestTarget, BzeroTestTarget } from './system-test.types';
 import { BzeroTargetStatusPollError, DigitalOceanBZeroTarget, DigitalOceanSSMTarget, getDOImageName, getPackageManagerType, SsmTargetStatusPollError } from '../digital-ocean/digital-ocean-ssm-target.service.types';
-import { randomAlphaNumericString } from '../../utils/utils';
 import { getAnsibleAutodiscoveryScript, getAutodiscoveryScript, getBzeroBashAutodiscoveryScript, getBzeroAnsibleAutodiscoveryScript } from '../../http-services/auto-discovery-script/auto-discovery-script.http-services';
 import { ScriptTargetNameOption } from '../../../webshell-common-ts/http/v2/autodiscovery-script/types/script-target-name-option.types';
 import { addRepo, install, MultiStringValue, SingleStringValue } from './utils/helm/helm-utils';
@@ -17,6 +16,8 @@ import { ApiKeyHttpService } from '../../http-services/api-key/api-key.http-serv
 import { DigitalOceanKubeService } from '../digital-ocean/digital-ocean-kube-service';
 import { DigitalOceanSSMTargetService } from '../digital-ocean/digital-ocean-ssm-target-service';
 import { cleanupHelmAgentInstallation } from './system-test-cleanup';
+import { ServiceAccountProviderCredentials } from '../../../src/handlers/login/types/service-account-provider-credentials.types';
+import { callZli } from './utils/zli-utils';
 
 // User to create for bzero targets to use for connect/ssh tests
 export const bzeroTargetCustomUser = 'bzuser';
@@ -122,7 +123,7 @@ export async function setupDOTestCluster(): Promise<RegisteredDigitalOceanKubern
     const clusterTargetName = `${resourceNamePrefix}-cluster`;
 
     // Set common helm variables
-    helmVariables['image.quickstartTag'] = { value: bctlQuickstartVersion, type: 'single' };
+    helmVariables['image.quickstartImageTag'] = { value: bctlQuickstartVersion, type: 'single' };
     // helm chart expects the service to not cannot contain a
     // trailing slash and our config service includes the slash
     helmVariables['serviceUrl'] = { value: stripTrailingSlash(configService.serviceUrl()), type: 'single' };
@@ -207,7 +208,7 @@ export async function createDOTestTargets() {
 
     // Create a droplet for various types of test targets
     const createDroplet = async (testTarget: TestTarget) => {
-        const targetName = `${resourceNamePrefix}-${getDOImageName(testTarget.dropletImage)}-${testTarget.installType}-${randomAlphaNumericString(15)}`;
+        const targetName = `${resourceNamePrefix}-${getDOImageName(testTarget.dropletImage)}-${testTarget.installType}-${testTarget.awsRegion}`;
 
         let userDataScript : string;
         let dropletSizeToCreate;
@@ -341,6 +342,15 @@ export async function createDOTestTargets() {
     // Issue create droplet requests concurrently
     const allDropletCreationResults = Promise.allSettled(allTargets.map(img => createDroplet(img)));
     await checkAllSettledPromise(allDropletCreationResults);
+}
+
+/**
+ * Helper function to create a service account
+ */
+export async function createServiceAccount() {
+    const providerCredsFile = JSON.parse(fs.readFileSync(providerCredsPath, 'utf-8')) as ServiceAccountProviderCredentials;
+    await callZli(['service-account', 'create', providerCredsPath, '--bzeroCreds', bzeroCredsPath]);
+    await callZli(['service-account', 'set-role', 'admin', providerCredsFile.client_email]);
 }
 
 /**

@@ -1,17 +1,17 @@
-import got from 'got/dist/source';
 import { Logger } from '../../services/logger/logger.service';
 import { ConfigService } from '../../services/config/config.service';
 import { cleanExit } from '../clean-exit.handler';
-import { createTableWithWordWrap, getTableOfKubeStatus, getTableOfWebStatus, toUpperCase } from '../../utils/utils';
+import { createTableWithWordWrap, getTableOfWebStatus, toUpperCase } from '../../utils/utils';
 import { listDaemonsArgs } from './list-daemons.command-builder';
 import yargs from 'yargs';
 import { killPortProcess } from '../../utils/daemon-utils';
 import chalk from 'chalk';
-import { newDbDaemonManagementService } from '../../services/daemon-management/daemon-management.service';
+import { newDbDaemonManagementService, newKubeDaemonManagementService } from '../../services/daemon-management/daemon-management.service';
 import { ProcessManagerService } from '../../services/process-manager/process-manager.service';
 import { DaemonIsRunningStatus, DaemonQuitUnexpectedlyStatus, DaemonStatus } from '../../services/daemon-management/types/daemon-status.types';
 import { ILogger } from '../../../webshell-common-ts/logging/logging.types';
 import { DaemonConfig, DaemonConfigType } from '../../services/config/config.service.types';
+import { buildMapOfNamedKubeEntries, filterAndOverwriteUserKubeConfig, findMatchingKubeContext, loadUserKubeConfig } from '../../services/kube-management/kube-management.service';
 
 export async function listDaemonsHandler(
     argv: yargs.Arguments<listDaemonsArgs>,
@@ -141,45 +141,33 @@ async function kubeStatusHandler(
     configService: ConfigService,
     logger: Logger
 ) {
-    // First get the status from the config service
-    const kubeConfig = configService.getKubeConfig();
-    const processManager = new ProcessManagerService();
+    const kubeDaemonManagementService = newKubeDaemonManagementService(configService);
+    const tableHeader: string[] = ['Connection ID', 'Target Cluster', 'Target User', 'Target Group(s)', 'Context', 'Local URL'];
 
-    if (kubeConfig['localPid'] == null) {
-        // Always ensure nothing is using the localport
-        await killPortProcess(kubeConfig['localPort'], logger);
+    const userKubeConfig = await loadUserKubeConfig();
+    logger.debug(`Using user kube config located at: ${userKubeConfig.filePath}`);
+    const kubeConfigClusters = buildMapOfNamedKubeEntries(userKubeConfig.kubeConfig.clusters);
 
-        logger.warn('No kube daemon running');
-    } else {
-        // Check if the pid is still alive
-        if (!processManager.isProcessRunning(kubeConfig['localPid'])) {
-            logger.error('The kube daemon has quit unexpectedly.');
-            kubeConfig['localPid'] = null;
+    await handleStatus(
+        kubeDaemonManagementService,
+        tableHeader,
+        async (_connectionId, result) => {
+            return `The ${kubeDaemonManagementService.configType} daemon connected to ${result.config.targetUser}@${result.config.targetCluster} has quit unexpectedly.`;
+        },
+        async (connectionId, result) => {
+            const matchingContextEntry = findMatchingKubeContext(configService, userKubeConfig.kubeConfig.contexts, kubeConfigClusters, result.config);
+            return [
+                connectionId ? connectionId : 'N/A',
+                result.status.targetCluster,
+                result.status.targetUser,
+                result.status.targetGroups,
+                matchingContextEntry ? matchingContextEntry.name : '',
+                result.status.localUrl
+            ];
+        },
+        logger
+    );
 
-            // Always ensure nothing is using the localport
-            await killPortProcess(kubeConfig['localPort'], logger);
-
-            configService.setKubeConfig(kubeConfig);
-            return;
-        }
-
-        try {
-            const statusResponse: StatusResponse = await got.get(`https://localhost:${kubeConfig['localPort']}/bastionzero-status`, { https: { rejectUnauthorized: false } }).json();
-            // Check if there is an exit message to show the user
-            if (statusResponse.ExitMessage != '') {
-                logger.error(`The Kube Deamon has gotten an exit message from Bastion. Please try logging in again and re-connect with 'zli connect'.\nExit Message: ${statusResponse.ExitMessage}`);
-            } else {
-                // If there is no exist message, pull the info from the config and show it to the user
-                logger.info(`Kube daemon running:`);
-                const tableString = getTableOfKubeStatus(kubeConfig);
-                console.log(tableString);
-            }
-        } catch (err) {
-            logger.error(`Error contacting Kube Daemon. Please try logging in again and restarting the daemon. Error: ${err}`);
-        }
-    }
-}
-
-interface StatusResponse {
-    ExitMessage: string;
+    // Filter stale bzero entries from user's kube config
+    await filterAndOverwriteUserKubeConfig(configService, logger);
 }

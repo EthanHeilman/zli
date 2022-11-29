@@ -31,29 +31,33 @@ export class DynamicAccessConnectionUtils {
         });
 
         const connectionSummary = await retrier.resolve(() => new Promise<ShellConnectionSummary>(async (resolve, reject) => {
-            // Query the DAT connection state to get state transition updates
-            const datConnectionDetails = await this.connectionService.GetDATConnectionDetails(connectionId);
+            try {
+                // Query the DAT connection state to get state transition updates
+                const datConnectionDetails = await this.connectionService.GetDATConnectionDetails(connectionId);
 
-            // Report DAT status depending on the DAT state
-            switch(datConnectionDetails.dynamicAccessTargetState)
-            {
-            case DynamicAccessTargetState.Starting:
-                this.logger.info('Waiting on the start webhook to create the dynamic access target...');
-                break;
-            case DynamicAccessTargetState.Started:
-                this.logger.info('Waiting on the dynamic access target to register and come online...');
-                break;
-            case DynamicAccessTargetState.StartError:
-                // Stop retrying immediately and report the error if we are in StartError state
-                reject(new DATStartError(`Failed to start dynamic access target: ${datConnectionDetails.provisioningServerErrorMessage}`));
-            }
+                // Report DAT status depending on the DAT state
+                switch(datConnectionDetails.dynamicAccessTargetState)
+                {
+                case DynamicAccessTargetState.Starting:
+                    this.logger.info('Waiting on the start webhook to create the dynamic access target...');
+                    break;
+                case DynamicAccessTargetState.Started:
+                    this.logger.info('Waiting on the dynamic access target to register and come online...');
+                    break;
+                case DynamicAccessTargetState.StartError:
+                    // Stop retrying immediately and report the error if we are in StartError state
+                    reject(new DATStartError(`Failed to start dynamic access target: ${datConnectionDetails.provisioningServerErrorMessage}`));
+                }
 
-            if(datConnectionDetails.connectionState != ConnectionState.Pending) {
-                // Resolve with the shell connection summary once we
-                // move out of pending state
-                resolve(await this.connectionService.GetShellConnection(connectionId));
-            } else {
-                reject('Timed out waiting for dynamic access target to come online');
+                if(datConnectionDetails.connectionState != ConnectionState.Pending) {
+                    // Resolve with the shell connection summary once we
+                    // move out of pending state
+                    resolve(await this.connectionService.GetShellConnection(connectionId));
+                } else {
+                    reject('Timed out waiting for dynamic access target to come online');
+                }
+            } catch(err) {
+                reject(err);
             }
         }));
 

@@ -1,6 +1,6 @@
 import mockArgv from 'mock-argv';
 import { CliDriver } from '../../../cli-driver';
-import { cleanConsoleLog, mockApiKeySummaryList, mockBzeroSummaryList, mockDatSummaryList, mockDbSummaryList, mockGroupsSummaryList, mockKubernetesPolicySummaryList, mockKubeSummaryList, mockOrganizationControlsPolicySummaryList, mockProxyPolicySummaryList, mockSessionRecordingPolicySummaryList, unitTestMockSetup, mockSsmSummaryList, mockTargetConnectPolicySummaryList, mockUserSummaryList, mockWebSummaryList, mockJustInTimePolicySummaryList } from '../../../utils/unit-test-utils';
+import { cleanConsoleLog, mockApiKeySummaryList, mockBzeroSummaryList, mockDatSummaryList, mockDbSummaryList, mockGroupsSummaryList, mockKubernetesPolicySummaryList, mockKubeSummaryList, mockOrganizationControlsPolicySummaryList, mockProxyPolicySummaryList, mockSessionRecordingPolicySummaryList, unitTestMockSetup, mockSsmSummaryList, mockTargetConnectPolicySummaryList, mockUserSummaryList as mockUserSummaryList, mockWebSummaryList, mockJustInTimePolicySummaryList, mockServiceAccountSummaryList } from '../../../utils/unit-test-utils';
 import { OrganizationHttpService } from '../../../http-services/organization/organization.http-services';
 import { ApiKeyHttpService } from '../../../http-services/api-key/api-key.http-services';
 import { UserHttpService } from '../../../http-services/user/user.http-services';
@@ -9,50 +9,51 @@ import { KubeHttpService } from '../../../http-services/targets/kube/kube.http-s
 import { SsmTargetHttpService } from '../../../http-services/targets/ssm/ssm-target.http-services';
 import { DynamicAccessConfigHttpService } from '../../../http-services/targets/dynamic-access/dynamic-access-config.http-services';
 import { BzeroTargetHttpService } from '../../../http-services/targets/bzero/bzero.http-services';
-import { DbTargetService } from '../../../http-services/db-target/db-target.http-service';
-import { WebTargetService } from '../../../http-services/web-target/web-target.http-service';
+import { DbTargetHttpService } from '../../../http-services/db-target/db-target.http-service';
+import { WebTargetHttpService } from '../../../http-services/web-target/web-target.http-service';
+import { ServiceAccountHttpService } from '../../../http-services/service-account/service-account.http-services';
 
 
 describe('List Policies suite', () => {
     const targetConnectPolicyOutput = String.raw`┌────────────────────────┬───────────────────┬──────────────────────────┬────────────────────────────┬─────────────────────────────┬──────────────┐
 │ Name                   │ Type              │ Subject                  │ Resource                   │ Target Users                │ Target Group │
 ├────────────────────────┼───────────────────┼──────────────────────────┼────────────────────────────┼─────────────────────────────┼──────────────┤
-│ some-session-recordin… │ TargetConnect     │ test-full-name           │ Environments: test-env-na… │ Unix Users: test-user       │ N/A          │
+│ some-session-recordin… │ TargetConnect     │ test-email               │ Environments: test-env-na… │ Unix Users: test-user       │ N/A          │
 │                        │                   │ Groups: some-group-name  │                            │                             │              │
 └────────────────────────┴───────────────────┴──────────────────────────┴────────────────────────────┴─────────────────────────────┴──────────────┘`;
 
     const sessionRecordingPolicyOutput = String.raw`┌────────────────────────┬───────────────────┬──────────────────────────┬────────────────────────────┬─────────────────────────────┬──────────────┐
 │ Name                   │ Type              │ Subject                  │ Resource                   │ Target Users                │ Target Group │
 ├────────────────────────┼───────────────────┼──────────────────────────┼────────────────────────────┼─────────────────────────────┼──────────────┤
-│ some-session-recordin… │ SessionRecording  │ test-full-name           │ N/A                        │ N/A                         │ N/A          │
+│ some-session-recordin… │ SessionRecording  │ test-email               │ N/A                        │ N/A                         │ N/A          │
 │                        │                   │ Groups: some-group-name  │                            │                             │              │
 └────────────────────────┴───────────────────┴──────────────────────────┴────────────────────────────┴─────────────────────────────┴──────────────┘`;
 
     const proxyPolicyOuput = String.raw`┌────────────────────────┬───────────────────┬──────────────────────────┬────────────────────────────┐
 │ Name                   │ Type              │ Subject                  │ Resource                   │
 ├────────────────────────┼───────────────────┼──────────────────────────┼────────────────────────────┤
-│ some-org-control-poli… │ Proxy             │ test-full-name           │ Environments: test-env-na… │
+│ some-org-control-poli… │ Proxy             │ test-email               │ Environments: test-env-na… │
 │                        │                   │ Groups: some-group-name  │                            │
 └────────────────────────┴───────────────────┴──────────────────────────┴────────────────────────────┘`;
 
     const kubernetesPolicyOutput = String.raw`┌────────────────────────┬───────────────────┬──────────────────────────┬────────────────────────────┬─────────────────────────────┬────────────────────────────────────┐
 │ Name                   │ Type              │ Subject                  │ Resource                   │ Target Users                │ Target Group                       │
 ├────────────────────────┼───────────────────┼──────────────────────────┼────────────────────────────┼─────────────────────────────┼────────────────────────────────────┤
-│ some-kube-policy-name  │ Kubernetes        │ test-full-name           │ Environments: test-env-na… │ Cluster Users: some-cluste… │ Cluster Groups: some-cluster-group │
+│ some-kube-policy-name  │ Kubernetes        │ test-email               │ Environments: test-env-na… │ Cluster Users: some-cluste… │ Cluster Groups: some-cluster-group │
 │                        │                   │ Groups: some-group-name  │                            │                             │                                    │
 └────────────────────────┴───────────────────┴──────────────────────────┴────────────────────────────┴─────────────────────────────┴────────────────────────────────────┘`;
 
     const organizationControlsPolicyOutput = String.raw`┌────────────────────────┬───────────────────┬──────────────────────────┬────────────────────────────┬─────────────────────────────┬──────────────┐
 │ Name                   │ Type              │ Subject                  │ Resource                   │ Target Users                │ Target Group │
 ├────────────────────────┼───────────────────┼──────────────────────────┼────────────────────────────┼─────────────────────────────┼──────────────┤
-│ some-org-control-poli… │ OrganizationCont… │ test-full-name           │ N/A                        │ N/A                         │ N/A          │
+│ some-org-control-poli… │ OrganizationCont… │ test-email               │ N/A                        │ N/A                         │ N/A          │
 │                        │                   │ Groups: some-group-name  │                            │                             │              │
 └────────────────────────┴───────────────────┴──────────────────────────┴────────────────────────────┴─────────────────────────────┴──────────────┘`;
 
     const justInTimePolicyOutput = String.raw`┌────────────────────────┬───────────────────┬──────────────────────────┬────────────────────────────────────┬─────────────────────────┬─────────────────────────┐
 │ Name                   │ Type              │ Subject                  │ Resource                           │ Automatically Approved  │ Duration                │
 ├────────────────────────┼───────────────────┼──────────────────────────┼────────────────────────────────────┼─────────────────────────┼─────────────────────────┤
-│ some-jit-policy-name   │ JustInTime        │ test-full-name           │ Child Policies:                    │ false                   │ 1 hour                  │
+│ some-jit-policy-name   │ JustInTime        │ test-email               │ Child Policies:                    │ false                   │ 1 hour                  │
 │                        │                   │ Groups: some-group-name  │ some-child-policy-name             │                         │                         │
 └────────────────────────┴───────────────────┴──────────────────────────┴────────────────────────────────────┴─────────────────────────┴─────────────────────────┘`;
 
@@ -70,12 +71,13 @@ describe('List Policies suite', () => {
             return mockApiKeySummaryList;
         });
         jest.spyOn(UserHttpService.prototype, 'ListUsers').mockImplementation(async () => mockUserSummaryList);
+        jest.spyOn(ServiceAccountHttpService.prototype, 'ListServiceAccounts').mockImplementation(async () => mockServiceAccountSummaryList);
         jest.spyOn(KubeHttpService.prototype, 'ListKubeClusters').mockImplementation(async () => mockKubeSummaryList);
         jest.spyOn(SsmTargetHttpService.prototype, 'ListSsmTargets').mockImplementation(async () => mockSsmSummaryList);
         jest.spyOn(DynamicAccessConfigHttpService.prototype, 'ListDynamicAccessConfigs').mockImplementation(async () => mockDatSummaryList);
         jest.spyOn(BzeroTargetHttpService.prototype, 'ListBzeroTargets').mockImplementation(async () => mockBzeroSummaryList);
-        jest.spyOn(DbTargetService.prototype, 'ListDbTargets').mockImplementation(async () => mockDbSummaryList);
-        jest.spyOn(WebTargetService.prototype, 'ListWebTargets').mockImplementation(async () => mockWebSummaryList);
+        jest.spyOn(DbTargetHttpService.prototype, 'ListDbTargets').mockImplementation(async () => mockDbSummaryList);
+        jest.spyOn(WebTargetHttpService.prototype, 'ListWebTargets').mockImplementation(async () => mockWebSummaryList);
     });
 
     afterEach(() => {

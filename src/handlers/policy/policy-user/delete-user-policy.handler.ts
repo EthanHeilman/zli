@@ -23,7 +23,7 @@ export async function deleteUserFromPolicyHandler(userEmail: string, policyName:
     const policyHttpService = new PolicyHttpService(configService, logger);
     const policy = await getPolicyFromName(policyName, policyHttpService);
 
-    if (policy) {
+    if (!policy) {
         // Log an error
         logger.error(`Unable to find policy with name: ${policyName}`);
         await cleanExit(1, logger);

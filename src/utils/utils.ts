@@ -30,6 +30,10 @@ import { CaseInsensitiveArgv } from './types/case-insensitive-argv';
 import { JustInTimePolicySummary } from '../../webshell-common-ts/http/v2/policy/just-in-time/types/just-in-time-policy-summary.types';
 import { DbTargetSummary } from '../../webshell-common-ts/http/v2/target/db/types/db-target-summary.types';
 import { DbConfig, KubeConfig, WebConfig } from '../services/config/config.service.types';
+import { ServiceAccountSummary } from '../../webshell-common-ts/http/v2/service-account/types/service-account-summary.types';
+import { ServiceAccountBzeroCredentials } from '../../src/handlers/login/types/service-account-bzero-credentials.types';
+import { baseCreatePolicyCmdBuilderArgs } from '../../src/handlers/policy/policy-create/create-policy.command-builder';
+import { SubjectRole } from '../../webshell-common-ts/http/v2/subject/types/subject-role.types';
 
 // case insensitive substring search, 'find targetString in searchString'
 export function isSubstring(targetString: string, searchString: string) : boolean
@@ -98,6 +102,21 @@ export function parseVerbType(verb: string) : VerbType
     }
 }
 
+export function parseSubjectRole(role: string) : SubjectRole
+{
+    if(!role) return undefined;
+
+    // Verbs are checked to be these three cases by yargs
+    switch(role.toLowerCase()){
+    case subjectRoleDisplay(SubjectRole.Admin).toLowerCase():
+        return SubjectRole.Admin;
+    case subjectRoleDisplay(SubjectRole.User).toLowerCase():
+        return SubjectRole.User;
+    default:
+        return undefined;
+    }
+}
+
 export function parsePolicyType(policyType: string) : PolicyType
 {
     const policyTypePattern = /^(targetconnect|organizationcontrols|sessionrecording|kubernetes|proxy|justintime)$/i; // case insensitive check for policyType
@@ -149,6 +168,8 @@ export function parseTargetStatus(targetStatus: string) : TargetStatus {
         return TargetStatus.Terminated;
     case TargetStatus.Error.toLowerCase():
         return TargetStatus.Error;
+    case TargetStatus.Restarting.toLowerCase():
+        return TargetStatus.Restarting;
     default:
         return undefined;
     }
@@ -250,6 +271,18 @@ export function verbTypeDisplay(type: VerbType) : string {
     }
 }
 
+export function subjectRoleDisplay(role: SubjectRole) : string {
+    switch(role) {
+    case SubjectRole.Admin:
+        return 'admin';
+    case SubjectRole.User:
+        return 'user';
+    default:
+        const _exhaustiveCheck: never = role;
+        return _exhaustiveCheck;
+    }
+}
+
 export function getTableOfTargets(targets: TargetSummary[], envs: EnvironmentSummary[], showDetail: boolean = false, showGuid: boolean = false) : string
 {
     // The following constant numbers are set specifically to conform with the specified 80/132 cols term size - do not change
@@ -331,11 +364,56 @@ export function getTableOfUsers(users: UserSummary[]) : string
     const table = new Table({ head: header, colWidths: columnWidths });
     const dateOptions = {year: '2-digit', month: 'numeric', day: 'numeric', hour:'numeric', minute:'numeric', hour12: true};
     users.forEach(u => {
-        const row = [u.fullName, u.email, u.isAdmin ? 'Admin' : 'User', new Date(u.lastLogin).toLocaleString('en-US', dateOptions as any)];
+        const row = [u.fullName, u.email, u.isAdmin ? 'Admin' : 'User', u.lastLogin ? u.lastLogin.toLocaleString('en-US', dateOptions as any) : 'N/A'];
         table.push(row);
     });
 
     return table.toString();
+}
+
+export function getTableOfServiceAccounts(serviceAccounts: ServiceAccountSummary[], showDetail: boolean = false) : string
+{
+    const emailLength = max(serviceAccounts.map(u => u.email.length).concat(36));
+    const header: string[] = ['Email', 'Role', 'Last Login'];
+    const columnWidths = [emailLength + 2, 7, 20];
+    const jwksUrlColumnWidth = 29;
+    const jwksUrlPatternColumnWidth = 29;
+
+    if(showDetail)
+    {
+        header.push('External ID', 'JWKS URL', 'JWKS URL Pattern', 'Enabled');
+        columnWidths.push(25, jwksUrlColumnWidth, jwksUrlPatternColumnWidth, 9);
+    }
+
+    const table = new Table({ head: header, colWidths: columnWidths });
+    const dateOptions = {year: '2-digit', month: 'numeric', day: 'numeric', hour:'numeric', minute:'numeric', hour12: true};
+    serviceAccounts.forEach(sa => {
+        // const row = [u.fullName, u.email, u.isAdmin ? 'Admin' : 'User', new Date(u.lastLogin).toLocaleString('en-US', dateOptions as any)];
+        const row = [sa.email, sa.isAdmin ? 'Admin' : 'User', sa.lastLogin ? sa.lastLogin.toLocaleString('en-US', dateOptions as any) : 'N/A'];
+        if(showDetail) {
+            row.push(sa.externalId);
+            row.push(getReadableMultiLineString(sa.jwksUrl, jwksUrlColumnWidth));
+            row.push(getReadableMultiLineString(sa.jwksUrlPattern, jwksUrlPatternColumnWidth));
+            row.push(String(sa.enabled));
+        }
+        table.push(row);
+    });
+
+    return table.toString();
+}
+
+function getReadableMultiLineString(value: string, columnWidth: number): string {
+    let readableMultiLineString = '';
+    let remainingValueLength = value.length;
+    let currentValueIndex = 0;
+    const realColumnWidth = columnWidth - 2;
+    while(remainingValueLength > realColumnWidth) {
+        readableMultiLineString += (value.substring(currentValueIndex, currentValueIndex+realColumnWidth) + '\n');
+        currentValueIndex += realColumnWidth;
+        remainingValueLength -= realColumnWidth;
+    }
+    readableMultiLineString += (value.substring(currentValueIndex, currentValueIndex+realColumnWidth));
+    return readableMultiLineString;
 }
 
 export function getTableOfGroups(groups: GroupSummary[]) : string
@@ -461,7 +539,8 @@ export function getTableOfKubernetesPolicies(
     userMap: {[id: string]: UserSummary},
     environmentMap: {[id: string]: EnvironmentSummary},
     targetMap : {[id: string]: string},
-    groupMap : {[id: string]: GroupSummary}
+    groupMap : {[id: string]: GroupSummary},
+    serviceAccountMap : {[id: string]: ServiceAccountSummary}
 ) : string
 {
     const header: string[] = ['Name', 'Type', 'Subject', 'Resource', 'Target Users', 'Target Group'];
@@ -478,10 +557,13 @@ export function getTableOfKubernetesPolicies(
         const formattedGroups = !! groupNames.length ? 'Groups: ' + groupNames.join( ', \n') : '';
 
         const subjectNames : string [] = [];
-        p.subjects.forEach((subject: any) => {
+        p.subjects.forEach(subject => {
             switch (subject.type) {
             case SubjectType.User:
-                subjectNames.push(getUserName(subject.id, userMap));
+                subjectNames.push(getReadableMultiLineString(getUserName(subject.id, userMap), 26));
+                break;
+            case SubjectType.ServiceAccount:
+                subjectNames.push(getReadableMultiLineString(getServiceAccountName(subject.id, serviceAccountMap), 26));
                 break;
             default:
                 break;
@@ -549,7 +631,8 @@ export function getTableOfTargetConnectPolicies(
     userMap: {[id: string]: UserSummary},
     environmentMap: {[id: string]: EnvironmentSummary},
     targetMap : {[id: string]: string},
-    groupMap : {[id: string]: GroupSummary}
+    groupMap : {[id: string]: GroupSummary},
+    serviceAccountMap : {[id: string]: ServiceAccountSummary}
 ) : string
 {
     const header: string[] = ['Name', 'Type', 'Subject', 'Resource', 'Target Users', 'Target Group'];
@@ -569,7 +652,10 @@ export function getTableOfTargetConnectPolicies(
         p.subjects.forEach(subject => {
             switch (subject.type) {
             case SubjectType.User:
-                subjectNames.push(getUserName(subject.id, userMap));
+                subjectNames.push(getReadableMultiLineString(getUserName(subject.id, userMap), 26));
+                break;
+            case SubjectType.ServiceAccount:
+                subjectNames.push(getReadableMultiLineString(getServiceAccountName(subject.id, serviceAccountMap), 26));
                 break;
             default:
                 break;
@@ -685,7 +771,8 @@ export function getTableOfJustInTimePolicies(
 export function getTableOfOrganizationControlPolicies(
     organizationControlsPolicies: OrganizationControlsPolicySummary[],
     userMap: {[id: string]: UserSummary},
-    groupMap : {[id: string]: GroupSummary}
+    groupMap : {[id: string]: GroupSummary},
+    serviceAccountMap : {[id: string]: ServiceAccountSummary}
 ) : string
 {
     const header: string[] = ['Name', 'Type', 'Subject', 'Resource', 'Target Users', 'Target Group'];
@@ -705,7 +792,10 @@ export function getTableOfOrganizationControlPolicies(
         p.subjects.forEach(subject => {
             switch (subject.type) {
             case SubjectType.User:
-                subjectNames.push(getUserName(subject.id, userMap));
+                subjectNames.push(getReadableMultiLineString(getUserName(subject.id, userMap), 26));
+                break;
+            case SubjectType.ServiceAccount:
+                subjectNames.push(getReadableMultiLineString(getServiceAccountName(subject.id, serviceAccountMap), 26));
                 break;
             default:
                 break;
@@ -737,6 +827,7 @@ export function getTableOfProxyPolicies(
     environmentMap: {[id: string]: EnvironmentSummary},
     targetMap : {[id: string]: string},
     groupMap : {[id: string]: GroupSummary},
+    serviceAccountMap : {[id: string]: ServiceAccountSummary}
 ) : string
 {
     const header: string[] = ['Name', 'Type', 'Subject', 'Resource',];
@@ -756,7 +847,10 @@ export function getTableOfProxyPolicies(
         p.subjects.forEach(subject => {
             switch (subject.type) {
             case SubjectType.User:
-                subjectNames.push(getUserName(subject.id, userMap));
+                subjectNames.push(getReadableMultiLineString(getUserName(subject.id, userMap), 26));
+                break;
+            case SubjectType.ServiceAccount:
+                subjectNames.push(getReadableMultiLineString(getServiceAccountName(subject.id, serviceAccountMap), 26));
                 break;
             default:
                 break;
@@ -802,7 +896,8 @@ export function getTableOfProxyPolicies(
 export function getTableOfSessionRecordingPolicies(
     sessionRecordingPolicies: SessionRecordingPolicySummary[],
     userMap: {[id: string]: UserSummary},
-    groupMap : {[id: string]: GroupSummary}
+    groupMap : {[id: string]: GroupSummary},
+    serviceAccountMap : {[id: string]: ServiceAccountSummary}
 ) : string
 {
     const header: string[] = ['Name', 'Type', 'Subject', 'Resource', 'Target Users', 'Target Group'];
@@ -823,6 +918,9 @@ export function getTableOfSessionRecordingPolicies(
             switch (subject.type) {
             case SubjectType.User:
                 subjectNames.push(getUserName(subject.id, userMap));
+                break;
+            case SubjectType.ServiceAccount:
+                subjectNames.push(getServiceAccountName(subject.id, serviceAccountMap));
                 break;
             default:
                 break;
@@ -850,8 +948,14 @@ export function getTableOfSessionRecordingPolicies(
 
 function getUserName(userId: string, userMap: {[id: string]: UserSummary}) : string {
     return userMap[userId]
-        ? userMap[userId].fullName
+        ? userMap[userId].email
         : 'USER DELETED';
+}
+
+function getServiceAccountName(subjectId: string, serviceAccountMap: {[id: string]: ServiceAccountSummary}) : string {
+    return serviceAccountMap[subjectId]
+        ? serviceAccountMap[subjectId].email
+        : 'SERVICE ACCOUNT DISABLED';
 }
 
 function getEnvironmentName(envId: string, environmentMap: {[id: string]: EnvironmentSummary}) : string {
@@ -1026,4 +1130,58 @@ export function isZliSilent(silent_flag: boolean, json_flag: boolean) {
 export function toUpperCase(str: string): string
 {
     return str.charAt(0).toUpperCase().concat(str.slice(1));
+}
+
+/**
+ * Checks if the provided path is writable/createable.
+ */
+export async function checkWritableFilePath(filePath: string, errorMessage: string) {
+    try {
+        await util.promisify(fs.writeFile)(filePath, '');
+    } catch(err) {
+        throw new Error(`${errorMessage}: ${err}`);
+    }
+}
+
+/**
+ * Creates a json file with bzero credentials in the current path, or, if provided, to a custom path.
+ */
+export async function createBzeroCredsFile(mfaSecret: string, orgId: string, idp: IdentityProvider, bzeroCredsPath: string) {
+    const bzeroCreds: ServiceAccountBzeroCredentials = {
+        mfa_secret: mfaSecret,
+        org_id: orgId,
+        identity_provider: idp
+    };
+
+    try {
+        await util.promisify(fs.writeFile)(bzeroCredsPath, JSON.stringify(bzeroCreds));
+    } catch(err) {
+        throw new Error(`Failed to create bzeroCreds file at ${bzeroCredsPath}: ${err}`);
+    }
+}
+
+export function userOrSubjectRequired(argv: baseCreatePolicyCmdBuilderArgs) : boolean {
+    if(!!argv.users || !!argv.subjects)
+        return !!argv.users || !!argv.subjects;
+    throw new Error('Either user(s) or subject(s) need to be provided');
+}
+
+/**
+ * Function that converts any string that looks like a date into a js date
+ * object that is suitable for passing into JSON.parse()
+ * https://stackoverflow.com/a/29971466/9186330
+ */
+export function jsonDateReviver(key: any, value: any): any {
+    const reDateDetect = /(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})/;  // starts with: 2015-04-29T22:06:55
+    if (typeof value == 'string' && (reDateDetect.exec(value))) {
+        return new Date(value);
+    }
+    return value;
+}
+
+/**
+ * Custom JSON.parse() function that also converts date strings to js date objects
+ */
+export function customJsonParser(text: string) {
+    return JSON.parse(text, jsonDateReviver);
 }

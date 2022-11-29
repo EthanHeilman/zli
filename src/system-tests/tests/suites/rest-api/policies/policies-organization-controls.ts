@@ -14,7 +14,7 @@ export const organizationControlsPolicySuite = () => {
         beforeAll(() => {
             policyService = new PolicyHttpService(configService, logger);
             expectedPolicySummary = {
-                id: expect.any('string'),
+                id: expect.any(String),
                 type: PolicyType.OrganizationControls,
                 groups: [],
                 name: originalPolicyName,

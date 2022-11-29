@@ -33,6 +33,11 @@ export class MfaHttpService extends HttpService
         return this.Post('reset', request);
     }
 
+    public RotateSecret(serviceAccountId: string): Promise<string>
+    {
+        return this.Patch('rotate/' + serviceAccountId);
+    }
+
     public ClearSecret(userId: string): Promise<void>
     {
         const request: MfaClearRequest = {

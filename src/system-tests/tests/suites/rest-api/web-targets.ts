@@ -1,4 +1,4 @@
-import { WebTargetService } from '../../../../http-services/web-target/web-target.http-service';
+import { WebTargetHttpService } from '../../../../http-services/web-target/web-target.http-service';
 import { DigitalOceanBZeroTarget } from '../../../digital-ocean/digital-ocean-ssm-target.service.types';
 import { configService, logger, systemTestEnvId, systemTestUniqueId, testTargets } from '../../system-test';
 import { bzeroTestTargetsToRun } from '../../targets-to-run';
@@ -7,12 +7,12 @@ export const webTargetRestApiSuite = () => {
     describe('Web Target REST API Suite', () => {
         const targetName = `${systemTestUniqueId}-restapi-web-suite`;
         let webTargetId: string;
-        let webTargetService: WebTargetService;
+        let webTargetService: WebTargetHttpService;
         let webTargetCommonProperties: any;
         let doTarget: DigitalOceanBZeroTarget;
 
         beforeAll(() => {
-            webTargetService = new WebTargetService(configService, logger);
+            webTargetService = new WebTargetHttpService(configService, logger);
 
             doTarget = testTargets.get(bzeroTestTargetsToRun[0]) as DigitalOceanBZeroTarget;
 

@@ -14,6 +14,13 @@ export interface ShellConnectionInfo extends BaseConnectionInfo {
     targetUser: string;
 }
 
+export interface KubeConnectionInfo extends BaseConnectionInfo {
+    type: 'kube';
+    targetUser: string;
+    targetGroups: string[];
+}
+
 export type ConnectionInfo =
 | DbConnectionInfo
-| ShellConnectionInfo;
+| ShellConnectionInfo
+| KubeConnectionInfo;

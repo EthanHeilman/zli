@@ -1,4 +1,3 @@
-import { SubjectType } from '../../../../../../webshell-common-ts/http/v2/common.types/subject.types';
 import { TargetConnectPolicySummary } from '../../../../../../webshell-common-ts/http/v2/policy/target-connect/types/target-connect-policy-summary.types';
 import { PolicyType } from '../../../../../../webshell-common-ts/http/v2/policy/types/policy-type.types';
 import { Subject } from '../../../../../../webshell-common-ts/http/v2/policy/types/subject.types';
@@ -12,11 +11,6 @@ import { callZli } from '../../../utils/zli-utils';
 
 export const targetConnectPolicySuite = () => {
     describe('Target Connect Policies Suite', () => {
-        const originalPolicyName = systemTestPolicyTemplate.replace('$POLICY_TYPE', 'target-connect');
-        const currentUser: Subject = {
-            id: configService.me().id,
-            type: SubjectType.User
-        };
         let policyService: PolicyHttpService;
         let envHttpService: EnvironmentHttpService;
         let targetConnectPolicy: TargetConnectPolicySummary;
@@ -25,20 +19,26 @@ export const targetConnectPolicySuite = () => {
         beforeAll(() => {
             policyService = new PolicyHttpService(configService, logger);
             envHttpService = new EnvironmentHttpService(configService, logger);
+
+            const originalPolicyName = systemTestPolicyTemplate.replace('$POLICY_TYPE', 'target-connect');
+            const currentSubject: Subject = {
+                id: configService.me().id,
+                type: configService.me().type
+            };
             expectedPolicySummary = {
-                id: expect.any('string'),
+                id: expect.any(String),
                 type: PolicyType.TargetConnect,
                 groups: [],
                 name: originalPolicyName,
                 subjects: [
-                    currentUser
+                    currentSubject
                 ],
                 environments: [
                     {
                         id: systemTestEnvId
                     }
                 ],
-                targets: null,
+                targets: [],
                 targetUsers: [
                     {
                         userName: 'test-user'
@@ -66,7 +66,7 @@ export const targetConnectPolicySuite = () => {
             const zliArgs = [
                 'policy', 'create-tconnect',
                 '-n', expectedPolicySummary.name,
-                '-u', configService.me().email,
+                '-a', configService.me().email,
                 '-e', environment.name,
                 '--targetUsers', 'test-user',
                 '-v', 'shell',

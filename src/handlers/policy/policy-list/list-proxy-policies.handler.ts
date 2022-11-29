@@ -5,8 +5,8 @@ import { policyArgs } from './policy-list.command-builder';
 import { PolicyHttpService } from '../../../http-services/policy/policy.http-services';
 import { getTableOfProxyPolicies } from '../../../utils/utils';
 import { EnvironmentSummary } from '../../../../webshell-common-ts/http/v2/environment/types/environment-summary.responses';
-import { DbTargetService } from '../../../http-services/db-target/db-target.http-service';
-import { WebTargetService } from '../../../http-services/web-target/web-target.http-service';
+import { DbTargetHttpService } from '../../../http-services/db-target/db-target.http-service';
+import { WebTargetHttpService } from '../../../http-services/web-target/web-target.http-service';
 import { EnvironmentHttpService } from '../../../http-services/environment/environment.http-services';
 import { getPolicySubjectDisplayInfo } from '../../../services/policy/policy.services';
 
@@ -17,8 +17,8 @@ export async function listProxyPoliciesHandler(
 ){
     const policyHttpService = new PolicyHttpService(configService, logger);
     const envHttpService = new EnvironmentHttpService(configService, logger);
-    const dbTargetService = new DbTargetService(configService, logger);
-    const webTargetService = new WebTargetService(configService, logger);
+    const dbTargetService = new DbTargetHttpService(configService, logger);
+    const webTargetService = new WebTargetHttpService(configService, logger);
 
     const [ environments, proxyPolicies, dbTargets, webTargets, policySubjectDisplayInfo] = await Promise.all([
         envHttpService.ListEnvironments(),
@@ -50,7 +50,7 @@ export async function listProxyPoliciesHandler(
             logger.info('There are no available Proxy policies');
         } else {
             // regular table output
-            return getTableOfProxyPolicies(proxyPolicies, policySubjectDisplayInfo.userMap, environmentMap, targetNameMap, policySubjectDisplayInfo.groupMap);
+            return getTableOfProxyPolicies(proxyPolicies, policySubjectDisplayInfo.userMap, environmentMap, targetNameMap, policySubjectDisplayInfo.groupMap, policySubjectDisplayInfo.serviceAccountMap);
         }
     }
 }

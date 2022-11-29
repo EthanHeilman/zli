@@ -1,12 +1,11 @@
 import { systemTestEnvId, systemTestEnvName, systemTestPolicyTemplate, systemTestUniqueId, testTargets } from '../system-test';
 import { callZli } from '../utils/zli-utils';
-import { DbTargetService } from '..../../../http-services/db-target/db-target.http-service';
+import { DbTargetHttpService } from '..../../../http-services/db-target/db-target.http-service';
 import { promisify } from 'util';
 import { exec } from 'child_process';
 
 import { configService, logger } from '../system-test';
 import { DigitalOceanBZeroTarget, getDOImageName } from '../../digital-ocean/digital-ocean-ssm-target.service.types';
-import { SubjectType } from '../../../../webshell-common-ts/http/v2/common.types/subject.types';
 import { Environment } from '../../../../webshell-common-ts/http/v2/policy/types/environment.types';
 import { bzeroTestTargetsToRun } from '../targets-to-run';
 import { TestTarget } from '../system-test.types';
@@ -60,9 +59,10 @@ export const iperfSuite = () => {
             // Construct all http services needed to run tests
             policyService = new PolicyHttpService(configService, logger);
 
-            const currentUser: Subject = {
-                id: configService.me().id,
-                type: SubjectType.User
+            const me = configService.me();
+            const currentSubject: Subject = {
+                id: me.id,
+                type: me.type
             };
             const environment: Environment = {
                 id: systemTestEnvId
@@ -70,7 +70,7 @@ export const iperfSuite = () => {
 
             await policyService.AddProxyPolicy({
                 name: systemTestPolicyTemplate.replace('$POLICY_TYPE', 'iperf-proxy'),
-                subjects: [currentUser],
+                subjects: [currentSubject],
                 groups: [],
                 description: `Iperf Proxy policy created for system test: ${systemTestUniqueId}`,
                 environments: [environment],
@@ -103,7 +103,7 @@ export const iperfSuite = () => {
                 const doTarget = testTargets.get(testTarget) as DigitalOceanBZeroTarget;
 
                 // Create a new db virtual target
-                const dbTargetService: DbTargetService = new DbTargetService(configService, logger);
+                const dbTargetService: DbTargetHttpService = new DbTargetHttpService(configService, logger);
                 const dbIperfVtName = `${doTarget.bzeroTarget.name}-db-iperf-upload-vt`;
 
                 const daemonLocalPort = await findPort();
@@ -142,7 +142,7 @@ export const iperfSuite = () => {
                 const doTarget = testTargets.get(testTarget) as DigitalOceanBZeroTarget;
 
                 // Create a new db virtual target
-                const dbTargetService: DbTargetService = new DbTargetService(configService, logger);
+                const dbTargetService: DbTargetHttpService = new DbTargetHttpService(configService, logger);
                 const dbIperfVtName = `${doTarget.bzeroTarget.name}-db-iperf-download-vt`;
 
                 const daemonLocalPort = await findPort();

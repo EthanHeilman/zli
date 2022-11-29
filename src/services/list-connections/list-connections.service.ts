@@ -5,7 +5,7 @@ import { ConnectionState } from '../../../webshell-common-ts/http/v2/connection/
 import { getCliSpace } from '../../utils/shell-utils';
 import { ConfigService } from '../config/config.service';
 import { Logger } from '../logger/logger.service';
-import { DbConnectionInfo, ShellConnectionInfo } from './list-connections.service.types';
+import { DbConnectionInfo, KubeConnectionInfo, ShellConnectionInfo } from './list-connections.service.types';
 import { ConnectionHttpService } from '../../http-services/connection/connection.http-services';
 import { SsmTargetSummary } from '../../../webshell-common-ts/http/v2/target/ssm/types/ssm-target-summary.types';
 import { BzeroAgentSummary } from '../../../webshell-common-ts/http/v2/target/bzero/types/bzero-agent-summary.types';
@@ -62,5 +62,25 @@ export async function listOpenDbConnections(
         targetName: conn.targetName,
         timeCreated: conn.timeCreated,
         remoteHost: `${conn.remoteHost}:${conn.remotePort}`,
+    }));
+}
+
+export async function listOpenKubeConnections(
+    configService: ConfigService,
+    logger: Logger
+): Promise<KubeConnectionInfo[]> {
+    const connectionHttpService = new ConnectionHttpService(configService, logger);
+    const openKubeConnections = await connectionHttpService.ListKubeConnections(ConnectionState.Open);
+    if (openKubeConnections.length === 0) {
+        return [];
+    }
+
+    return openKubeConnections.map<KubeConnectionInfo>((conn) => ({
+        type: 'kube',
+        connectionId: conn.id,
+        targetName: conn.targetName,
+        timeCreated: conn.timeCreated,
+        targetUser: conn.targetUser,
+        targetGroups: conn.targetGroups
     }));
 }

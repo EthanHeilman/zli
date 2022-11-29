@@ -71,7 +71,7 @@ export function listTargetsCmdBuilder(yargs: yargs.Argv<{}>, targetTypeChoices: 
                 default: false,
                 demandOption: false,
                 alias: 'd',
-                description: 'Returns extra detail in the ouput'
+                description: 'Returns extra detail in the output'
             }
         )
         .option(

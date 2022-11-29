@@ -57,7 +57,7 @@ export async function listTargetConnectPoliciesHandler(
             logger.info('There are no available Target Connect policies');
         } else {
             // return regular table output
-            return getTableOfTargetConnectPolicies(targetConnectPolicies, policySubjectDisplayInfo.userMap, environmentMap, targetNameMap, policySubjectDisplayInfo.groupMap);
+            return getTableOfTargetConnectPolicies(targetConnectPolicies, policySubjectDisplayInfo.userMap, environmentMap, targetNameMap, policySubjectDisplayInfo.groupMap, policySubjectDisplayInfo.serviceAccountMap);
         }
     }
 }

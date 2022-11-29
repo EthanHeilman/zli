@@ -94,3 +94,11 @@ interface BaseTarget {
 }
 
 export type TestTarget = SSMTestTargetAutoDiscovery | SSMTestTargetSelfRegistrationAutoDiscovery | SSMTestTargetAnsibleAutoDiscovery | BzeroTestTarget | BzeroTestTargetBashAutoDiscovery | BzeroTestTargetAnsibleAutoDiscovery;
+
+export function isBzeroTarget(testTarget: TestTarget): boolean {
+    return testTarget.installType === 'pm-bzero' || testTarget.installType === 'ad-bzero' || testTarget.installType === 'as-bzero';
+}
+
+export function isSsmTarget(testTarget: TestTarget): boolean {
+    return testTarget.installType == 'ad' || testTarget.installType == 'as' || testTarget.installType == 'pm';
+}

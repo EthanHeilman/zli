@@ -1,6 +1,6 @@
 import yargs from 'yargs';
 
-const connectionTypes = ['shell', 'db'] as const;
+const connectionTypes = ['shell', 'db', 'kube'] as const;
 export type ConnectionTypeOption = typeof connectionTypes[number];
 
 export type listConnectionsArgs = {json: boolean} &
@@ -28,6 +28,6 @@ export function listConnectionsCmdBuilder(yargs: yargs.Argv<{}>) : yargs.Argv<li
                 describe: 'Filters for a specific connection type'
             }
         )
-        .example('$0 lc --json', 'List all open shell and db connections, output as json, pipeable')
+        .example('$0 lc --json', 'List all open shell, db, and kube connections, output as json, pipeable')
         .example('$0 lc -t db', 'List all open db connections');
 }

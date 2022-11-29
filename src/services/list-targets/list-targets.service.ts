@@ -3,13 +3,15 @@ import { TargetSummary } from '../../../webshell-common-ts/http/v2/target/target
 import { ConfigService } from '../config/config.service';
 import { Logger } from '../logger/logger.service';
 import { BzeroTargetHttpService } from '../../http-services/targets/bzero/bzero.http-services';
-import { WebTargetService } from '../../http-services/web-target/web-target.http-service';
+import { WebTargetHttpService } from '../../http-services/web-target/web-target.http-service';
 import { DynamicAccessConfigHttpService } from '../../http-services/targets/dynamic-access/dynamic-access-config.http-services';
 import { TargetType } from '../../../webshell-common-ts/http/v2/target/types/target.types';
 import { KubeHttpService } from '../../http-services/targets/kube/kube.http-services';
 import { SsmTargetHttpService } from '../../http-services/targets/ssm/ssm-target.http-services';
-import { DbTargetService } from '../../http-services/db-target/db-target.http-service';
+import { DbTargetHttpService } from '../../http-services/db-target/db-target.http-service';
 import { PolicyQueryHttpService } from '../../http-services/policy-query/policy-query.http-services';
+import { Dictionary } from 'lodash';
+import { gte, parse, SemVer } from 'semver';
 
 export async function listTargets(
     configService: ConfigService,
@@ -17,6 +19,27 @@ export async function listTargets(
     targetTypes: TargetType[],
     userEmail?: string
 ) : Promise<TargetSummary[]>
+{
+    const targetsPerType: Dictionary<TargetSummary[]> = await listTargetsPerType(configService, logger, targetTypes, userEmail);
+    const allTargetSummaries: TargetSummary[][] = [[]];
+    for (const targets in targetsPerType) {
+        allTargetSummaries.push(targetsPerType[targets]);
+    }
+    const allTargetSummariesFlattened = allTargetSummaries.reduce((t1, t2) => t1.concat(t2), []);
+
+    return allTargetSummariesFlattened;
+}
+
+/**
+ * Lists all the targets of the specified {@link targetTypes} and creates a dictionary {@link TargetType} -> [{@link TargetSummary}].
+ * @returns a dictionary {@link TargetType} -> [{@link TargetSummary}].
+ */
+export async function listTargetsPerType(
+    configService: ConfigService,
+    logger: Logger,
+    targetTypes: TargetType[],
+    userEmail?: string
+) : Promise<Dictionary<TargetSummary[]>>
 {
     const policyQueryHttpService = new PolicyQueryHttpService(configService, logger);
     let targetSummaryWork: Promise<TargetSummary[]>[] = [];
@@ -123,7 +146,7 @@ export async function listTargets(
     }
 
     if (targetTypes.includes(TargetType.Db)) {
-        const dbTargetService = new DbTargetService(configService, logger);
+        const dbTargetService = new DbTargetHttpService(configService, logger);
         const getDbTargetSummaries = async () => {
             let dbTargetSummaries = await dbTargetService.ListDbTargets();
             if (userEmail) {
@@ -139,7 +162,7 @@ export async function listTargets(
     }
 
     if (targetTypes.includes(TargetType.Web)) {
-        const webTargetService = new WebTargetService(configService, logger);
+        const webTargetService = new WebTargetHttpService(configService, logger);
         const getWebTargetSummaries = async () => {
             let webTargetSummaries = await webTargetService.ListWebTargets();
             if (userEmail) {
@@ -167,7 +190,31 @@ export async function listTargets(
     }
 
     const allTargetSummaries = await Promise.all(targetSummaryWork);
-    const allTargetSummariesFlattened = allTargetSummaries.reduce((t1, t2) => t1.concat(t2), []);
 
-    return allTargetSummariesFlattened;
+    const targetsPerType: Dictionary<TargetSummary[]> = {};
+    allTargetSummaries.forEach(targets => {
+        if(targets.length) {
+            targetsPerType[targets[0].type] = targets;
+        }
+    });
+    return targetsPerType;
+}
+
+/**
+ * Returns all the targets that are equal or above the specified {@link minAgentVersion}.
+ * Includes targets with undefined version.
+ * @returns a list of {@link TargetSummary} are equal or above the specified version.
+ */
+export function filterTargetsOnVersion(
+    targets: TargetSummary[],
+    minAgentVersion: SemVer = new SemVer('0.0.0')
+) : TargetSummary[]
+{
+    return targets
+        .filter(
+            t => {
+                const agentVersion = parse(t.agentVersion);
+                return (agentVersion == null) || gte(agentVersion, minAgentVersion);
+            }
+        );
 }

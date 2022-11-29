@@ -18,8 +18,9 @@ export class UserHttpService extends HttpService
     {
         const requestHeaders = {
             'AccessToken': this.configService.getAccessToken(),
-            'IdToken': this.configService.getIdToken()
+            'IdToken': this.configService.getIdToken(),
         };
+
         const resp = await this.Post<{}, UserRegisterResponse>('register', {}, requestHeaders);
 
         // Store the session cookies in config
@@ -35,7 +36,7 @@ export class UserHttpService extends HttpService
         }
 
         if (cookiesDict['sessionToken'].value != this.configService.getSessionToken()) {
-            this.logger.debug('Received new session token, refreshing session');
+            this.logger.debug('Received new session token for user, refreshing session');
             this.configService.setSessionToken(cookiesDict['sessionToken'].value);
         }
 

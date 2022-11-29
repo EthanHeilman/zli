@@ -1,7 +1,6 @@
-import { configService, datEndpoint, datSecret, logger, loggerConfigService, resourceNamePrefix, systemTestEnvId, systemTestPolicyTemplate, systemTestUniqueId } from '../system-test';
+import { configService, datEndpoint, datSecret, logger, resourceNamePrefix, systemTestEnvId, systemTestPolicyTemplate, systemTestUniqueId } from '../system-test';
 import { ConnectionHttpService } from '../../../http-services/connection/connection.http-services';
 import { TestUtils } from '../utils/test-utils';
-import { SubjectType } from '../../../../webshell-common-ts/http/v2/common.types/subject.types';
 import { Environment } from '../../../../webshell-common-ts/http/v2/policy/types/environment.types';
 import { cleanupTargetConnectPolicies } from '../system-test-cleanup';
 import { PolicyHttpService } from '../../../http-services/policy/policy.http-services';
@@ -34,7 +33,7 @@ export const dynamicAccessSuite = () => {
             policyService = new PolicyHttpService(configService, logger);
             connectionService = new ConnectionHttpService(configService, logger);
             dynamicAccessConfigService = new DynamicAccessConfigHttpService(configService, logger);
-            testUtils = new TestUtils(configService, logger, loggerConfigService);
+            testUtils = new TestUtils(configService, logger);
 
             // Create our DAT config
             const response = await dynamicAccessConfigService.CreateDynamicAccessConfig({
@@ -54,9 +53,10 @@ export const dynamicAccessSuite = () => {
                 dynamicAccessConfiguration: dynamicAccessConfiguration
             };
 
-            const currentUser: Subject = {
-                id: configService.me().id,
-                type: SubjectType.User
+            const me = configService.me();
+            const currentSubject: Subject = {
+                id: me.id,
+                type: me.type
             };
             const environment: Environment = {
                 id: systemTestEnvId
@@ -65,7 +65,7 @@ export const dynamicAccessSuite = () => {
             // Then create our targetConnect policy
             await policyService.AddTargetConnectPolicy({
                 name: systemTestPolicyTemplate.replace('$POLICY_TYPE', 'dat-connect'),
-                subjects: [currentUser],
+                subjects: [currentSubject],
                 groups: [],
                 description: `DAT connect policy created for system test: ${systemTestUniqueId}`,
                 environments: [environment],
@@ -96,12 +96,12 @@ export const dynamicAccessSuite = () => {
 
         test(`3090: Connect to DAT target`, async () => {
             const exit = true;
-            const connectionId = await connectTestUtils.runNonTestTargetShellConnectTest(dynamicAccessTestTarget, `DAT connect test - ${systemTestUniqueId}`, exit);
+            const connectionTestResult = await connectTestUtils.runNonTestTargetShellConnectTest(dynamicAccessTestTarget, `DAT connect test - ${systemTestUniqueId}`, exit);
 
             // After the connection is closed we should eventually see the DAT
             // state move to Stopped once the stop webhook is successfully sent
             await testUtils.waitForExpect(async () => {
-                const datConnectionDetails = await connectionService.GetDATConnectionDetails(connectionId);
+                const datConnectionDetails = await connectionService.GetDATConnectionDetails(connectionTestResult.connectionId);
                 expect(datConnectionDetails.dynamicAccessTargetState).toBe(DynamicAccessTargetState.Stopped);
             });
         }, 2 * 60 * 1000);

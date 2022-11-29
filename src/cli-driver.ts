@@ -4,7 +4,8 @@ import {
     targetStringExample,
     getZliRunCommand,
     targetTypeDisplay,
-    verbTypeDisplay} from './utils/utils';
+    verbTypeDisplay,
+    userOrSubjectRequired} from './utils/utils';
 import { ConfigService } from './services/config/config.service';
 import { checkVersionMiddleware } from './middlewares/check-version-middleware';
 import { Logger } from './services/logger/logger.service';
@@ -23,7 +24,7 @@ import { VerbType } from '../webshell-common-ts/http/v2/policy/types/verb-type.t
 // Handlers
 import { initMiddleware, oAuthMiddleware, GATrackingMiddleware, initLoggerMiddleware, mixpanelTrackingMiddleware, bzCertValidationInfoMiddleware } from './handlers/middleware.handler';
 import { sshProxyHandler } from './handlers/ssh-proxy/ssh-proxy.handler';
-import { loginHandler } from './handlers/login/login.handler';
+import { loginUserHandler, loginServiceAccountHandler } from './handlers/login/login.handler';
 import { listTargetsHandler } from './handlers/list-targets/list-targets.handler';
 import { configHandler } from './handlers/configure/config.handler';
 import { configDefaultTargetUserHandler } from './handlers/configure/config-default-targetuser.handler';
@@ -63,6 +64,7 @@ import { generateSshConfigHandler } from './handlers/generate/generate-ssh-confi
 import { sshProxyConfigHandler } from './handlers/generate/generate-ssh-proxy.handler';
 import { targetRestartHandler } from './handlers/target/target-restart.handler';
 import { sendLogsHandler } from './handlers/send-logs/send-logs.handler';
+import { createServiceAccountCmdBuilder } from './handlers/service-account/create-service-account.command-builder';
 
 // 3rd Party Modules
 import yargs from 'yargs/yargs';
@@ -102,6 +104,26 @@ import { createApiKeyHandler } from './handlers/api-key/create-api-key.handler';
 import { listDaemonsCmdBuilder } from './handlers/list-daemons/list-daemons.command-builder';
 import { targetRestartCmdBuilder } from './handlers/target/target-restart.command-builder';
 import { sendLogsCmdBuilder } from './handlers/send-logs/send-logs.command-builder';
+import { SubjectRole } from '../webshell-common-ts/http/v2/subject/types/subject-role.types';
+import { listServiceAccountsCmdBuilder } from './handlers/policy/policy-service-account/list-service-accounts.command-builder';
+import { listServiceAccountsHandler } from './handlers/policy/policy-service-account/list-service-accounts.handler';
+import { addSubjectToPolicyCmdBuilder } from './handlers/policy/policy-subject/add-subject-policy.command-builder';
+import { addSubjectToPolicyHandler } from './handlers/policy/policy-subject/add-subject-policy.handler';
+import { deleteSubjectFromPolicyCmdBuilder } from './handlers/policy/policy-subject/delete-subject-policy.command-builder';
+import { deleteSubjectFromPolicyHandler } from './handlers/policy/policy-subject/delete-subject-policy.handler';
+import { configureServiceAccountHandler } from './handlers/service-account/configure-service-account.handler';
+import { createServiceAccountHandler } from './handlers/service-account/create-service-account.handler';
+import { disableServiceAccountCmdBuilder } from './handlers/service-account/disable-service-account.command-builder';
+import { disableServiceAccountHandler } from './handlers/service-account/disable-service-account.handler';
+import { enableServiceAccountCmdBuilder } from './handlers/service-account/enable-service-account.command-builder';
+import { enableServiceAccountHandler } from './handlers/service-account/enable-service-account.handler';
+import { rotateMfaCmdBuilder } from './handlers/service-account/rotate-mfa.command-builder';
+import { rotateMfaHandler } from './handlers/service-account/rotate-mfa.handler';
+import { serviceAccountLoginCmdBuilder } from './handlers/service-account/service-account-login.command-builder';
+import { serviceAccountSetRoleCmdBuilder } from './handlers/service-account/set-role-service-account.command-builder';
+import { serviceAccountSetRoleCmdHandler } from './handlers/service-account/set-role-service-account.handler';
+import { SubjectHttpService } from './http-services/subject/subject.http-services';
+import { configureServiceAccountCmdBuilder } from './handlers/service-account/configure-service-account.command-builder';
 
 export type EnvMap = Readonly<{
     configName: string;
@@ -124,7 +146,8 @@ export class CliDriver
     private GAService: GAService;
     private mixpanelService: MixpanelService;
 
-    private availableCommands: Set<string> = new Set([
+    public availableCommands: Set<string> = new Set([
+        'me',
         'login',
         'connect',
         'status',
@@ -151,10 +174,11 @@ export class CliDriver
         'register',
         'api-key',
         'target',
+        'service-account',
     ]);
 
-    // use the following to shortcut middleware according to command
     private oauthCommands: Set<string> = new Set([
+        'me',
         'kube',
         'ssh-proxy-config',
         'connect',
@@ -172,9 +196,11 @@ export class CliDriver
         'api-key',
         'target',
         'send-logs',
+        'service-account',
     ]);
 
     private GACommands: Set<string> = new Set([
+        'me',
         'kube',
         'ssh-proxy-config',
         'connect',
@@ -189,22 +215,25 @@ export class CliDriver
         'generate',
         'policy',
         'target',
+        'service-account',
     ]);
 
     private adminOnlyCommands: Set<string> = new Set([
         'policy',
-        'api-key'
+        'api-key',
+        'service-account',
     ]);
 
     // available options for TargetType autogenerated from enum
     private targetTypeChoices: string[] = Object.values(TargetType).map(tt => targetTypeDisplay(tt).toLowerCase());
     private targetStatusChoices: string[] = Object.keys(TargetStatus).map(s => s.toLowerCase());
     private verbTypeChoices: string[] = Object.values(VerbType).map(vt => verbTypeDisplay(vt).toLowerCase());
+    private subjectRoleChoices: string[] = Object.values(SubjectRole).map(st => st.toLowerCase());
 
     // available options for PolicyType autogenerated from enum
     private policyTypeChoices: string[] = Object.keys(PolicyType).map(s => s.toLowerCase());
 
-    private getCliDriver(isSystemTest: boolean, baseCmd: string) {
+    public getCliDriver(isSystemTest: boolean, baseCmd: string) {
         return yargs()
             .scriptName('zli')
             .usage('$0 <cmd> [args]')
@@ -231,8 +260,9 @@ export class CliDriver
                     }
                 }
             })
-            .middleware(async (_) => {
-                if(!this.GACommands.has(baseCmd)) {
+            .middleware(async (argv) => {
+                const isServiceAccountLogin = argv._[0] == 'service-account' && argv._[1] == 'login';
+                if(!this.GACommands.has(baseCmd) || isServiceAccountLogin) {
                     this.GAService = null;
                     return;
                 }
@@ -254,7 +284,8 @@ export class CliDriver
                 this.logger.setGAService(this.GAService);
             })
             .middleware(async (argv) => {
-                if(!this.GACommands.has(baseCmd))
+                const isServiceAccountLogin = argv._[0] == 'service-account' && argv._[1] == 'login';
+                if(!this.GACommands.has(baseCmd) || isServiceAccountLogin)
                     return;
                 if(!this.configService.mixpanelToken()) {
                     await this.configService.fetchMixpanelToken();
@@ -266,23 +297,28 @@ export class CliDriver
                     return;
                 await checkVersionMiddleware(this.configService, this.logger);
             })
-            .middleware(async () => {
-                if(!this.oauthCommands.has(baseCmd))
+            .middleware(async (argv) => {
+                const isServiceAccountLogin = argv._[0] == 'service-account' && argv._[1] == 'login';
+                if(!this.oauthCommands.has(baseCmd) || isServiceAccountLogin)
                     return;
                 await oAuthMiddleware(this.configService, this.logger);
             })
             .middleware(async (argv) => {
+                const isServiceAccountLogin = argv._[0] == 'service-account' && argv._[1] == 'login';
                 const isGenerateBash = argv._[0] == 'generate' && argv._[1] == 'bash';
-                if((this.adminOnlyCommands.has(baseCmd) || isGenerateBash) && !this.configService.me().isAdmin){
+                const isGenerateKubeYaml = argv._[0] == 'generate' && argv._[1] == 'kubeYaml';
+                if(!isServiceAccountLogin &&
+                    ((this.adminOnlyCommands.has(baseCmd) || isGenerateBash || isGenerateKubeYaml) && !this.configService.me().isAdmin)){
                     this.logger.error(`This is an admin restricted command. Please login as an admin to perform it.`);
                     await cleanExit(1, this.logger);
                 }
             })
             // Middleware to ensure that BZCertValidation Info is set in the MrTAP config
-            .middleware(async () => {
+            .middleware(async (argv) => {
+                const isServiceAccountLogin = argv._[0] == 'service-account' && argv._[1] == 'login';
                 // Makes a Bastion API call so oauth middleware must have run
                 // first to ensure session token is set
-                if(!this.oauthCommands.has(baseCmd) || baseCmd === 'register')
+                if(!this.oauthCommands.has(baseCmd) || baseCmd === 'register' || isServiceAccountLogin)
                     return;
                 await bzCertValidationInfoMiddleware(this.mrtapService, this.configService, this.logger);
             })
@@ -387,7 +423,7 @@ export class CliDriver
                 }
             )
             .command(
-                'generate <typeOfConfig>',
+                'generate',
                 'Generate different types of configuration files (bash, sshConfig, ssh-proxy, kubeConfig or kubeYaml)',
                 (yargs) => {
                     return yargs
@@ -474,10 +510,10 @@ export class CliDriver
                     return loginCmdBuilder(yargs);
                 },
                 async (argv) => {
-                    const loginResult = await loginHandler(this.configService, this.logger, argv, this.mrtapService);
+                    const loginResult = await loginUserHandler(this.configService, this.logger, this.mrtapService, argv);
 
                     if (loginResult) {
-                        const me = loginResult.userSummary;
+                        const me = loginResult.subjectSummary;
                         this.logger.info(`Logged in as: ${me.email}, bzero-id:${me.id}, session-id:${this.configService.getSessionId()}`);
                         await cleanExit(0, this.logger);
                     } else {
@@ -565,7 +601,20 @@ export class CliDriver
                                 return addUserToPolicyCmdBuilder(yargs);
                             },
                             async (argv) => {
+                                this.logger.warn('The add-user command is deprecated and will be removed soon, please use its equivalent \'zli add-subject\'');
                                 await addUserToPolicyHandler(argv.idpEmail, argv.policyName, this.configService, this.logger);
+                            },
+                            [],
+                            true // deprecated flag
+                        )
+                        .command(
+                            'add-subject <policyName> <email>',
+                            'Add a subject (IdP user or service account) to an existing policy',
+                            (yargs) => {
+                                return addSubjectToPolicyCmdBuilder(yargs);
+                            },
+                            async (argv) => {
+                                await addSubjectToPolicyHandler(argv.email, argv.policyName, this.configService, this.logger);
                             }
                         )
                         .command(
@@ -602,7 +651,7 @@ export class CliDriver
                             'create-cluster',
                             'Create a cluster policy. See help menu for required and optional flags.',
                             (yargs) => {
-                                return createClusterPolicyCmdBuilder(yargs);
+                                return createClusterPolicyCmdBuilder(yargs, userOrSubjectRequired);
                             },
                             async (argv) => {
                                 await createClusterPolicyHandler(argv, this.configService, this.logger);
@@ -612,7 +661,7 @@ export class CliDriver
                             'create-tconnect',
                             'Create a target connect policy. See help menu for required and optional flags.',
                             (yargs) => {
-                                return createTConnectPolicyCmdBuilder(yargs, this.verbTypeChoices);
+                                return createTConnectPolicyCmdBuilder(yargs, this.verbTypeChoices, userOrSubjectRequired);
                             },
                             async (argv) => {
                                 await createTConnectPolicyHandler(argv, this.configService, this.logger);
@@ -622,7 +671,7 @@ export class CliDriver
                             'create-recording',
                             'Create a session recording policy. See help menu for required and optional flags.',
                             (yargs) => {
-                                return createRecordingPolicyCmdBuilder(yargs);
+                                return createRecordingPolicyCmdBuilder(yargs, userOrSubjectRequired);
                             },
                             async (argv) => {
                                 await createRecordingPolicyHandler(argv, this.configService, this.logger);
@@ -632,7 +681,7 @@ export class CliDriver
                             'create-proxy',
                             'Create a proxy policy. See help menu for required and optional flags.',
                             (yargs) => {
-                                return createProxyPolicyCmdBuilder(yargs);
+                                return createProxyPolicyCmdBuilder(yargs, userOrSubjectRequired);
                             },
                             async (argv) => {
                                 await createProxyPolicyHandler(argv, this.configService, this.logger);
@@ -645,7 +694,20 @@ export class CliDriver
                                 return deleteUserFromPolicyCmdBuilder(yargs);
                             },
                             async (argv) => {
+                                this.logger.warn('The delete-user command is deprecated and will be removed soon, please use its equivalent \'zli delete-subject\'');
                                 await deleteUserFromPolicyHandler(argv.idpEmail, argv.policyName, this.configService, this.logger);
+                            },
+                            [],
+                            true // deprecated flag
+                        )
+                        .command(
+                            'delete-subject <policyName> <email>',
+                            'Delete a subject (IdP user or service account) from an existing policy',
+                            (yargs) => {
+                                return deleteSubjectFromPolicyCmdBuilder(yargs);
+                            },
+                            async (argv) => {
+                                await deleteSubjectFromPolicyHandler(argv.email, argv.policyName, this.configService, this.logger);
                             }
                         )
                         .command(
@@ -707,13 +769,12 @@ export class CliDriver
                 () => {},
                 async () => {
                     const userHttpService = new UserHttpService(this.configService, this.logger);
+                    const subjectHttpService = new SubjectHttpService(this.configService, this.logger);
                     await userHttpService.Register();
-                    // Update me section of the config in case this is a new login or any
-                    // user information has changed since last login
-                    const me = await userHttpService.Me();
+
+                    // Update me
+                    const me = await subjectHttpService.Me();
                     this.configService.setMe(me);
-
-
                 }
             )
             .command(
@@ -725,6 +786,102 @@ export class CliDriver
                 async (argv) => {
                     await sendLogsHandler(argv, this.configService, this.loggerConfigService, this.logger);
                 }
+            )
+            .command(
+                ['service-account'],
+                'List, create, update and configure functionality for service accounts',
+                (yargs) => {
+                    return yargs
+                        .command(
+                            'create <providerCreds>',
+                            'Create a new service account',
+                            (yargs) => {
+                                return createServiceAccountCmdBuilder(yargs);
+                            },
+                            async (argv) => {
+                                await createServiceAccountHandler(this.configService, this.logger, argv);
+                            }
+                        )
+                        .command(
+                            'configure',
+                            'Add the specified service account\'s pattern to the specified target(s)',
+                            (yargs) => {
+                                return configureServiceAccountCmdBuilder(yargs);
+                            },
+                            async (argv) => {
+                                await configureServiceAccountHandler(this.configService, this.logger, this.mrtapService, argv);
+                            }
+                        )
+                        .command(
+                            'disable <serviceAccountEmail>',
+                            'Disables a service account that is currently enabled',
+                            (yargs) => {
+                                return disableServiceAccountCmdBuilder(yargs);
+                            },
+                            async (argv) => {
+                                await disableServiceAccountHandler(this.configService, this.logger, argv);
+                            }
+                        )
+                        .command(
+                            'enable <serviceAccountEmail>',
+                            'Enables a service account that is currently disabled',
+                            (yargs) => {
+                                return enableServiceAccountCmdBuilder(yargs);
+                            },
+                            async (argv) => {
+                                await enableServiceAccountHandler(this.configService, this.logger, argv);
+                            }
+                        )
+                        .command(
+                            'list',
+                            'List the BastionZero service accounts in the organization',
+                            (yargs) => {
+                                return listServiceAccountsCmdBuilder(yargs);
+                            },
+                            async (argv) => {
+                                await listServiceAccountsHandler(argv, this.configService, this.logger);
+                            }
+                        )
+                        .command(
+                            'login',
+                            'Log in using a service account',
+                            (yargs) => {
+                                return serviceAccountLoginCmdBuilder(yargs);
+                            },
+                            async (argv) => {
+                                const loginResult = await loginServiceAccountHandler(this.configService, this.logger, argv, this.mrtapService);
+                                if (loginResult) {
+                                    const me = loginResult.subjectSummary;
+                                    this.logger.info(`Logged in as: ${me.email}, bzero-id:${me.id}, session-id:${this.configService.getSessionId()}`);
+                                    await cleanExit(0, this.logger);
+                                } else {
+                                    await cleanExit(1, this.logger);
+                                }
+                            }
+                        )
+                        .command(
+                            'rotate-mfa <serviceAccountEmail>',
+                            'Rotate the MFA secret of an existing service account',
+                            (yargs) => {
+                                return rotateMfaCmdBuilder(yargs);
+                            },
+                            async (argv) => {
+                                await rotateMfaHandler(this.configService, this.logger, argv);
+                            }
+                        )
+                        .command(
+                            'set-role <role> <serviceAccountEmail>',
+                            'Change a service account\'s role to user or admin',
+                            (yargs) => {
+                                return serviceAccountSetRoleCmdBuilder(yargs, this.subjectRoleChoices);
+                            },
+                            async (argv) => {
+                                await serviceAccountSetRoleCmdHandler(this.configService, this.logger, argv);
+                            }
+                        )
+                        .demandCommand(1, '')
+                        .strict();
+                },
             )
             .command(
                 'ssh-proxy-config',
@@ -774,7 +931,7 @@ export class CliDriver
                         .demandCommand(1, 'target requires a sub-command. Specify --help for available options');
                 },
             )
-            .option('configName', {type: 'string', choices: ['prod', 'stage', 'dev'], default: envMap.configName, hidden: true})
+            .option('configName', {type: 'string', default: envMap.configName, hidden: true, describe: 'prod, stage, dev or any other custom provided value'})
             // Overwrites the default directory used by conf. Used by
             // system-tests to use an isolated configuration file with a
             // pre-loaded logged in user

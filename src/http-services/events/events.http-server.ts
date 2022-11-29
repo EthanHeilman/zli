@@ -43,14 +43,14 @@ export class EventsHttpService extends HttpService
         return this.Get('kube');
     }
 
-    public GetUserEvents(startTime?: Date, subjectIds?: string[], count?: number) : Promise<UserEventDataMessage[]>
+    public GetSubjectEvents(startTime?: Date, subjectIds?: string[], count?: number) : Promise<UserEventDataMessage[]>
     {
         const params = {
             startTimestamp: startTime?.toJSON(),
             subjectIds: subjectIds?.toString(),
             eventCount: count?.toString()
         };
-        return this.Get('user', params);
+        return this.Get('subject', params);
     }
 
     public GetAgentStatusChangeEvents(targetId: string, startTime?: Date, endTime?: Date): Promise<AgentStatusChangeData[]> {
@@ -60,6 +60,6 @@ export class EventsHttpService extends HttpService
             endTimestamp: endTime?.toJSON(),
         };
 
-        return this.Get('agentstatuschange', params);
+        return this.Get('agent-status-change', params);
     }
 }

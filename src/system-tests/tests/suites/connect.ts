@@ -1,11 +1,10 @@
-import { configService, logger, loggerConfigService, systemTestEnvId, systemTestPolicyTemplate, systemTestUniqueId, testTargets, allTargets } from '../system-test';
+import { configService, logger, systemTestEnvId, systemTestPolicyTemplate, systemTestUniqueId, testTargets, allTargets, RUN_AS_SERVICE_ACCOUNT } from '../system-test';
 import { callZli } from '../utils/zli-utils';
 import { ConnectionHttpService } from '../../../http-services/connection/connection.http-services';
 import { getDOImageName } from '../../digital-ocean/digital-ocean-ssm-target.service.types';
 import { TestUtils } from '../utils/test-utils';
-import { SubjectType } from '../../../../webshell-common-ts/http/v2/common.types/subject.types';
 import { Environment } from '../../../../webshell-common-ts/http/v2/policy/types/environment.types';
-import { TestTarget } from '../system-test.types';
+import { TestTarget, isSsmTarget, isBzeroTarget } from '../system-test.types';
 import { cleanupTargetConnectPolicies } from '../system-test-cleanup';
 import { PolicyHttpService } from '../../../http-services/policy/policy.http-services';
 import { Subject } from '../../../../webshell-common-ts/http/v2/policy/types/subject.types';
@@ -15,6 +14,12 @@ import { ConnectionEventType } from '../../../../webshell-common-ts/http/v2/even
 import { testIf } from '../utils/utils';
 import * as CleanExitHandler from '../../../handlers/clean-exit.handler';
 import { EventsHttpService } from '../../../http-services/events/events.http-server';
+
+export function runTestForTarget(testTarget: TestTarget): boolean {
+    // do not run ssm target tests as service account because this is not
+    // supported in the ssm agent
+    return !(isSsmTarget(testTarget) && RUN_AS_SERVICE_ACCOUNT);
+}
 
 export const connectSuite = () => {
     describe('connect suite', () => {
@@ -32,11 +37,12 @@ export const connectSuite = () => {
             policyService = new PolicyHttpService(configService, logger);
             connectionService = new ConnectionHttpService(configService, logger);
             eventsService = new EventsHttpService(configService, logger);
-            testUtils = new TestUtils(configService, logger, loggerConfigService);
+            testUtils = new TestUtils(configService, logger);
 
-            const currentUser: Subject = {
-                id: configService.me().id,
-                type: SubjectType.User
+            const me = configService.me();
+            const currentSubject: Subject = {
+                id: me.id,
+                type: me.type
             };
             const environment: Environment = {
                 id: systemTestEnvId
@@ -45,7 +51,7 @@ export const connectSuite = () => {
             // Then create our targetConnect policy
             await policyService.AddTargetConnectPolicy({
                 name: systemTestPolicyTemplate.replace('$POLICY_TYPE', 'target-connect'),
-                subjects: [currentUser],
+                subjects: [currentSubject],
                 groups: [],
                 description: `Target connect policy created for system test: ${systemTestUniqueId}`,
                 environments: [environment],
@@ -54,7 +60,7 @@ export const connectSuite = () => {
                 verbs: [{type: VerbType.Shell},]
             });
 
-            const mostRecentUserEvent = await eventsService.GetUserEvents(null, [configService.me().id], 1);
+            const mostRecentUserEvent = await eventsService.GetSubjectEvents(null, [configService.me().id], 1);
             userLogFilterStartTime = mostRecentUserEvent[0]?.timestamp;
         }, 60 * 1000);
 
@@ -76,15 +82,14 @@ export const connectSuite = () => {
         });
 
         allTargets.forEach(async (testTarget: TestTarget) => {
-            it(`${testTarget.connectCaseId}: zli connect - ${testTarget.awsRegion} - ${testTarget.installType} - ${getDOImageName(testTarget.dropletImage)}`, async () => {
+            testIf(runTestForTarget(testTarget), `${testTarget.connectCaseId}: zli connect - ${testTarget.awsRegion} - ${testTarget.installType} - ${getDOImageName(testTarget.dropletImage)}`, async () => {
                 await connectTestUtils.runShellConnectTest(testTarget, `connect test - ${systemTestUniqueId}`, true);
             }, 2 * 60 * 1000);
 
             // TODO: Disable attach tests for bzero targets until attach
             // flow is stable for bzero targets
             // https://commonwealthcrypto.atlassian.net/browse/CWC-1826
-            const runAttachTest = testTarget.installType !== 'pm-bzero' && testTarget.installType !== 'ad-bzero' && testTarget.installType !== 'as-bzero';
-            testIf(runAttachTest, `${testTarget.attachCaseId}: zli attach - ${testTarget.awsRegion} - ${testTarget.installType} - ${getDOImageName(testTarget.dropletImage)}`, async () => {
+            testIf(!isBzeroTarget(testTarget) && runTestForTarget(testTarget), `${testTarget.attachCaseId}: zli attach - ${testTarget.awsRegion} - ${testTarget.installType} - ${getDOImageName(testTarget.dropletImage)}`, async () => {
                 const doTarget = testTargets.get(testTarget);
                 const connectTarget = connectTestUtils.getConnectTarget(doTarget, testTarget.awsRegion);
 
@@ -95,18 +100,18 @@ export const connectSuite = () => {
 
                 // Run normal connect test first
                 const beforeAttachEchoString = `before attach - ${systemTestUniqueId}`;
-                const connectionId = await connectTestUtils.runShellConnectTest(testTarget, beforeAttachEchoString, shouldExit);
+                const connectionTestResult = await connectTestUtils.runShellConnectTest(testTarget, beforeAttachEchoString, shouldExit);
 
                 // Get a new instance of the ConnectTarget which has a separate
                 // mockstdin/mock pty and captured output buffer
                 const attachTarget = connectTestUtils.getConnectTarget(doTarget, testTarget.awsRegion);
 
                 // Call zli attach
-                const attachPromise = callZli(['attach', connectionId]);
+                const attachPromise = callZli(['attach', connectionTestResult.connectionId]);
 
                 // After attaching we should see another client connection event
                 await connectTestUtils.ensureConnectionEvent(attachTarget, ConnectionEventType.ClientConnect, testStartTime);
-                const eventExists = await testUtils.EnsureUserEventExists('connectionservice:connect', true, attachTarget.id, new Date(userLogFilterStartTime));
+                const eventExists = await testUtils.EnsureSubjectEventExists('connectionservice:connect', true, attachTarget.id, new Date(userLogFilterStartTime));
                 expect(eventExists).toBeTrue();
 
                 // Make sure terminal output is replayed before sending new input
@@ -130,33 +135,28 @@ export const connectSuite = () => {
                 // Exit the connection
                 await connectTestUtils.sendExitCommand(attachTarget);
 
-                // Wait for the attach command to exit
-                await attachPromise;
+                // Wait for the attach/connect commands to exit
+                await Promise.all([attachPromise, connectionTestResult.zliConnectPromise]);
 
                 // After exiting we should see a client disconnected event
                 await connectTestUtils.ensureConnectionEvent(attachTarget, ConnectionEventType.ClientDisconnect, testStartTime);
             }, 4 * 60 * 1000); // Use a longer timeout on attach tests because they essentially run 2 back-to-back connect tests
 
-            it(`${testTarget.closeCaseId}: zli close - ${testTarget.awsRegion} - ${testTarget.installType} - ${getDOImageName(testTarget.dropletImage)}`, async () => {
+            testIf(runTestForTarget(testTarget), `${testTarget.closeCaseId}: zli close - ${testTarget.awsRegion} - ${testTarget.installType} - ${getDOImageName(testTarget.dropletImage)}`, async () => {
                 const doTarget = testTargets.get(testTarget);
                 const connectTarget = connectTestUtils.getConnectTarget(doTarget, testTarget.awsRegion);
 
                 // Run normal connect test first but do not exit so the terminal and zli connect command remain running
                 const shouldExit = false;
-                const connectionId = await connectTestUtils.runShellConnectTest(testTarget, `connect test - ${systemTestUniqueId}`, shouldExit);
+                const connectionTestResult = await connectTestUtils.runShellConnectTest(testTarget, `connect test - ${systemTestUniqueId}`, shouldExit);
 
                 // Call zli close which should cause the zli connect command to also exit
                 const cleanExitSpy = jest.spyOn(CleanExitHandler, 'cleanExit').mockImplementation(() => Promise.resolve());
-                await callZli(['close', connectionId]);
+                await Promise.all([await callZli(['close', connectionTestResult.connectionId]), connectionTestResult.zliConnectPromise]);
 
                 // cleanExit should be called twice. Once when the zli close
-                // command exits and once when the zli connect command
-                // exits.
-                await testUtils.waitForExpect(
-                    async () => expect(cleanExitSpy).toBeCalledTimes(2),
-                    30 * 1000,
-                    1 * 1000
-                );
+                // command exits and once when the zli connect command exits.
+                expect(cleanExitSpy).toBeCalledTimes(2);
 
                 // Expect our close event now
                 await connectTestUtils.ensureConnectionEvent(connectTarget, ConnectionEventType.Closed, testStartTime);
@@ -164,14 +164,14 @@ export const connectSuite = () => {
         });
 
         allTargets.forEach(async (testTarget: TestTarget) => {
-            it(`${testTarget.badConnectCaseId}: zli connect bad user - ${testTarget.awsRegion} - ${testTarget.installType} - ${getDOImageName(testTarget.dropletImage)}`, async () => {
+            testIf(runTestForTarget(testTarget), `${testTarget.badConnectCaseId}: zli connect bad user - ${testTarget.awsRegion} - ${testTarget.installType} - ${getDOImageName(testTarget.dropletImage)}`, async () => {
                 const doTarget = testTargets.get(testTarget);
                 const connectTarget = connectTestUtils.getConnectTarget(doTarget, testTarget.awsRegion);
 
                 // Call "zli connect"
                 const connectPromise = callZli(['connect', `baduser@${connectTarget.name}`]);
 
-                await expect(connectPromise).rejects.toThrow('cleanExit was called');
+                await expect(connectPromise).rejects.toThrow();
             }, 60 * 1000);
         });
     });

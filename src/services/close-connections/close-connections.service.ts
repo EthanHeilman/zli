@@ -1,3 +1,5 @@
+import { isError } from 'lodash';
+import { BaseConnectionSummary } from '../../../webshell-common-ts/http/v2/connection/types/base-connection-summary.types';
 import { ConnectionState } from '../../../webshell-common-ts/http/v2/connection/types/connection-state.types';
 import { ConnectionHttpService } from '../../http-services/connection/connection.http-services';
 import { SpaceHttpService } from '../../http-services/space/space.http-services';
@@ -26,17 +28,37 @@ export async function closeShellConnections(
 };
 
 /**
- * Close all of the user's db connections
- * @returns A promise that is resolved when all db connections have been closed or rejected when any of the db connections failed to close
+ * Close open connections for specific type of connection. All close requests
+ * are issued concurrently and failing to close one connection does not cancel
+ * outstanding close requests. An error is thrown, once all requests have
+ * finished, if at least one connection failed to close
  */
-export async function closeDbConnections(
+export async function closeConnections(
     configService: ConfigService,
-    logger: Logger
+    logger: Logger,
+    type: 'db' | 'kube'
 ): Promise<void> {
     const connectionHttpService = new ConnectionHttpService(configService, logger);
 
-    // Send close requests concurrently and wait for all promises to
-    // resolve/reject
-    const openDbConnections = await connectionHttpService.ListDbConnections(ConnectionState.Open);
-    await Promise.all(openDbConnections.map(conn => connectionHttpService.CloseConnection(conn.id)));
+    let connections: BaseConnectionSummary[];
+    switch (type) {
+    case 'db':
+        connections = await connectionHttpService.ListDbConnections(ConnectionState.Open);
+        break;
+    case 'kube':
+        connections = await connectionHttpService.ListKubeConnections(ConnectionState.Open);
+        break;
+    default:
+        // Compile-time exhaustive check
+        const exhaustiveCheck: never = type;
+        throw new Error(`Unhandled case: ${exhaustiveCheck}`);
+    }
+
+    const results = await Promise.allSettled(connections.map(conn => connectionHttpService.CloseConnection(conn.id)));
+    const allErrors = results.reduce<any[]>((acc, result) => result.status === 'rejected' ? [...acc, result.reason] : acc, []);
+
+    if (allErrors.length > 0) {
+        const messages = allErrors.reduce<string[]>((acc, err) => isError(err) ? [...acc, err.message] : acc, []);
+        throw new Error(`Failed closing at least one ${type} connection: ${messages.join(', ')}`);
+    }
 }

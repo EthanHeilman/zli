@@ -16,12 +16,14 @@ import { ConsoleWithTranscriptService } from '../../services/consoleWithTranscri
 import chalk from 'chalk';
 import { TranscriptMessage } from '../../services/consoleWithTranscript/consoleWithTranscript.types';
 import ora from 'ora';
-import { login } from '../login/login.handler';
 import { MrtapService } from '../../../webshell-common-ts/mrtap.service/mrtap.service';
 import { EnvironmentHttpService } from '../../http-services/environment/environment.http-services';
 import { PolicyHttpService } from '../../../src/http-services/policy/policy.http-services';
 import { UserSummary } from '../../../webshell-common-ts/http/v2/user/types/user-summary.types';
 import { RegisteredSSHHost } from '../../services/quickstart/quickstart.service.types';
+import { UserHttpService } from '../../../src/http-services/user/user.http-services';
+import { SubjectType } from '../../../webshell-common-ts/http/v2/common.types/subject.types';
+import { loginUserHandler } from '../login/login.handler';
 
 const welcomeMessage = `Welcome to BastionZero and the journey to zero trust access via our multi-root, trustless access protocol (MrTAP). We're excited to have you!\n
 Our quickstart installer is a fast and easy method for you to try BastionZero using your existing SSH configuration.
@@ -139,6 +141,7 @@ export async function quickstartHandler(
 ) {
     await validateQuickstartArgs(argv);
 
+    const userHttpService = new UserHttpService(configService, logger);
     const consoleWithTranscript = new ConsoleWithTranscriptService(chalk.magenta);
 
     // Callback on cancel prompt
@@ -174,9 +177,11 @@ export async function quickstartHandler(
     try {
         // Run standard oauth middleware logic that checks if user is logged in
         // and refreshes token if its expired.
-        await oauthService.getIdTokenAndCheckSessionToken();
-
-        await postSuccessLogin(configService.me(), (firstName) => {
+        await oauthService.getIdToken();
+        if(configService.me().type !== SubjectType.User)
+            throw new Error(`Cannot continue as subject ${configService.me().type}`);
+        const userSummary = await userHttpService.GetUserById(configService.me().id);
+        await postSuccessLogin(userSummary, (firstName) => {
             if (firstName) {
                 return `\nWelcome back ${firstName}!`;
             }
@@ -190,9 +195,12 @@ export async function quickstartHandler(
         consoleWithTranscript.log(loginMessage);
         await waitForKeypress();
 
-        const loginResult = await login(mrtapService, configService, logger);
+        const loginResult = await loginUserHandler(configService, logger, mrtapService);
         if (loginResult) {
-            await postSuccessLogin(loginResult.userSummary, (firstName) => {
+            if(configService.me().type !== SubjectType.User)
+                throw new Error(`Cannot continue as subject ${configService.me().type}`);
+            const userSummary = await userHttpService.GetUserById(configService.me().id);
+            await postSuccessLogin(userSummary, (firstName) => {
                 if (firstName) {
                     return `\nWelcome ${firstName}!`;
                 }

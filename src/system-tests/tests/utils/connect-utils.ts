@@ -44,6 +44,11 @@ interface ConnectTarget {
     cleanup: () => void | Promise<void>;
 };
 
+export interface ConnectTestResult {
+    connectionId: string;
+    zliConnectPromise: Promise<void>;
+}
+
 export class ConnectTestUtils {
 
     private _connectTargets: ConnectTarget[] = [];
@@ -67,22 +72,22 @@ export class ConnectTestUtils {
      * re-attaching can happen whereas bzero targets will close the connection.
      * @returns The ID of the shell connection created
      */
-    public async runShellConnectTest(testTarget: TestTarget, stringToEcho: string, exit: boolean): Promise<string> {
+    public async runShellConnectTest(testTarget: TestTarget, stringToEcho: string, exit: boolean, appName: string = null): Promise<ConnectTestResult> {
         const doTarget = testTargets.get(testTarget);
         const connectTarget = this.getConnectTarget(doTarget, testTarget.awsRegion);
-        return await this.runShellConnectTestHelper(connectTarget, stringToEcho, exit);
+        return await this.runShellConnectTestHelper(connectTarget, stringToEcho, exit, appName);
     }
 
     /**
      * Runs shell connect test for a non TestTarget
      * which is specific to Digital Ocean
      */
-    public async runNonTestTargetShellConnectTest(target: DATBzeroTarget | ContainerBzeroTarget, stringToEcho: string, exit: boolean): Promise<string> {
+    public async runNonTestTargetShellConnectTest(target: DATBzeroTarget | ContainerBzeroTarget, stringToEcho: string, exit: boolean): Promise<ConnectTestResult> {
         const connectTarget = this.getConnectTarget(target, target.awsRegion);
         return await this.runShellConnectTestHelper(connectTarget, stringToEcho, exit);
     }
 
-    private async runShellConnectTestHelper(connectTarget: ConnectTarget, stringToEcho: string, exit: boolean): Promise<string> {
+    private async runShellConnectTestHelper(connectTarget: ConnectTarget, stringToEcho: string, exit: boolean, appName: string = null): Promise<ConnectTestResult> {
         const startTime = new Date();
 
         // Spy on result of the ConnectionHttpService.CreateUniversalConnection
@@ -102,7 +107,13 @@ export class ConnectTestUtils {
         if(connectTarget.type !== 'ssm') {
             targetString += `.${connectTarget.environmentId}`;
         }
-        const connectPromise = callZli(['connect', targetString]);
+
+        const connectArgs = ['connect', targetString];
+        if(appName) {
+            connectArgs.push('--configName', appName);
+        }
+
+        const connectPromise = callZli(connectArgs);
 
         if(connectTarget.type === 'dat-bzero') {
             // For DATs we have to wait for the waitForDATConnection method to
@@ -147,7 +158,10 @@ export class ConnectTestUtils {
             await this.ensureConnectionEvent(connectTarget, ConnectionEventType.ClientDisconnect, startTime);
         }
 
-        return gotUniversalConnectionResponse.connectionId;
+        return {
+            connectionId: gotUniversalConnectionResponse.connectionId,
+            zliConnectPromise: connectPromise
+        };
     }
 
     public async sendExitCommand(connectTarget: ConnectTarget) {
