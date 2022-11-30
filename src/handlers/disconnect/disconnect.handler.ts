@@ -1,4 +1,3 @@
-import { killDaemon } from '../../utils/daemon-utils';
 import yargs from 'yargs';
 import { ConfigService } from '../../services/config/config.service';
 import { Logger } from '../../services/logger/logger.service';
@@ -9,6 +8,8 @@ import { DisconnectResult } from '../../services/daemon-management/types/disconn
 import { ILogger } from '../../../webshell-common-ts/logging/logging.types';
 import { DaemonConfig, DaemonConfigType } from '../../services/config/config.service.types';
 import { filterAndOverwriteUserKubeConfig } from '../../services/kube-management/kube-management.service';
+import { killDaemonAndLog, logKillDaemonResult } from '../../utils/daemon-utils';
+import { toUpperCase } from '../../utils/utils';
 
 export async function disconnectHandler(
     argv: yargs.Arguments<disconnectArgs>,
@@ -30,7 +31,7 @@ export async function disconnectHandler(
         const webConfig = configService.getWebConfig();
 
         if (webConfig['localPid'] != null) {
-            await killDaemon(webConfig['localPid'], logger);
+            await killDaemonAndLog(webConfig, logger);
 
             // Update the localPid
             webConfig['localPid'] = null;
@@ -56,25 +57,29 @@ export async function handleDisconnect<T extends DaemonConfig>(
     daemonDisconnector: IDaemonDisconnector<T>,
     logger: ILogger
 ) {
+    logger.info(`Waiting for all ${daemonDisconnector.configType} daemons to shut down...`);
     const disconnectResults = await daemonDisconnector.disconnectAllDaemons();
 
     // Process each disconnect result
     let didDisconnect: boolean = false;
-    for (const [connectionId, result] of disconnectResults) {
-        const localPid = result.daemon.localPid;
-        switch (result.type) {
+    for (const [connectionId, disconnectResult] of disconnectResults) {
+        const localPid = disconnectResult.daemon.localPid;
+        switch (disconnectResult.type) {
         case 'daemon_fail_killed':
-            logger.warn(`Attempt to kill existing daemon failed. This is expected if the daemon has been killed already. Make sure no program is using pid: ${localPid}. Try running \`kill -9 ${localPid}\``);
-            logger.debug(`Error killing daemon process: ${result.error}`);
+            logger.warn(`Attempt to shut down the daemon running on PID ${localPid} failed: ${disconnectResult.error}\nConsider running \'kill -9 ${localPid}\' to force kill it`);
             break;
         case 'daemon_success_killed':
-            didDisconnect = true;
-            const connId = connectionId ? connectionId : 'N/A';
-            logger.info(`Killed local ${result.daemon.type} daemon: (connId: ${connId} - localPid: ${localPid})!`);
+            didDisconnect = disconnectResult.killResult !== 'no_longer_exists';
+            const id = `${toUpperCase(disconnectResult.daemon.type)} daemon (connId: ${connectionId ? connectionId : 'N/A'} - PID: ${localPid})`;
+            logKillDaemonResult(id, disconnectResult.killResult, logger);
+            break;
+        case 'daemon_pid_not_set':
+            // Nothing to log because we can't attempt to shut down a daemon
+            // process whose PID is unknown
             break;
         default:
             // Compile-time exhaustive check
-            const exhaustiveCheck: never = result;
+            const exhaustiveCheck: never = disconnectResult;
             throw new Error(`Unhandled case: ${exhaustiveCheck}`);
         }
     }

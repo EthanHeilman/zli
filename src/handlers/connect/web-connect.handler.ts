@@ -38,7 +38,7 @@ export async function webConnectHandler(
     webConfig.localHost = localHost;
     webConfig.name = webTarget.name;
 
-    await killLocalPortAndPid(webConfig.localPid, webConfig.localPort, logger);
+    await killLocalPortAndPid(webConfig, webConfig.localPort, logger);
 
     // Build our runtime config and cwd
     const baseEnv = getBaseDaemonEnv(configService, loggerConfigService, webTarget.agentPublicKey, createUniversalConnectionResponse.connectionId, createUniversalConnectionResponse.connectionAuthDetails);

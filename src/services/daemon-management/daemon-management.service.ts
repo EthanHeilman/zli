@@ -1,6 +1,7 @@
 import { DaemonConfig, DaemonConfigs, DaemonConfigType, DbConfig, getDefaultDbConfig, getDefaultKubeConfig, KubeConfig } from '../config/config.service.types';
 import { ProcessManagerService } from '../process-manager/process-manager.service';
 import { DaemonIsRunningStatus, DaemonRunningStatus, DaemonStatus } from './types/daemon-status.types';
+import { KillProcessResultType } from '../process-manager/process-manager.service.types';
 import { DisconnectResult } from './types/disconnect-result.types';
 
 export interface DaemonStore<T extends DaemonConfig> {
@@ -9,8 +10,8 @@ export interface DaemonStore<T extends DaemonConfig> {
 }
 
 export interface ProcessManager {
-    killProcess(pid: number): void;
     isProcessRunning(pid: number): boolean;
+    tryKillProcess(localPid: number): Promise<KillProcessResultType>;
 }
 
 export const LEGACY_KEY_STRING: string = 'n/a';
@@ -196,38 +197,32 @@ export class DaemonManagementService<T extends DaemonConfig> {
         const resultMap: Map<string, DisconnectResult<T>> = new Map();
         const daemonConfigs = this.getDaemonConfigs();
 
-        for (const [connectionId, daemonConfig] of daemonConfigs) {
-            const localPid = daemonConfig.localPid;
-            if (localPid != null) {
-                // Try to kill the daemon process. Log results if killing daemon
-                // fails.
-                try {
-                    this.processManager.killProcess(localPid);
-                } catch (err: any) {
-                    // If the daemon was killed or doesn't exist--just continue
-
-                    // Still remove from the config store
-                    this.deleteDaemon(connectionId);
-
-                    // Track decision
-                    resultMap.set(connectionId, {
-                        type: 'daemon_fail_killed',
-                        daemon: daemonConfig,
-                        error: err
-                    });
-                    continue;
-                }
-
-                // Daemon successfully killed. Delete from the config
-                this.deleteDaemon(connectionId);
-
-                // Track decision
-                resultMap.set(connectionId, {
-                    type: 'daemon_success_killed',
-                    daemon: daemonConfig,
-                });
+        const killButAlwaysResolve = async (connectionId: string, daemonConfig: T): Promise<[string, DisconnectResult<T>]> => {
+            if (daemonConfig.localPid == null) {
+                return [connectionId, { type: 'daemon_pid_not_set', daemon: daemonConfig }];
             }
-        }
+
+            try {
+                const killResult = await this.processManager.tryKillProcess(daemonConfig.localPid);
+                return [connectionId, { type: 'daemon_success_killed', daemon: daemonConfig, killResult: killResult }];
+            } catch (err: any) {
+                return [connectionId, { type: 'daemon_fail_killed', daemon: daemonConfig, error: err }];
+            }
+        };
+
+        // Attempt to kill all daemons concurrently
+        const results = await Promise.all(
+            Array
+                .from(daemonConfigs.entries())
+                .map(([connectionId, daemonConfig]) => killButAlwaysResolve(connectionId, daemonConfig)
+                ));
+
+        // Process results
+        results.forEach(([connectionId, result]) => {
+            // Delete daemon from config and track decision
+            this.deleteDaemon(connectionId);
+            resultMap.set(connectionId, result);
+        });
 
         return resultMap;
     }
