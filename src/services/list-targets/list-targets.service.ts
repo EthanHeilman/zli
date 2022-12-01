@@ -213,7 +213,8 @@ export function filterTargetsOnVersion(
     return targets
         .filter(
             t => {
-                const agentVersion = parse(t.agentVersion);
+                const sanitizedAgentVersion = t.agentVersion.replace('-beta', '');
+                const agentVersion = parse(sanitizedAgentVersion);
                 return (agentVersion == null) || gte(agentVersion, minAgentVersion);
             }
         );

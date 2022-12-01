@@ -30,17 +30,19 @@ export const serviceAccountSuite = () => {
 
         let policyService: PolicyHttpService;
         let subjectHttpService: SubjectHttpService;
+        let serviceAccountHttpService: ServiceAccountHttpService;
         let connectTestUtils: ConnectTestUtils;
 
         beforeAll(async () => {
             policyService = new PolicyHttpService(configService, logger);
             subjectHttpService = new SubjectHttpService(configService, logger);
+            serviceAccountHttpService = new ServiceAccountHttpService(configService, logger);
 
             if(IN_PIPELINE) {
                 // Make sure the bzeroCreds file exists because it wont be
                 // created when running in pipeline against cloud-dev or
                 // cloud-staging
-                await ensureServiceAccountExistsForLogin(subjectHttpService);
+                await ensureServiceAccountExistsForLogin(subjectHttpService, serviceAccountHttpService);
                 await ensureServiceAccountRole(subjectHttpService, false);
             }
         });

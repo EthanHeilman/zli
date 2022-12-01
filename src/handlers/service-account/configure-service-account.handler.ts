@@ -80,8 +80,8 @@ export async function configureServiceAccountHandler(configService: ConfigServic
 
     const serviceAccount = await serviceAccountHttpService.GetServiceAccount(subjectSummary.id);
     if(!serviceAccount.enabled) {
-        this.logger.error(`Service account ${serviceAccount.email} is not currently enabled.`);
-        await cleanExit(1, this.logger);
+        logger.error(`Service account ${serviceAccount.email} is not currently enabled.`);
+        await cleanExit(1, logger);
     }
 
     const serviceAccountConfiguration: ServiceAccountConfiguration = {
