@@ -39,6 +39,8 @@ export type BzeroContainerTestTarget = {
 
 export const agentContainerSuite = () => {
     describe('Agent Container suite', () => {
+        const targetConnectPolicyName = systemTestPolicyTemplate.replace('$POLICY_TYPE', 'container-target-connect');
+
         let policyService: PolicyHttpService;
         let connectionService: ConnectionHttpService;
         let testUtils: TestUtils;
@@ -69,7 +71,7 @@ export const agentContainerSuite = () => {
 
             // Then create our targetConnect policy
             await policyService.AddTargetConnectPolicy({
-                name: systemTestPolicyTemplate.replace('$POLICY_TYPE', 'container-target-connect'),
+                name: targetConnectPolicyName,
                 subjects: [currentSubject],
                 groups: [],
                 description: `Target connect policy created via containers for system test: ${systemTestUniqueId}`,
@@ -98,7 +100,7 @@ export const agentContainerSuite = () => {
 
 
             await Promise.allSettled([
-                await cleanupTargetConnectPolicies(systemTestPolicyTemplate.replace('$POLICY_TYPE', 'container-target-connect')),
+                await cleanupTargetConnectPolicies(targetConnectPolicyName),
                 policyService.DeleteSessionRecordingPolicy(sessionRecordingPolicy.id),
             ]);
         }, 60 * 1000 * 10);
@@ -145,10 +147,10 @@ export async function setupAgentContainer(targetsToRun: BzeroContainerTestTarget
         let imageUrl : string = undefined;
         switch (target.type) {
         case 'al2':
-            imageUrl = 'registry.digitalocean.com/bastionzero-do/agent-container-al2:latest';
+            imageUrl = 'registry.digitalocean.com/bastionzero-do/agent-container-al2-beta:latest';
             break;
         case 'ubuntu':
-            imageUrl = 'registry.digitalocean.com/bastionzero-do/agent-container-ubuntu:latest';
+            imageUrl = 'registry.digitalocean.com/bastionzero-do/agent-container-ubuntu-beta:latest';
             break;
         default:
             throw new Error(`Unhandled type passed: ${target.type}`);

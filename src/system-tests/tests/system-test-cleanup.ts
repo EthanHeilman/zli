@@ -70,5 +70,8 @@ export async function cleanupTargetConnectPolicies(policyName: string) {
     const targetConnectPolicy = targetConnectPolicies.find(policy =>
         policy.name == policyName
     );
-    await policyService.DeleteTargetConnectPolicy(targetConnectPolicy.id);
+
+    if(targetConnectPolicy) {
+        await policyService.DeleteTargetConnectPolicy(targetConnectPolicy.id);
+    }
 }

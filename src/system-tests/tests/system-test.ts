@@ -24,7 +24,7 @@ import { TestTarget } from './system-test.types';
 import { EnvironmentHttpService } from '../../http-services/environment/environment.http-services';
 import { iperfSuite } from './suites/iperf';
 import { extraSsmTestTargetsToRun, extraBzeroTestTargetsToRun, ssmTestTargetsToRun, bzeroTestTargetsToRun, initRegionalSSMTargetsTestConfig } from './targets-to-run';
-import { setupDOTestCluster, createDOTestTargets, setupSystemTestApiKeys, createServiceAccount } from './system-test-setup';
+import { setupDOTestCluster, createDOTestTargets, setupSystemTestApiKeys, ensureServiceAccountExistsForLogin } from './system-test-setup';
 import { cleanupDOTestCluster, cleanupDOTestTargets, cleanupSystemTestApiKeys } from './system-test-cleanup';
 import { apiKeySuite } from './suites/rest-api/api-keys';
 import { organizationSuite } from './suites/rest-api/organization';
@@ -267,7 +267,7 @@ beforeAll(async () => {
     // Logging in before we create the DO cluster also means the SA will be the
     // subject in the kube policy that gets created when installing via helm
     if(RUN_AS_SERVICE_ACCOUNT){
-        await createServiceAccount();
+        await ensureServiceAccountExistsForLogin(subjectHttpService);
         await callZli(['service-account', 'login', '--providerCreds', providerCredsPath, '--bzeroCreds', bzeroCredsPath]);
         const serviceAccountService = new ServiceAccountHttpService(configService, logger);
         systemTestServiceAccount = await serviceAccountService.Me();

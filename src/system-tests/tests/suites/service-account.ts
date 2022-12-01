@@ -1,7 +1,7 @@
 import { callZli } from '../utils/zli-utils';
 import fs from 'fs';
 import { ServiceAccountBzeroCredentials } from '../../../../src/handlers/login/types/service-account-bzero-credentials.types';
-import { bzeroCredsPath, configService, logger, providerCredsPath, setSystemTestServiceAccount, systemTestEnvId, systemTestPolicyTemplate, systemTestUniqueId } from '../system-test';
+import { bzeroCredsPath, configService, IN_PIPELINE, logger, providerCredsPath, setSystemTestServiceAccount, systemTestEnvId, systemTestPolicyTemplate, systemTestUniqueId } from '../system-test';
 import { ServiceAccountProviderCredentials } from '../../../../src/handlers/login/types/service-account-provider-credentials.types';
 import { Logger } from '../../../../src/services/logger/logger.service';
 import { ServiceAccountHttpService } from '../../../http-services/service-account/service-account.http-services';
@@ -17,19 +17,38 @@ import { Subject } from '../../../../webshell-common-ts/http/v2/policy/types/sub
 import { Environment } from '../../../../webshell-common-ts/http/v2/policy/types/environment.types';
 import { VerbType } from '../../../../webshell-common-ts/http/v2/policy/types/verb-type.types';
 import { cleanupTargetConnectPolicies } from '../system-test-cleanup';
+import { testIf } from '../utils/utils';
+import { ensureServiceAccountExistsForLogin } from '../system-test-setup';
+import { SubjectHttpService } from '../../../http-services/subject/subject.http-services';
 
 export const serviceAccountSuite = () => {
     describe('Service Account Suite', () => {
-        let policyService: PolicyHttpService;
+        const targetConnectPolicyName = systemTestPolicyTemplate.replace('$POLICY_TYPE', 'sa-configure-target-connect');
         const appNameRegex = new RegExp('https://(.*).bastionzero.com/');
         const appNameRegexTokenized = appNameRegex.exec(configService.getBastionUrl());
         const appName = appNameRegexTokenized[1]; // prod/stage/dev/tr-1 etc
 
+        let policyService: PolicyHttpService;
+        let subjectHttpService: SubjectHttpService;
+        let connectTestUtils: ConnectTestUtils;
+
         beforeAll(async () => {
             policyService = new PolicyHttpService(configService, logger);
+            subjectHttpService = new SubjectHttpService(configService, logger);
+
+            if(IN_PIPELINE) {
+                // Make sure the bzeroCreds file exists because it wont be
+                // created when running in pipeline against cloud-dev or
+                // cloud-staging
+                await ensureServiceAccountExistsForLogin(subjectHttpService);
+            }
         });
 
         afterAll(async() => {
+            // cleanup from configure sa test
+            if(connectTestUtils) await connectTestUtils.cleanup();
+            await cleanupTargetConnectPolicies(targetConnectPolicyName);
+
             // After the SA system tests are done we should get a stable SA summary and use that for API tests
             const loginServiceAccountSpy = jest.spyOn(ServiceAccountHttpService.prototype, 'LoginServiceAccount');
             await callZli(['service-account', 'login', '--providerCreds', providerCredsPath, '--bzeroCreds', bzeroCredsPath, '--configName', appName]);
@@ -40,7 +59,7 @@ export const serviceAccountSuite = () => {
         });
 
         // test successfully creating a service account
-        it('481485: Create service account as user', async () => {
+        testIf(!IN_PIPELINE, '481485: Create service account as user', async () => {
             await callZli(['service-account', 'create', providerCredsPath, '--bzeroCreds', bzeroCredsPath]);
             const bzeroCredsFile = JSON.parse(fs.readFileSync(bzeroCredsPath, 'utf-8')) as ServiceAccountBzeroCredentials;
             expect(bzeroCredsFile).toBeTruthy();
@@ -83,7 +102,7 @@ export const serviceAccountSuite = () => {
                 const systemTestSAConfigService = new ConfigService(appName, logger, envMap.configDir, true);
                 const testUtils = new TestUtils(systemTestSAConfigService, logger);
                 const connectionService = new ConnectionHttpService(systemTestSAConfigService, logger);
-                const connectTestUtils = new ConnectTestUtils(connectionService, testUtils);
+                connectTestUtils = new ConnectTestUtils(connectionService, testUtils);
 
                 // Then create our targetConnect policy
                 const me = systemTestSAConfigService.me();
@@ -96,7 +115,7 @@ export const serviceAccountSuite = () => {
                 };
 
                 await policyService.AddTargetConnectPolicy({
-                    name: systemTestPolicyTemplate.replace('$POLICY_TYPE', 'target-connect'),
+                    name: targetConnectPolicyName,
                     subjects: [currentSubject],
                     groups: [],
                     description: `Target connect policy created for service account configure system test: ${systemTestUniqueId}`,
@@ -108,8 +127,6 @@ export const serviceAccountSuite = () => {
 
                 const testTarget = bzeroTestTargetsToRun[0];
                 await connectTestUtils.runShellConnectTest(testTarget, `configure service account connect test - ${systemTestUniqueId}`, true, appName);
-                await connectTestUtils.cleanup();
-                await cleanupTargetConnectPolicies(systemTestPolicyTemplate.replace('$POLICY_TYPE', 'target-connect'));
             }
         }, 60 * 1000);
     });

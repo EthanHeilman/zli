@@ -25,6 +25,7 @@ import { EventsHttpService } from '../../../http-services/events/events.http-ser
 import { getTargetInfo } from '../utils/ssh-utils';
 import { dir, DirectoryResult } from 'tmp-promise';
 import path from 'path';
+import { cleanupTargetConnectPolicies } from '../system-test-cleanup';
 
 // Container and Systemd Service Names
 // https://github.com/bastionzero/cwc-infra/blob/7b17c303f4acec7553e05688958354c70a7444c1/Bzero-Common/bzero_common/utils.py#L58-L59
@@ -65,6 +66,8 @@ function fromTestTargetToCaseIdMapping(testTarget: TestTarget): testRailsCaseIdM
 
 export const agentRecoverySuite = (testRunnerKubeConfigFile: string, testRunnerUniqueId: string) => {
     describe('Agent Recovery Suite', () => {
+        const targetConnectPolicyName = systemTestPolicyTemplate.replace('$POLICY_TYPE', 'agent-recovery-target-connect');
+
         let k8sApi: k8s.CoreV1Api;
         let k8sExec: k8s.Exec;
         let policyService: PolicyHttpService;
@@ -104,7 +107,7 @@ export const agentRecoverySuite = (testRunnerKubeConfigFile: string, testRunnerU
             };
 
             await policyService.AddTargetConnectPolicy({
-                name: systemTestPolicyTemplate.replace('$POLICY_TYPE', 'target-connect'),
+                name: targetConnectPolicyName,
                 subjects: [currentSubject],
                 groups: [],
                 description: `Target connect policy created for agent recovery system test: ${systemTestUniqueId}`,
@@ -125,6 +128,7 @@ export const agentRecoverySuite = (testRunnerKubeConfigFile: string, testRunnerU
 
         afterAll(async () => {
             await tempDir.cleanup();
+            await cleanupTargetConnectPolicies(targetConnectPolicyName);
         });
 
         // Called before each case

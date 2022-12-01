@@ -23,6 +23,8 @@ export function runTestForTarget(testTarget: TestTarget): boolean {
 
 export const connectSuite = () => {
     describe('connect suite', () => {
+        const targetConnectPolicyName = systemTestPolicyTemplate.replace('$POLICY_TYPE', 'target-connect');
+
         let policyService: PolicyHttpService;
         let connectionService: ConnectionHttpService;
         let eventsService: EventsHttpService;
@@ -50,7 +52,7 @@ export const connectSuite = () => {
 
             // Then create our targetConnect policy
             await policyService.AddTargetConnectPolicy({
-                name: systemTestPolicyTemplate.replace('$POLICY_TYPE', 'target-connect'),
+                name: targetConnectPolicyName,
                 subjects: [currentSubject],
                 groups: [],
                 description: `Target connect policy created for system test: ${systemTestUniqueId}`,
@@ -67,7 +69,7 @@ export const connectSuite = () => {
         // Cleanup all policy after the tests
         afterAll(async () => {
             // Search and delete our target connect policy
-            await cleanupTargetConnectPolicies(systemTestPolicyTemplate.replace('$POLICY_TYPE', 'target-connect'));
+            await cleanupTargetConnectPolicies(targetConnectPolicyName);
         });
 
         // Called before each case

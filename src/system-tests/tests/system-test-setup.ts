@@ -18,6 +18,7 @@ import { DigitalOceanSSMTargetService } from '../digital-ocean/digital-ocean-ssm
 import { cleanupHelmAgentInstallation } from './system-test-cleanup';
 import { ServiceAccountProviderCredentials } from '../../../src/handlers/login/types/service-account-provider-credentials.types';
 import { callZli } from './utils/zli-utils';
+import { SubjectHttpService } from '../../http-services/subject/subject.http-services';
 
 // User to create for bzero targets to use for connect/ssh tests
 export const bzeroTargetCustomUser = 'bzuser';
@@ -345,12 +346,22 @@ export async function createDOTestTargets() {
 }
 
 /**
- * Helper function to create a service account
+ * Helper function to ensure a service account exists and we can login to it in system tests
  */
-export async function createServiceAccount() {
+export async function ensureServiceAccountExistsForLogin(subjectHttpService: SubjectHttpService) {
     const providerCredsFile = JSON.parse(fs.readFileSync(providerCredsPath, 'utf-8')) as ServiceAccountProviderCredentials;
-    await callZli(['service-account', 'create', providerCredsPath, '--bzeroCreds', bzeroCredsPath]);
-    await callZli(['service-account', 'set-role', 'admin', providerCredsFile.client_email]);
+    const providerEmail = providerCredsFile.client_email;
+
+    try {
+        await subjectHttpService.GetSubjectByEmail(providerEmail);
+        // If the service account already exists it should rotate its MFA secret
+        // so that the bzeroCreds file exists for login to use
+        await callZli(['service-account', 'rotate-mfa', providerCredsFile.client_email, '--bzeroCreds', bzeroCredsPath]);
+    } catch(err) {
+        // If the service account doesn't exist it should create it and change its role to admin
+        await callZli(['service-account', 'create', providerCredsPath, '--bzeroCreds', bzeroCredsPath]);
+        await callZli(['service-account', 'set-role', 'admin', providerEmail]);
+    }
 }
 
 /**

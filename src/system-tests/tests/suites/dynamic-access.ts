@@ -19,6 +19,8 @@ export type DATBzeroTarget = {
 
 export const dynamicAccessSuite = () => {
     describe('dynamic access suite', () => {
+        const targetConnectPolicyName = systemTestPolicyTemplate.replace('$POLICY_TYPE', 'dat-connect');
+
         let policyService: PolicyHttpService;
         let connectionService: ConnectionHttpService;
         let dynamicAccessConfigService: DynamicAccessConfigHttpService;
@@ -64,7 +66,7 @@ export const dynamicAccessSuite = () => {
 
             // Then create our targetConnect policy
             await policyService.AddTargetConnectPolicy({
-                name: systemTestPolicyTemplate.replace('$POLICY_TYPE', 'dat-connect'),
+                name: targetConnectPolicyName,
                 subjects: [currentSubject],
                 groups: [],
                 description: `DAT connect policy created for system test: ${systemTestUniqueId}`,
@@ -88,7 +90,7 @@ export const dynamicAccessSuite = () => {
         // Cleanup all policy after the tests
         afterAll(async () => {
             // Search and delete our target connect policy
-            await cleanupTargetConnectPolicies(systemTestPolicyTemplate.replace('$POLICY_TYPE', 'dat-connect'));
+            await cleanupTargetConnectPolicies(targetConnectPolicyName);
 
             // Delete the DAT target
             await dynamicAccessConfigService.DeleteDynamicAccessConfig(dynamicAccessId);
