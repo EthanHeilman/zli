@@ -18,7 +18,7 @@ import { Environment } from '../../../../webshell-common-ts/http/v2/policy/types
 import { VerbType } from '../../../../webshell-common-ts/http/v2/policy/types/verb-type.types';
 import { cleanupTargetConnectPolicies } from '../system-test-cleanup';
 import { testIf } from '../utils/utils';
-import { ensureServiceAccountExistsForLogin } from '../system-test-setup';
+import { ensureServiceAccountExistsForLogin, ensureServiceAccountRole } from '../system-test-setup';
 import { SubjectHttpService } from '../../../http-services/subject/subject.http-services';
 
 export const serviceAccountSuite = () => {
@@ -41,6 +41,7 @@ export const serviceAccountSuite = () => {
                 // created when running in pipeline against cloud-dev or
                 // cloud-staging
                 await ensureServiceAccountExistsForLogin(subjectHttpService);
+                await ensureServiceAccountRole(subjectHttpService, false);
             }
         });
 

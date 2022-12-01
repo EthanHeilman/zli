@@ -358,9 +358,22 @@ export async function ensureServiceAccountExistsForLogin(subjectHttpService: Sub
         // so that the bzeroCreds file exists for login to use
         await callZli(['service-account', 'rotate-mfa', providerCredsFile.client_email, '--bzeroCreds', bzeroCredsPath]);
     } catch(err) {
-        // If the service account doesn't exist it should create it and change its role to admin
+        // If the service account doesn't exist it should create it
         await callZli(['service-account', 'create', providerCredsPath, '--bzeroCreds', bzeroCredsPath]);
-        await callZli(['service-account', 'set-role', 'admin', providerEmail]);
+    }
+}
+
+/**
+ * Helper function to ensure a service account has the correct admin/user role
+ */
+export async function ensureServiceAccountRole(subjectHttpService: SubjectHttpService, desiredAdminStatus: boolean) {
+    const providerCredsFile = JSON.parse(fs.readFileSync(providerCredsPath, 'utf-8')) as ServiceAccountProviderCredentials;
+    const providerEmail = providerCredsFile.client_email;
+
+    const subject = await subjectHttpService.GetSubjectByEmail(providerEmail);
+    if(subject.isAdmin != desiredAdminStatus) {
+        const role = desiredAdminStatus ? 'admin' : 'user';
+        await callZli(['service-account', 'set-role', role, providerEmail]);
     }
 }
 

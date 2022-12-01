@@ -2,15 +2,27 @@ import { ServiceAccountHttpService } from '../../../../../src/http-services/serv
 import { configService, logger, RUN_AS_SERVICE_ACCOUNT, systemTestServiceAccount } from '../../system-test';
 import { MfaHttpService } from '../../../../../src/http-services/mfa/mfa.http-services';
 import { testIf } from '../../utils/utils';
+import { ensureServiceAccountRole } from '../../system-test-setup';
+import { SubjectHttpService } from '../../../../http-services/subject/subject.http-services';
 
 export const serviceAccountRestApiSuite = () => {
     describe('Service Account REST API Suite', () => {
+        let subjectHttpService: SubjectHttpService;
         let serviceAccountService: ServiceAccountHttpService;
         let mfaService: MfaHttpService;
 
         beforeAll(async () => {
+            subjectHttpService = new SubjectHttpService(configService, logger);
             serviceAccountService = new ServiceAccountHttpService(configService, logger);
             mfaService = new MfaHttpService(configService, logger);
+
+            if(RUN_AS_SERVICE_ACCOUNT) {
+                // When running as a service account these tests assume the service account always an admin to begin with
+                await ensureServiceAccountRole(subjectHttpService, true);
+            } else {
+                // When running as a user these tests assume the service account always is not an admin to begin with
+                await ensureServiceAccountRole(subjectHttpService, false);
+            }
         });
 
         test(`481488: Get a service account's data by ID`, async () => {
