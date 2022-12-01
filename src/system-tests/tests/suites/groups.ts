@@ -14,6 +14,8 @@ import { runTestForTarget } from './connect';
 
 export const groupsSuite = () => {
     describe('Groups suite', () => {
+        const targetConnectPolicyName = systemTestPolicyTemplate.replace('$POLICY_TYPE', 'group-connect');
+
         let policyService: PolicyHttpService;
         let connectionService: ConnectionHttpService;
         let organizationService: OrganizationHttpService;
@@ -39,7 +41,7 @@ export const groupsSuite = () => {
 
             // Then create our group based targetConnect policy
             await policyService.AddTargetConnectPolicy({
-                name: systemTestPolicyTemplate.replace('$POLICY_TYPE', 'group-connect'),
+                name: targetConnectPolicyName,
                 subjects: [],
                 groups: [{
                     id: GROUP_ID,
@@ -56,7 +58,7 @@ export const groupsSuite = () => {
         // Cleanup all policy after the tests
         afterAll(async () => {
             // Search and delete our target connect policy
-            await cleanupTargetConnectPolicies(systemTestPolicyTemplate.replace('$POLICY_TYPE', 'group-connect'));
+            await cleanupTargetConnectPolicies(targetConnectPolicyName);
         }, 60 * 1000);
 
         // Called before each case

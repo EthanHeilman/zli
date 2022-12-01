@@ -21,6 +21,7 @@ export const sshSuite = () => {
     describe('ssh suite', () => {
         let policyService: PolicyHttpService;
 
+        const targetConnectPolicyName = systemTestPolicyTemplate.replace('$POLICY_TYPE', 'ssh-target-connect');
         const badTargetUser = 'bad-user';
 
         const userConfigFile = path.join(
@@ -53,7 +54,7 @@ export const sshSuite = () => {
         });
 
         afterEach(async () => {
-            await cleanupTargetConnectPolicies(systemTestPolicyTemplate.replace('$POLICY_TYPE', 'target-connect'));
+            await cleanupTargetConnectPolicies(targetConnectPolicyName);
         });
 
         // Cleanup all policy after the tests
@@ -79,7 +80,7 @@ export const sshSuite = () => {
 
                 // create our policy
                 await policyService.AddTargetConnectPolicy({
-                    name: systemTestPolicyTemplate.replace('$POLICY_TYPE', 'target-connect'),
+                    name: targetConnectPolicyName,
                     subjects: [currentSubject],
                     groups: [],
                     description: `Target ssh policy created for system test: ${systemTestUniqueId}`,
@@ -113,7 +114,7 @@ export const sshSuite = () => {
 
                 // create our policy
                 await policyService.AddTargetConnectPolicy({
-                    name: systemTestPolicyTemplate.replace('$POLICY_TYPE', 'target-connect'),
+                    name: targetConnectPolicyName,
                     subjects: [currentSubject],
                     groups: [],
                     description: `Target ssh policy created for system test: ${systemTestUniqueId}`,
@@ -147,7 +148,7 @@ export const sshSuite = () => {
 
                 // create our policy
                 await policyService.AddTargetConnectPolicy({
-                    name: systemTestPolicyTemplate.replace('$POLICY_TYPE', 'target-connect'),
+                    name: targetConnectPolicyName,
                     subjects: [currentSubject],
                     groups: [],
                     description: `Target ssh policy created for system test: ${systemTestUniqueId}`,
@@ -179,7 +180,7 @@ export const sshSuite = () => {
 
                 // create our policy
                 await policyService.AddTargetConnectPolicy({
-                    name: systemTestPolicyTemplate.replace('$POLICY_TYPE', 'target-connect'),
+                    name: targetConnectPolicyName,
                     subjects: [currentUser],
                     groups: [],
                     description: `Target ssh policy created for system test: ${systemTestUniqueId}`,
@@ -221,7 +222,7 @@ export const sshSuite = () => {
 
                 // create our policy
                 await policyService.AddTargetConnectPolicy({
-                    name: systemTestPolicyTemplate.replace('$POLICY_TYPE', 'target-connect'),
+                    name: targetConnectPolicyName,
                     subjects: [currentSubject],
                     groups: [],
                     description: `Target file transfer policy created for system test: ${systemTestUniqueId}`,
@@ -265,7 +266,7 @@ export const sshSuite = () => {
 
                 // create our policy
                 await policyService.AddTargetConnectPolicy({
-                    name: systemTestPolicyTemplate.replace('$POLICY_TYPE', 'target-connect'),
+                    name: targetConnectPolicyName,
                     subjects: [currentSubject],
                     groups: [],
                     description: `Target file transfer policy created for system test: ${systemTestUniqueId}`,
@@ -315,7 +316,7 @@ export const sshSuite = () => {
 
                 // create our policy
                 await policyService.AddTargetConnectPolicy({
-                    name: systemTestPolicyTemplate.replace('$POLICY_TYPE', 'target-connect'),
+                    name: targetConnectPolicyName,
                     subjects: [currentSubject],
                     groups: [],
                     description: `Target file transfer policy created for system test: ${systemTestUniqueId}`,
@@ -353,7 +354,7 @@ export const sshSuite = () => {
 
                 // create our policy
                 await policyService.AddTargetConnectPolicy({
-                    name: systemTestPolicyTemplate.replace('$POLICY_TYPE', 'target-connect'),
+                    name: targetConnectPolicyName,
                     subjects: [currentSubject],
                     groups: [],
                     description: `Target ssh policy created for system test: ${systemTestUniqueId}`,
@@ -391,7 +392,7 @@ export const sshSuite = () => {
 
                 // create our policy
                 await policyService.AddTargetConnectPolicy({
-                    name: systemTestPolicyTemplate.replace('$POLICY_TYPE', 'target-connect'),
+                    name: targetConnectPolicyName,
                     subjects: [currentSubject],
                     groups: [],
                     description: `Target file transfer policy created for system test: ${systemTestUniqueId}`,
