@@ -14,6 +14,7 @@ import { newDbDaemonManagementService } from '../../services/daemon-management/d
 export async function dbConnectHandler(
     argv: yargs.Arguments<connectArgs>,
     targetId: string,
+    targetUser: string,
     createUniversalConnectionResponse: CreateUniversalConnectionResponse,
     configService: ConfigService,
     logger: Logger,
@@ -40,6 +41,7 @@ export async function dbConnectHandler(
         'LOCAL_PORT': localPort,
         'LOCAL_HOST': localHost,
         'TARGET_ID': dbTarget.id,
+        'TARGET_USER': targetUser,
         'REMOTE_PORT': dbTarget.remotePort.value,
         'REMOTE_HOST': dbTarget.remoteHost,
         'PLUGIN': 'db'
