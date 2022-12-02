@@ -549,7 +549,7 @@ export GOPATH=/root/go
 export GOCACHE=/root/.cache/go-build
 sh /root/bzero/update-agent-version.sh
 cd /root/bzero/bctl/agent
-/usr/local/go/bin/go build
+/usr/local/go/bin/go build -buildvcs=false
 systemctl stop ${packageName}
 cp agent /usr/bin/${packageName}
 systemctl restart ${packageName}

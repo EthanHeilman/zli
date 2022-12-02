@@ -8,6 +8,7 @@ env:
   parameter-store:
     GITHUB_KEY_PATH: "/github/sshkey/path"
     SSH_KEY_PATH: "/webshell/sshkey/path"
+    GO_VERSION: "/development/bzero/go-version"
 phases:
   install:
     runtime-versions:
@@ -29,10 +30,10 @@ phases:
       - ls -als ~/.ssh/*
       - eval `ssh-agent -s`
       - ssh-add ~/.ssh/*.pem
-      - echo Installing go 1.16...
-      # We need to 1.16 and this isnt in yum
-      - wget https://dl.google.com/go/go1.16.4.linux-amd64.tar.gz -q
-      - tar -C /usr/local -xzf go1.16.4.linux-amd64.tar.gz
+      - echo Installing go $GO_VERSION...
+      # We need a version of go not available via yum
+      - wget https://dl.google.com/go/go${GO_VERSION}.linux-amd64.tar.gz -q
+      - tar -C /usr/local -xzf go${GO_VERSION}.linux-amd64.tar.gz
       - echo 'export PATH=/usr/local/go/bin:$PATH' >>~/.bash_profile
       - export PATH=/usr/local/go/bin:$PATH
   build:
