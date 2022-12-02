@@ -19,6 +19,7 @@ import { cleanupHelmAgentInstallation } from './system-test-cleanup';
 import { ServiceAccountProviderCredentials } from '../../../src/handlers/login/types/service-account-provider-credentials.types';
 import { callZli } from './utils/zli-utils';
 import { SubjectHttpService } from '../../http-services/subject/subject.http-services';
+import { ServiceAccountHttpService } from '../../http-services/service-account/service-account.http-services';
 
 // User to create for bzero targets to use for connect/ssh tests
 export const bzeroTargetCustomUser = 'bzuser';
@@ -348,19 +349,50 @@ export async function createDOTestTargets() {
 /**
  * Helper function to ensure a service account exists and we can login to it in system tests
  */
-export async function ensureServiceAccountExistsForLogin(subjectHttpService: SubjectHttpService) {
+export async function ensureServiceAccountExistsForLogin(subjectHttpService: SubjectHttpService, serviceAccountHttpService: ServiceAccountHttpService) {
     const providerCredsFile = JSON.parse(fs.readFileSync(providerCredsPath, 'utf-8')) as ServiceAccountProviderCredentials;
     const providerEmail = providerCredsFile.client_email;
 
     try {
         await subjectHttpService.GetSubjectByEmail(providerEmail);
+
+        // In case the service account exists but is disabled, re-enable before rotating mfa
+        await ensureServiceAccountEnabled(subjectHttpService, serviceAccountHttpService);
+
         // If the service account already exists it should rotate its MFA secret
         // so that the bzeroCreds file exists for login to use
         await callZli(['service-account', 'rotate-mfa', providerCredsFile.client_email, '--bzeroCreds', bzeroCredsPath]);
     } catch(err) {
-        // If the service account doesn't exist it should create it and change its role to admin
+        // If the service account doesn't exist it should create it
         await callZli(['service-account', 'create', providerCredsPath, '--bzeroCreds', bzeroCredsPath]);
-        await callZli(['service-account', 'set-role', 'admin', providerEmail]);
+    }
+}
+
+/**
+ * Helper function to ensure a service account has the correct admin/user role
+ */
+export async function ensureServiceAccountRole(subjectHttpService: SubjectHttpService, desiredAdminStatus: boolean) {
+    const providerCredsFile = JSON.parse(fs.readFileSync(providerCredsPath, 'utf-8')) as ServiceAccountProviderCredentials;
+    const providerEmail = providerCredsFile.client_email;
+
+    const subject = await subjectHttpService.GetSubjectByEmail(providerEmail);
+    if(subject.isAdmin != desiredAdminStatus) {
+        const role = desiredAdminStatus ? 'admin' : 'user';
+        await callZli(['service-account', 'set-role', role, providerEmail]);
+    }
+}
+
+/**
+ * Helper function to ensure a service account is enabled
+ */
+export async function ensureServiceAccountEnabled(subjectHttpService: SubjectHttpService, serviceAccountHttpService: ServiceAccountHttpService) {
+    const providerCredsFile = JSON.parse(fs.readFileSync(providerCredsPath, 'utf-8')) as ServiceAccountProviderCredentials;
+    const providerEmail = providerCredsFile.client_email;
+    const subject = await subjectHttpService.GetSubjectByEmail(providerEmail);
+    const serviceAccount = await serviceAccountHttpService.GetServiceAccount(subject.id);
+
+    if(! serviceAccount.enabled) {
+        await serviceAccountHttpService.UpdateServiceAccount(serviceAccount.id, {enabled: true});
     }
 }
 

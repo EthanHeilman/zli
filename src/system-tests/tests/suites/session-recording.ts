@@ -7,7 +7,6 @@ import { PolicyHttpService } from '../../../http-services/policy/policy.http-ser
 import { SessionRecordingHttpService } from '../../../http-services/session-recording/session-recording.http-services';
 import { getDOImageName } from '../../digital-ocean/digital-ocean-ssm-target.service.types';
 import {
-    allTargets,
     configService,
     logger,
     systemTestEnvId,
@@ -21,6 +20,7 @@ import { ConnectTestResult, ConnectTestUtils } from '../utils/connect-utils';
 import { checkAllSettledPromise, checkAllSettledPromiseRejected, testIf } from '../utils/utils';
 import { runTestForTarget } from './connect';
 import * as CleanExitHandler from '../../../handlers/clean-exit.handler';
+import { bzeroTestTargetsToRun } from '../targets-to-run';
 
 export const sessionRecordingSuite = () => {
     describe('Session Recording Suite', () => {
@@ -90,7 +90,7 @@ export const sessionRecordingSuite = () => {
             await connectTestUtils.cleanup();
         }, 60 * 1000);
 
-        allTargets.forEach(async (testTarget: TestTarget) => {
+        bzeroTestTargetsToRun.forEach(async (testTarget: TestTarget) => {
             testIf(runTestForTarget(testTarget), `${testTarget.sessionRecordingCaseId}: Connect to target and verify session is recorded (${testTarget.awsRegion} - ${testTarget.installType} - ${getDOImageName(testTarget.dropletImage)})`, async () => {
                 const sessionRecordingTestMessage = `session recording test - ${systemTestUniqueId}`;
                 // Dont close the connection so we can test deleting session
