@@ -12,7 +12,6 @@ import { DigitalOceanBZeroTarget, DigitalOceanSSMTarget } from '../digital-ocean
 import { LoggerConfigService } from '../../services/logger/logger-config.service';
 import { Logger } from '../../services/logger/logger.service';
 import { ConfigService } from '../../services/config/config.service';
-import { OAuthService } from '../../services/oauth/oauth.service';
 import { randomAlphaNumericString } from '../../utils/utils';
 import { listTargetsSuite } from './suites/list-targets';
 import { versionSuite } from './suites/version';
@@ -227,25 +226,26 @@ beforeAll(async () => {
     // teardown
     mockCleanExit();
 
-    const oauthService = new OAuthService(configService, logger);
+    // Reset ssh config key paths because these are different for the IdPLogin
+    // tests (run as ec2-user) which uploads the config that system test uses
+    configService.clearSshConfigPaths();
 
     // Reset sessionId and sessionToken to get unique session for this test
     configService.setSessionId('');
     configService.setSessionToken('');
 
-    // Reset ssh config key paths because these are different for the IdPLogin
-    // tests (run as ec2-user) which uploads the config that system test uses
-    configService.clearSshConfigPaths();
+    // Call register to create new session token and id, and verify session with totp
+    const sysTestMfaSecret = process.env.MFA_SECRET;
+    const registerCmd = ['register'];
+    if(sysTestMfaSecret) {
+        registerCmd.push('--mfaSecret', sysTestMfaSecret);
+    }
+    await callZli(registerCmd);
 
-    // Force refresh ID token and access token because it is likely expired
-    const newTokenSet = await oauthService.refresh();
-    configService.setTokenSet(newTokenSet);
-    // Ask bastion for new session token
-    const userHttpService = new UserHttpService(configService, logger);
-    await userHttpService.Register();
     // Update me section of the config in case this is a new login or any
     // user information has changed since last login
     const subjectHttpService = new SubjectHttpService(configService, logger);
+    const userHttpService = new UserHttpService(configService, logger);
     const me = await subjectHttpService.Me();
     configService.setMe(me);
     systemTestUser = await userHttpService.Me();

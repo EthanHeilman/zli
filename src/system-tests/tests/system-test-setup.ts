@@ -20,6 +20,7 @@ import { ServiceAccountProviderCredentials } from '../../../src/handlers/login/t
 import { callZli } from './utils/zli-utils';
 import { SubjectHttpService } from '../../http-services/subject/subject.http-services';
 import { ServiceAccountHttpService } from '../../http-services/service-account/service-account.http-services';
+import { MfaHttpService } from '../../http-services/mfa/mfa.http-services';
 
 // User to create for bzero targets to use for connect/ssh tests
 export const bzeroTargetCustomUser = 'bzuser';
@@ -379,6 +380,16 @@ export async function ensureServiceAccountRole(subjectHttpService: SubjectHttpSe
     if(subject.isAdmin != desiredAdminStatus) {
         const role = desiredAdminStatus ? 'admin' : 'user';
         await callZli(['service-account', 'set-role', role, providerEmail]);
+    }
+}
+
+/**
+ * Helper function to ensure that mfa is enabled before the mfa system test suite
+ */
+export async function ensureMfaEnabled(mfaService: MfaHttpService) {
+    const mfaSummary = await mfaService.GetCurrentUserMfaSummary();
+    if(!mfaSummary.enabled) {
+        await mfaService.EnableMfa(configService.me().id);
     }
 }
 

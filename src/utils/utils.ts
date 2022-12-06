@@ -1185,3 +1185,13 @@ export function jsonDateReviver(key: any, value: any): any {
 export function customJsonParser(text: string) {
     return JSON.parse(text, jsonDateReviver);
 }
+
+/**
+ * Custom function to extract the secret from the url returned by reset
+ */
+export function extractMfaSecretFromUrl(mfaSecretUrl: string) {
+    const secretRegEx = /secret=(?<base32Secret>\w*)\&/;
+    const matches = mfaSecretUrl.match(secretRegEx);
+    const base32Secret = matches?.groups.base32Secret;
+    return base32Secret;
+}

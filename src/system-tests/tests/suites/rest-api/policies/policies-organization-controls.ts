@@ -1,7 +1,8 @@
+import { testIf } from '../../../../../system-tests/tests/utils/utils';
 import { OrganizationControlsPolicySummary } from '../../../../../../webshell-common-ts/http/v2/policy/organization-controls/types/organization-controls-policy-summary.types';
 import { PolicyType } from '../../../../../../webshell-common-ts/http/v2/policy/types/policy-type.types';
 import { PolicyHttpService } from '../../../../../http-services/policy/policy.http-services';
-import { configService, logger, systemTestPolicyTemplate } from '../../../system-test';
+import { configService, logger, systemTestPolicyTemplate, IN_PIPELINE } from '../../../system-test';
 import { restApiPolicyDescriptionTemplate } from './policies';
 
 export const organizationControlsPolicySuite = () => {
@@ -11,7 +12,8 @@ export const organizationControlsPolicySuite = () => {
         let expectedPolicySummary: OrganizationControlsPolicySummary;
         let policyService: PolicyHttpService;
 
-        beforeAll(() => {
+        // Adding an org policy should also add all subjects to the policy
+        beforeAll(async () => {
             policyService = new PolicyHttpService(configService, logger);
             expectedPolicySummary = {
                 id: expect.any(String),
@@ -23,16 +25,32 @@ export const organizationControlsPolicySuite = () => {
                 mfaEnabled: false,
                 timeExpires: null
             };
+
+            if(!IN_PIPELINE) {
+                const allPolicies = await policyService.ListOrganizationControlPolicies();
+                if(allPolicies.length == 1) {
+                    orgControlsPolicy = allPolicies[0];
+                } else {
+                    // At this point, atleast one policy exists, so only errors for more than one
+                    throw Error('More than one org policy exists');
+                }
+
+                // expect org policy in test runners to have mfaEnabled = true
+                expectedPolicySummary.mfaEnabled = true;
+            }
         });
 
         afterAll(async () => {
-            if (orgControlsPolicy) {
+            // org policy won't be created if the test is not run in pipeline
+            if (IN_PIPELINE) {
                 await policyService.DeleteOrganizationControlsPolicy(orgControlsPolicy.id);
             }
         }, 15 * 1000);
 
-        test('2272: Create and get organization controls policy', async () => {
-            // An organization controls policy with mfaEnabled set to true cannot be deleted
+        // this test will only be run in pipeline since we cannot create more than one org policy
+        // and the test runner already has a default org policy with mfaEnabled set to true
+        testIf(IN_PIPELINE, '2272: Create and get organization controls policy', async () => {
+            // an organization controls policy with mfaEnabled set to true cannot be deleted
             orgControlsPolicy = await policyService.AddOrganizationControlPolicy({
                 name: expectedPolicySummary.name,
                 groups: expectedPolicySummary.groups,
@@ -50,7 +68,6 @@ export const organizationControlsPolicySuite = () => {
         test('2273: Edit organization controls policy', async () => {
             expectedPolicySummary.description = 'modified description';
             expectedPolicySummary.name = orgControlsPolicy.name += '-modified';
-
             const editedPolicy = await policyService.UpdateOrganizationControlsPolicy(orgControlsPolicy.id, {
                 name: expectedPolicySummary.name,
                 description: expectedPolicySummary.description
@@ -67,7 +84,9 @@ export const organizationControlsPolicySuite = () => {
             expect(foundPolicy).toBeDefined();
         }, 15 * 1000);
 
-        test('2275: Delete organization controls policy', async () => {
+        // this test will only be run in pipeline since the test runner already has a default
+        // org policy with mfaEnabled set to true which means it cannot be deleted
+        testIf(IN_PIPELINE, '2275: Delete organization controls policy', async () => {
             await policyService.DeleteOrganizationControlsPolicy(orgControlsPolicy.id);
             const allPolicies = await policyService.ListOrganizationControlPolicies();
             const foundPolicy = allPolicies.find(policy => policy.id === orgControlsPolicy.id);
