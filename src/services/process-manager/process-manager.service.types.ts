@@ -1,0 +1,1 @@
+export type KillProcessResultType = 'killed_gracefully' | 'killed_forcefully' | 'no_longer_exists';

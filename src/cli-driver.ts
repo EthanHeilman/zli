@@ -97,7 +97,6 @@ import { sshProxyCmdBuilder } from './handlers/ssh-proxy/ssh-proxy.command-build
 import { generateKubeConfigCmdBuilder, generateKubeYamlCmdBuilder } from './handlers/generate/generate-kube.command-builder';
 import { generateBashCmdBuilder } from './handlers/generate/generate-bash.command-builder';
 import { defaultTargetGroupCmdBuilder } from './handlers/default-target-group/default-target-group.command-builder';
-import { UserHttpService } from './http-services/user/user.http-services';
 import { generateSshConfigCmdBuilder } from './handlers/generate/generate-ssh-config.command-builder';
 import { createApiKeyCmdBuilder } from './handlers/api-key/create-api-key.command-builder';
 import { createApiKeyHandler } from './handlers/api-key/create-api-key.handler';
@@ -122,8 +121,9 @@ import { rotateMfaHandler } from './handlers/service-account/rotate-mfa.handler'
 import { serviceAccountLoginCmdBuilder } from './handlers/service-account/service-account-login.command-builder';
 import { serviceAccountSetRoleCmdBuilder } from './handlers/service-account/set-role-service-account.command-builder';
 import { serviceAccountSetRoleCmdHandler } from './handlers/service-account/set-role-service-account.handler';
-import { SubjectHttpService } from './http-services/subject/subject.http-services';
 import { configureServiceAccountCmdBuilder } from './handlers/service-account/configure-service-account.command-builder';
+import { registerCmdBuilder } from './handlers/register/register.command-builder';
+import { registerHandler } from './handlers/register/register.handler';
 
 export type EnvMap = Readonly<{
     configName: string;
@@ -147,7 +147,6 @@ export class CliDriver
     private mixpanelService: MixpanelService;
 
     public availableCommands: Set<string> = new Set([
-        'me',
         'login',
         'connect',
         'status',
@@ -178,7 +177,6 @@ export class CliDriver
     ]);
 
     private oauthCommands: Set<string> = new Set([
-        'me',
         'kube',
         'ssh-proxy-config',
         'connect',
@@ -191,7 +189,6 @@ export class CliDriver
         'lc',
         'ssh-proxy',
         'policy',
-        'register',
         'generate',
         'api-key',
         'target',
@@ -200,7 +197,6 @@ export class CliDriver
     ]);
 
     private GACommands: Set<string> = new Set([
-        'me',
         'kube',
         'ssh-proxy-config',
         'connect',
@@ -766,15 +762,11 @@ export class CliDriver
             .command(
                 'register',
                 false,
-                () => {},
-                async () => {
-                    const userHttpService = new UserHttpService(this.configService, this.logger);
-                    const subjectHttpService = new SubjectHttpService(this.configService, this.logger);
-                    await userHttpService.Register();
-
-                    // Update me
-                    const me = await subjectHttpService.Me();
-                    this.configService.setMe(me);
+                (yargs) => {
+                    return registerCmdBuilder(yargs);
+                },
+                async (argv) => {
+                    await registerHandler(argv.mfaSecret, this.configService, this.logger);
                 }
             )
             .command(

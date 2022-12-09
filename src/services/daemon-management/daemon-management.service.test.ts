@@ -234,18 +234,27 @@ const makeDaemonManagementServiceTests = <T extends DaemonConfig>(
                 const gotDisconnectResults = await sut.disconnectAllDaemons();
                 // We should receive an empty map of results because nothing
                 // should happen
-                expect(mapToArrayTuples(gotDisconnectResults)).toMatchObject<Array<[string, DisconnectResult<T>]>>([]);
+                expect(mapToArrayTuples(gotDisconnectResults)).toMatchObject<Array<[string, DisconnectResult<T>]>>([
+                    [connectionId, {
+                        type: 'daemon_pid_not_set',
+                        daemon: newConfig
+                    }]
+                ]);
 
-                // The daemon store should still contain the daemon
+                // The daemon store should be empty because there is no point in
+                // keeping a daemon with localPid == null. Local pid being set
+                // to null is actually a remanant of legacy code prior to
+                // multi-daemon feature. New code doesn't set this to null, but
+                // we still must handle it for legacy config
                 const gotDaemonConfigs = sut.getDaemonConfigs();
-                expect(mapToArrayTuples(gotDaemonConfigs)).toMatchObject<Array<[string, T]>>([[connectionId, newConfig]]);
+                expect(mapToArrayTuples(gotDaemonConfigs)).toMatchObject<Array<[string, T]>>([]);
             });
 
             test(`${caseIds.disconnectDaemons.oneDaemonNewConfigKillFails}: when there is one daemon (new config schema) and it fails to be killed`, async () => {
                 const [connectionId, newConfig] = createDaemonConfigWithNewSchema();
                 inMemoryStore[connectionId] = newConfig;
                 const errorToThrow = new Error('failed to kill');
-                processManagerMock.killProcess.mockImplementation(() => { throw errorToThrow; });
+                processManagerMock.tryKillProcess.mockImplementation(() => { throw errorToThrow; });
 
                 const gotDisconnectResults = await sut.disconnectAllDaemons();
                 // We should receive a result that says the daemon failed to be
@@ -254,7 +263,7 @@ const makeDaemonManagementServiceTests = <T extends DaemonConfig>(
                     [connectionId, {
                         type: 'daemon_fail_killed',
                         daemon: newConfig,
-                        error: errorToThrow
+                        error: new Error('failed to kill'),
                     }]
                 ]);
 
@@ -268,6 +277,8 @@ const makeDaemonManagementServiceTests = <T extends DaemonConfig>(
                 const [connectionId, newConfig] = createDaemonConfigWithNewSchema();
                 inMemoryStore[connectionId] = newConfig;
 
+                processManagerMock.tryKillProcess.mockImplementation(async () => { return 'killed_gracefully'; });
+
                 const gotDisconnectResults = await sut.disconnectAllDaemons();
                 // We should receive a result that says the daemon was
                 // successfully killed
@@ -275,6 +286,7 @@ const makeDaemonManagementServiceTests = <T extends DaemonConfig>(
                     [connectionId, {
                         type: 'daemon_success_killed',
                         daemon: newConfig,
+                        killResult: 'killed_gracefully'
                     }]
                 ]);
 
@@ -292,6 +304,8 @@ const makeDaemonManagementServiceTests = <T extends DaemonConfig>(
                 mockReturnedDaemons[connectionId] = legacyConfig;
                 daemonStoreMock.getDaemons.mockReturnValue(mockReturnedDaemons);
 
+                processManagerMock.tryKillProcess.mockImplementation(async () => { return 'killed_gracefully'; });
+
                 const gotDisconnectResults = await sut.disconnectAllDaemons();
                 // We should receive a result that says the daemon was
                 // successfully killed
@@ -299,6 +313,7 @@ const makeDaemonManagementServiceTests = <T extends DaemonConfig>(
                     [undefined, {
                         type: 'daemon_success_killed',
                         daemon: legacyConfig,
+                        killResult: 'killed_gracefully'
                     }]
                 ]);
 
@@ -313,13 +328,17 @@ const makeDaemonManagementServiceTests = <T extends DaemonConfig>(
                 inMemoryStore[connectionIdSuccessKill] = successConfig;
 
                 const [connectionIdFailKill, failConfig] = createDaemonConfigWithNewSchema();
+                const goodPid = 11;
+                successConfig.localPid = goodPid;
+
                 const badPid = 10;
                 failConfig.localPid = badPid;
                 inMemoryStore[connectionIdFailKill] = failConfig;
 
+                processManagerMock.tryKillProcess.calledWith(goodPid).mockImplementation(async () => { return 'killed_forcefully'; });
                 // Fail to kill the daemon with the bad pid
                 const errorToThrow = new Error('failed to kill');
-                processManagerMock.killProcess.calledWith(badPid).mockImplementation(() => { throw errorToThrow; });
+                processManagerMock.tryKillProcess.calledWith(badPid).mockImplementation(async () => { throw errorToThrow; });
 
                 const gotDisconnectResults = await sut.disconnectAllDaemons();
                 // We should receive a result that says the daemon was
@@ -328,11 +347,12 @@ const makeDaemonManagementServiceTests = <T extends DaemonConfig>(
                     [connectionIdSuccessKill, {
                         type: 'daemon_success_killed',
                         daemon: successConfig,
+                        killResult: 'killed_forcefully',
                     }],
                     [connectionIdFailKill, {
                         type: 'daemon_fail_killed',
                         daemon: failConfig,
-                        error: errorToThrow
+                        error: new Error('failed to kill'),
                     }]
                 ]);
 

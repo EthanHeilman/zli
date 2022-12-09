@@ -1,4 +1,3 @@
-import { killDaemon } from '../../utils/daemon-utils';
 import { cleanExit } from '../clean-exit.handler';
 import { DbConfig, KubeConfig, WebConfig } from '../../services/config/config.service.types';
 import { Logger } from '../../services/logger/logger.service';
@@ -7,6 +6,7 @@ import { removeIfExists } from '../../utils/utils';
 import { ILogger } from '../../../webshell-common-ts/logging/logging.types';
 import { handleDisconnect, IDaemonDisconnector } from '../disconnect/disconnect.handler';
 import { newDbDaemonManagementService, newKubeDaemonManagementService } from '../../services/daemon-management/daemon-management.service';
+import { killDaemonAndLog } from '../../utils/daemon-utils';
 
 export async function logoutHandler(
     configService: ConfigService,
@@ -72,7 +72,7 @@ export async function handleLogout(
     // Then web
     logger.info('Closing any existing Web Connections');
     const webConfig = configService.getWebConfig();
-    killDaemon(webConfig['localPid'], logger);
+    await killDaemonAndLog(webConfig, logger);
 
     // Update the localPid
     webConfig['localPid'] = null;

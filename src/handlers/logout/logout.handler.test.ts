@@ -4,8 +4,7 @@ import { ILogger } from '../../../webshell-common-ts/logging/logging.types';
 
 // TODO: CWC-2030 Remove these imports once kube and web have been refactored to
 // use DaemonManagementService
-import * as DaemonUtilsService from '../../utils/daemon-utils';
-import { DbConfig, getDefaultWebConfig, KubeConfig } from '../../services/config/config.service.types';
+import { DbConfig, KubeConfig, getDefaultWebConfig } from '../../services/config/config.service.types';
 import { IDaemonDisconnector } from '../disconnect/disconnect.handler';
 import { DisconnectResult } from '../../services/daemon-management/types/disconnect-result.types';
 
@@ -23,12 +22,6 @@ describe('Logout handler suite', () => {
         jest.restoreAllMocks();
         jest.resetAllMocks();
         jest.clearAllMocks();
-
-        // Spies
-        // TODO: CWC-2030 This stub can be removed once logoutHandler is
-        // refactored to use the DaemonManagementService class for both kube and
-        // web
-        jest.spyOn(DaemonUtilsService, 'killDaemon').mockImplementation(async () => Promise.resolve());
 
         // Use jest-mock-extended to more easily create type-safe mocks of
         // interfaces. Each test gets a fresh mock

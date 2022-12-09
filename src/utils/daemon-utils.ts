@@ -17,8 +17,11 @@ import { LoggerConfigService } from '../services/logger/logger-config.service';
 import { ShellConnectionAuthDetails } from '../../webshell-common-ts/http/v2/connection/types/shell-connection-auth-details.types';
 import { DAEMON_EXIT_CODES } from './daemon-exit-codes';
 import { check as checkTcpPort } from 'tcp-port-used';
-import { ILogger } from '../../webshell-common-ts/logging/logging.types';
 import { ProcessManagerService } from '../services/process-manager/process-manager.service';
+import { DaemonConfig } from '../services/config/config.service.types';
+import { ILogger } from '../../webshell-common-ts/logging/logging.types';
+import { toUpperCase } from './utils';
+import { KillProcessResultType } from '../services/process-manager/process-manager.service.types';
 
 export const DAEMON_PATH : string = 'bzero/bctl/daemon/daemon';
 
@@ -300,31 +303,40 @@ async function deleteIfExists(pathToFile: string) {
     }
 }
 
+export function logKillDaemonResult(daemonIdentifier: string, result: KillProcessResultType, logger: ILogger) {
+    switch (result) {
+    case 'killed_gracefully':
+        logger.info(`${daemonIdentifier} shut down gracefully`);
+        break;
+    case 'killed_forcefully':
+        logger.info(`${daemonIdentifier} shut down forcefully`);
+        break;
+    case 'no_longer_exists':
+        logger.info(`Cannot shut down ${daemonIdentifier} because it no longer exists`);
+        break;
+    default:
+        // Compile-time exhaustive check
+        const exhaustiveCheck: never = result;
+        throw new Error(`Unhandled case: ${exhaustiveCheck}`);
+    }
+}
+
 /**
- * Helper function to kill a daemon process
- * @param {number} localPid Local pid we are trying to kill
+ * Helper function to kill a daemon process and log the results
+ * @param {number} daemon The daemon to kill
  * @param {Logger} logger Logger
  */
-export async function killDaemon(localPid: number, logger: ILogger) {
-    // TODO: CWC-2030 Remove this function once kube and web migrate to
-    // DaemonManagementService
-
-    const processManager = new ProcessManagerService();
-    // then kill the daemon
-    if ( localPid != null) {
-        // First try to kill the process
+export async function killDaemonAndLog(daemon: DaemonConfig, logger: ILogger) {
+    // Check if we've already started a process
+    if (daemon.localPid != null) {
         try {
-            processManager.killProcess(localPid);
-            logger.debug('Waiting for daemon to shut down gracefully...');
-            await processManager.waitForProcess(localPid);
-            logger.debug('daemon process killed.');
-        } catch (err: any) {
-            // If the daemon pid was killed, or doesn't exist, just continue
-            if (err.name == 'TIMEOUT') {
-                logger.warn(`Attempt to kill the daemon running on pid ${localPid} timed out. Consider running \`kill -9 ${localPid}\` to force kill it`);
-            } else {
-                logger.warn(`Attempt to kill the daemon running on pid ${localPid} failed: ${err}\nConsider running \`kill -9 ${localPid}\` to force kill it`);
-            }
+            const processManager = new ProcessManagerService();
+            logger.info(`Waiting for ${daemon.type} daemon to shut down...`);
+            const result = await processManager.tryKillProcess(daemon.localPid);
+            const id = `${toUpperCase(daemon.type)} daemon (PID: ${daemon.localPid})`;
+            logKillDaemonResult(id, result, logger);
+        } catch (e: any) {
+            logger.warn(`Attempt to shut down the daemon running on PID ${daemon.localPid} failed: ${e}\nConsider running \'kill -9 ${daemon.localPid}\' to force kill it`);
         }
     }
 }
@@ -332,15 +344,11 @@ export async function killDaemon(localPid: number, logger: ILogger) {
 /**
  * Helper function to check if we have saved a local pid for a daemon and attempts to kill
  * This function will also alert a user if a local port is in use
- * @param {number} savedPid Saved pid in our config
  * @param {number} localPort Local port we are trying to use
  * @param {Logger} logger Logger
  */
-export async function killLocalPortAndPid(savedPid: number, localPort: number, logger: Logger) {
-    // Check if we've already started a process
-    if (savedPid != null) {
-        await killDaemon(savedPid, logger);
-    }
+export async function killLocalPortAndPid(daemon: DaemonConfig, localPort: number, logger: Logger) {
+    await killDaemonAndLog(daemon, logger);
 
     // Also check if anything is using that local port
     await checkIfPortAvailable(localPort);
