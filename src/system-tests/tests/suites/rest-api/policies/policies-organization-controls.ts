@@ -40,13 +40,6 @@ export const organizationControlsPolicySuite = () => {
             }
         });
 
-        afterAll(async () => {
-            // org policy won't be created if the test is not run in pipeline
-            if (IN_PIPELINE) {
-                await policyService.DeleteOrganizationControlsPolicy(orgControlsPolicy.id);
-            }
-        }, 15 * 1000);
-
         // this test will only be run in pipeline since we cannot create more than one org policy
         // and the test runner already has a default org policy with mfaEnabled set to true
         testIf(IN_PIPELINE, '2272: Create and get organization controls policy', async () => {
@@ -92,9 +85,6 @@ export const organizationControlsPolicySuite = () => {
             const foundPolicy = allPolicies.find(policy => policy.id === orgControlsPolicy.id);
             // verify that the policy created in first test is no longer in the list of all organization controls policies
             expect(foundPolicy).toBeUndefined();
-
-            // set to undefined so afterAll does not try to delete it again
-            orgControlsPolicy = undefined;
         }, 15 * 1000);
     });
 };
