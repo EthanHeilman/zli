@@ -59,6 +59,10 @@ export async function connectHandler(
         case TargetType.DynamicAccessConfig:
             return await shellConnectHandler(createUniversalConnectionResponse.targetType, createUniversalConnectionResponse.targetUser, createUniversalConnectionResponse, configService, logger, loggerConfigService);
         case TargetType.Db:
+            // We indicate whether the agent should negotiate a certificate if there is a target user
+            if (!createUniversalConnectionResponse.isPasswordless) {
+                targetUser = ""
+            }
             return await dbConnectHandler(argv, createUniversalConnectionResponse.targetId, createUniversalConnectionResponse.targetUser, createUniversalConnectionResponse, configService, logger, loggerConfigService);
         case TargetType.Web:
             return await webConnectHandler(argv, createUniversalConnectionResponse.targetId, createUniversalConnectionResponse, configService, logger, loggerConfigService);
