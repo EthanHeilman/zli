@@ -21,8 +21,10 @@ export const mfaSuite = () => {
         });
 
         afterAll(async () => {
-            // disable mfa after all tests have run
-            await mfaService.DisableMfa(subjectId);
+            if(!RUN_AS_SERVICE_ACCOUNT) {
+                // disable mfa after all tests have run
+                await mfaService.DisableMfa(subjectId);
+            }
         });
 
         testIf(!RUN_AS_SERVICE_ACCOUNT, '5603: Get MFA status and expect it to be enabled as a user', async () => {

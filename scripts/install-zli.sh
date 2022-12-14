@@ -40,6 +40,7 @@ function install_zli_yum {
 	echo "Installing ZLI using yum."
 	sudo yum-config-manager --add-repo https://download-yum.bastionzero.com/bastionzero.repo
 	sudo yum install zli -y
+	sudo yum update zli -y
 }
 
 function install_zli () {
