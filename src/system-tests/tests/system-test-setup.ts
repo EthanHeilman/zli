@@ -437,10 +437,8 @@ sudo touch /etc/ansible/hosts
         break;
     case 'yum':
         // Ref: https://www.ktexperts.com/how-to-install-ansible-in-amazon-linux-machine/
-        installBlock = String.raw`sudo yum update -y
-wget https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
+        installBlock = String.raw`wget https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
 sudo yum install epel-release-latest-7.noarch.rpm -y
-sudo yum update -y
 sudo yum install ansible -y
 `;
         break;
@@ -498,7 +496,6 @@ sudo apt install ${packageName} -y
         break;
     case 'yum':
         installBlock = String.raw`sudo yum-config-manager --add-repo https://download-yum.bastionzero.com/bastionzero-beta.repo
-sudo yum update -y
 sudo yum install ${packageName} -y
 `;
         break;
