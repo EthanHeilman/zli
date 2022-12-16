@@ -2,6 +2,7 @@ import { IdentityProvider } from '../../../webshell-common-ts/auth-service/auth.
 import { ClientSecretResponse } from '../../../webshell-common-ts/http/v2/token/responses/client-secret.responses';
 import { TrackingTokenResponse } from '../../../webshell-common-ts/http/v2/token/responses/tracking-token.responses';
 import { OktaClientResponse } from '../../../webshell-common-ts/http/v2/token/responses/okta-client.responses';
+import { OneLoginClientResponse } from '../../../webshell-common-ts/http/v2/token/responses/onelogin-client-responses';
 import { ConfigService } from '../../services/config/config.service';
 import { HttpService } from '../../services/http/http.service';
 import { Logger } from '../../services/logger/logger.service';
@@ -30,6 +31,12 @@ export class TokenHttpService extends HttpService
 
     public getOktaClient(userEmail: string) : Promise<OktaClientResponse> {
         return this.Get('okta-client', {
+            email: userEmail
+        });
+    }
+
+    public getOneLoginClient(userEmail: string) : Promise<OneLoginClientResponse> {
+        return this.Get('onelogin-client', {
             email: userEmail
         });
     }

@@ -1,4 +1,4 @@
-import { allTargets, configService, GROUP_ID, GROUP_NAME, logger, systemTestEnvId, systemTestPolicyTemplate, systemTestUniqueId } from '../system-test';
+import { allTargets, configService, GROUP_ID, GROUP_NAME, logger, systemTestEnvId, systemTestPolicyTemplate, systemTestUniqueId, RUN_AS_ONELOGIN } from '../system-test';
 import { ConnectionHttpService } from '../../../http-services/connection/connection.http-services';
 import { getDOImageName } from '../../digital-ocean/digital-ocean-ssm-target.service.types';
 import { TestUtils } from '../utils/test-utils';
@@ -73,7 +73,7 @@ export const groupsSuite = () => {
 
         // Attempt to make a connection to targets via our groups based policy
         allTargets.forEach(async (testTarget: TestTarget) => {
-            testIf(runTestForTarget(testTarget), `${testTarget.groupConnectCaseId}: zli group connect - ${testTarget.awsRegion} - ${testTarget.installType} - ${getDOImageName(testTarget.dropletImage)}`, async () => {
+            testIf(!RUN_AS_ONELOGIN && runTestForTarget(testTarget), `${testTarget.groupConnectCaseId}: zli group connect - ${testTarget.awsRegion} - ${testTarget.installType} - ${getDOImageName(testTarget.dropletImage)}`, async () => {
                 await connectTestUtils.runShellConnectTest(testTarget, `groups test - ${systemTestUniqueId}`, true);
             }, 2 * 60 * 1000);
         });

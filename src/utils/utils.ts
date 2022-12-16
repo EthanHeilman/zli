@@ -151,6 +151,8 @@ export function parseIdpType(idp: IdentityProvider) : IdentityProvider
         return IdentityProvider.Microsoft;
     case IdentityProvider.Okta:
         return IdentityProvider.Okta;
+    case IdentityProvider.OneLogin:
+        return IdentityProvider.OneLogin;
     default:
         return undefined;
     }

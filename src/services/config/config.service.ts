@@ -421,6 +421,17 @@ export class ConfigService implements ConfigInterface {
             this.config.set('clientId', oktaClientResponse.clientId);
             this.config.delete('clientSecret');
             this.config.set('authUrl', `${oktaClientResponse.domain}`);
+        } else if (idp == IdentityProvider.OneLogin) {
+            if (!email)
+                throw new Error('User email is required for logging in with OneLogin');
+
+            const oneLoginClientResponse = await this.tokenHttpService.getOneLoginClient(email);
+            if (!oneLoginClientResponse)
+                throw new Error(`Unknown organization for email ${email}`);
+
+            this.config.set('clientId', oneLoginClientResponse.clientId);
+            this.config.delete('clientSecret');
+            this.config.set('authUrl', `${oneLoginClientResponse.domain}/oidc/2`);
         } else {
             throw new Error(`Unhandled idp ${idp} in loginSetup`);
         }
@@ -509,6 +520,8 @@ export class ConfigService implements ConfigInterface {
             return 'offline_access openid email profile User.Read';
         case IdentityProvider.Okta:
             return 'offline_access openid email profile';
+        case IdentityProvider.OneLogin:
+            return 'openid profile';
         default:
             throw new Error(`Unknown idp ${idp}`);
         }
