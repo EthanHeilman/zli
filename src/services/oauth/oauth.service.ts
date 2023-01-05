@@ -86,9 +86,8 @@ export class OAuthService implements IDisposable {
 
                     // While state is not strictly required to be set per the
                     // oidc spec when using PKCE flow, it is specifically
-                    // required by okta and will fail if left empty. So we
-                    // implement sending a random value in the state for all
-                    // providers
+                    // required by okta and onelogin and will fail if left empty.
+                    // So we implement sending a random value in the state for all providers
                     // https://github.com/panva/node-openid-client/issues/377
                     // https://developer.okta.com/docs/guides/implement-grant-type/authcodepkce/main/#flow-specifics
                     this.state = randomAlphaNumericString(45);
@@ -98,7 +97,7 @@ export class OAuthService implements IDisposable {
                     res.writeHead(302, {
                         'Access-Control-Allow-Origin': '*',
                         'content-type': 'text/html',
-                        'Location': this.getAuthUrl(code_challenge, this.state)
+                        'Location': this.getAuthUrl(code_challenge, email, this.state)
                     });
                     res.end();
                 } catch(err) {
@@ -177,7 +176,7 @@ export class OAuthService implements IDisposable {
             response_types: ['code'],
         };
 
-        // Client secret is not used for okta but it is required for google/microsoft
+        // Client secret is not used for Okta and OneLogin but it is required for Google/Microsoft
         // https://github.com/panva/node-openid-client/blob/main/docs/README.md#client-authentication-methods
         const clientSecret = this.configService.clientSecret();
         if(clientSecret) {
@@ -199,7 +198,7 @@ export class OAuthService implements IDisposable {
         this.oidcClient = client;
     }
 
-    private getAuthUrl(code_challenge: string, state: string) : string
+    private getAuthUrl(code_challenge: string, email: string, state: string) : string
     {
         if(this.oidcClient === undefined){
             throw new Error('Unable to get authUrl from undefined OIDC client');
@@ -221,6 +220,7 @@ export class OAuthService implements IDisposable {
             prompt = 'consent';
             break;
         case IdentityProvider.Microsoft:
+        case IdentityProvider.OneLogin:
             prompt = 'login';
             break;
         default:
@@ -239,6 +239,10 @@ export class OAuthService implements IDisposable {
             nonce: this.nonce,
             state: state
         };
+
+        if(idp == IdentityProvider.Okta || idp == IdentityProvider.OneLogin) {
+            authParams.login_hint = email;
+        }
 
         return this.oidcClient.authorizationUrl(authParams);
     }

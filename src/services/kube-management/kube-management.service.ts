@@ -29,7 +29,7 @@ interface NamedKubeEntry {
  * @returns YAML-encoded string
  */
 export function exportKubeConfigToYaml(kubeConfig: k8s.KubeConfig): string {
-    return yaml.stringify(JSON.parse(kubeConfig.exportConfig()), { version: '1.1' });
+    return yaml.stringify(JSON.parse(kubeConfig.exportConfig()), { version: '1.2' });
 }
 
 export interface IKubeConfigService {
@@ -259,7 +259,7 @@ export function loadKubeConfigFromString(config: string): k8s.KubeConfig {
     // doesn't have issues with certain date-like strings
     // See here: https://github.com/eemeli/yaml/issues/117
     const loadedKubeConfig = new KubeConfig();
-    const obj = yaml.parse(config);
+    const obj = yaml.parse(config, { version: '1.2' });
     loadedKubeConfig.clusters = newClusters(obj.clusters);
     loadedKubeConfig.contexts = newContexts(obj.contexts);
     loadedKubeConfig.users = newUsers(obj.users);

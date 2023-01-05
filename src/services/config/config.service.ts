@@ -405,23 +405,31 @@ export class ConfigService implements ConfigInterface {
         this.config.set('authScopes', this.getAuthScopes(idp));
 
         // IdP specific login setup
-        if (idp == IdentityProvider.Google || idp == IdentityProvider.Microsoft) {
+        switch(idp) {
+        case IdentityProvider.Google:
+        case IdentityProvider.Microsoft:
             const clientSecret = await this.tokenHttpService.getClientIdAndSecretForProvider(idp);
             this.config.set('clientId', clientSecret.clientId);
             this.config.set('clientSecret', clientSecret.clientSecret);
             this.config.set('authUrl', this.getCommonAuthUrl(idp));
-        } else if (idp == IdentityProvider.Okta) {
+            break;
+        case IdentityProvider.Okta:
+        case IdentityProvider.OneLogin:
             if (!email)
-                throw new Error('User email is required for logging in with okta');
+                throw new Error(`User email is required for logging in with ${idp}`);
 
-            const oktaClientResponse = await this.tokenHttpService.getOktaClient(email);
-            if (!oktaClientResponse)
+            const oidcClientResponse = await this.tokenHttpService.getOidcClient(email, idp);
+            if (!oidcClientResponse)
                 throw new Error(`Unknown organization for email ${email}`);
 
-            this.config.set('clientId', oktaClientResponse.clientId);
+            this.config.set('clientId', oidcClientResponse.clientId);
             this.config.delete('clientSecret');
-            this.config.set('authUrl', `${oktaClientResponse.domain}`);
-        } else {
+            let domain = oidcClientResponse.domain;
+            if(idp == IdentityProvider.OneLogin)
+                domain = oidcClientResponse.domain.concat('/oidc/2');
+            this.config.set('authUrl', `${domain}`);
+            break;
+        default:
             throw new Error(`Unhandled idp ${idp} in loginSetup`);
         }
 
@@ -509,6 +517,8 @@ export class ConfigService implements ConfigInterface {
             return 'offline_access openid email profile User.Read';
         case IdentityProvider.Okta:
             return 'offline_access openid email profile';
+        case IdentityProvider.OneLogin:
+            return 'openid profile';
         default:
             throw new Error(`Unknown idp ${idp}`);
         }

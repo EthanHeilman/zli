@@ -1,4 +1,4 @@
-import { configService, logger, systemTestEnvId, systemTestPolicyTemplate, systemTestUniqueId, testTargets, allTargets, RUN_AS_SERVICE_ACCOUNT } from '../system-test';
+import { configService, logger, systemTestEnvId, systemTestPolicyTemplate, systemTestUniqueId, testTargets, allTargets, RUN_AS_SERVICE_ACCOUNT, RUN_AS_ONELOGIN } from '../system-test';
 import { callZli } from '../utils/zli-utils';
 import { ConnectionHttpService } from '../../../http-services/connection/connection.http-services';
 import { getDOImageName } from '../../digital-ocean/digital-ocean-ssm-target.service.types';
@@ -16,9 +16,9 @@ import * as CleanExitHandler from '../../../handlers/clean-exit.handler';
 import { EventsHttpService } from '../../../http-services/events/events.http-server';
 
 export function runTestForTarget(testTarget: TestTarget): boolean {
-    // do not run ssm target tests as service account because this is not
-    // supported in the ssm agent
-    return !(isSsmTarget(testTarget) && RUN_AS_SERVICE_ACCOUNT);
+    // Do not run ssm target tests as service account or onelogin
+    // because they are not supported in the ssm agent
+    return !(isSsmTarget(testTarget) && (RUN_AS_SERVICE_ACCOUNT || RUN_AS_ONELOGIN));
 }
 
 export const connectSuite = () => {
