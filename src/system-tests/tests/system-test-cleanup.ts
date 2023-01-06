@@ -1,6 +1,6 @@
 import { PolicyHttpService } from '../../http-services/policy/policy.http-services';
 import { ApiKeyHttpService } from '../../http-services/api-key/api-key.http-services';
-import { DigitalOceanSSMTargetService } from '../digital-ocean/digital-ocean-ssm-target-service';
+import { DigitalOceanTargetService } from '../digital-ocean/digital-ocean-target-service';
 import { configService, doApiKey, logger, testTargets } from './system-test';
 import { checkAllSettledPromise } from './utils/utils';
 import { uninstall } from './utils/helm/helm-utils';
@@ -52,7 +52,7 @@ export async function cleanupDOTestCluster(cluster: RegisteredDigitalOceanKubern
  * Helper function to clean up our digital ocean test targets
  */
 export async function cleanupDOTestTargets() {
-    const doService = new DigitalOceanSSMTargetService(doApiKey, configService, logger);
+    const doService = new DigitalOceanTargetService(doApiKey, configService, logger);
     const allTargetsCleanup = Promise.allSettled(Array.from(testTargets.values()).map((doTarget) => {
         return doService.deleteDigitalOceanTarget(doTarget);
     }));

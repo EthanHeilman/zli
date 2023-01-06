@@ -7,14 +7,14 @@ import { promisify } from 'util';
 import fs from 'fs';
 import { exec } from 'child_process';
 import { KubeBctlNamespace, KubeHelmQuickstartChartName, KubeTestTargetGroups, KubeTestUserName } from './suites/kube';
-import { SSMTestTargetSelfRegistrationAutoDiscovery, TestTarget, BzeroTestTarget } from './system-test.types';
-import { BzeroTargetStatusPollError, DigitalOceanBZeroTarget, DigitalOceanSSMTarget, getDOImageName, getPackageManagerType, SsmTargetStatusPollError } from '../digital-ocean/digital-ocean-ssm-target.service.types';
-import { getAnsibleAutodiscoveryScript, getAutodiscoveryScript, getBzeroBashAutodiscoveryScript, getBzeroAnsibleAutodiscoveryScript } from '../../http-services/auto-discovery-script/auto-discovery-script.http-services';
+import { TestTarget, BzeroTestTarget } from './system-test.types';
+import { BzeroTargetStatusPollError, DigitalOceanBZeroTarget, getDOImageName, getPackageManagerType } from '../digital-ocean/digital-ocean-target.service.types';
+import { getBzeroBashAutodiscoveryScript, getBzeroAnsibleAutodiscoveryScript } from '../../http-services/auto-discovery-script/auto-discovery-script.http-services';
 import { ScriptTargetNameOption } from '../../../webshell-common-ts/http/v2/autodiscovery-script/types/script-target-name-option.types';
 import { addRepo, install, MultiStringValue, SingleStringValue } from './utils/helm/helm-utils';
 import { ApiKeyHttpService } from '../../http-services/api-key/api-key.http-services';
 import { DigitalOceanKubeService } from '../digital-ocean/digital-ocean-kube-service';
-import { DigitalOceanSSMTargetService } from '../digital-ocean/digital-ocean-ssm-target-service';
+import { DigitalOceanTargetService } from '../digital-ocean/digital-ocean-target-service';
 import { cleanupHelmAgentInstallation } from './system-test-cleanup';
 import { ServiceAccountProviderCredentials } from '../../../src/handlers/login/types/service-account-provider-credentials.types';
 import { callZli } from './utils/zli-utils';
@@ -27,7 +27,6 @@ export const bzeroTargetCustomUser = 'bzuser';
 
 // Droplet size to create
 const vtDropletSize = DigitalOceanDropletSize.CPU_1_MEM_1GB;
-const ssmDropletSize =  DigitalOceanDropletSize.CPU_1_MEM_1GB;
 
 // DigitalOcean cluster ID that is used by all kube system tests
 export const systemTestDigitalOceanClusterId = 'e3dd3573-6c83-40de-bd50-7ddef43dea7c';
@@ -207,7 +206,7 @@ export async function setupDOTestCluster(): Promise<RegisteredDigitalOceanKubern
  * Helper function to create our digital ocean test droplets
  */
 export async function createDOTestTargets() {
-    const doService = new DigitalOceanSSMTargetService(doApiKey, configService, logger);
+    const doService = new DigitalOceanTargetService(doApiKey, configService, logger);
 
     // Create a droplet for various types of test targets
     const createDroplet = async (testTarget: TestTarget) => {
@@ -216,20 +215,6 @@ export async function createDOTestTargets() {
         let userDataScript : string;
         let dropletSizeToCreate;
         switch (testTarget.installType) {
-        case 'ad':
-            // Autodiscovery expect envId, not env name
-            userDataScript = await getAutodiscoveryScript(logger, configService, systemTestEnvId, ScriptTargetNameOption.DigitalOceanMetadata, 'staging');
-            dropletSizeToCreate = ssmDropletSize;
-            break;
-        case 'as':
-            // Ansible script expects envId not env name
-            userDataScript = await getAnsibleUserDataScript(testTarget, systemTestEnvId, 'staging');
-            dropletSizeToCreate = ssmDropletSize;
-            break;
-        case 'pm':
-            userDataScript = getPackageManagerRegistrationScript('bzero-ssm-agent', testTarget, systemTestEnvName, systemTestRegistrationApiKey.secret);
-            dropletSizeToCreate = ssmDropletSize;
-            break;
         case 'pm-bzero':
             userDataScript = getPackageManagerRegistrationScript('bzero-beta', testTarget, systemTestEnvName, systemTestRegistrationApiKey.secret);
             dropletSizeToCreate = vtDropletSize;
@@ -249,7 +234,7 @@ export async function createDOTestTargets() {
             dropletSizeToCreate = vtDropletSize;
             break;
         case 'as-bzero':
-            userDataScript = await getAnsibleUserDataScript(testTarget, systemTestEnvId, null);
+            userDataScript = await getAnsibleUserDataScript(testTarget, systemTestEnvId);
             dropletSizeToCreate = vtDropletSize;
             break;
         default:
@@ -270,76 +255,40 @@ export async function createDOTestTargets() {
         }, userDataScript);
 
         // Add the digital ocean droplet to test targets mapping so that we can clean it up in afterAll
-        if(testTarget.installType === 'pm' || testTarget.installType == 'ad' || testTarget.installType == 'as' ) {
-            const digitalOceanSsmTarget: DigitalOceanSSMTarget = { type: 'ssm', droplet: droplet, ssmTarget: undefined};
-            testTargets.set(testTarget, digitalOceanSsmTarget);
+        const digitalOceanBZeroTarget: DigitalOceanBZeroTarget = { type: 'bzero', droplet: droplet, bzeroTarget: undefined };
+        testTargets.set(testTarget, digitalOceanBZeroTarget);
 
-            try {
-                const ssmTarget = await doService.pollSsmTargetOnline(targetName);
-                // Set the ssmTarget associated with this digital ocean droplet
-                digitalOceanSsmTarget.ssmTarget = ssmTarget;
-            } catch (err) {
-                // Catch special exception so that we can save ssmTarget reference
-                // for cleanup.
-                //
-                // SsmTargetStatusPollError is thrown if target reaches 'Error'
-                // state, or if target is known but does not come online within the
-                // specified timeout.
-                if (err instanceof SsmTargetStatusPollError) {
-                    digitalOceanSsmTarget.ssmTarget = err.ssmTarget;
-                }
+        try {
+            const bzeroTarget = await doService.pollBZeroTargetOnline(targetName);
 
-                // Still throw the error because something failed. No other system
-                // tests should continue if one target fails to become Online.
-                throw err;
+            // Set the bzeroTarget associated with this digital ocean droplet
+            digitalOceanBZeroTarget.bzeroTarget = bzeroTarget;
+        } catch (err) {
+            // Catch special exception so that we can save bzeroTarget reference
+            // for cleanup.
+            //
+            // BzeroTargetStatusPollError is thrown if target reaches 'Error'
+            // state, or if target is known but does not come online within the
+            // specified timeout.
+            if (err instanceof BzeroTargetStatusPollError) {
+                digitalOceanBZeroTarget.bzeroTarget = err.bzeroTarget;
             }
 
-            logger.info(
-                `Successfully created DigitalOceanTarget:
-                \tAWS region: ${testTarget.awsRegion}
-                \tDigitalOcean region: ${testTarget.doRegion}
-                \tInstall Type: ${testTarget.installType}
-                \tDroplet ID: ${digitalOceanSsmTarget.droplet.id}
-                \tDroplet Image: ${getDOImageName(testTarget.dropletImage)}
-                \tSSM Target ID: ${digitalOceanSsmTarget.ssmTarget.id}`
-            );
-
-        } else if(testTarget.installType === 'pm-bzero' || testTarget.installType === 'ad-bzero' || testTarget.installType === 'as-bzero') {
-            const digitalOceanBZeroTarget: DigitalOceanBZeroTarget = {  type: 'bzero', droplet: droplet, bzeroTarget: undefined};
-            testTargets.set(testTarget, digitalOceanBZeroTarget);
-
-            try {
-                const bzeroTarget = await doService.pollBZeroTargetOnline(targetName);
-
-                // Set the bzeroTarget associated with this digital ocean droplet
-                digitalOceanBZeroTarget.bzeroTarget = bzeroTarget;
-            } catch (err) {
-                // Catch special exception so that we can save bzeroTarget reference
-                // for cleanup.
-                //
-                // BzeroTargetStatusPollError is thrown if target reaches 'Error'
-                // state, or if target is known but does not come online within the
-                // specified timeout.
-                if (err instanceof BzeroTargetStatusPollError) {
-                    digitalOceanBZeroTarget.bzeroTarget = err.bzeroTarget;
-                }
-
-                // Still throw the error because something failed. No other system
-                // tests should continue if one target fails to become Online.
-                throw err;
-            }
-
-            logger.info(
-                `Successfully created DigitalOceanSSMTarget:
-                \tAWS region: ${testTarget.awsRegion}
-                \tDigitalOcean region: ${testTarget.doRegion}
-                \tInstall Type: ${testTarget.installType}
-                \tDroplet ID: ${digitalOceanBZeroTarget.droplet.id}
-                \tDroplet Name: ${digitalOceanBZeroTarget.droplet.name}
-                \tDroplet Image: ${getDOImageName(testTarget.dropletImage)}
-                \tBZero Target ID: ${digitalOceanBZeroTarget.bzeroTarget.id}`
-            );
+            // Still throw the error because something failed. No other system
+            // tests should continue if one target fails to become Online.
+            throw err;
         }
+
+        logger.info(
+            `Successfully created DigitalOceanTarget:
+            \tAWS region: ${testTarget.awsRegion}
+            \tDigitalOcean region: ${testTarget.doRegion}
+            \tInstall Type: ${testTarget.installType}
+            \tDroplet ID: ${digitalOceanBZeroTarget.droplet.id}
+            \tDroplet Name: ${digitalOceanBZeroTarget.droplet.name}
+            \tDroplet Image: ${getDOImageName(testTarget.dropletImage)}
+            \tBZero Target ID: ${digitalOceanBZeroTarget.bzeroTarget.id}`
+        );
     };
 
     // Issue create droplet requests concurrently
@@ -408,22 +357,14 @@ export async function ensureServiceAccountEnabled(subjectHttpService: SubjectHtt
 }
 
 /**
- * Helper function to build a user data script to install via ansible
+ * Helper function to build a user data script to install bzero via ansible
  * @param environmentId EnvironmentId to use when registering target
- * @param agentVersion Agent version to use
  * @returns User data script to run on droplet
  */
-async function getAnsibleUserDataScript(testTarget: TestTarget, environmentId: string, agentVersion: string): Promise<string> {
+async function getAnsibleUserDataScript(testTarget: TestTarget, environmentId: string): Promise<string> {
     // First get our ansible user data script and set up other needed commands
-    let ansibleScript: string;
-    let initBlock: string = '';
-    if (testTarget.installType === 'as') {
-        ansibleScript = await getAnsibleAutodiscoveryScript(logger, configService, environmentId, agentVersion);
-    } else if (testTarget.installType === 'as-bzero') {
-        ansibleScript = await getBzeroAnsibleAutodiscoveryScript(logger, configService, environmentId, true);
-        initBlock = getBzeroTargetSetupCommands();
-    }
-
+    const ansibleScript = await getBzeroAnsibleAutodiscoveryScript(logger, configService, environmentId, true);
+    const initBlock = getBzeroTargetSetupCommands();
     const packageManager = getPackageManagerType(testTarget.dropletImage);
 
     let installBlock: string;
@@ -470,13 +411,13 @@ ${ansibleInstall}
 
 /**
  * Helper function to get a package manager (yum/apt) install script to pass to user data for a given test target
- * @param packageName Package name to use (bzero-beta vs bzero-ssm-agent)
+ * @param packageName Package name to use (e.g., bzero-beta)
  * @param testTarget Test target itself
  * @param envName Environment name used in bastion
  * @param registrationApiKeySecret API key used to activate these agents
  * @returns User data script to run on droplet
  */
-function getPackageManagerRegistrationScript(packageName: string, testTarget: SSMTestTargetSelfRegistrationAutoDiscovery | BzeroTestTarget, envName: string, registrationApiKeySecret: string): string {
+function getPackageManagerRegistrationScript(packageName: string, testTarget: BzeroTestTarget, envName: string, registrationApiKeySecret: string): string {
     let installBlock: string;
     const packageManager = getPackageManagerType(testTarget.dropletImage);
     const shouldBuildFromSource = packageName === 'bzero-beta' && bzeroAgentBranch;
@@ -509,18 +450,8 @@ sudo yum install ${packageName} -y
         installBlock += getCompileBzeroFromSourceCommands('bzero-beta');
     }
 
-    let registerCommand: string;
-    let initBlock: string = '';
-    switch(testTarget.installType) {
-    case 'pm':
-        registerCommand = `${packageName} --serviceUrl ${configService.serviceUrl()} -registrationKey "${registrationApiKeySecret}" -envName "${envName}"`;
-        break;
-    case 'pm-bzero':
-        registerCommand = `${packageName} --serviceUrl ${configService.serviceUrl()} -registrationKey "${registrationApiKeySecret}" -environmentName "${envName}"`;
-
-        initBlock = getBzeroTargetSetupCommands();
-        break;
-    }
+    const registerCommand = `${packageName} --serviceUrl ${configService.serviceUrl()} -registrationKey "${registrationApiKeySecret}" -environmentName "${envName}"`;
+    const initBlock = getBzeroTargetSetupCommands();
 
     return String.raw`#!/bin/bash
 set -Ee

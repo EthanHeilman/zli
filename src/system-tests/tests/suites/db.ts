@@ -4,7 +4,7 @@ import { DbTargetHttpService } from '..../../../http-services/db-target/db-targe
 import * as ListConnectionsService from '../../../services/list-connections/list-connections.service';
 
 import { configService, logger } from '../system-test';
-import { DigitalOceanBZeroTarget, DigitalOceanDistroImage, getDOImageName } from '../../digital-ocean/digital-ocean-ssm-target.service.types';
+import { DigitalOceanBZeroTarget, DigitalOceanDistroImage, getDOImageName } from '../../digital-ocean/digital-ocean-target.service.types';
 import { TestUtils } from '../utils/test-utils';
 import { Environment } from '../../../../webshell-common-ts/http/v2/policy/types/environment.types';
 import { ConnectionEventType } from '../../../../webshell-common-ts/http/v2/event/types/connection-event.types';

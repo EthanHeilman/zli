@@ -99,14 +99,14 @@ export const targetConnectPolicySuite = () => {
             expect(editedPolicy).toMatchObject(expectedPolicySummary);
         }, 15 * 1000);
 
-        test('2287: Edit target connect policy - should disallow adding target with an environment is already configured', async () => {
+        test('2287: Edit target connect policy - should disallow adding target with an environment already configured', async () => {
             let expectedError = undefined;
             try {
                 await policyService.UpdateTargetConnectPolicy(targetConnectPolicy.id, {
                     targets: [
                         {
                             id: '5fa85f64-5717-4567-b3fc-2c963f66afa5', // not a real ID
-                            type: TargetType.SsmTarget
+                            type: TargetType.Bzero
                         }
                     ]
                 });

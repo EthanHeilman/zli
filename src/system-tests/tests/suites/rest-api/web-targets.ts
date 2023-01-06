@@ -1,5 +1,5 @@
 import { WebTargetHttpService } from '../../../../http-services/web-target/web-target.http-service';
-import { DigitalOceanBZeroTarget } from '../../../digital-ocean/digital-ocean-ssm-target.service.types';
+import { DigitalOceanBZeroTarget } from '../../../digital-ocean/digital-ocean-target.service.types';
 import { configService, logger, systemTestEnvId, systemTestUniqueId, testTargets } from '../../system-test';
 import { bzeroTestTargetsToRun } from '../../targets-to-run';
 

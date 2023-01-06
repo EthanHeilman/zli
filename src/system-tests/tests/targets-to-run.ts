@@ -1,4 +1,4 @@
-import { DigitalOceanDistroImage } from '../digital-ocean/digital-ocean-ssm-target.service.types';
+import { DigitalOceanDistroImage } from '../digital-ocean/digital-ocean-target.service.types';
 import { convertAwsRegionToDigitalOceanRegion } from '../digital-ocean/digital-ocean.types';
 import { TestTarget } from './system-test.types';
 import { Logger } from '../../services/logger/logger.service';
@@ -7,27 +7,8 @@ import { BzeroContainerTestTarget } from './suites/agent-container';
 const defaultAwsRegion = 'us-east-1';
 const defaultDigitalOceanRegion = convertAwsRegionToDigitalOceanRegion(defaultAwsRegion);
 
-// Different types of SSM test targets to create. Each object corresponds to a
+// Different types of bzero test targets to create. Each object corresponds to a
 // new droplet.
-export const ssmTestTargetsToRun: TestTarget[] = [
-    {
-        installType: 'pm',
-        dropletImage: DigitalOceanDistroImage.Debian11,
-        doRegion: defaultDigitalOceanRegion,
-        awsRegion: defaultAwsRegion,
-        connectCaseId: '2123',
-        closeCaseId: '3655',
-        badConnectCaseId: '2352',
-        sshCaseId: '2150',
-        sshBadUserCaseId: '2361',
-        sshConnectFailsCaseId: '84380',
-        groupConnectCaseId: '3094',
-        sessionRecordingCaseId: '3042',
-        attachCaseId: '6495',
-    }
-];
-
-// Different types of bzero targets to create for each type of operating system
 export const bzeroTestTargetsToRun: TestTarget[] = [
     {
         installType: 'pm-bzero',
@@ -72,88 +53,6 @@ export const agentContainersToRun : BzeroContainerTestTarget[] = [
 ];
 
 // Extra targets to run when IN_PIPELINE and IN_CI mode
-
-export const extraSsmTestTargetsToRun: TestTarget[] = [
-    // old autodiscovery script (all-in-bash)
-    {
-        installType: 'ad',
-        dropletImage: DigitalOceanDistroImage.AmazonLinux2,
-        doRegion: defaultDigitalOceanRegion,
-        awsRegion: defaultAwsRegion,
-        connectCaseId: '2120',
-        closeCaseId: '3652',
-        badConnectCaseId: '2347',
-        sshCaseId: '2147',
-        sshBadUserCaseId: '2358',
-        sshConnectFailsCaseId: '84382',
-        groupConnectCaseId: '3091',
-        sessionRecordingCaseId: '4974',
-        attachCaseId: '6491',
-    },
-    {
-        installType: 'ad',
-        dropletImage: DigitalOceanDistroImage.Debian11,
-        doRegion: defaultDigitalOceanRegion,
-        awsRegion: defaultAwsRegion,
-        connectCaseId: '2121',
-        closeCaseId: '3653',
-        badConnectCaseId: '2350',
-        sshCaseId: '2148',
-        sshBadUserCaseId: '2359',
-        sshConnectFailsCaseId: '84383',
-        groupConnectCaseId: '3092',
-        sessionRecordingCaseId: '4970',
-        attachCaseId: '6493',
-    },
-    // new autodiscovery script (self-registration)
-    {
-        installType: 'pm',
-        dropletImage: DigitalOceanDistroImage.AmazonLinux2,
-        doRegion: defaultDigitalOceanRegion,
-        awsRegion: defaultAwsRegion,
-        connectCaseId: '2124',
-        closeCaseId: '3656',
-        badConnectCaseId: '2353',
-        sshCaseId: '2151',
-        sshBadUserCaseId: '2362',
-        sshConnectFailsCaseId: '84386',
-        groupConnectCaseId: '3095',
-        sessionRecordingCaseId: '4969',
-        attachCaseId: '6496',
-    },
-    // Ansible ssm target test
-    {
-        installType: 'as',
-        dropletImage: DigitalOceanDistroImage.Debian11,
-        doRegion: defaultDigitalOceanRegion,
-        awsRegion: defaultAwsRegion,
-        connectCaseId: '2348',
-        closeCaseId: '3659',
-        badConnectCaseId: '2354',
-        sshCaseId: '2356',
-        sshBadUserCaseId: '2365',
-        sshConnectFailsCaseId: '84387',
-        groupConnectCaseId: '3098',
-        sessionRecordingCaseId: '4972',
-        attachCaseId: '6498',
-    },
-    {
-        installType: 'as',
-        dropletImage: DigitalOceanDistroImage.AmazonLinux2,
-        doRegion: defaultDigitalOceanRegion,
-        awsRegion: defaultAwsRegion,
-        connectCaseId: '2349',
-        closeCaseId: '3660',
-        badConnectCaseId: '2355',
-        sshCaseId: '2357',
-        sshBadUserCaseId: '2366',
-        sshConnectFailsCaseId: '84388',
-        groupConnectCaseId: '3099',
-        sessionRecordingCaseId: '4973',
-        attachCaseId: '6499',
-    }
-];
-
 export const extraBzeroTestTargetsToRun: TestTarget[] = [
     {
         installType: 'pm-bzero',
@@ -238,9 +137,9 @@ export const extraBzeroTestTargetsToRun: TestTarget[] = [
 /**
  * Helper function to automatically add a list of defaulted regions to run system-test against, or pull from the EXTRA_REGIONS env var
  * @param logger Logger to log any warnings
- * @returns Returns a list of additional ssm targets to run
+ * @returns Returns a list of additional targets to run
  */
-export function initRegionalSSMTargetsTestConfig(logger: Logger): TestTarget[] {
+export function initRegionalTargetsTestConfig(logger: Logger): TestTarget[] {
     const enabledExtraRegionsEnvVar = process.env.EXTRA_REGIONS;
     const enabledExtraRegions = [];
 
@@ -272,6 +171,28 @@ export function initRegionalSSMTargetsTestConfig(logger: Logger): TestTarget[] {
         let pmSessionRecordingCaseId = null;
         let adAttachCaseId = null;
         let pmAttachCaseId = null;
+        let adWebCaseId: string;
+        let pmWebCaseId: string;
+        let adBadWebCaseId: string;
+        let pmBadWebCaseId: string;
+        let adIperfDownload: string;
+        let pmIperfDownload: string;
+        let adIperfUpload: string;
+        let pmIperfUpload: string;
+        let adSendLogsCaseId: string;
+        let pmSendLogsCaseId: string;
+        let adSshByUuidCaseId: string;
+        let pmSshByUuidCaseId: string;
+        let adSshScpByUuidCaseId: string;
+        let pmSshScpByUuidCaseId: string;
+        let adSshScpCaseId: string;
+        let pmSshScpCaseId: string;
+        let adSshSftpCaseId: string;
+        let pmSshSftpCaseId: string;
+        let adSshTunnelFailsCaseId: string;
+        let pmSshTunnelFailsCaseId: string;
+        let adSshWithEnvCaseId: string;
+        let pmSshWithEnvCaseId: string;
 
         switch (awsRegion) {
         case 'ap-northeast-1':
@@ -289,16 +210,41 @@ export function initRegionalSSMTargetsTestConfig(logger: Logger): TestTarget[] {
             adSshCaseId = '2178';
             adSshBadUserCaseId = '2363';
             adSshConnectFailsCaseId = '84390';
+            adSshByUuidCaseId = '648521';
+            adSshScpByUuidCaseId = '648523';
+            adSshScpCaseId = '648525';
+            adSshSftpCaseId = '648527';
+            adSshTunnelFailsCaseId = '648530';
+            adSshWithEnvCaseId = '648531';
 
             pmSshCaseId = '2179';
             pmSshBadUserCaseId = '2364';
             pmSshConnectFailsCaseId = '84391';
+            pmSshByUuidCaseId = '648522';
+            pmSshScpByUuidCaseId = '648524';
+            pmSshScpCaseId = '648526';
+            pmSshSftpCaseId = '648528';
+            pmSshTunnelFailsCaseId = '648529';
+            pmSshWithEnvCaseId = '648532';
 
             adSessionRecordingCaseId = '5003';
             pmSessionRecordingCaseId = '5004';
 
             adAttachCaseId = '6492';
             pmAttachCaseId = '6497';
+
+            adWebCaseId = '648533';
+            pmWebCaseId = '648534';
+            adBadWebCaseId = '648535';
+            pmBadWebCaseId = '648536';
+
+            adIperfDownload = '648538';
+            adIperfUpload = '648537';
+            pmIperfDownload = '648540';
+            pmIperfUpload = '648539';
+
+            adSendLogsCaseId = '648542';
+            pmSendLogsCaseId = '648541';
             break;
         default:
             logger.warn(`Unhandled TestRail awsRegion passed: ${awsRegion}`);
@@ -306,8 +252,8 @@ export function initRegionalSSMTargetsTestConfig(logger: Logger): TestTarget[] {
 
         toReturn.push(
             {
-                installType: 'ad',
-                dropletImage: DigitalOceanDistroImage.Debian11,
+                installType: 'ad-bzero',
+                dropletImage: DigitalOceanDistroImage.BzeroVTUbuntuTestImage,
                 doRegion: convertAwsRegionToDigitalOceanRegion(awsRegion),
                 awsRegion: awsRegion,
                 connectCaseId: adConnectCaseId,
@@ -318,11 +264,22 @@ export function initRegionalSSMTargetsTestConfig(logger: Logger): TestTarget[] {
                 groupConnectCaseId: adGroupConnectCaseId,
                 closeCaseId: adCloseCasedId,
                 sessionRecordingCaseId: adSessionRecordingCaseId,
-                attachCaseId: adAttachCaseId
+                attachCaseId: adAttachCaseId,
+                webCaseId: adWebCaseId,
+                badWebCaseId: adBadWebCaseId,
+                iperfDownload: adIperfDownload,
+                iperfUpload: adIperfUpload,
+                sendLogsCaseId: adSendLogsCaseId,
+                sshByUuidCaseId: adSshByUuidCaseId,
+                sshScpByUuidCaseId: adSshScpByUuidCaseId,
+                sshScpCaseId: adSshScpCaseId,
+                sshSftpCaseId: adSshSftpCaseId,
+                sshTunnelFailsCaseId: adSshTunnelFailsCaseId,
+                sshWithEnvCaseId: adSshWithEnvCaseId
             },
             {
-                installType: 'pm',
-                dropletImage: DigitalOceanDistroImage.Debian11,
+                installType: 'pm-bzero',
+                dropletImage: DigitalOceanDistroImage.BzeroVTUbuntuTestImage,
                 doRegion: convertAwsRegionToDigitalOceanRegion(awsRegion),
                 awsRegion: awsRegion,
                 connectCaseId: pmConnectCaseId,
@@ -334,6 +291,17 @@ export function initRegionalSSMTargetsTestConfig(logger: Logger): TestTarget[] {
                 closeCaseId: pmCloseCasedId,
                 sessionRecordingCaseId: pmSessionRecordingCaseId,
                 attachCaseId: pmAttachCaseId,
+                webCaseId: pmWebCaseId,
+                badWebCaseId: pmBadWebCaseId,
+                iperfDownload: pmIperfDownload,
+                iperfUpload: pmIperfUpload,
+                sendLogsCaseId: pmSendLogsCaseId,
+                sshByUuidCaseId: pmSshByUuidCaseId,
+                sshScpByUuidCaseId: pmSshScpByUuidCaseId,
+                sshScpCaseId: pmSshScpCaseId,
+                sshSftpCaseId: pmSshSftpCaseId,
+                sshTunnelFailsCaseId: pmSshTunnelFailsCaseId,
+                sshWithEnvCaseId: pmSshWithEnvCaseId
             }
         );
     });

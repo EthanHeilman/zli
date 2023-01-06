@@ -2,7 +2,7 @@ import * as k8s from '@kubernetes/client-node';
 
 import { configService, logger, systemTestEnvId, systemTestPolicyTemplate, systemTestUniqueId, testCluster, testTargets, systemTestEnvName } from '../system-test';
 import { ConnectionHttpService } from '../../../http-services/connection/connection.http-services';
-import { DigitalOceanDistroImage, getDOImageName } from '../../digital-ocean/digital-ocean-ssm-target.service.types';
+import { DigitalOceanDistroImage, getDOImageName } from '../../digital-ocean/digital-ocean-target.service.types';
 import { sleepTimeout, TestUtils } from '../utils/test-utils';
 import { ConnectTestUtils, setupBackgroundDaemonMocks } from '../utils/connect-utils';
 import { bzeroTestTargetsToRun } from '../targets-to-run';

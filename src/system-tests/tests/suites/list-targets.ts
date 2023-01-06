@@ -16,20 +16,8 @@ export const listTargetsSuite = () => {
             const returnedTargetSummaries = (await getMockResultValue(listTargetsSpy.mock.results[0]));
             const expectedTargetSummaries = [];
 
-            const expectedSSMTargetSummaries = Array.from(testTargets.values()).map<TargetSummary>(t => {
-                if (t.type === 'ssm') {
-                    return {
-                        type: TargetType.SsmTarget,
-                        agentPublicKey: t.ssmTarget.agentPublicKey,
-                        id: t.ssmTarget.id,
-                        name: t.ssmTarget.name,
-                        environmentId: systemTestEnvId,
-                        agentVersion: t.ssmTarget.agentVersion,
-                        status: t.ssmTarget.status,
-                        targetUsers: t.ssmTarget.allowedTargetUsers.map(tu => tu.userName),
-                        region: t.ssmTarget.region
-                    };
-                } else if (t.type === 'bzero') {
+            const expectedBzeroTargetSummaries = Array.from(testTargets.values()).map<TargetSummary>(t => {
+                if (t.type === 'bzero') {
                     return {
                         type: TargetType.Bzero,
                         agentPublicKey: t.bzeroTarget.agentPublicKey,
@@ -43,7 +31,7 @@ export const listTargetsSuite = () => {
                     };
                 }
             });
-            expectedTargetSummaries.push(...expectedSSMTargetSummaries);
+            expectedTargetSummaries.push(...expectedBzeroTargetSummaries);
 
             if (testCluster) {
                 expectedTargetSummaries.push({
