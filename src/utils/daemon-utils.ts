@@ -22,6 +22,7 @@ import { DaemonConfig } from '../services/config/config.service.types';
 import { ILogger } from '../../webshell-common-ts/logging/logging.types';
 import { toUpperCase } from './utils';
 import { KillProcessResultType } from '../services/process-manager/process-manager.service.types';
+import { CreateUniversalConnectionResponse } from '../../webshell-common-ts/http/v2/connection/responses/create-universal-connection.response';
 
 export const DAEMON_PATH : string = 'bzero/bctl/daemon/daemon';
 
@@ -478,10 +479,6 @@ export function waitForDaemonProcessExit(logger: Logger, loggerConfigService: Lo
                     exitCode = 0;
                     break;
                 }
-                case DAEMON_EXIT_CODES.USER_NOT_FOUND: {
-                    logger.error('Failed to connect: the specified user does not exist on the target');
-                    break;
-                }
                 case DAEMON_EXIT_CODES.SERVICE_ACCOUNT_NOT_CONFIGURED: {
                     logger.error('Failed to connect: this service account has not been configured on the target');
                     break;
@@ -490,14 +487,47 @@ export function waitForDaemonProcessExit(logger: Logger, loggerConfigService: Lo
                     logger.error('Error parsing zli config file. Please try logging in again with \'zli login\' to resolve this issue');
                     break;
                 }
+                case DAEMON_EXIT_CODES.USER_NOT_FOUND:
+                case DAEMON_EXIT_CODES.POLICY_EDITED_DISCONNECT:
+                case DAEMON_EXIT_CODES.POLICY_DELETED_DISCONNECT: {
+                    // don't report an error in this case -- handled by upstream processes
+                    break;
+                }
                 default: {
                     logger.error(`daemon process closed with nonzero exit code ${exitCode} -- for more details, see ${loggerConfigService.daemonLogPath()}`);
                     break;
                 }
                 }
             }
-
             resolve(exitCode);
         });
     });
+}
+
+/**
+ * Takes a daemon exit code and connection metadata and returns an appropriate error log statement. Can be used
+ * by connection handlers that receive a nonzero code.
+ *
+ * NOTE: If an error code is handled in this function, we should not log an error for it in {@link waitForDaemonProcessExit},
+ *       but we should still catch it to avoid logging the default error.
+ * @param exitCode should be a nonzero number
+ * @param conn A {@link CreateUniversalConnectionResponse} that we can use to inform the user about the connection
+ * @returns an error message to log
+ */
+export function handleExitCode(exitCode: number, conn: CreateUniversalConnectionResponse): string {
+    switch (exitCode) {
+    case DAEMON_EXIT_CODES.USER_NOT_FOUND: {
+        return `Failed to connect: ${conn.targetUser} does not exist on ${conn.targetName}`;
+    }
+    case DAEMON_EXIT_CODES.POLICY_EDITED_DISCONNECT: {
+        return `The policy allowing you access to ${conn.targetName} as ${conn.targetUser} was edited. You may no longer have access to ${conn.targetName}. To view which targets you have access to, try zli lt.`;
+    }
+    case DAEMON_EXIT_CODES.POLICY_DELETED_DISCONNECT: {
+        return `The policy allowing you access to ${conn.targetName} as ${conn.targetUser} was deleted. If you had access through JIT, you will need to request JIT access again.`;
+    }
+    default: {
+        // if the code isn't recognized here, we already logged the general-purpose error message
+        return '';
+    }
+    }
 }

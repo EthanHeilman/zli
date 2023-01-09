@@ -12,6 +12,7 @@ import { webConnectHandler } from './web-connect.handler';
 import { startKubeDaemonHandler } from './kube-connect.handler';
 import { MixpanelService } from '../../services/Tracking/mixpanel.service';
 import { CreateUniversalConnectionResponse } from '../../../webshell-common-ts/http/v2/connection/responses/create-universal-connection.response';
+import { handleExitCode } from '../../utils/daemon-utils';
 
 export async function connectHandler(
     argv: yargs.Arguments<connectArgs>,
@@ -56,7 +57,15 @@ export async function connectHandler(
         case TargetType.SsmTarget:
         case TargetType.Bzero:
         case TargetType.DynamicAccessConfig:
-            return await shellConnectHandler(createUniversalConnectionResponse.targetType, createUniversalConnectionResponse.targetUser, createUniversalConnectionResponse, configService, logger, loggerConfigService);
+            const exitCode = await shellConnectHandler(createUniversalConnectionResponse.targetType, createUniversalConnectionResponse.targetUser, createUniversalConnectionResponse, configService, logger, loggerConfigService);
+
+            if (exitCode !== 0) {
+                const errMsg = handleExitCode(exitCode, createUniversalConnectionResponse);
+                if (errMsg.length > 0) {
+                    logger.error(errMsg);
+                }
+            }
+            return exitCode;
         case TargetType.Db:
             return await dbConnectHandler(argv, createUniversalConnectionResponse.targetId, createUniversalConnectionResponse, configService, logger, loggerConfigService);
         case TargetType.Web:

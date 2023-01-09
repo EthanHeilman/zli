@@ -9,7 +9,7 @@ import { SsmTunnelService } from '../../services/ssm-tunnel/ssm-tunnel.service';
 import { cleanExit } from '../clean-exit.handler';
 import { parseTargetString } from '../../utils/utils';
 import { LoggerConfigService } from '../../services/logger/logger-config.service';
-import { copyExecutableToLocalDir, getBaseDaemonEnv, waitForDaemonProcessExit, getOrDefaultLocalport} from '../../utils/daemon-utils';
+import { copyExecutableToLocalDir, getBaseDaemonEnv, waitForDaemonProcessExit, getOrDefaultLocalport, handleExitCode} from '../../utils/daemon-utils';
 import { sshProxyArg } from './ssh-proxy.command-builder';
 import yargs from 'yargs';
 import { ConnectionHttpService } from '../../http-services/connection/connection.http-services';
@@ -85,12 +85,23 @@ export async function sshProxyHandler(
             cleanExit(1, logger);
         }
 
+        let exitCode: number;
         // if the user has file transfer access but not tunnel access, give them a transparent connection
         if (createUniversalConnectionResponse.sshScpOnly) {
-            return await bzeroTransparentSshProxyHandler(configService, logger, sshTunnelParameters, createUniversalConnectionResponse, loggerConfigService);
+            exitCode = await bzeroTransparentSshProxyHandler(configService, logger, sshTunnelParameters, createUniversalConnectionResponse, loggerConfigService);
         } else {
-            return await bzeroOpaueSshProxyHandler(configService, logger, sshTunnelParameters, createUniversalConnectionResponse, loggerConfigService);
+            exitCode = await bzeroOpaueSshProxyHandler(configService, logger, sshTunnelParameters, createUniversalConnectionResponse, loggerConfigService);
         }
+
+        if (exitCode !== 0) {
+            const errMsg = handleExitCode(exitCode, createUniversalConnectionResponse);
+            if (errMsg.length > 0) {
+                logger.error(errMsg);
+            }
+        }
+
+        cleanExit(exitCode, logger);
+
     default:
         logger.error(`Unhandled ssh target type ${createUniversalConnectionResponse.targetType}`);
         return -1;
@@ -131,7 +142,7 @@ async function ssmSshProxyHandler(configService: ConfigService, logger: Logger, 
 /**
  * Launch an "opaque" SSH tunnel session to a bzero target
  */
-async function bzeroOpaueSshProxyHandler(configService: ConfigService, logger: Logger, sshTunnelParameters: SshTunnelParameters, createUniversalConnectionResponse: CreateUniversalConnectionResponse, loggerConfigService: LoggerConfigService) {
+async function bzeroOpaueSshProxyHandler(configService: ConfigService, logger: Logger, sshTunnelParameters: SshTunnelParameters, createUniversalConnectionResponse: CreateUniversalConnectionResponse, loggerConfigService: LoggerConfigService): Promise<number> {
     // Build our runtime config and cwd
     const baseEnv = getBaseDaemonEnv(configService, loggerConfigService, createUniversalConnectionResponse.agentPublicKey, createUniversalConnectionResponse.connectionId, createUniversalConnectionResponse.connectionAuthDetails);
     const pluginEnv = getBaseSshArgs(configService, sshTunnelParameters, createUniversalConnectionResponse);
@@ -185,8 +196,7 @@ async function bzeroOpaueSshProxyHandler(configService: ConfigService, logger: L
             daemonProcess.stdin.end();
         });
 
-        const exitCode = await waitForDaemonProcessExit(logger, loggerConfigService, daemonProcess);
-        await cleanExit(exitCode, logger);
+        return await waitForDaemonProcessExit(logger, loggerConfigService, daemonProcess);
     } catch (err) {
         logger.error(`Error starting ssh daemon: ${err}`);
         await cleanExit(1, logger);
@@ -201,7 +211,7 @@ async function bzeroOpaueSshProxyHandler(configService: ConfigService, logger: L
  *      Thus we use stdio as a way for the daemon to communicate with the ZLI directly, and the TCP connection
  *      to carry messages between the daemon and the local SSH process
  */
-async function bzeroTransparentSshProxyHandler(configService: ConfigService, logger: Logger, sshTunnelParameters: SshTunnelParameters, createUniversalConnectionResponse: CreateUniversalConnectionResponse, loggerConfigService: LoggerConfigService) {
+async function bzeroTransparentSshProxyHandler(configService: ConfigService, logger: Logger, sshTunnelParameters: SshTunnelParameters, createUniversalConnectionResponse: CreateUniversalConnectionResponse, loggerConfigService: LoggerConfigService): Promise<number> {
     // Build our runtime config and cwd
     const localPort = await getOrDefaultLocalport(null);
 
@@ -276,9 +286,7 @@ async function bzeroTransparentSshProxyHandler(configService: ConfigService, log
             process.stdout.end();
         });
 
-        const exitCode = await waitForDaemonProcessExit(logger, loggerConfigService, daemonProcess);
-
-        await cleanExit(exitCode, logger);
+        return await waitForDaemonProcessExit(logger, loggerConfigService, daemonProcess);
     } catch (err) {
         logger.error(`Error starting ssh daemon: ${err}`);
         await cleanExit(1, logger);
