@@ -70,8 +70,6 @@ export const loggerConfigService = new LoggerConfigService(configName, false, en
 export const logger = new Logger(loggerConfigService, false, false, true);
 export const configService = new ConfigService(configName, logger, envMap.configDir, true);
 
-export const RUN_AS_ONELOGIN = configService.idp() == 'onelogin';
-
 // This is the UserSummary for the user that is used to run system tests. When
 // RUN_AS_SERVICE account is enabled this will still be the user system tests
 // uses to initially create the SA before logging in as that SA. It is reused in

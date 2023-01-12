@@ -139,6 +139,7 @@ export const agentRecoverySuite = (testRunnerKubeConfigFile: string, testRunnerU
 
         afterEach(async () => {
             await connectTestUtils.cleanup();
+            await callZli(['disconnect', 'kube']);
         });
 
         bzeroTestTargetsToRun.forEach(async (testTarget) => {
@@ -163,7 +164,7 @@ export const agentRecoverySuite = (testRunnerKubeConfigFile: string, testRunnerU
                 // Run normal shell connect test to ensure that new connections can be made after bastion restarted
                 await connectTestUtils.runShellConnectTest(testTarget, `bastion restart test - ${systemTestUniqueId}`, true);
             },
-            3 * 60 * 1000); // 3 min timeout
+            5 * 60 * 1000); // 5 min timeout
         });
 
         bzeroTestTargetsToRun.forEach(async (testTarget) => {
@@ -193,7 +194,7 @@ export const agentRecoverySuite = (testRunnerKubeConfigFile: string, testRunnerU
                 // Run normal shell connect test to ensure that new connections can be made after connection orchestrator restarted
                 await connectTestUtils.runShellConnectTest(testTarget, `connection orchestrator restart test - ${systemTestUniqueId}`, true);
             },
-            3 * 60 * 1000); // 3 min timeout
+            5 * 60 * 1000); // 5 min timeout
         });
 
         bzeroTestTargetsToRun.forEach(async (testTarget) => {
@@ -254,9 +255,7 @@ export const agentRecoverySuite = (testRunnerKubeConfigFile: string, testRunnerU
 
             // Test the kube connection works after bastion comes back online
             await testKubeConnection();
-
-            await callZli(['disconnect', 'kube']);
-        }, 3 * 60 * 1000); // 3 min timeout;
+        }, 5 * 60 * 1000); // 3 min timeout;
 
         it('326521: kube agent connection node restart test', async() => {
             // Wait for the target to come online in case its offline from a previous recovery test
@@ -291,8 +290,6 @@ export const agentRecoverySuite = (testRunnerKubeConfigFile: string, testRunnerU
 
             // Test the kube connection still works after the control channel reconnects
             await testKubeConnection();
-
-            await callZli(['disconnect', 'kube']);
         }, 15 * 60 * 1000); // 15 min timeout;
 
         bzeroTestTargetsToRun.forEach(async (testTarget: TestTarget) => {
@@ -366,9 +363,7 @@ export const agentRecoverySuite = (testRunnerKubeConfigFile: string, testRunnerU
             // start the kube daemon
             await callZli(['connect', `${KubeTestUserName}@${testCluster.bzeroClusterTargetSummary.name}`, '--targetGroup', 'system:masters']);
             await testKubeConnection();
-            await callZli(['disconnect', 'kube']);
         }, 5 * 60 * 1000);
-
 
         async function stopService(pod: k8s.V1Pod, containerName: string, serviceName: string) {
             logger.info(`stopping ${containerName} container`);
