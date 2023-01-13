@@ -489,7 +489,8 @@ export function waitForDaemonProcessExit(logger: Logger, loggerConfigService: Lo
                 }
                 case DAEMON_EXIT_CODES.USER_NOT_FOUND:
                 case DAEMON_EXIT_CODES.POLICY_EDITED_DISCONNECT:
-                case DAEMON_EXIT_CODES.POLICY_DELETED_DISCONNECT: {
+                case DAEMON_EXIT_CODES.POLICY_DELETED_DISCONNECT:
+                case DAEMON_EXIT_CODES.IDLE_TIMEOUT: {
                     // don't report an error in this case -- handled by upstream processes
                     break;
                 }
@@ -524,6 +525,9 @@ export function handleExitCode(exitCode: number, conn: CreateUniversalConnection
     }
     case DAEMON_EXIT_CODES.POLICY_DELETED_DISCONNECT: {
         return `The policy allowing you access to ${conn.targetName} as ${conn.targetUser} was deleted. If you had access through JIT, you will need to request JIT access again.`;
+    }
+    case DAEMON_EXIT_CODES.IDLE_TIMEOUT: {
+        return `Connection to ${conn.targetName} closed because idle user timeout was reached.`;
     }
     default: {
         // if the code isn't recognized here, we already logged the general-purpose error message

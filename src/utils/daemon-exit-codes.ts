@@ -7,4 +7,5 @@ export const enum DAEMON_EXIT_CODES {
     SERVICE_ACCOUNT_NOT_CONFIGURED = 6,
     POLICY_EDITED_DISCONNECT       = 7,
     POLICY_DELETED_DISCONNECT      = 8,
+    IDLE_TIMEOUT                   = 9
 }
