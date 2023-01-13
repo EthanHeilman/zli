@@ -1,14 +1,12 @@
 import * as pty from 'node-pty';
-import { stdin } from 'mock-stdin';
 import * as cp from 'child_process';
 
 import * as CleanExitHandler from '../../../handlers/clean-exit.handler';
-import * as ShellUtilWrappers from '../../../utils/shell-util-wrappers';
 import * as DaemonUtils from '../../../utils/daemon-utils';
 
 import { sleepTimeout, TestUtils } from './test-utils';
 import { bzeroTargetCustomUser } from '../system-test-setup';
-import { DigitalOceanSSMTarget, DigitalOceanBZeroTarget } from '../../digital-ocean/digital-ocean-ssm-target.service.types';
+import { DigitalOceanBZeroTarget } from '../../digital-ocean/digital-ocean-target.service.types';
 import { callZli } from './zli-utils';
 import { ConnectionHttpService } from '../../../http-services/connection/connection.http-services';
 import { ConnectionEventType } from '../../../../webshell-common-ts/http/v2/event/types/connection-event.types';
@@ -21,15 +19,15 @@ import { DATBzeroTarget } from '../suites/dynamic-access';
 import { ContainerBzeroTarget } from '../suites/agent-container';
 
 /**
- * Interface that can be used to abstract any differences between ssm/bzero
+ * Interface that can be used to abstract any differences between bzero
  * targets in system-tests so that they can share the same common test code
  */
 interface ConnectTarget {
-    // Connect tests only rely on fields that are common between both ssm/bzero targets (id/name)
+    // Connect tests only rely on fields that are common between various targets (id/name)
     id: string;
     name: string;
     environmentId: string;
-    type: 'ssm' | 'bzero' | 'dat-bzero' | 'container-bzero';
+    type: 'bzero' | 'dat-bzero' | 'container-bzero';
     awsRegion: string;
 
     // The target type is still using the database "ConnectionType" enum from the backend so will either be "SHELL" or "SSM"
@@ -62,8 +60,7 @@ export class ConnectTestUtils {
      * in the terminal, connection/command events are being generated correctly,
      * and that the connection service is using the AWS region based on the
      * geo-latency record.
-     * @param testTarget The target to connect to. Supports both ssm/bzero
-     * targets
+     * @param testTarget The target to connect to
      * @param stringToEcho A string to echo in the shell terminal to test
      * terminal output is working
      * @param exit Boolean indicating if we should type exit in terminal after
@@ -102,11 +99,9 @@ export class ConnectTestUtils {
 
         // Call "zli connect"
         // Additionally, calls uses environmentId in the connect string. expected flow is the same
-        // We should expect to see this environment variable in the connection event and command event logs for non-ssm targets
+        // We should expect to see this environment variable in the connection event and command event logs
         let targetString = `${connectTarget.targetUser}@${connectTarget.name}`;
-        if(connectTarget.type !== 'ssm') {
-            targetString += `.${connectTarget.environmentId}`;
-        }
+        targetString += `.${connectTarget.environmentId}`;
 
         const connectArgs = ['connect', targetString];
         if(appName) {
@@ -236,49 +231,12 @@ export class ConnectTestUtils {
 
     /**
      * Converts a DigitalOcean target which is either registered as a bzero or a
-     * ssm target or a Bzero DAT target into a common interface ConnectTarget
-     * that can be used in system-tests
+     * Bzero DAT target into a common interface ConnectTarget that can be used in system-tests
      */
-    public getConnectTarget(target: DigitalOceanSSMTarget | DigitalOceanBZeroTarget | DATBzeroTarget | ContainerBzeroTarget, awsRegion: string) : ConnectTarget {
-        if(target.type === 'bzero' || target.type === 'dat-bzero' || target.type == 'container-bzero' ) {
-            const bzeroConnectTarget = this.getBZeroConnectTarget(target, awsRegion);
-            this._connectTargets.push(bzeroConnectTarget);
-            return bzeroConnectTarget;
-        } else if(target.type === 'ssm') {
-            const mockStdin = stdin();
-            const capturedOutput: string[] = [];
-            jest.spyOn(ShellUtilWrappers, 'pushToStdOut').mockImplementation((output) => {
-                capturedOutput.push(Buffer.from(output).toString('utf-8'));
-            });
-
-            const ssmConnectTarget: ConnectTarget = {
-                id: target.ssmTarget.id,
-                name: target.ssmTarget.name,
-                awsRegion: awsRegion,
-                // no environmentId in ssm targets, so emulates Guid.Empty
-                environmentId: '00000000-0000-0000-0000-000000000000',
-                eventTargetType: 'SSM',
-                targetUser: 'ssm-user',
-                type: 'ssm',
-                writeToStdIn: async (data) => {
-                    if(! mockStdin) {
-                        throw new Error('mockStdin is undefined');
-                    }
-                    await this.sendMockInput(data, (data) => mockStdin.send(data));
-                },
-                getCapturedOutput: () => {
-                    return capturedOutput;
-                },
-                cleanup: () => {
-                    if(mockStdin) {
-                        mockStdin.restore();
-                    }
-                }
-            };
-
-            this._connectTargets.push(ssmConnectTarget);
-            return ssmConnectTarget;
-        }
+    public getConnectTarget(target: DigitalOceanBZeroTarget | DATBzeroTarget | ContainerBzeroTarget, awsRegion: string) : ConnectTarget {
+        const bzeroConnectTarget = this.getBZeroConnectTarget(target, awsRegion);
+        this._connectTargets.push(bzeroConnectTarget);
+        return bzeroConnectTarget;
     }
 
     public async cleanup() {
@@ -358,11 +316,10 @@ export class ConnectTestUtils {
 
     /**
      * Gets list of TargetUsers needed in bzero TargetConnect policies to be
-     * able to connect to bzero/ssm targets
+     * able to connect to bzero targets
      */
     static getPolicyTargetUsers() : TargetUser[] {
         return [
-            {userName: 'ssm-user' }, // ssm targets
             {userName: bzeroTargetCustomUser }, // bzero targets
             {userName: 'root'} // dat targets
         ];

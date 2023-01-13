@@ -1,4 +1,3 @@
-import { SsmTargetSummary } from '../../../webshell-common-ts/http/v2/target/ssm/types/ssm-target-summary.types';
 import { BzeroAgentSummary } from '../../../webshell-common-ts/http/v2/target/bzero/types/bzero-agent-summary.types';
 import { DigitalOceanDropletSize, DigitalOceanRegion } from './digital-ocean.types';
 import { IDroplet } from 'dots-wrapper/dist/droplet/types/droplet';
@@ -77,15 +76,6 @@ export function getDOImageName(image: DigitalOceanDistroImage) {
 }
 
 /**
- * Represents an SSM target hosted on a specific droplet
- */
-export type DigitalOceanSSMTarget = {
-    type: 'ssm';
-    droplet: IDroplet;
-    ssmTarget: SsmTargetSummary;
-};
-
-/**
  * Represents a BZero target hosted on a specific droplet
  */
 export type DigitalOceanBZeroTarget = {
@@ -95,9 +85,9 @@ export type DigitalOceanBZeroTarget = {
 };
 
 /**
- * Parameters to create an SSM target hosted on a DigitalOcean droplet
+ * Parameters to create a target hosted on a DigitalOcean droplet
  */
-export type DigitalOceanSsmTargetParameters = {
+export type DigitalOceanTargetParameters = {
     targetName: string;
     dropletParameters: CreateNewDropletParameters;
 };
@@ -115,21 +105,7 @@ export type CreateNewDropletParameters = {
 };
 
 /**
- * This error is thrown when the SSM target status poller sees that the watched
- * target has entered the "Error" state, or if the poller times out before the
- * target can reach "Online"
- */
-export class SsmTargetStatusPollError extends Error {
-    constructor(
-        public ssmTarget: SsmTargetSummary,
-        message?: string) {
-        super(message);
-        this.name = 'SsmTargetStatusPollError';
-    }
-}
-
-/**
- * This error is thrown when the SSM target status poller sees that the watched
+ * This error is thrown when the target status poller sees that the watched
  * target has entered the "Error" state, or if the poller times out before the
  * target can reach "Online"
  */

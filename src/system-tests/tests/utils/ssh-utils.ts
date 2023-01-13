@@ -1,35 +1,22 @@
 import fs from 'fs';
 
 import { allTargets, testTargets, configService, logger } from '../system-test';
-import { DigitalOceanBZeroTarget, DigitalOceanSSMTarget } from '../../digital-ocean/digital-ocean-ssm-target.service.types';
+import { DigitalOceanBZeroTarget } from '../../digital-ocean/digital-ocean-target.service.types';
 import { TestTarget } from '../system-test.types';
 import { bzeroTargetCustomUser } from '../system-test-setup';
 import { EnvironmentHttpService } from '../../../../src/http-services/environment/environment.http-services';
-import { EnvironmentSummary } from '../../../../webshell-common-ts/http/v2/environment/types/environment-summary.responses';
 
-export const ssmUser = 'ssm-user';
-
-// type-agnostic way to get information about a target
+// get information about a target
 export async function getTargetInfo(testTarget: TestTarget): Promise<SshTargetInfo> {
-    const doTarget = testTargets.get(testTarget);
-    let userName, targetName, targetId, environmentName: string;
-    let target: DigitalOceanSSMTarget | DigitalOceanBZeroTarget;
-    let environment: EnvironmentSummary;
+    const target = testTargets.get(testTarget) as DigitalOceanBZeroTarget;
     const environmentService = new EnvironmentHttpService(configService, logger);
-    if (doTarget.type === 'ssm') {
-        userName = ssmUser;
-        target = doTarget as DigitalOceanSSMTarget;
-        targetName = target.ssmTarget.name;
-        targetId = target.ssmTarget.id;
-    } else {
-        userName = bzeroTargetCustomUser;
-        target = doTarget as DigitalOceanBZeroTarget;
-        targetName = target.bzeroTarget.name;
-        targetId = target.bzeroTarget.id;
-        environment = await environmentService.GetEnvironment(target.bzeroTarget.environmentId);
-        environmentName = environment.name;
-    }
-    return { userName, targetName, targetId, environmentName };
+    const environment = await environmentService.GetEnvironment(target.bzeroTarget.environmentId);
+    return {
+        userName: bzeroTargetCustomUser,
+        targetName: target.bzeroTarget.name,
+        targetId: target.bzeroTarget.id,
+        environmentName: environment.name,
+    };
 }
 
 /**

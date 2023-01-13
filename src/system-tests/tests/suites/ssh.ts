@@ -12,10 +12,7 @@ import { cleanupTargetConnectPolicies } from '../system-test-cleanup';
 import { PolicyHttpService } from '../../../http-services/policy/policy.http-services';
 import { Subject } from '../../../../webshell-common-ts/http/v2/policy/types/subject.types';
 import { VerbType } from '../../../../webshell-common-ts/http/v2/policy/types/verb-type.types';
-import { ssmUser, getTargetInfo } from '../utils/ssh-utils';
-import { bzeroTestTargetsToRun } from '../targets-to-run';
-import { testIf } from '../utils/utils';
-import { runTestForTarget } from './connect';
+import { getTargetInfo } from '../utils/ssh-utils';
 
 export const sshSuite = () => {
     describe('ssh suite', () => {
@@ -28,12 +25,8 @@ export const sshSuite = () => {
             process.env.HOME, '.ssh', 'test-config-user'
         );
 
-        const bzSsmConfigFile = path.join(
-            process.env.HOME, '.ssh', 'test-config-ssm'
-        );
-
-        const bzBzeroConfigFile = path.join(
-            process.env.HOME, '.ssh', 'test-config-bzero'
+        const bzConfigFile = path.join(
+            process.env.HOME, '.ssh', 'test-config'
         );
 
         const scpUpFile = path.join(
@@ -61,15 +54,14 @@ export const sshSuite = () => {
         afterAll(async () => {
             // delete outstanding configuration files
             removeIfExists(userConfigFile);
-            removeIfExists(bzSsmConfigFile);
-            removeIfExists(bzBzeroConfigFile);
+            removeIfExists(bzConfigFile);
             removeIfExists(scpUpFile);
             removeIfExists(scpDownFile);
             removeIfExists(sftpBatchFile);
         });
 
         allTargets.forEach(async (testTarget: TestTarget) => {
-            testIf(runTestForTarget(testTarget), `${testTarget.sshCaseId}: ssh tunnel - ${testTarget.awsRegion} - ${testTarget.installType} - ${testTarget.dropletImage}`, async () => {
+            it(`${testTarget.sshCaseId}: ssh tunnel - ${testTarget.awsRegion} - ${testTarget.installType} - ${testTarget.dropletImage}`, async () => {
                 const currentSubject: Subject = {
                     id: configService.me().id,
                     type: configService.me().type
@@ -86,12 +78,12 @@ export const sshSuite = () => {
                     description: `Target ssh policy created for system test: ${systemTestUniqueId}`,
                     environments: [environment],
                     targets: [],
-                    targetUsers: [{ userName: bzeroTargetCustomUser }, { userName: ssmUser }],
+                    targetUsers: [{ userName: bzeroTargetCustomUser }],
                     verbs: [{ type: VerbType.Tunnel }]
                 });
 
                 const { userName, targetName } = await getTargetInfo(testTarget);
-                await callZli(['generate', 'sshConfig', '--mySshPath', userConfigFile, '--bzSshPath', bzSsmConfigFile]);
+                await callZli(['generate', 'sshConfig', '--mySshPath', userConfigFile, '--bzSshPath', bzConfigFile]);
 
                 const command = `ssh -F ${userConfigFile} -o CheckHostIP=no -o StrictHostKeyChecking=no ${userName}@${targetName} echo success`;
 
@@ -102,7 +94,7 @@ export const sshSuite = () => {
         });
 
         // adding a success case for connecting to bzero targets via ssh using .environment
-        bzeroTestTargetsToRun.forEach(async (testTarget: TestTarget) => {
+        allTargets.forEach(async (testTarget: TestTarget) => {
             it(`${testTarget.sshWithEnvCaseId}: ssh tunnel with env - ${testTarget.awsRegion} - ${testTarget.installType} - ${testTarget.dropletImage}`, async () => {
                 const currentSubject: Subject = {
                     id: configService.me().id,
@@ -125,7 +117,7 @@ export const sshSuite = () => {
                 });
 
                 const { userName, targetName, environmentName } = await getTargetInfo(testTarget);
-                await callZli(['generate', 'sshConfig', '--mySshPath', userConfigFile, '--bzSshPath', bzSsmConfigFile]);
+                await callZli(['generate', 'sshConfig', '--mySshPath', userConfigFile, '--bzSshPath', bzConfigFile]);
 
                 const command = `ssh -F ${userConfigFile} -o CheckHostIP=no -o StrictHostKeyChecking=no ${userName}@${targetName}.${environmentName} echo success`;
 
@@ -136,7 +128,7 @@ export const sshSuite = () => {
         });
 
         allTargets.forEach(async (testTarget: TestTarget) => {
-            testIf(runTestForTarget(testTarget), `${testTarget.sshConnectFailsCaseId}: connect fails with only tunnel policy - ${testTarget.awsRegion} - ${testTarget.installType} - ${testTarget.dropletImage}`, async () => {
+            it(`${testTarget.sshConnectFailsCaseId}: connect fails with only tunnel policy - ${testTarget.awsRegion} - ${testTarget.installType} - ${testTarget.dropletImage}`, async () => {
 
                 const currentSubject: Subject = {
                     id: configService.me().id,
@@ -154,7 +146,7 @@ export const sshSuite = () => {
                     description: `Target ssh policy created for system test: ${systemTestUniqueId}`,
                     environments: [environment],
                     targets: [],
-                    targetUsers: [{ userName: bzeroTargetCustomUser }, { userName: ssmUser }],
+                    targetUsers: [{ userName: bzeroTargetCustomUser }],
                     verbs: [{ type: VerbType.Tunnel }]
                 });
 
@@ -168,7 +160,7 @@ export const sshSuite = () => {
         });
 
         allTargets.forEach(async (testTarget: TestTarget) => {
-            testIf(runTestForTarget(testTarget), `${testTarget.sshBadUserCaseId}: ssh tunnel bad user - ${testTarget.awsRegion} - ${testTarget.installType} - ${testTarget.dropletImage}`, async () => {
+            it(`${testTarget.sshBadUserCaseId}: ssh tunnel bad user - ${testTarget.awsRegion} - ${testTarget.installType} - ${testTarget.dropletImage}`, async () => {
 
                 const currentUser: Subject = {
                     id: configService.me().id,
@@ -186,7 +178,7 @@ export const sshSuite = () => {
                     description: `Target ssh policy created for system test: ${systemTestUniqueId}`,
                     environments: [environment],
                     targets: [],
-                    targetUsers: [{ userName: bzeroTargetCustomUser }, { userName: ssmUser }],
+                    targetUsers: [{ userName: bzeroTargetCustomUser }],
                     verbs: [{ type: VerbType.Tunnel }]
                 });
 
@@ -206,11 +198,11 @@ export const sshSuite = () => {
                 // Ensure we see the expected error message
                 expect(error).not.toEqual(undefined);
                 const stdError = error.stderr;
-                expect(stdError).toMatch(new RegExp(`You do not have permission to tunnel as targetUser: ${badTargetUser}.\nCurrent allowed users for you: ${bzeroTargetCustomUser},${ssmUser}`));
+                expect(stdError).toMatch(new RegExp(`You do not have permission to tunnel as targetUser: ${badTargetUser}.\nCurrent allowed users for you: ${bzeroTargetCustomUser}`));
             }, 60 * 1000);
         });
 
-        bzeroTestTargetsToRun.forEach(async (testTarget: TestTarget) => {
+        allTargets.forEach(async (testTarget: TestTarget) => {
             it(`${testTarget.sshScpCaseId}: scp - ${testTarget.awsRegion} - ${testTarget.installType} - ${testTarget.dropletImage}`, async () => {
                 const currentSubject: Subject = {
                     id: configService.me().id,
@@ -233,7 +225,7 @@ export const sshSuite = () => {
                 });
 
                 const { targetName } = await getTargetInfo(testTarget);
-                await callZli(['generate', 'sshConfig', '--mySshPath', userConfigFile, '--bzSshPath', bzSsmConfigFile]);
+                await callZli(['generate', 'sshConfig', '--mySshPath', userConfigFile, '--bzSshPath', bzConfigFile]);
 
                 // make file
                 const testData = 'TEST DATA';
@@ -254,7 +246,7 @@ export const sshSuite = () => {
             }, 60 * 1000);
         });
 
-        bzeroTestTargetsToRun.forEach(async (testTarget: TestTarget) => {
+        allTargets.forEach(async (testTarget: TestTarget) => {
             it(`${testTarget.sshSftpCaseId}: sftp - ${testTarget.awsRegion} - ${testTarget.installType} - ${testTarget.dropletImage}`, async () => {
                 const currentSubject: Subject = {
                     id: configService.me().id,
@@ -277,7 +269,7 @@ export const sshSuite = () => {
                 });
 
                 const { targetName } = await getTargetInfo(testTarget);
-                await callZli(['generate', 'sshConfig', '--mySshPath', userConfigFile, '--bzSshPath', bzSsmConfigFile]);
+                await callZli(['generate', 'sshConfig', '--mySshPath', userConfigFile, '--bzSshPath', bzConfigFile]);
 
                 // make data file
                 const testData = 'TEST DATA';
@@ -304,7 +296,7 @@ export const sshSuite = () => {
             }, 60 * 1000);
         });
 
-        bzeroTestTargetsToRun.forEach(async (testTarget: TestTarget) => {
+        allTargets.forEach(async (testTarget: TestTarget) => {
             it(`${testTarget.sshTunnelFailsCaseId}: tunnel/exec fails when user only has file transfer access - ${testTarget.awsRegion} - ${testTarget.installType} - ${testTarget.dropletImage}`, async () => {
                 const currentSubject: Subject = {
                     id: configService.me().id,
@@ -327,7 +319,7 @@ export const sshSuite = () => {
                 });
 
                 const { targetName } = await getTargetInfo(testTarget);
-                await callZli(['generate', 'sshConfig', '--mySshPath', userConfigFile, '--bzSshPath', bzSsmConfigFile]);
+                await callZli(['generate', 'sshConfig', '--mySshPath', userConfigFile, '--bzSshPath', bzConfigFile]);
 
                 const command = `ssh -F ${userConfigFile} -o CheckHostIP=no -o StrictHostKeyChecking=no ${targetName} echo success`;
 
@@ -342,7 +334,7 @@ export const sshSuite = () => {
             }, 60 * 1000);
         });
 
-        bzeroTestTargetsToRun.forEach(async (testTarget: TestTarget) => {
+        allTargets.forEach(async (testTarget: TestTarget) => {
             it(`${testTarget.sshByUuidCaseId}: ssh using id instead of name - ${testTarget.awsRegion} - ${testTarget.installType} - ${testTarget.dropletImage}`, async () => {
                 const currentSubject: Subject = {
                     id: configService.me().id,
@@ -360,11 +352,11 @@ export const sshSuite = () => {
                     description: `Target ssh policy created for system test: ${systemTestUniqueId}`,
                     environments: [environment],
                     targets: [],
-                    targetUsers: [{ userName: bzeroTargetCustomUser }, { userName: ssmUser }],
+                    targetUsers: [{ userName: bzeroTargetCustomUser }],
                     verbs: [{ type: VerbType.Tunnel }]
                 });
 
-                await callZli(['generate', 'sshConfig', '--mySshPath', userConfigFile, '--bzSshPath', bzSsmConfigFile]);
+                await callZli(['generate', 'sshConfig', '--mySshPath', userConfigFile, '--bzSshPath', bzConfigFile]);
 
                 const { userName, targetId } = await getTargetInfo(testTarget);
                 const configName = configService.getConfigName();
@@ -380,7 +372,7 @@ export const sshSuite = () => {
             }, 60 * 1000);
         });
 
-        bzeroTestTargetsToRun.forEach(async (testTarget: TestTarget) => {
+        allTargets.forEach(async (testTarget: TestTarget) => {
             it(`${testTarget.sshScpByUuidCaseId}: scp using id instead of name - ${testTarget.awsRegion} - ${testTarget.installType} - ${testTarget.dropletImage}`, async () => {
                 const currentSubject: Subject = {
                     id: configService.me().id,
@@ -402,7 +394,7 @@ export const sshSuite = () => {
                     verbs: [{ type: VerbType.FileTransfer }]
                 });
 
-                await callZli(['generate', 'sshConfig', '--mySshPath', userConfigFile, '--bzSshPath', bzSsmConfigFile]);
+                await callZli(['generate', 'sshConfig', '--mySshPath', userConfigFile, '--bzSshPath', bzConfigFile]);
 
                 const { userName, targetId } = await getTargetInfo(testTarget);
                 const configName = configService.getConfigName();

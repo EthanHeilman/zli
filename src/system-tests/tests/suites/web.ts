@@ -4,7 +4,7 @@ import got from 'got/dist/source';
 import FormData from 'form-data';
 
 import { configService, logger } from '../system-test';
-import { DigitalOceanBZeroTarget, getDOImageName } from '../../digital-ocean/digital-ocean-ssm-target.service.types';
+import { DigitalOceanBZeroTarget, getDOImageName } from '../../digital-ocean/digital-ocean-target.service.types';
 import { WebTargetHttpService } from '../../../http-services/web-target/web-target.http-service';
 import { TestUtils } from '../utils/test-utils';
 import { Environment } from '../../../../webshell-common-ts/http/v2/policy/types/environment.types';

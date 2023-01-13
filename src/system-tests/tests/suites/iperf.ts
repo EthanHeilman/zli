@@ -5,7 +5,7 @@ import { promisify } from 'util';
 import { exec } from 'child_process';
 
 import { configService, logger } from '../system-test';
-import { DigitalOceanBZeroTarget, getDOImageName } from '../../digital-ocean/digital-ocean-ssm-target.service.types';
+import { DigitalOceanBZeroTarget, getDOImageName } from '../../digital-ocean/digital-ocean-target.service.types';
 import { Environment } from '../../../../webshell-common-ts/http/v2/policy/types/environment.types';
 import { bzeroTestTargetsToRun } from '../targets-to-run';
 import { TestTarget } from '../system-test.types';

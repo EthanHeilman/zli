@@ -1,10 +1,10 @@
-import { configService, logger, systemTestEnvId, systemTestPolicyTemplate, systemTestUniqueId, testTargets, allTargets, RUN_AS_SERVICE_ACCOUNT, RUN_AS_ONELOGIN } from '../system-test';
+import { configService, logger, systemTestEnvId, systemTestPolicyTemplate, systemTestUniqueId, testTargets, allTargets } from '../system-test';
 import { callZli } from '../utils/zli-utils';
 import { ConnectionHttpService } from '../../../http-services/connection/connection.http-services';
-import { getDOImageName } from '../../digital-ocean/digital-ocean-ssm-target.service.types';
+import { getDOImageName } from '../../digital-ocean/digital-ocean-target.service.types';
 import { TestUtils } from '../utils/test-utils';
 import { Environment } from '../../../../webshell-common-ts/http/v2/policy/types/environment.types';
-import { TestTarget, isSsmTarget, isBzeroTarget } from '../system-test.types';
+import { TestTarget, isBzeroTarget } from '../system-test.types';
 import { cleanupTargetConnectPolicies } from '../system-test-cleanup';
 import { PolicyHttpService } from '../../../http-services/policy/policy.http-services';
 import { Subject } from '../../../../webshell-common-ts/http/v2/policy/types/subject.types';
@@ -14,12 +14,6 @@ import { ConnectionEventType } from '../../../../webshell-common-ts/http/v2/even
 import { testIf } from '../utils/utils';
 import * as CleanExitHandler from '../../../handlers/clean-exit.handler';
 import { EventsHttpService } from '../../../http-services/events/events.http-server';
-
-export function runTestForTarget(testTarget: TestTarget): boolean {
-    // Do not run ssm target tests as service account or onelogin
-    // because they are not supported in the ssm agent
-    return !(isSsmTarget(testTarget) && (RUN_AS_SERVICE_ACCOUNT || RUN_AS_ONELOGIN));
-}
 
 export const connectSuite = () => {
     describe('connect suite', () => {
@@ -84,25 +78,19 @@ export const connectSuite = () => {
         });
 
         allTargets.forEach(async (testTarget: TestTarget) => {
-            testIf(runTestForTarget(testTarget), `${testTarget.connectCaseId}: zli connect - ${testTarget.awsRegion} - ${testTarget.installType} - ${getDOImageName(testTarget.dropletImage)}`, async () => {
+            it(`${testTarget.connectCaseId}: zli connect - ${testTarget.awsRegion} - ${testTarget.installType} - ${getDOImageName(testTarget.dropletImage)}`, async () => {
                 await connectTestUtils.runShellConnectTest(testTarget, `connect test - ${systemTestUniqueId}`, true);
             }, 2 * 60 * 1000);
 
             // TODO: Disable attach tests for bzero targets until attach
             // flow is stable for bzero targets
             // https://commonwealthcrypto.atlassian.net/browse/CWC-1826
-            testIf(!isBzeroTarget(testTarget) && runTestForTarget(testTarget), `${testTarget.attachCaseId}: zli attach - ${testTarget.awsRegion} - ${testTarget.installType} - ${getDOImageName(testTarget.dropletImage)}`, async () => {
+            testIf(!isBzeroTarget(testTarget), `${testTarget.attachCaseId}: zli attach - ${testTarget.awsRegion} - ${testTarget.installType} - ${getDOImageName(testTarget.dropletImage)}`, async () => {
                 const doTarget = testTargets.get(testTarget);
-                const connectTarget = connectTestUtils.getConnectTarget(doTarget, testTarget.awsRegion);
-
-                // Bzero targets will close the connection automatically when
-                // exiting. We do not yet support a way to exit the terminal and
-                // keep the connection open (detach)
-                const shouldExit = connectTarget.type === 'ssm' ? true : false;
 
                 // Run normal connect test first
                 const beforeAttachEchoString = `before attach - ${systemTestUniqueId}`;
-                const connectionTestResult = await connectTestUtils.runShellConnectTest(testTarget, beforeAttachEchoString, shouldExit);
+                const connectionTestResult = await connectTestUtils.runShellConnectTest(testTarget, beforeAttachEchoString, false);
 
                 // Get a new instance of the ConnectTarget which has a separate
                 // mockstdin/mock pty and captured output buffer
@@ -144,7 +132,7 @@ export const connectSuite = () => {
                 await connectTestUtils.ensureConnectionEvent(attachTarget, ConnectionEventType.ClientDisconnect, testStartTime);
             }, 4 * 60 * 1000); // Use a longer timeout on attach tests because they essentially run 2 back-to-back connect tests
 
-            testIf(runTestForTarget(testTarget), `${testTarget.closeCaseId}: zli close - ${testTarget.awsRegion} - ${testTarget.installType} - ${getDOImageName(testTarget.dropletImage)}`, async () => {
+            it(`${testTarget.closeCaseId}: zli close - ${testTarget.awsRegion} - ${testTarget.installType} - ${getDOImageName(testTarget.dropletImage)}`, async () => {
                 const doTarget = testTargets.get(testTarget);
                 const connectTarget = connectTestUtils.getConnectTarget(doTarget, testTarget.awsRegion);
 
@@ -166,7 +154,7 @@ export const connectSuite = () => {
         });
 
         allTargets.forEach(async (testTarget: TestTarget) => {
-            testIf(runTestForTarget(testTarget), `${testTarget.badConnectCaseId}: zli connect bad user - ${testTarget.awsRegion} - ${testTarget.installType} - ${getDOImageName(testTarget.dropletImage)}`, async () => {
+            it(`${testTarget.badConnectCaseId}: zli connect bad user - ${testTarget.awsRegion} - ${testTarget.installType} - ${getDOImageName(testTarget.dropletImage)}`, async () => {
                 const doTarget = testTargets.get(testTarget);
                 const connectTarget = connectTestUtils.getConnectTarget(doTarget, testTarget.awsRegion);
 

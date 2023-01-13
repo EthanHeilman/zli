@@ -1,10 +1,8 @@
 import { Retrier } from '@jsier/retrier';
 import { ConfigService } from '../../services/config/config.service';
 import { Logger } from '../../services/logger/logger.service';
-import { BzeroTargetStatusPollError, CreateNewDropletParameters, DigitalOceanBZeroTarget, DigitalOceanSSMTarget, DigitalOceanSsmTargetParameters, SsmTargetStatusPollError } from './digital-ocean-ssm-target.service.types';
+import { BzeroTargetStatusPollError, CreateNewDropletParameters, DigitalOceanBZeroTarget, DigitalOceanTargetParameters } from './digital-ocean-target.service.types';
 import { checkAllSettledPromise } from '../tests/utils/utils';
-import { SsmTargetHttpService } from '../../http-services/targets/ssm/ssm-target.http-services';
-import { SsmTargetSummary } from '../../../webshell-common-ts/http/v2/target/ssm/types/ssm-target-summary.types';
 import { TargetStatus } from '../../../webshell-common-ts/http/v2/target/types/targetStatus.types';
 import { BzeroAgentSummary } from '../../../webshell-common-ts/http/v2/target/bzero/types/bzero-agent-summary.types';
 import { BzeroTargetHttpService } from '../../http-services/targets/bzero/bzero.http-services';
@@ -12,9 +10,8 @@ import { createApiClient } from 'dots-wrapper';
 import { IDroplet } from 'dots-wrapper/dist/droplet/types/droplet';
 
 
-export class DigitalOceanSSMTargetService {
+export class DigitalOceanTargetService {
     private doClient;
-    private ssmTargetHttpService: SsmTargetHttpService;
     private bzeroTargetHttpService: BzeroTargetHttpService;
 
     constructor(
@@ -23,7 +20,6 @@ export class DigitalOceanSSMTargetService {
         private logger: Logger
     ) {
         this.doClient = createApiClient({ token: apiToken });
-        this.ssmTargetHttpService = new SsmTargetHttpService(this.configService, this.logger);
         this.bzeroTargetHttpService = new BzeroTargetHttpService(this.configService, this.logger);
     }
 
@@ -33,7 +29,7 @@ export class DigitalOceanSSMTargetService {
      * a User-Data script during droplet creation
      * @returns Information about the created droplet
      */
-    public async createDigitalOceanTarget(parameters: DigitalOceanSsmTargetParameters, autoDiscoveryScript: string): Promise<IDroplet> {
+    public async createDigitalOceanTarget(parameters: DigitalOceanTargetParameters, autoDiscoveryScript: string): Promise<IDroplet> {
         // Create the droplet
         let droplet = await this.createNewDroplet({ ...parameters.dropletParameters, userDataScript: autoDiscoveryScript });
 
@@ -44,15 +40,12 @@ export class DigitalOceanSSMTargetService {
     }
 
     /**
-     * Cleans up a DigitalOcean SSM target by deleting both the SSM target and
-     * droplet
-     * @param doTarget The DigitalOcean SSM target to clean up
-     * @returns A promise that represents the results of deleting the droplet
-     * and SSM target concurrently
+     * Cleans up a DigitalOcean target by deleting both the target and droplet.
+     *
+     * @param doTarget The DigitalOcean target to clean up
+     * @returns A promise that represents the results of deleting the droplet and target concurrently
      */
-    public async deleteDigitalOceanTarget(
-        doTarget: DigitalOceanSSMTarget | DigitalOceanBZeroTarget
-    ): Promise<void> {
+    public async deleteDigitalOceanTarget(doTarget: DigitalOceanBZeroTarget): Promise<void> {
         const cleanupPromises = [];
 
         // Only delete droplet if it is set
@@ -61,12 +54,7 @@ export class DigitalOceanSSMTargetService {
         }
 
         const targetType = doTarget.type;
-        if(targetType === 'ssm' ) {
-            // Only delete SSM target if it is set
-            if (doTarget.ssmTarget) {
-                cleanupPromises.push(this.ssmTargetHttpService.DeleteSsmTarget(doTarget.ssmTarget.id));
-            }
-        } else if(targetType === 'bzero') {
+        if(targetType === 'bzero') {
             // Only delete bzero target if it is set
             if (doTarget.bzeroTarget) {
                 cleanupPromises.push(this.bzeroTargetHttpService.DeleteBzeroTarget(doTarget.bzeroTarget.id));
@@ -87,53 +75,6 @@ export class DigitalOceanSSMTargetService {
     }
 
     /**
-     * Polls the bastion until the SSM target is Online and the agent version is
-     * known.
-     * @param ssmTargetName The name of the target to poll
-     * @returns Information about the target
-     */
-    public async pollSsmTargetOnline(ssmTargetName: string): Promise<SsmTargetSummary> {
-        // Try 60 times with a delay of 10 seconds between each attempt (10 min).
-        const retrier = new Retrier({
-            limit: 60,
-            delay: 1000 * 10,
-            stopRetryingIf: (reason: any) => reason instanceof SsmTargetStatusPollError && reason.ssmTarget.status === TargetStatus.Error
-        });
-
-        // We don't know SSM target ID initially
-        let ssmTargetId: string = '';
-        return retrier.resolve(() => new Promise<SsmTargetSummary>(async (resolve, reject) => {
-            const checkIsTargetOnline = (ssmTarget: SsmTargetSummary) => {
-                if (ssmTarget.status === TargetStatus.Online && ssmTarget.agentVersion !== '') {
-                    resolve(ssmTarget);
-                } else {
-                    throw new SsmTargetStatusPollError(ssmTarget, `Target ${ssmTarget.name} is not online. Has status: ${ssmTarget.status}`);
-                }
-            };
-            try {
-                if (ssmTargetId === '') {
-                    // We don't know the SSM target ID yet, so we have to use
-                    // the less efficient list API to learn about the ID
-                    const targets = await this.ssmTargetHttpService.ListSsmTargets(false);
-                    const foundTarget = targets.find(target => target.name === ssmTargetName);
-                    if (foundTarget) {
-                        ssmTargetId = foundTarget.id;
-                        checkIsTargetOnline(foundTarget);
-                    } else {
-                        throw new Error(`Target with name ${ssmTargetName} does not exist`);
-                    }
-                } else {
-                    // SSM target ID is known
-                    const target = await this.ssmTargetHttpService.GetSsmTarget(ssmTargetId);
-                    checkIsTargetOnline(target);
-                }
-            } catch (error) {
-                reject(error);
-            }
-        }));
-    }
-
-    /**
      * Polls the bastion until the Bzero target is Online and the agent version is known.
      *
      * @param bzeroTargetName The name of the target to poll
@@ -147,7 +88,7 @@ export class DigitalOceanSSMTargetService {
             stopRetryingIf: (reason: any) => reason instanceof BzeroTargetStatusPollError && reason.bzeroTarget.status === TargetStatus.Error
         });
 
-        // We don't know SSM target ID initially
+        // We don't know target ID initially
         let bzeroTargetId: string = '';
         return retrier.resolve(() => new Promise<BzeroAgentSummary>(async (resolve, reject) => {
             const checkIsTargetOnline = (bzeroTarget: BzeroAgentSummary) => {
@@ -159,7 +100,7 @@ export class DigitalOceanSSMTargetService {
             };
             try {
                 if (bzeroTargetId === '') {
-                    // We don't know the SSM target ID yet, so we have to use
+                    // We don't know the target ID yet, so we have to use
                     // the less efficient list API to learn about the ID
                     const bzeroTargets = await this.bzeroTargetHttpService.ListBzeroTargets();
                     const foundTarget = bzeroTargets.find(target => target.name === bzeroTargetName);
@@ -170,7 +111,7 @@ export class DigitalOceanSSMTargetService {
                         throw new Error(`Target with name ${bzeroTargetName} does not exist`);
                     }
                 } else {
-                    // SSM target ID is known
+                    // Target ID is known
                     const target = await this.bzeroTargetHttpService.GetBzeroTarget(bzeroTargetId);
                     checkIsTargetOnline(target);
                 }

@@ -13,8 +13,8 @@ import { BzeroAgentSummary } from '../../../../webshell-common-ts/http/v2/target
 import * as k8s from '@kubernetes/client-node';
 import { agentContainersToRun } from '../../tests/targets-to-run';
 import { checkAllSettledPromise } from '../utils/utils';
-import { DigitalOceanSSMTargetService } from '../../digital-ocean/digital-ocean-ssm-target-service';
-import { BzeroTargetStatusPollError } from '../../digital-ocean/digital-ocean-ssm-target.service.types';
+import { DigitalOceanTargetService } from '../../digital-ocean/digital-ocean-target-service';
+import { BzeroTargetStatusPollError } from '../../digital-ocean/digital-ocean-target.service.types';
 
 /**
  * Represents a BZero target hosted on a specific cluster
@@ -138,7 +138,7 @@ export const agentContainerSuite = () => {
  */
 export async function setupAgentContainer(targetsToRun: BzeroContainerTestTarget[]): Promise<Map<BzeroContainerTestTarget, ContainerBzeroTarget >> {
     // To poll to ensure the agent is online
-    const doService = new DigitalOceanSSMTargetService(doApiKey, configService, logger);
+    const doService = new DigitalOceanTargetService(doApiKey, configService, logger);
 
     const toReturn = new Map<BzeroContainerTestTarget, ContainerBzeroTarget>();
 
@@ -230,7 +230,7 @@ export async function setupAgentContainer(targetsToRun: BzeroContainerTestTarget
                 `Successfully created ContainerAgent:
                 \tAWS region: ${containerAgentTarget.region}
                 \tInstall Type: ${target.type}
-                \tSSM Target ID: ${containerAgentTarget.id}`
+                \tBzero Target ID: ${containerAgentTarget.id}`
             );
         } catch (err) {
             // Catch special exception so that we can save bzeroTarget reference
@@ -262,7 +262,7 @@ export async function setupAgentContainer(targetsToRun: BzeroContainerTestTarget
  */
 async function cleanupAgentContainer(testContainerAgents: Map<BzeroContainerTestTarget, ContainerBzeroTarget >) {
     // Loop over each test container agent
-    const doService = new DigitalOceanSSMTargetService(doApiKey, configService, logger);
+    const doService = new DigitalOceanTargetService(doApiKey, configService, logger);
     testContainerAgents.forEach(async (targetInfo, _) => {
         await doService.deleteBzeroTarget(targetInfo.bzeroTarget.id);
 

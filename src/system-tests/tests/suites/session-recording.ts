@@ -5,7 +5,7 @@ import { Subject } from '../../../../webshell-common-ts/http/v2/policy/types/sub
 import { VerbType } from '../../../../webshell-common-ts/http/v2/policy/types/verb-type.types';
 import { PolicyHttpService } from '../../../http-services/policy/policy.http-services';
 import { SessionRecordingHttpService } from '../../../http-services/session-recording/session-recording.http-services';
-import { getDOImageName } from '../../digital-ocean/digital-ocean-ssm-target.service.types';
+import { getDOImageName } from '../../digital-ocean/digital-ocean-target.service.types';
 import {
     configService,
     logger,
@@ -17,8 +17,7 @@ import { TestUtils } from '../utils/test-utils';
 import { ConnectionHttpService } from '../../../http-services/connection/connection.http-services';
 import { TestTarget } from '../system-test.types';
 import { ConnectTestResult, ConnectTestUtils } from '../utils/connect-utils';
-import { checkAllSettledPromise, checkAllSettledPromiseRejected, testIf } from '../utils/utils';
-import { runTestForTarget } from './connect';
+import { checkAllSettledPromise, checkAllSettledPromiseRejected } from '../utils/utils';
 import * as CleanExitHandler from '../../../handlers/clean-exit.handler';
 import { bzeroTestTargetsToRun } from '../targets-to-run';
 
@@ -91,7 +90,7 @@ export const sessionRecordingSuite = () => {
         }, 60 * 1000);
 
         bzeroTestTargetsToRun.forEach(async (testTarget: TestTarget) => {
-            testIf(runTestForTarget(testTarget), `${testTarget.sessionRecordingCaseId}: Connect to target and verify session is recorded (${testTarget.awsRegion} - ${testTarget.installType} - ${getDOImageName(testTarget.dropletImage)})`, async () => {
+            it(`${testTarget.sessionRecordingCaseId}: Connect to target and verify session is recorded (${testTarget.awsRegion} - ${testTarget.installType} - ${getDOImageName(testTarget.dropletImage)})`, async () => {
                 const sessionRecordingTestMessage = `session recording test - ${systemTestUniqueId}`;
                 // Dont close the connection so we can test deleting session
                 // recordings before connections are closed

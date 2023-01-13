@@ -8,7 +8,7 @@ require('leaked-handles').set({
 import path from 'path';
 
 import { envMap } from '../../cli-driver';
-import { DigitalOceanBZeroTarget, DigitalOceanSSMTarget } from '../digital-ocean/digital-ocean-ssm-target.service.types';
+import { DigitalOceanBZeroTarget } from '../digital-ocean/digital-ocean-target.service.types';
 import { LoggerConfigService } from '../../services/logger/logger-config.service';
 import { Logger } from '../../services/logger/logger.service';
 import { ConfigService } from '../../services/config/config.service';
@@ -22,7 +22,7 @@ import { NewApiKeyResponse } from '../../../webshell-common-ts/http/v2/api-key/r
 import { TestTarget } from './system-test.types';
 import { EnvironmentHttpService } from '../../http-services/environment/environment.http-services';
 import { iperfSuite } from './suites/iperf';
-import { extraSsmTestTargetsToRun, extraBzeroTestTargetsToRun, ssmTestTargetsToRun, bzeroTestTargetsToRun, initRegionalSSMTargetsTestConfig } from './targets-to-run';
+import { extraBzeroTestTargetsToRun, bzeroTestTargetsToRun, initRegionalTargetsTestConfig } from './targets-to-run';
 import { setupDOTestCluster, createDOTestTargets, setupSystemTestApiKeys, ensureServiceAccountExistsForLogin, ensureServiceAccountRole } from './system-test-setup';
 import { cleanupDOTestCluster, cleanupDOTestTargets, cleanupSystemTestApiKeys } from './system-test-cleanup';
 import { apiKeySuite } from './suites/rest-api/api-keys';
@@ -32,7 +32,6 @@ import { policySuite } from './suites/rest-api/policies/policies';
 import { groupsSuite } from './suites/groups';
 import { callZli, mockCleanExit } from './utils/zli-utils';
 import { UserHttpService } from '../../http-services/user/user.http-services';
-import { ssmTargetRestApiSuite } from './suites/rest-api/ssm-targets';
 import { bzeroTargetRestApiSuite } from './suites/rest-api/bzero-targets';
 import { kubeClusterRestApiSuite } from './suites/rest-api/kube-targets';
 import { databaseTargetRestApiSuite } from './suites/rest-api/database-targets';
@@ -70,8 +69,6 @@ const configName = envMap.configName;
 export const loggerConfigService = new LoggerConfigService(configName, false, envMap.configDir);
 export const logger = new Logger(loggerConfigService, false, false, true);
 export const configService = new ConfigService(configName, logger, envMap.configDir, true);
-
-export const RUN_AS_ONELOGIN = configService.idp() == 'onelogin';
 
 // This is the UserSummary for the user that is used to run system tests. When
 // RUN_AS_SERVICE account is enabled this will still be the user system tests
@@ -120,7 +117,6 @@ export const RUN_AS_SERVICE_ACCOUNT = process.env.RUN_AS_SERVICE_ACCOUNT ? (proc
 export const KUBE_ENABLED = process.env.KUBE_ENABLED ? (process.env.KUBE_ENABLED === 'true') : true;
 const VT_ENABLED = process.env.VT_ENABLED ? (process.env.VT_ENABLED === 'true') : true;
 const BZERO_ENABLED = process.env.BZERO_ENABLED ? (process.env.BZERO_ENABLED === 'true') : true;
-const SSM_ENABLED =  process.env.SSM_ENABLED ? (process.env.SSM_ENABLED === 'true') : true;
 const API_ENABLED = process.env.API_ENABLED ? (process.env.API_ENABLED === 'true') : true;
 const AGENT_RECOVERY_ENABLED = process.env.AGENT_RECOVERY_ENABLED ? (process.env.AGENT_RECOVERY_ENABLED === 'true') : true;
 const SERVICE_ACCOUNT_ENABLED =  process.env.SERVICE_ACCOUNT_ENABLED ? (process.env.SERVICE_ACCOUNT_ENABLED === 'true') : true;
@@ -177,18 +173,17 @@ if (bzeroKubeAgentImageName) {
 // Create a new API Key to be used for cluster registration
 let systemTestRESTApiKey: NewApiKeyResponse;
 
-// Create a new API key to be used for self-registration SSM test targets
+// Create a new API key to be used for self-registration test targets
 export let systemTestRegistrationApiKey: NewApiKeyResponse;
 
 // Global mapping of system test targets
-export const testTargets = new Map<TestTarget, DigitalOceanSSMTarget | DigitalOceanBZeroTarget >();
+export const testTargets = new Map<TestTarget, DigitalOceanBZeroTarget>();
 
 // Add extra targets to test config based on EXTRA_REGIONS env var
-ssmTestTargetsToRun.push(...initRegionalSSMTargetsTestConfig(logger));
+bzeroTestTargetsToRun.push(...initRegionalTargetsTestConfig(logger));
 
 // Add extra targets if in pipeline mode
 if (IN_PIPELINE && IN_CI) {
-    ssmTestTargetsToRun.push(...extraSsmTestTargetsToRun);
     bzeroTestTargetsToRun.push(...extraBzeroTestTargetsToRun);
 }
 
@@ -198,13 +193,7 @@ export let testCluster : RegisteredDigitalOceanKubernetesCluster = undefined;
 // Global mapping of all other targets
 export let allTargets: TestTarget[] = [];
 
-if(SSM_ENABLED) {
-    allTargets = allTargets.concat(ssmTestTargetsToRun);
-} else {
-    logger.info(`Skipping adding ssm targets because SSM_ENABLED is false`);
-}
-
-if(BZERO_ENABLED) {
+if (BZERO_ENABLED) {
     allTargets = allTargets.concat(bzeroTestTargetsToRun);
 } else {
     logger.info(`Skipping adding bzero targets because BZERO_ENABLED is false`);
@@ -349,7 +338,7 @@ if (SERVICE_ACCOUNT_ENABLED && !RUN_AS_SERVICE_ACCOUNT) {
 }
 
 // Call list target suite anytime a target test is called
-if (SSM_ENABLED || BZERO_ENABLED || KUBE_ENABLED) {
+if (BZERO_ENABLED || KUBE_ENABLED) {
     listTargetsSuite();
 }
 
@@ -359,12 +348,12 @@ if (BZERO_ENABLED && KUBE_ENABLED) {
     sendLogsSuite();
 }
 
-// These suites are based on testing allTargets use SSM_ENABLED or BZERO_ENABLED
-// environment variables to control which targets are created
-if(SSM_ENABLED || BZERO_ENABLED) {
+// BZero only test suites
+if (BZERO_ENABLED) {
     connectSuite();
     sessionRecordingSuite();
     sshSuite();
+    dynamicAccessSuite();
 
     if (IN_CI && NOT_USING_RUNNER && !RUN_AS_SERVICE_ACCOUNT) {
         // Only run group tests if we are in CI and talking to staging or dev
@@ -373,22 +362,17 @@ if(SSM_ENABLED || BZERO_ENABLED) {
     };
 }
 
-// BZero only test suites
-if(BZERO_ENABLED) {
-    dynamicAccessSuite();
-}
-
 // Only run the agent container suite when we are running
 // in the pipeline
-if(IN_PIPELINE) {
+if (IN_PIPELINE) {
     agentContainerSuite();
 }
 
-if(KUBE_ENABLED) {
+if (KUBE_ENABLED) {
     kubeSuite();
 }
 
-if(VT_ENABLED) {
+if (VT_ENABLED) {
     dbSuite();
     webSuite();
     iperfSuite();
@@ -411,17 +395,9 @@ if (API_ENABLED) {
         logger.info('Skipping service account REST API suite because service account is disabled.');
     }
 
-    if (SSM_ENABLED) {
-        // Since this suite modifies an SSM target name, we must be cautious if we parallelize test suite running because
-        // other SSM-related tests could fail that rely on the name, such as tests that use the name with 'zli connect'.
-        // It may be possible to allow parallelization if we use target IDs instead of names in `zli connect`.
-        ssmTargetRestApiSuite();
-    } else {
-        logger.info('Skipping SSM target REST API suite because SSM target creation is disabled.');
-    }
     if (VT_ENABLED) {
         // Since this suite modifies a bzero target name, we must be cautious if we parallelize test suite running because
-        // other SSM-related tests could fail that rely on the name, such as tests that use the name with 'zli connect'.
+        // other bzero-related tests could fail that rely on the name, such as tests that use the name with 'zli connect'.
         // It may be possible to allow parallelization if we use target IDs instead of names in `zli connect`.
         bzeroTargetRestApiSuite();
 

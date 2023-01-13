@@ -1,11 +1,10 @@
 import { OrganizationSummary } from '../../../../../webshell-common-ts/http/v2/organization/types/organization-summary.types';
 import { OrganizationHttpService } from '../../../../http-services/organization/organization.http-services';
-import { configService, GROUP_ID, GROUP_NAME, IN_CI, logger, SERVICE_URL, systemTestRegistrationApiKey, RUN_AS_ONELOGIN } from '../../system-test';
+import { configService, GROUP_ID, GROUP_NAME, IN_CI, logger, SERVICE_URL, systemTestRegistrationApiKey } from '../../system-test';
 import { ApiKeyHttpService } from '../../../../http-services/api-key/api-key.http-services';
 import 'jest-extended';
 import { GroupSummary } from '../../../../../webshell-common-ts/http/v2/organization/types/group-summary.types';
 import { OrgBZCertValidationInfo } from '../../../../../webshell-common-ts/http/v2/organization/types/organization-bzcert-validation-info.types';
-import { testIf } from '../../utils/utils';
 
 export const organizationSuite = () => {
     describe('Organization Suite', () => {
@@ -36,6 +35,8 @@ export const organizationSuite = () => {
             orgProvider = 'onelogin';
             // https://bastionzero.onelogin.com/
             orgIssuerId = 'bastionzero';
+            getGroupsCaseId = '658655';
+            fetchGroupsCaseId = '658654';
             break;
         case 'microsoft':
             orgProvider = 'microsoft';
@@ -108,7 +109,7 @@ export const organizationSuite = () => {
             expect(disableGlobalRegKeyResponse).toMatchObject(toExpect);
         }, 15 * 1000);
 
-        testIf(!RUN_AS_ONELOGIN, `${fetchGroupsCaseId}: Fetch groups from the identity provider`, async () => {
+        test(`${fetchGroupsCaseId}: Fetch groups from the identity provider`, async () => {
             // Only run this test if we are in CI and talking to staging or dev
             if (IN_CI && (SERVICE_URL.includes('cloud-dev') || SERVICE_URL.includes('cloud-staging'))) {
                 const groups = await organizationService.FetchGroups();
@@ -123,7 +124,7 @@ export const organizationSuite = () => {
         });
 
         // Test our group based endpoints
-        testIf(!RUN_AS_ONELOGIN, `${getGroupsCaseId}: Get Groups configured for this org`, async () => {
+        test(`${getGroupsCaseId}: Get Groups configured for this org`, async () => {
             // Only run this test if we are in CI and talking to staging or dev
             if (IN_CI && (SERVICE_URL.includes('cloud-dev') || SERVICE_URL.includes('cloud-staging'))) {
                 const groups = await organizationService.ListGroups();
