@@ -348,6 +348,10 @@ export class ConnectTestUtils {
             await sleepTimeout(25);
         }
 
+        // Wait before sending final carriage return to avoid race condition
+        // where only part of the command output exists
+        await sleepTimeout(2 * 1000);
+
         // Finally send our enter key
         writeFunc('\r');
     }
