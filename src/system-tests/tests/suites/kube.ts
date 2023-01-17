@@ -290,7 +290,7 @@ export const kubeSuite = () => {
                 }
 
                 // Ensure that we see a log of this under the kube logs
-                expect(await testUtils.EnsureKubeEvent(testCluster.bzeroClusterTargetSummary.name, daemon.kubeDaemonDetails.targetUser, daemon.kubeDaemonDetails.targetGroups, 'N/A', ['/api/v1/namespaces'], []));
+                expect(await testUtils.EnsureKubeEvent(testCluster.bzeroClusterTargetSummary.name, daemon.kubeDaemonDetails.targetUser, daemon.kubeDaemonDetails.targetGroups, 'N/A', ['/api/v1/namespaces'], [], testStartTime));
             };
 
             // TODO: this needs to be fixed before it's ready to be added back in
@@ -360,8 +360,8 @@ export const kubeSuite = () => {
                 );
 
                 // Ensure that we see a log of this under the kube logs
-                expect(await testUtils.EnsureKubeEvent(doCluster.bzeroClusterTargetSummary.name, KubeTestUserName, ['system:masters'], 'N/A', [`/api/v1/namespaces/${doCluster.helmChartNamespace}/pods`], []));
-                expect(await testUtils.EnsureKubeEvent(doCluster.bzeroClusterTargetSummary.name, KubeTestUserName, ['system:masters'], 'N/A', [`/api/v1/namespaces/${doCluster.helmChartNamespace}/pods/${oldAgentPodName}`], []));
+                expect(await testUtils.EnsureKubeEvent(doCluster.bzeroClusterTargetSummary.name, KubeTestUserName, ['system:masters'], 'N/A', [`/api/v1/namespaces/${doCluster.helmChartNamespace}/pods`], [], testStartTime));
+                expect(await testUtils.EnsureKubeEvent(doCluster.bzeroClusterTargetSummary.name, KubeTestUserName, ['system:masters'], 'N/A', [`/api/v1/namespaces/${doCluster.helmChartNamespace}/pods/${oldAgentPodName}`], [], testStartTime));
 
                 // Wait for the agent pod to come online. The next test will ensure
                 // we can still connect

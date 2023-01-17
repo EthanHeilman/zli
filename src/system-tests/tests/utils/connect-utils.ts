@@ -128,7 +128,8 @@ export class ConnectTestUtils {
         await this.ensureConnectionEvent(connectTarget, ConnectionEventType.ClientConnect, startTime);
         await this.ensureConnectionEvent(connectTarget, ConnectionEventType.Created, startTime);
 
-        await this.testEchoCommand(connectTarget, stringToEcho);
+        // Test echo output in shell and command event generation
+        await this.testEchoCommand(connectTarget, stringToEcho, startTime);
 
         expect(createUniversalConnectionSpy).toHaveBeenCalledOnce();
         const gotUniversalConnectionResponse = await getMockResultValue(createUniversalConnectionSpy.mock.results[0]);
@@ -173,7 +174,7 @@ export class ConnectTestUtils {
         await connectTarget.writeToStdIn('exit');
     }
 
-    public async testEchoCommand(connectTarget: ConnectTarget, stringToEcho: string) {
+    public async testEchoCommand(connectTarget: ConnectTarget, stringToEcho: string, startTime: Date) {
         await this.testUtils.waitForExpect(
             async () => {
                 // We should get some captured output (from the command
@@ -204,7 +205,9 @@ export class ConnectTestUtils {
                 );
 
                 // Check that command exists in our backend, its possible this will fail on first attempts if we go too fast
-                await this.testUtils.EnsureCommandLogExists(connectTarget.id, connectTarget.name, connectTarget.targetUser, connectTarget.eventTargetType, connectTarget.environmentId, commandToSend);
+                await this.testUtils.EnsureCommandLogExists(
+                    connectTarget.id, connectTarget.name, connectTarget.targetUser, connectTarget.eventTargetType,connectTarget.environmentId, commandToSend, startTime
+                );
             },
             1000 * 60,  // Timeout,
             1000 * 1    // Interval
