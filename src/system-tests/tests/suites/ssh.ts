@@ -198,7 +198,7 @@ export const sshSuite = () => {
                 // Ensure we see the expected error message
                 expect(error).not.toEqual(undefined);
                 const stdError = error.stderr;
-                expect(stdError).toMatch(new RegExp(`You do not have permission to tunnel as targetUser: ${badTargetUser}.\nCurrent allowed users for you: ${bzeroTargetCustomUser}`));
+                expect(stdError).toMatch(new RegExp(`You do not have permission to create a tunnel to ${targetName} as target user: ${badTargetUser}.\nAllowed target users are: ${bzeroTargetCustomUser}`));
             }, 60 * 1000);
         });
 
