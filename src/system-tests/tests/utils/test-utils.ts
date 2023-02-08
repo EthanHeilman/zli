@@ -8,7 +8,6 @@ import { AgentStatusChangeData } from '../../../../webshell-common-ts/http/v2/ev
 
 const pids = require('port-pid');
 
-const EVENT_QUERY_TIME = 2;
 const SLEEP_TIME = 5;
 
 let allTimeouts: NodeJS.Timeout[] = [];
@@ -173,23 +172,19 @@ export class TestUtils {
      * @param {string} targetType Target type we are looking for (i.e. CLUSTER)
      * @param {string} command Command we are looking for
      */
-    public async EnsureCommandLogExists(targetId: string, targetName: string, targetUser: string, targetType: string, targetEnvId: string, command: string) {
-
+    public async EnsureCommandLogExists(targetId: string, targetName: string, targetUser: string, targetType: string, targetEnvId: string, command: string, startTime: Date) {
         // Query for our events
-        const startTimestamp = new Date();
-        startTimestamp.setHours(startTimestamp.getHours() - EVENT_QUERY_TIME);
-        const commands = await this.eventsService.GetCommandEvent(startTimestamp, [this.configService.me().id]);
+        const commands = await this.eventsService.GetCommandEvent(startTime, [this.configService.me().id]);
 
-        const commandCreated = commands.find(event => {
-            if (event.targetId == targetId && event.targetType == targetType) {
-                if (event.command == command) {
-                    return true;
-                }
-            };
-        });
+        const commandEventMatch = commands.find(event => {
+            return event.targetId == targetId &&
+                   event.targetType == targetType &&
+                   event.command == command;
+        }
+        );
 
-        if (commandCreated == undefined) {
-            throw new Error(`Unable to find command: ${command} for targetId ${targetId}`);
+        if (commandEventMatch == undefined) {
+            throw new Error(`Unable to find command: ${command} for targetId ${targetId} and targetType ${targetType}. Commands found: ${JSON.stringify(commands)}`);
         }
 
         // get the environment summary to assert on environment name as well
@@ -202,7 +197,7 @@ export class TestUtils {
         const commandEvent = this.BuildCommandEvent(targetId, targetName, targetUser, targetType, targetEnvId, environmentName, command);
 
         // Ensure the values match
-        expect(commandCreated).toMatchObject(commandEvent);
+        expect(commandEventMatch).toMatchObject(commandEvent);
     }
 
     /**
@@ -213,12 +208,9 @@ export class TestUtils {
      * @param {string} kubeEnglishCommand Kube english command we are expecting
      * @param {string[]} expectedEndpoints List of expected endpoints to have been hit
      */
-    public async EnsureKubeEvent(targetName: string, role: string, targetGroup: string[], kubeEnglishCommand: string, expectedEndpoints: string[], expectedExecs: string[]) {
+    public async EnsureKubeEvent(targetName: string, role: string, targetGroup: string[], kubeEnglishCommand: string, expectedEndpoints: string[], expectedExecs: string[], startTime: Date) {
         const kubeEvents = await this.eventsService.GetKubeEvents();
         const me = this.configService.me();
-
-        const eventWindow = new Date();
-        eventWindow.setHours(eventWindow.getHours() - EVENT_QUERY_TIME);
 
         const kubeEvent = kubeEvents.find(kubeEvent => {
             // Check the basic values that we expect
@@ -229,7 +221,7 @@ export class TestUtils {
                 kubeEvent.userId == me.id &&
                 kubeEvent.userEmail == me.email) {
                 // Ensure this event has happened recently
-                if (kubeEvent.creationDate < eventWindow) {
+                if (kubeEvent.creationDate < startTime) {
                     return false;
                 }
 

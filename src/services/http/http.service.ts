@@ -102,9 +102,9 @@ export class HttpService {
                     errorMessage = error.response.body as string;
                 }
             }
-            return `Authentication Error:\n${errorMessage}`;
+            return `Authentication error:\n${errorMessage}.`;
         } else if (error.response.statusCode === 502) {
-            return 'Service is offline';
+            return 'BastionZero is unreachable. Contact support@bastionzero.com for assistance.';
         } else if (error.response.statusCode === 500) {
             // Handle 500 errors by returning our custom exception message
             // Pull out the specific error message from the back end
@@ -116,11 +116,11 @@ export class HttpService {
                     errorMessage = '';
                 }
             }
-            return `Server Error: ${errorMessage}`;
+            return `${errorMessage}`;
         } else if (error.response.statusCode === 404) {
-            return `Resource not found:\n Status code: 404 at ${error.request.requestUrl}`;
+            return `Resource not found.\n Status code: 404 at ${error.request.requestUrl}`;
         } else {
-            return `Unknown Error:\nStatusCode: ${error.response.statusCode}\n${errorMessage}`;
+            return `Unknown Error.\nStatusCode: ${error.response.statusCode}\n${errorMessage}. Contact support@bastionzero.com and use the send-logs command for assistance.`;
         }
     }
 

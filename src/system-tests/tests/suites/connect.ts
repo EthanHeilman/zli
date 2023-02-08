@@ -120,7 +120,7 @@ export const connectSuite = () => {
                 );
 
                 // Test sending an echo command in the attached terminal
-                await connectTestUtils.testEchoCommand(attachTarget, `after attach - ${systemTestUniqueId}`);
+                await connectTestUtils.testEchoCommand(attachTarget, `after attach - ${systemTestUniqueId}`, testStartTime);
 
                 // Exit the connection
                 await connectTestUtils.sendExitCommand(attachTarget);
