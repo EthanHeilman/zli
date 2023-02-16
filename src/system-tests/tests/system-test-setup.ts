@@ -1,5 +1,5 @@
 import { DigitalOceanDropletSize } from '../digital-ocean/digital-ocean.types';
-import { allTargets,  bctlQuickstartVersion, chartsBranch, bzeroAgentBranch, bzeroAgentVersion, bzeroKubeAgentImageName, configService, digitalOceanRegistry, doApiKey, logger, resourceNamePrefix, systemTestEnvId, systemTestEnvName, systemTestEnvNameCluster, systemTestRegistrationApiKey, systemTestTags, systemTestUniqueId, testTargets, providerCredsPath, bzeroCredsPath } from './system-test';
+import { allTargets, chartsBranch, bzeroAgentBranch, bzeroAgentVersion, bzeroKubeAgentImageName, configService, digitalOceanRegistry, doApiKey, logger, resourceNamePrefix, systemTestEnvId, systemTestEnvName, systemTestRegistrationApiKey, systemTestTags, systemTestUniqueId, testTargets, providerCredsPath, bzeroCredsPath } from './system-test';
 import { checkAllSettledPromise, stripTrailingSlash } from './utils/utils';
 import * as k8s from '@kubernetes/client-node';
 import { ClusterTargetStatusPollError, RegisteredDigitalOceanKubernetesCluster } from '../digital-ocean/digital-ocean-kube.service.types';
@@ -125,13 +125,12 @@ export async function setupDOTestCluster(): Promise<RegisteredDigitalOceanKubern
     const clusterTargetName = `${resourceNamePrefix}-cluster`;
 
     // Set common helm variables
-    helmVariables['image.quickstartImageTag'] = { value: bctlQuickstartVersion, type: 'single' };
     // helm chart expects the service to not cannot contain a
     // trailing slash and our config service includes the slash
     helmVariables['serviceUrl'] = { value: stripTrailingSlash(configService.serviceUrl()), type: 'single' };
     helmVariables['apiKey'] = { value: systemTestRegistrationApiKey.secret, type: 'single' };
     helmVariables['clusterName'] = { value: clusterTargetName, type: 'single' };
-    helmVariables['environmentName'] = { value: systemTestEnvNameCluster, type: 'single'};
+    helmVariables['environmentId'] = { value: systemTestEnvId, type: 'single'};
     helmVariables['users'] = { value: [configService.me().email], type: 'multi' };
     helmVariables['targetUsers'] = { value: [KubeTestUserName], type: 'multi' };
     helmVariables['targetGroups'] = { value: KubeTestTargetGroups, type: 'multi' };

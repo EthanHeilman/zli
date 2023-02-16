@@ -1,7 +1,7 @@
 import * as k8s from '@kubernetes/client-node';
 import { callZli } from '../utils/zli-utils';
 import { HttpError, V1Pod } from '@kubernetes/client-node';
-import { systemTestEnvNameCluster, systemTestPolicyTemplate, systemTestUniqueId, testCluster } from '../system-test';
+import { systemTestEnvName, systemTestPolicyTemplate, systemTestUniqueId, testCluster } from '../system-test';
 import { configService, logger } from '../system-test';
 import { TestUtils } from '../utils/test-utils';
 import { ConnectionEventType } from '../../../../webshell-common-ts/http/v2/event/types/connection-event.types';
@@ -128,7 +128,7 @@ export const kubeSuite = () => {
                     targetUser: daemon.kubeDaemonDetails.targetUser,
                     targetType: 'CLUSTER',
                     environmentId: testCluster.bzeroClusterTargetSummary.environmentId,
-                    environmentName: systemTestEnvNameCluster,
+                    environmentName: systemTestEnvName,
                     connectionEventType: eventType,
                     connectionId: daemon.connectionId
                 }, testStartTime);

@@ -108,11 +108,6 @@ if(! bzeroAgentVersion) {
     throw new Error('Must set the BZERO_AGENT_VERSION environment variable');
 }
 
-export const bctlQuickstartVersion = process.env.BCTL_QUICKSTART_VERSION;
-if (! bctlQuickstartVersion) {
-    throw new Error('Must set the BCTL_QUICKSTART_VERSION environment variable');
-}
-
 export const RUN_AS_SERVICE_ACCOUNT = process.env.RUN_AS_SERVICE_ACCOUNT ? (process.env.RUN_AS_SERVICE_ACCOUNT === 'true') : false;
 export const KUBE_ENABLED = process.env.KUBE_ENABLED ? (process.env.KUBE_ENABLED === 'true') : true;
 const VT_ENABLED = process.env.VT_ENABLED ? (process.env.VT_ENABLED === 'true') : true;
@@ -205,10 +200,9 @@ export const systemTestUniqueId = process.env.SYSTEM_TEST_UNIQUE_ID ? process.en
 // begins with this prefix
 export const resourceNamePrefix = `st-${systemTestUniqueId}`;
 
-export const systemTestEnvName = `${resourceNamePrefix}-non-kube-env`;
+export const systemTestEnvName = `${resourceNamePrefix}-env`;
 export let systemTestEnvId: string = undefined;
 export const systemTestPolicyTemplate = `${resourceNamePrefix}-$POLICY_TYPE-policy`;
-export const systemTestEnvNameCluster = `${resourceNamePrefix}-cluster-env`;
 
 // Setup all droplets before running tests
 beforeAll(async () => {
