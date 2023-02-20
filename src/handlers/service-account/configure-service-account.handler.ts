@@ -66,10 +66,10 @@ export async function configureServiceAccountHandler(configService: ConfigServic
         checkAllIdentifiersExist(logger, 'target', targetIdentifierMap, argv.target);
         checkAllIdentifiersAreSingle(logger, 'target', targetIdentifierMap, argv.target);
 
-        for (const targetIdentifier in targetIdentifierMap) {
-            const target: Target = targetIdentifierMap[targetIdentifier][0];
-            targetIds.push(target.id);
-        }
+        argv.target.forEach((target) => {
+            const targetToAdd: Target = targetIdentifierMap[target][0];
+            targetIds.push(targetToAdd.id);
+        });
     }
 
     if(targetIds.length === 0)
