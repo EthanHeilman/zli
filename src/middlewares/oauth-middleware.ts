@@ -16,8 +16,8 @@ export async function oauthMiddleware(configService: ConfigService, logger: Logg
         const serviceAccountHttpService = new ServiceAccountHttpService(configService, logger);
         const serviceAccount = await serviceAccountHttpService.Me();
         if(!serviceAccount.enabled) {
-            this.logger.error(`Service account ${serviceAccount.email} is not currently enabled.`);
-            await cleanExit(1, this.logger);
+            logger.error(`Service account ${serviceAccount.email} is not currently enabled.`);
+            await cleanExit(1, logger);
         }
     }
 }

@@ -32,7 +32,7 @@ export async function createTConnectPolicyHandler(argv: yargs.Arguments<createTC
 
     let subjectsEmails: string[];
     if(argv.users) {
-        this.logger.warn('The users flag is deprecated and will be removed soon, please use its equivalent \'subjects\'');
+        logger.warn('The users flag is deprecated and will be removed soon, please use its equivalent \'subjects\'');
         subjectsEmails = argv.users;
     } else
         subjectsEmails = argv.subjects;
@@ -50,14 +50,14 @@ export async function createTConnectPolicyHandler(argv: yargs.Arguments<createTC
         targetIdentifierMap = await getTargetsByNameOrId(configService, logger, [TargetType.Bzero, TargetType.DynamicAccessConfig]);
         checkAllIdentifiersExist(logger, 'bzero target or dynamic access config', targetIdentifierMap, argv.targets);
         checkAllIdentifiersAreSingle(logger, 'bzero target or dynamic access config', targetIdentifierMap, argv.targets);
-        for (const targetIdentifier in targetIdentifierMap) {
+        argv.targets.forEach((target) => {
             // Accessing this with [0] is safe because we have just checked above there is only a single target there
-            const target: Target = targetIdentifierMap[targetIdentifier][0];
+            const targetToAdd: Target = targetIdentifierMap[target][0];
             targets.push({
-                id: target.id,
-                type: target.type
+                id: targetToAdd.id,
+                type: targetToAdd.type
             });
-        }
+        });
     } else {
         environments = await getEnvironmentByName(argv.environments, envHttpService, logger);
     }

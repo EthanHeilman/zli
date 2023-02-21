@@ -17,7 +17,7 @@ export async function createRecordingPolicyHandler(argv: yargs.Arguments<createR
 
     let subjectsEmails: string[];
     if(argv.users) {
-        this.logger.warn('The users flag is deprecated and will be removed soon, please use its equivalent \'subjects\'');
+        logger.warn('The users flag is deprecated and will be removed soon, please use its equivalent \'subjects\'');
         subjectsEmails = argv.users;
     } else
         subjectsEmails = argv.subjects;

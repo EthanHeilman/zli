@@ -33,7 +33,7 @@ export async function createClusterPolicyHandler(argv: yargs.Arguments<createClu
 
     let subjectsEmails: string[];
     if(argv.users) {
-        this.logger.warn('The users flag is deprecated and will be removed soon, please use its equivalent \'subjects\'');
+        logger.warn('The users flag is deprecated and will be removed soon, please use its equivalent \'subjects\'');
         subjectsEmails = argv.users;
     } else
         subjectsEmails = argv.subjects;
@@ -51,11 +51,13 @@ export async function createClusterPolicyHandler(argv: yargs.Arguments<createClu
         clustersIdentifierMap = await getTargetsByNameOrId(configService, logger, [TargetType.Cluster]);
         checkAllIdentifiersExist(logger, 'cluster', clustersIdentifierMap, argv.clusters);
         checkAllIdentifiersAreSingle(logger, 'cluster', clustersIdentifierMap, argv.clusters);
-        for (const clusterIdentifier in clustersIdentifierMap) {
-            // Accessing this with [0] is safe because we have just checked above there is only a single target there
-            const target: Target = clustersIdentifierMap[clusterIdentifier][0];
-            clusters.push({id: target.id});
-        }
+        argv.clusters.forEach((cluster) => {
+            // Accessing this with [0] is safe because we have just checked above there is only a single tar
+            const clusterToAdd: Target = clustersIdentifierMap[cluster][0];
+            clusters.push({
+                id: clusterToAdd.id
+            });
+        });
     } else {
         environments = await getEnvironmentByName(argv.environments, envHttpService, logger);
     }

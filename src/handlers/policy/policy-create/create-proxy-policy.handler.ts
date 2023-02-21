@@ -30,7 +30,7 @@ export async function createProxyPolicyHandler(argv: yargs.Arguments<createProxy
 
     let subjectsEmails: string[];
     if(argv.users) {
-        this.logger.warn('The users flag is deprecated and will be removed soon, please use its equivalent \'subjects\'');
+        logger.warn('The users flag is deprecated and will be removed soon, please use its equivalent \'subjects\'');
         subjectsEmails = argv.users;
     } else
         subjectsEmails = argv.subjects;
@@ -47,14 +47,14 @@ export async function createProxyPolicyHandler(argv: yargs.Arguments<createProxy
         vtIdentifierMap = await getTargetsByNameOrId(configService, logger, [TargetType.Db, TargetType.Web]);
         checkAllIdentifiersExist(logger, 'virtual target', vtIdentifierMap, argv.targets);
         checkAllIdentifiersAreSingle(logger, 'virtual target', vtIdentifierMap, argv.targets);
-        for (const targetIdentifier in vtIdentifierMap) {
-            // Accessing this with [0] is safe because we have just checked above there is only a single target there
-            const target: Target = vtIdentifierMap[targetIdentifier][0];
+        argv.targets.forEach((target) => {
+            // Accessing this with [0] is safe because we have just checked above there is only a single there
+            const targetToAdd: Target = vtIdentifierMap[target][0];
             targets.push({
-                id: target.id,
-                type: target.type
+                id: targetToAdd.id,
+                type: targetToAdd.type
             });
-        }
+        });
     } else {
         environments = await getEnvironmentByName(argv.environments, envHttpService, logger);
     }
@@ -66,7 +66,7 @@ export async function createProxyPolicyHandler(argv: yargs.Arguments<createProxy
         groups: groups,
         targets: targets,
         environments: environments,
-        description: argv.description
+        description: argv.description,
     });
 
     logger.warn(`Successfully created a new Proxy Policy. Name: ${proxyPolicy.name} ID: ${proxyPolicy.id}`);

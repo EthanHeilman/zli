@@ -158,7 +158,7 @@ export async function loginServiceAccountHandler(configService: ConfigService, l
         bzeroCredsFile = JSON.parse(fs.readFileSync(argv.bzeroCreds, 'utf-8')) as ServiceAccountBzeroCredentials;
     if(!bzeroCredsFile.mfa_secret) {
         logger.error('Invalid mfa secret in the provided bz creds file');
-        await cleanExit(1, this.logger);
+        await cleanExit(1, logger);
         return;
     }
     const totpPasscode = totp(bzeroCredsFile.mfa_secret);
@@ -167,8 +167,8 @@ export async function loginServiceAccountHandler(configService: ConfigService, l
     };
     const serviceAccountSummary = await serviceAccountHttpService.LoginServiceAccount(req);
     if(!serviceAccountSummary.enabled) {
-        this.logger.error(`Service account ${serviceAccountSummary.email} is not currently enabled.`);
-        await cleanExit(1, this.logger);
+        logger.error(`Service account ${serviceAccountSummary.email} is not currently enabled.`);
+        await cleanExit(1, logger);
     }
     const subjectHttpService = new SubjectHttpService(configService, logger);
     const me = await subjectHttpService.Me();
