@@ -16,7 +16,7 @@ export function listConnectionsCmdBuilder(yargs: yargs.Argv<{}>) : yargs.Argv<li
                 default: false,
                 demandOption: false,
                 alias: 'j',
-                description: 'Formats the ouput in JSON format'
+                description: 'Formats the output in JSON format'
             }
         )
         .option(

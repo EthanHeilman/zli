@@ -1,10 +1,10 @@
 import yargs from 'yargs';
 
-export type listServiceAccountsArgs =
+export type listAuthorizedGithubActionsArgs =
 {json: boolean} &
 {detail: boolean};
 
-export function listServiceAccountsCmdBuilder(yargs: yargs.Argv<{}>) : yargs.Argv<listServiceAccountsArgs> {
+export function listAuthorizedGithubActionsCmdBuilder(yargs: yargs.Argv<{}>) : yargs.Argv<listAuthorizedGithubActionsArgs> {
     return yargs
         .option(
             'json',
@@ -26,7 +26,7 @@ export function listServiceAccountsCmdBuilder(yargs: yargs.Argv<{}>) : yargs.Arg
                 description: 'Returns extra detail in the output'
             }
         )
-        .example('$0 service-account list', 'List all service accounts, as regular table output')
-        .example('$0 service-account list --json', 'List all service accounts, output as json, pipeable')
-        .example('$0 service-accounts list --detail', 'List all service accounts, show all extra information');
+        .example('$0 authorized-action list', 'List all authorized Github Actions, as regular table output')
+        .example('$0 authorized-action list --json', 'List all authorized Github Actions, output as json, pipeable')
+        .example('$0 authorized-action list --detail', 'List all authorized Github Actions, show all extra information');
 }

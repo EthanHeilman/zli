@@ -34,6 +34,7 @@ import { ServiceAccountSummary } from '../../webshell-common-ts/http/v2/service-
 import { ServiceAccountBzeroCredentials } from '../../src/handlers/login/types/service-account-bzero-credentials.types';
 import { baseCreatePolicyCmdBuilderArgs } from '../../src/handlers/policy/policy-create/create-policy.command-builder';
 import { SubjectRole } from '../../webshell-common-ts/http/v2/subject/types/subject-role.types';
+import { AuthorizedGithubActionSummary } from '../../webshell-common-ts/http/v2/authorized-github-action/types/authorized-github-action-summary.types';
 
 // case insensitive substring search, 'find targetString in searchString'
 export function isSubstring(targetString: string, searchString: string) : boolean
@@ -389,7 +390,6 @@ export function getTableOfServiceAccounts(serviceAccounts: ServiceAccountSummary
     const table = new Table({ head: header, colWidths: columnWidths });
     const dateOptions = {year: '2-digit', month: 'numeric', day: 'numeric', hour:'numeric', minute:'numeric', hour12: true};
     serviceAccounts.forEach(sa => {
-        // const row = [u.fullName, u.email, u.isAdmin ? 'Admin' : 'User', new Date(u.lastLogin).toLocaleString('en-US', dateOptions as any)];
         const row = [sa.email, sa.isAdmin ? 'Admin' : 'User', sa.lastLogin ? sa.lastLogin.toLocaleString('en-US', dateOptions as any) : 'N/A'];
         if(showDetail) {
             row.push(sa.externalId);
@@ -397,6 +397,22 @@ export function getTableOfServiceAccounts(serviceAccounts: ServiceAccountSummary
             row.push(getReadableMultiLineString(sa.jwksUrlPattern, jwksUrlPatternColumnWidth));
             row.push(String(sa.enabled));
         }
+        table.push(row);
+    });
+
+    return table.toString();
+}
+
+export function getTableOfAuthorizedGithubActions(authorizedGithubActions: AuthorizedGithubActionSummary[], userMap: {[id: string]: UserSummary}) : string
+{
+    const actionIdLength = max(authorizedGithubActions.map(a => a.githubActionId.length).concat(36));
+    const header: string[] = ['Github Action ID', 'Created By', 'Time Created'];
+    const columnWidths = [actionIdLength + 2, 29, 19];
+
+    const table = new Table({ head: header, colWidths: columnWidths });
+    const dateOptions = {year: '2-digit', month: 'numeric', day: 'numeric', hour:'numeric', minute:'numeric', hour12: true};
+    authorizedGithubActions.forEach(a => {
+        const row = [a.githubActionId, getUserName(a.createdBy, userMap), a.timeCreated.toLocaleString('en-US', dateOptions as any)];
         table.push(row);
     });
 
