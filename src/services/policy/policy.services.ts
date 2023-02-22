@@ -2,7 +2,7 @@ import { PolicyHttpService } from '../../http-services/policy/policy.http-servic
 import { KubernetesPolicySummary } from '../../../webshell-common-ts/http/v2/policy/kubernetes/types/kubernetes-policy-summary.types';
 import { TargetConnectPolicySummary } from '../../../webshell-common-ts/http/v2/policy/target-connect/types/target-connect-policy-summary.types';
 import { ProxyPolicySummary } from '../../../webshell-common-ts/http/v2/policy/proxy/types/proxy-policy-summary.types';
-import { JustInTimePolicySummary } from '/../../webshell-common-ts/http/v2/policy/just-in-time/types/just-in-time-policy-summary.types';
+import { JustInTimePolicySummary } from '../../../webshell-common-ts/http/v2/policy/just-in-time/types/just-in-time-policy-summary.types';
 import { PolicyType } from '../../../webshell-common-ts/http/v2/policy/types/policy-type.types';
 import { ConfigService } from '../config/config.service';
 import { Logger } from '../logger/logger.service';

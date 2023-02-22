@@ -7,6 +7,7 @@ export interface BaseConnectionInfo {
 export interface DbConnectionInfo extends BaseConnectionInfo {
     type: 'db'
     remoteHost: string;
+    targetUser?: string;
 }
 
 export interface ShellConnectionInfo extends BaseConnectionInfo {

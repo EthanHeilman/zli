@@ -62,6 +62,7 @@ export async function listOpenDbConnections(
         targetName: conn.targetName,
         timeCreated: conn.timeCreated,
         remoteHost: `${conn.remoteHost}:${conn.remotePort}`,
+        targetUser: conn.targetUser,
     }));
 }
 

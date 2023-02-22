@@ -1,13 +1,13 @@
 import util from 'util';
 import yargs from 'yargs';
 import fs from 'fs';
-import { ConfigService } from '../../services/config/config.service';
-import { Logger } from '../../services/logger/logger.service';
-import { cleanExit } from '../clean-exit.handler';
+import { ConfigService } from '../../../services/config/config.service';
+import { Logger } from '../../../services/logger/logger.service';
+import { cleanExit } from '../../clean-exit.handler';
 import { generateKubeYamlArgs } from './generate-kube.command-builder';
-import { getEnvironmentFromName } from '../../utils/utils';
-import { KubeHttpService } from '../../http-services/targets/kube/kube.http-services';
-import { EnvironmentHttpService } from '../../http-services/environment/environment.http-services';
+import { getEnvironmentFromName } from '../../../utils/utils';
+import { KubeHttpService } from '../../../http-services/targets/kube/kube.http-services';
+import { EnvironmentHttpService } from '../../../http-services/environment/environment.http-services';
 
 export async function generateKubeYamlHandler(
     argv: yargs.Arguments<generateKubeYamlArgs>,

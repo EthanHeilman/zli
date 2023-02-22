@@ -1,10 +1,3 @@
-// TODO: Remove this once we determine the cause of the leaky handlers
-require('leaked-handles').set({
-    fullStack: true, // use full stack traces
-    timeout: 30000, // run every 30 seconds instead of 5.
-    debugSockets: true // pretty print tcp thrown exceptions.
-});
-
 import path from 'path';
 
 import { envMap } from '../../cli-driver';

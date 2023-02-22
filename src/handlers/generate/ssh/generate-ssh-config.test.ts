@@ -2,13 +2,13 @@ import fs from 'fs';
 import path from 'path';
 import mockArgv from 'mock-argv';
 import * as SshConfigMocks from './generate-ssh-config.mock';
-import { PolicyQueryHttpService } from '../../../src/http-services/policy-query/policy-query.http-services';
-import { CliDriver } from '../../cli-driver';
-import { ConnectionHttpService } from '../../../src/http-services/connection/connection.http-services';
-import { createTempDirectory, deleteDirectory, mockShellAuthDetails, mockUniversalConnectionRequest, mockUniversalConnectionResponse, unitTestMockSetup } from '../../utils/unit-test-utils';
-import * as CleanExitHandler from '../clean-exit.handler';
-import * as shellConnectHandler from '../connect/shell-connect.handler';
-import * as ShellUtils from '../../../src/utils/shell-utils';
+import { PolicyQueryHttpService } from '../../../../src/http-services/policy-query/policy-query.http-services';
+import { CliDriver } from '../../../cli-driver';
+import { ConnectionHttpService } from '../../../../src/http-services/connection/connection.http-services';
+import { createTempDirectory, deleteDirectory, mockShellAuthDetails, mockUniversalConnectionRequest, mockUniversalConnectionResponse, unitTestMockSetup } from '../../../utils/unit-test-utils';
+import * as CleanExitHandler from '../../clean-exit.handler';
+import * as shellConnectHandler from '../../connect/shell-connect.handler';
+import * as ShellUtils from '../../../../src/utils/shell-utils';
 
 describe('Generate ssh config suite', () => {
     const originalPath: string = process.env.HOME;

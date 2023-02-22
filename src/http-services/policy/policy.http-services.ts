@@ -153,7 +153,8 @@ export class PolicyHttpService extends HttpService
             groups: policy.groups,
             description: policy.description,
             environments: policy.environments,
-            targets: policy.targets
+            targets: policy.targets,
+            targetUsers: policy.targetUsers,
         };
         return this.Patch(`${PROXY}/${policy.id}`, request);
     }

@@ -28,7 +28,7 @@ export const DigitalOceanDistroImage = {
 } as const;
 export type DigitalOceanDistroImage = typeof DigitalOceanDistroImage[keyof typeof DigitalOceanDistroImage];
 
-export function getPackageManagerType(image: DigitalOceanDistroImage) : 'yum' | 'apt' {
+export function getPackageManagerType(image: DigitalOceanDistroImage): 'yum' | 'apt' {
     switch (image) {
     case DigitalOceanDistroImage.CentOS7:
     case DigitalOceanDistroImage.CentOS8:
@@ -41,6 +41,66 @@ export function getPackageManagerType(image: DigitalOceanDistroImage) : 'yum' | 
     case DigitalOceanDistroImage.Ubuntu20:
     case DigitalOceanDistroImage.BzeroVTUbuntuTestImage:
         return 'apt';
+    default:
+        // Compile-time exhaustive check
+        const _exhaustiveCheck: never = image;
+        return _exhaustiveCheck;
+    }
+}
+
+export function getPostgresConfigRoot(image: DigitalOceanDistroImage): '/var/lib/pgsql/12/data' | '/etc/postgresql/12/main' {
+    switch (image) {
+    case DigitalOceanDistroImage.CentOS7:
+    case DigitalOceanDistroImage.CentOS8:
+    case DigitalOceanDistroImage.AmazonLinux2:
+    case DigitalOceanDistroImage.BzeroVTAL2TestImage:
+        return '/var/lib/pgsql/12/data';
+    case DigitalOceanDistroImage.Debian10:
+    case DigitalOceanDistroImage.Debian11:
+    case DigitalOceanDistroImage.Ubuntu18:
+    case DigitalOceanDistroImage.Ubuntu20:
+    case DigitalOceanDistroImage.BzeroVTUbuntuTestImage:
+        return '/etc/postgresql/12/main';
+    default:
+        // Compile-time exhaustive check
+        const _exhaustiveCheck: never = image;
+        return _exhaustiveCheck;
+    }
+}
+
+export function getPostgresServiceName(image: DigitalOceanDistroImage): 'postgresql-12' | 'postgresql' {
+    switch (image) {
+    case DigitalOceanDistroImage.CentOS7:
+    case DigitalOceanDistroImage.CentOS8:
+    case DigitalOceanDistroImage.AmazonLinux2:
+    case DigitalOceanDistroImage.BzeroVTAL2TestImage:
+        return 'postgresql-12';
+    case DigitalOceanDistroImage.Debian10:
+    case DigitalOceanDistroImage.Debian11:
+    case DigitalOceanDistroImage.Ubuntu18:
+    case DigitalOceanDistroImage.Ubuntu20:
+    case DigitalOceanDistroImage.BzeroVTUbuntuTestImage:
+        return 'postgresql';
+    default:
+        // Compile-time exhaustive check
+        const _exhaustiveCheck: never = image;
+        return _exhaustiveCheck;
+    }
+}
+
+export function getOsName(image: DigitalOceanDistroImage): 'ubuntu' | 'centos' {
+    switch (image) {
+    case DigitalOceanDistroImage.CentOS7:
+    case DigitalOceanDistroImage.CentOS8:
+    case DigitalOceanDistroImage.AmazonLinux2:
+    case DigitalOceanDistroImage.BzeroVTAL2TestImage:
+        return 'centos';
+    case DigitalOceanDistroImage.Debian10:
+    case DigitalOceanDistroImage.Debian11:
+    case DigitalOceanDistroImage.Ubuntu18:
+    case DigitalOceanDistroImage.Ubuntu20:
+    case DigitalOceanDistroImage.BzeroVTUbuntuTestImage:
+        return 'ubuntu';
     default:
         // Compile-time exhaustive check
         const _exhaustiveCheck: never = image;

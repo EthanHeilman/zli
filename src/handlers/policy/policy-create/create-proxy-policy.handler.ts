@@ -11,6 +11,7 @@ import { Subject } from '../../../../webshell-common-ts/http/v2/policy/types/sub
 import { Group } from '../../../../webshell-common-ts/http/v2/policy/types/group.types';
 import { Environment } from '../../../../webshell-common-ts/http/v2/policy/types/environment.types';
 import { Target } from '../../../../webshell-common-ts/http/v2/policy/types/target.types';
+import { TargetUser } from '../../../../webshell-common-ts/http/v2/policy/types/target-user.types';
 import { SubjectHttpService } from '../../../../src/http-services/subject/subject.http-services';
 import { Dictionary } from 'lodash';
 import { TargetType } from '../../../../webshell-common-ts/http/v2/target/types/target.types';
@@ -59,6 +60,12 @@ export async function createProxyPolicyHandler(argv: yargs.Arguments<createProxy
         environments = await getEnvironmentByName(argv.environments, envHttpService, logger);
     }
 
+    // Process the target users, if any, into TargetUser array
+    const targetUsers: TargetUser[] = [];
+    argv.targetUsers?.forEach((tu) => {
+        targetUsers.push({ userName: tu });
+    });
+
     // Send the ProxyPolicyCreateRequest to AddPolicy endpoint
     const proxyPolicy = await policyService.AddProxyPolicy({
         name: argv.name,
@@ -67,6 +74,7 @@ export async function createProxyPolicyHandler(argv: yargs.Arguments<createProxy
         targets: targets,
         environments: environments,
         description: argv.description,
+        targetUsers: targetUsers
     });
 
     logger.warn(`Successfully created a new Proxy Policy. Name: ${proxyPolicy.name} ID: ${proxyPolicy.id}`);

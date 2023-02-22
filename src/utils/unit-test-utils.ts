@@ -284,7 +284,10 @@ export const mockProxyPolicySummaryList: ProxyPolicySummary[] = [{
     targets: [{
         id: 'mock-proxy-target-id',
         type: TargetType.Db
-    }]
+    }],
+    targetUsers: [{
+        userName: 'test-user',
+    }],
 }];
 
 export const mockSessionRecordingPolicySummaryList: SessionRecordingPolicySummary[] = [{

@@ -1,10 +1,10 @@
 import fs from 'fs';
 import path from 'path';
 import yargs from 'yargs';
-import { ConfigService } from '../../services/config/config.service';
-import { Logger } from '../../services/logger/logger.service';
-import { PolicyQueryHttpService } from '../../http-services/policy-query/policy-query.http-services';
-import { SshTargetsResponse } from '../../../webshell-common-ts/http/v2/policy-query/responses/tunnels.response';
+import { ConfigService } from '../../../services/config/config.service';
+import { Logger } from '../../../services/logger/logger.service';
+import { PolicyQueryHttpService } from '../../../http-services/policy-query/policy-query.http-services';
+import { SshTargetsResponse } from '../../../../webshell-common-ts/http/v2/policy-query/responses/tunnels.response';
 import { buildSshConfigStrings } from './generate-ssh-proxy.handler';
 import { generateSshConfigArgs } from './generate-ssh-config.command-builder';
 

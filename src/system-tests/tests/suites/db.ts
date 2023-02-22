@@ -1,8 +1,13 @@
+import path from 'path';
+import fs from 'fs';
+
+import { Client, Pool } from 'pg';
+const findPort = require('find-open-port');
+
 import { systemTestEnvId, systemTestEnvName, systemTestPolicyTemplate, systemTestUniqueId, testTargets } from '../system-test';
 import { callZli } from '../utils/zli-utils';
 import { DbTargetHttpService } from '..../../../http-services/db-target/db-target.http-service';
 import * as ListConnectionsService from '../../../services/list-connections/list-connections.service';
-
 import { configService, logger } from '../system-test';
 import { DigitalOceanBZeroTarget, DigitalOceanDistroImage, getDOImageName } from '../../digital-ocean/digital-ocean-target.service.types';
 import { TestUtils } from '../utils/test-utils';
@@ -12,7 +17,6 @@ import { bzeroTestTargetsToRun } from '../targets-to-run';
 import { TestTarget } from '../system-test.types';
 import { PolicyHttpService } from '../../../http-services/policy/policy.http-services';
 import { Subject } from '../../../../webshell-common-ts/http/v2/policy/types/subject.types';
-import { Client, Pool } from 'pg';
 import { AddNewDbTargetRequest } from '../../../../webshell-common-ts/http/v2/target/db/requests/add-new-db-target.requests';
 import { ConnectionHttpService } from '../../../http-services/connection/connection.http-services';
 import { getMockResultValue } from '../utils/jest-utils';
@@ -24,8 +28,10 @@ import { getListOfAvailPorts, mapToArrayTuples } from '../utils/utils';
 import { ConnectionState } from '../../../../webshell-common-ts/http/v2/connection/types/connection-state.types';
 import { DbConfig } from '../../../services/config/config.service.types';
 import { setupBackgroundDaemonMocks } from '../utils/connect-utils';
-
-const findPort = require('find-open-port');
+import { TargetUser } from '../../../../webshell-common-ts/http/v2/policy/types/target-user.types';
+import { VerbType } from '../../../../webshell-common-ts/http/v2/policy/types/verb-type.types';
+import { removeIfExists } from '../../../utils/utils';
+import { configurePostgres } from '../utils/pwdb/pwdb-utils';
 
 // Create mapping object and function for test rails case IDs
 
@@ -40,6 +46,7 @@ interface testRailsCaseIdMapping {
     dbReconnectViaDbPool: string;
     dbVirtualTargetConnect: string;
     badDbVirtualTargetConnect: string;
+    passwordlessConnectPostgres: string;
 }
 function fromTestTargetToCaseIdMapping(testTarget: TestTarget): testRailsCaseIdMapping {
     // Note: We don't have any extraBzeroTargets based on region, so we only
@@ -58,7 +65,8 @@ function fromTestTargetToCaseIdMapping(testTarget: TestTarget): testRailsCaseIdM
             closeMultipleDbConnectionsViaCloseAll: '187380',
             dbReconnectViaDbPool: '187381',
             dbVirtualTargetConnect: '2152',
-            badDbVirtualTargetConnect: '2371'
+            badDbVirtualTargetConnect: '2371',
+            passwordlessConnectPostgres: '731370',
         };
     case DigitalOceanDistroImage.BzeroVTUbuntuTestImage:
         return {
@@ -71,7 +79,8 @@ function fromTestTargetToCaseIdMapping(testTarget: TestTarget): testRailsCaseIdM
             closeMultipleDbConnectionsViaCloseAll: '187388',
             dbReconnectViaDbPool: '187389',
             dbVirtualTargetConnect: '2153',
-            badDbVirtualTargetConnect: '2372'
+            badDbVirtualTargetConnect: '2372',
+            passwordlessConnectPostgres: '731369'
         };
     default:
         throw new Error(`Unexpected distro image: ${testTarget.dropletImage}`);
@@ -104,9 +113,13 @@ export const dbSuite = () => {
         // Proxy policy ID created for this entire suite in order to make DB
         // connections
         let proxyPolicyID: string;
+        let targetConnectPolicyID: string;
 
         // Track created db targets to cleanup after each test is complete
         let createdDbTargets: CreatedDbTargetDetails[];
+
+        // postgres target user
+        const postgresUser: TargetUser = { userName: 'postgres' };
 
         beforeAll(async () => {
             // Construct all services needed to run tests
@@ -133,13 +146,26 @@ export const dbSuite = () => {
                 groups: [],
                 description: `Proxy policy created for system test: ${systemTestUniqueId}`,
                 environments: [environment],
-                targets: []
+                targets: [],
+                targetUsers: [postgresUser] // this will have no effect on vanilla DB connections
+            })).id;
+
+            targetConnectPolicyID = (await policyService.AddTargetConnectPolicy({
+                name: `${systemTestPolicyTemplate.replace('$POLICY_TYPE', 'ssh-target-connect')}-db-suite`,
+                subjects: [currentSubject],
+                groups: [],
+                description: `Target ssh policy created for system test: ${systemTestUniqueId}`,
+                environments: [environment],
+                targets: [],
+                targetUsers: [{ userName: 'root' }],
+                verbs: [{ type: VerbType.Tunnel }]
             })).id;
         }, 60 * 1000);
 
         afterAll(async () => {
             // Cleanup policy after all the tests have finished
             await policyService.DeleteProxyPolicy(proxyPolicyID);
+            await policyService.DeleteTargetConnectPolicy(targetConnectPolicyID);
         }, 60 * 1000);
 
         beforeEach(() => {
@@ -188,248 +214,263 @@ export const dbSuite = () => {
             return createdDbTarget;
         };
 
+        /**
+         * Connect to a DB target some number of times
+         * @param target DB target to connect to
+         * @param numOfConnections Number of connections to make
+         * @param customPorts Array of custom ports to use when making the
+         * connections. Set array's values to undefined to omit using the
+         * --customPort flag when connecting. Length of this array must
+         * equal numOfConnections, otherwise an error is thrown.
+         * @returns List of connection details
+         */
+        const connectNumOfTimes = async (target: CreatedDbTargetDetails, numOfConnections: number, customPorts: number[]): Promise<ConnectedDbDaemonDetails[]> => {
+            expect(customPorts.length).toBe(numOfConnections);
+
+            const connectedDbDaemons: ConnectedDbDaemonDetails[] = [];
+            // Must do this in serial order due to usage of spy
+            for (let i = 0; i < numOfConnections; i++) {
+                const connectedDbDaemonDetails = await connectToDbTarget(target, customPorts[i]);
+                connectedDbDaemons.push(connectedDbDaemonDetails);
+            }
+
+            return connectedDbDaemons;
+        };
+        const connectNumOfTimesWithoutCustomPort = async (target: CreatedDbTargetDetails, numOfConnections: number): Promise<ConnectedDbDaemonDetails[]> => {
+            return connectNumOfTimes(target, numOfConnections, Array(numOfConnections).fill(undefined));
+        };
+
+        /**
+         * Wrapper of EnsureConnectionEvent but assumes the event is DB and
+         * passes a filter for a specific connectionId
+         * @param daemon The daemon expected to connect
+         * @param eventType The eventType to filter for
+         */
+        const ensureConnectionEvent = async (daemon: ConnectedDbDaemonDetails, eventType: ConnectionEventType) => {
+            await testUtils.EnsureConnectionEventCreated({
+                targetId: daemon.targetId,
+                targetName: daemon.dbDaemonDetails.name,
+                targetType: 'DB',
+                environmentId: systemTestEnvId,
+                environmentName: systemTestEnvName,
+                connectionEventType: eventType,
+                connectionId: daemon.connectionId
+            }, testStartTime);
+        };
+
+        /**
+         * Ensure the created and connected events exist for a list of
+         * connected DB daemons. Polls for the events concurrently for each
+         * daemon.
+         * @param connectedDbDaemons List of connected db daemons
+         */
+        const ensureConnectedEvents = async (connectedDbDaemons: ConnectedDbDaemonDetails[]) => {
+            await Promise.all(connectedDbDaemons.map(async daemon => {
+                await ensureConnectionEvent(daemon, ConnectionEventType.Created);
+                await ensureConnectionEvent(daemon, ConnectionEventType.ClientConnect);
+            }));
+        };
+
+        /**
+         * Ensure the disconnect and closed events exist for a list of
+         * connected DB daemons. Polls for the events concurrently for each
+         * daemon.
+         * @param connectedDbDaemons List of connected db daemons
+         */
+        const ensureDisconnectedEvents = async (connectedDbDaemons: ConnectedDbDaemonDetails[]) => {
+            await Promise.all(connectedDbDaemons.map(async daemon => {
+                await ensureConnectionEvent(daemon, ConnectionEventType.ClientDisconnect);
+                await ensureConnectionEvent(daemon, ConnectionEventType.Closed);
+            }));
+        };
+
+        /**
+         * Connect to a DB target and wait for the connected events to
+         * appear on the Backend
+         * @param createdTarget Details about a created DB target
+         * @returns Object with details about the connected DB daemon
+         */
+        const connectAndEnsure = async (createdTarget: CreatedDbTargetDetails): Promise<ConnectedDbDaemonDetails> => {
+            const connectedDbDaemonDetails = await connectToDbTarget(createdTarget);
+            await ensureConnectedEvents([connectedDbDaemonDetails]);
+
+            return connectedDbDaemonDetails;
+        };
+
+        /**
+         * Creates a DB target with local port set on the backend (with a
+         * randomly available port). Then connects to the target and ensures
+         * the connected events exist on the backend.
+         * @param nameSuffix Suffix string to add to end of target's name
+         * @param target The backing proxy target (Bzero target)
+         * @param trackTarget Optional. Tracks the target and deletes it
+         * once the test finishes. Defaults to true.
+         * @returns Tuple with details about the created DB target and
+         * connected DB daemon details
+         */
+        const createAndConnectDbTarget = async (nameSuffix: string, target: DigitalOceanBZeroTarget, trackTarget: boolean = true): Promise<[CreatedDbTargetDetails, ConnectedDbDaemonDetails]> => {
+            const daemonLocalPort = await findPort();
+
+            const createdDbTargetDetails = await createDbTarget(nameSuffix, target, daemonLocalPort, trackTarget);
+            const connectedDbDaemonDetails = await connectAndEnsure(createdDbTargetDetails);
+
+            return [createdDbTargetDetails, connectedDbDaemonDetails];
+        };
+
+        /**
+         * Creates a new DB target with the provided base (proxy) BZero
+         * target
+         * @param nameSuffix Suffix string to add to end of target's name
+         * @param target The backing proxy target (Bzero target)
+         * @param daemonLocalPort Optional. If provided, db daemon server
+         * will attempt to bind to this port when `zli connect` is called.
+         * @param trackTarget Optional. Tracks the target and deletes it
+         * once the test finishes. Defaults to true.
+         * @param databaseType Optional. If non-empty, the DB target that is
+         * created is passwordless, using the provided type. By default, it
+         * is not passwordless
+         * @returns Object with details about the created DB target
+         */
+        const createDbTarget = async (nameSuffix: string, target: DigitalOceanBZeroTarget, daemonLocalPort?: number, trackTarget: boolean = true, databaseType: string = ''): Promise<CreatedDbTargetDetails> => {
+            // Create a new db virtual target
+            const dbVtName = nameSuffix.length > 0 ? `${target.bzeroTarget.name}-db-vt-${nameSuffix}` : `${target.bzeroTarget.name}-db-vt`;
+
+            // Set parameters for create db target request
+            const addDbTargetRequest = {} as AddNewDbTargetRequest;
+            addDbTargetRequest.targetName = dbVtName;
+            addDbTargetRequest.proxyTargetId = target.bzeroTarget.id;
+            addDbTargetRequest.remoteHost = 'localhost';
+            // Our postgres servers run on the default 5432 port
+            addDbTargetRequest.remotePort = { value: 5432 };
+            // Place these targets in the environment we created a policy
+            // for
+            addDbTargetRequest.environmentName = systemTestEnvName;
+            addDbTargetRequest.localHost = 'localhost';
+
+            // Optionally specify local port config option to test both dynamic
+            // ports and non-dynamic port feature of connect
+            if (daemonLocalPort) {
+                addDbTargetRequest.localPort = { value: daemonLocalPort };
+            } else {
+                addDbTargetRequest.localPort = { value: null };
+            }
+
+            // Optionally specify database type
+            if (databaseType.length > 0) {
+                addDbTargetRequest.splitCert = true;
+                addDbTargetRequest.databaseType = databaseType;
+            }
+
+            if (trackTarget) {
+                return createAndTrackDbTarget(addDbTargetRequest);
+            } else {
+                return createDbTargetWithReq(addDbTargetRequest);
+            }
+        };
+        /**
+         * Connects to a DB target
+         * @param createdDbTargetDetails Details about the db target to connect to
+         * @param customPort Optional. If provided, then the --customPort flag is used when connecting
+         * @param targetUser Optional. If provided, connects as the given user
+         * @returns Object with details about the started db daemon
+         */
+        const connectToDbTarget = async (createdDbTargetDetails: CreatedDbTargetDetails, customPort?: number, targetUser?: string): Promise<ConnectedDbDaemonDetails> => {
+            // Start the connection to the db virtual target
+            logger.info('Creating db target connection');
+
+            const createUniversalConnectionSpy = jest.spyOn(ConnectionHttpService.prototype, 'CreateUniversalConnection');
+
+            const targetUserString = targetUser ? `${targetUser}@` : '';
+            const zliArgs = ['connect', `${targetUserString}${createdDbTargetDetails.targetName}`];
+
+            // Add --customPort flag if customPort argument provided
+            if (customPort) {
+                zliArgs.push('--customPort', customPort.toString());
+            }
+            await callZli(zliArgs);
+
+            // Retrieve connection ID from the spy
+            expect(createUniversalConnectionSpy).toHaveBeenCalledOnce();
+            const gotUniversalConnectionResponse = await getMockResultValue(createUniversalConnectionSpy.mock.results[0]);
+            const connectionId = gotUniversalConnectionResponse.connectionId;
+
+            // Grab the DB daemon config from the config store
+            const dbConfig = dbDaemonManagementService.getDaemonConfigs().get(connectionId);
+
+            // If dbConfig is not defined, it means it was never added to the
+            // map of db daemons
+            expect(dbConfig).toBeDefined();
+
+            // Clear the spy, so this function can be called again (in the
+            // same test) without leaking state between the spy's
+            // invocations
+            createUniversalConnectionSpy.mockClear();
+            return {
+                connectionId: connectionId,
+                targetId: createdDbTargetDetails.targetId,
+                dbDaemonDetails: dbConfig
+            };
+        };
+        /**
+         * Connect to the PSQL DB server using a typescript PG client and
+         * execute a SQL query
+         * @param daemonLocalPort The db daemon's local server port
+         * @param isPasswordless Specifies whether we're connecting via a split certificate.
+         *  Deafults to false
+         */
+        const dbConnectAndExecuteSQL = async (daemonLocalPort: number) => {
+            // Attempt to make our PSQL connection
+            const client = new Client({
+                // Daemon is spawned on localhost
+                host: 'localhost',
+                port: daemonLocalPort,
+                // Our DB targets have default postgres user
+                user: 'postgres',
+                password: '',
+            });
+
+            // Make connection
+            try {
+                await client.connect();
+            } catch (err) {
+                logger.error(`Error connecting to db: ${err.stack}`);
+                throw err;
+            }
+
+            // Make a PSQL query for all connections made to database
+            const PSQL_QUERY = 'SELECT * FROM pg_stat_activity';
+            try {
+                await client.query(PSQL_QUERY);
+            } catch (err) {
+                logger.error(`Error running query ${PSQL_QUERY}. Error: ${err.stack}`);
+                throw err;
+            } finally {
+                client.end();
+            }
+        };
+        /**
+         * Stops the db daemon by calling the provided closeAction lambda
+         * function. Checks that the daemonPid process is not running with a
+         * 5 second grace period. Ensures connection closed events are
+         * created.
+         * @param connectedDbDaemon The connected daemon to stop
+         * @param closeAction Lambda function that is expected to perform
+         * the logic that stops the db daemon
+         */
+        const stopDbDaemon = async (
+            connectedDbDaemon: ConnectedDbDaemonDetails,
+            closeAction: () => Promise<void>
+        ) => {
+            await closeAction();
+
+            // Ensure the disconnect and close event exist
+            await ensureDisconnectedEvents([connectedDbDaemon]);
+
+            // Expect the daemon process to stop running within 5 seconds
+            await testUtils.waitForExpect(async () => expect(processManager.isProcessRunning(connectedDbDaemon.dbDaemonDetails.localPid)).toBeFalse(), 5 * 1000);
+        };
+
         describe('happy path: db connect', () => {
-            /**
-             * Connect to a DB target some number of times
-             * @param target DB target to connect to
-             * @param numOfConnections Number of connections to make
-             * @param customPorts Array of custom ports to use when making the
-             * connections. Set array's values to undefined to omit using the
-             * --customPort flag when connecting. Length of this array must
-             * equal numOfConnections, otherwise an error is thrown.
-             * @returns List of connection details
-             */
-            const connectNumOfTimes = async (target: CreatedDbTargetDetails, numOfConnections: number, customPorts: number[]): Promise<ConnectedDbDaemonDetails[]> => {
-                expect(customPorts.length).toBe(numOfConnections);
-
-                const connectedDbDaemons: ConnectedDbDaemonDetails[] = [];
-                // Must do this in serial order due to usage of spy
-                for (let i = 0; i < numOfConnections; i++) {
-                    const connectedDbDaemonDetails = await connectToDbTarget(target, customPorts[i]);
-                    connectedDbDaemons.push(connectedDbDaemonDetails);
-                }
-
-                return connectedDbDaemons;
-            };
-            const connectNumOfTimesWithoutCustomPort = async (target: CreatedDbTargetDetails, numOfConnections: number): Promise<ConnectedDbDaemonDetails[]> => {
-                return connectNumOfTimes(target, numOfConnections, Array(numOfConnections).fill(undefined));
-            };
-
-            /**
-             * Wrapper of EnsureConnectionEvent but assumes the event is DB and
-             * passes a filter for a specific connectionId
-             * @param daemon The daemon expected to connect
-             * @param eventType The eventType to filter for
-             */
-            const ensureConnectionEvent = async (daemon: ConnectedDbDaemonDetails, eventType: ConnectionEventType) => {
-                await testUtils.EnsureConnectionEventCreated({
-                    targetId: daemon.targetId,
-                    targetName: daemon.dbDaemonDetails.name,
-                    targetType: 'DB',
-                    environmentId: systemTestEnvId,
-                    environmentName: systemTestEnvName,
-                    connectionEventType: eventType,
-                    connectionId: daemon.connectionId
-                }, testStartTime);
-            };
-
-            /**
-             * Ensure the created and connected events exist for a list of
-             * connected DB daemons. Polls for the events concurrently for each
-             * daemon.
-             * @param connectedDbDaemons List of connected db daemons
-             */
-            const ensureConnectedEvents = async (connectedDbDaemons: ConnectedDbDaemonDetails[]) => {
-                await Promise.all(connectedDbDaemons.map(async daemon => {
-                    await ensureConnectionEvent(daemon, ConnectionEventType.Created);
-                    await ensureConnectionEvent(daemon, ConnectionEventType.ClientConnect);
-                }));
-            };
-
-            /**
-             * Ensure the disconnect and closed events exist for a list of
-             * connected DB daemons. Polls for the events concurrently for each
-             * daemon.
-             * @param connectedDbDaemons List of connected db daemons
-             */
-            const ensureDisconnectedEvents = async (connectedDbDaemons: ConnectedDbDaemonDetails[]) => {
-                await Promise.all(connectedDbDaemons.map(async daemon => {
-                    await ensureConnectionEvent(daemon, ConnectionEventType.ClientDisconnect);
-                    await ensureConnectionEvent(daemon, ConnectionEventType.Closed);
-                }));
-            };
-
-            /**
-             * Connect to a DB target and wait for the connected events to
-             * appear on the Backend
-             * @param createdTarget Details about a created DB target
-             * @returns Object with details about the connected DB daemon
-             */
-            const connectAndEnsure = async (createdTarget: CreatedDbTargetDetails): Promise<ConnectedDbDaemonDetails> => {
-                const connectedDbDaemonDetails = await connectToDbTarget(createdTarget);
-                await ensureConnectedEvents([connectedDbDaemonDetails]);
-
-                return connectedDbDaemonDetails;
-            };
-
-            /**
-             * Creates a DB target with local port set on the backend (with a
-             * randomly available port). Then connects to the target and ensures
-             * the connected events exist on the backend.
-             * @param nameSuffix Suffix string to add to end of target's name
-             * @param target The backing proxy target (Bzero target)
-             * @param trackTarget Optional. Tracks the target and deletes it
-             * once the test finishes. Defaults to true.
-             * @returns Tuple with details about the created DB target and
-             * connected DB daemon details
-             */
-            const createAndConnectDbTarget = async (nameSuffix: string, target: DigitalOceanBZeroTarget, trackTarget: boolean = true): Promise<[CreatedDbTargetDetails, ConnectedDbDaemonDetails]> => {
-                const daemonLocalPort = await findPort();
-
-                const createdDbTargetDetails = await createDbTarget(nameSuffix, target, daemonLocalPort, trackTarget);
-                const connectedDbDaemonDetails = await connectAndEnsure(createdDbTargetDetails);
-
-                return [createdDbTargetDetails, connectedDbDaemonDetails];
-            };
-
-            /**
-             * Creates a new DB target with the provided base (proxy) BZero
-             * target
-             * @param nameSuffix Suffix string to add to end of target's name
-             * @param target The backing proxy target (Bzero target)
-             * @param daemonLocalPort Optional. If provided, db daemon server
-             * will attempt to bind to this port when `zli connect` is called.
-             * @param trackTarget Optional. Tracks the target and deletes it
-             * once the test finishes. Defaults to true.
-             * @returns Object with details about the created DB target
-             */
-            const createDbTarget = async (nameSuffix: string, target: DigitalOceanBZeroTarget, daemonLocalPort?: number, trackTarget: boolean = true): Promise<CreatedDbTargetDetails> => {
-                // Create a new db virtual target
-                const dbVtName = nameSuffix.length > 0 ? `${target.bzeroTarget.name}-db-vt-${nameSuffix}` : `${target.bzeroTarget.name}-db-vt`;
-
-                // Set parameters for create db target request
-                const addDbTargetRequest = {} as AddNewDbTargetRequest;
-                addDbTargetRequest.targetName = dbVtName;
-                addDbTargetRequest.proxyTargetId = target.bzeroTarget.id;
-                addDbTargetRequest.remoteHost = 'localhost';
-                // Our postgres servers run on the default 5432 port
-                addDbTargetRequest.remotePort = { value: 5432 };
-                // Place these targets in the environment we created a policy
-                // for
-                addDbTargetRequest.environmentName = systemTestEnvName;
-                addDbTargetRequest.localHost = 'localhost';
-
-                // Optionally specify local port config option to test both dynamic
-                // ports and non-dynamic port feature of connect
-                if (daemonLocalPort) {
-                    addDbTargetRequest.localPort = { value: daemonLocalPort };
-                } else {
-                    addDbTargetRequest.localPort = { value: null };
-                }
-
-                if (trackTarget) {
-                    return createAndTrackDbTarget(addDbTargetRequest);
-                } else {
-                    return createDbTargetWithReq(addDbTargetRequest);
-                }
-            };
-            /**
-             * Connects to a DB target
-             * @param createdDbTargetDetails Details about the db target to connect to
-             * @param customPort Optional. If provided, then the --customPort flag is used when connecting
-             * @returns Object with details about the started db daemon
-             */
-            const connectToDbTarget = async (createdDbTargetDetails: CreatedDbTargetDetails, customPort?: number): Promise<ConnectedDbDaemonDetails> => {
-                // Start the connection to the db virtual target
-                logger.info('Creating db target connection');
-
-                // Add --customPort flag if customPort argument provided
-                const createUniversalConnectionSpy = jest.spyOn(ConnectionHttpService.prototype, 'CreateUniversalConnection');
-                const zliArgs = ['connect', createdDbTargetDetails.targetName];
-                if (customPort) {
-                    zliArgs.push('--customPort', customPort.toString());
-                }
-                await callZli(zliArgs);
-
-                // Retrieve connection ID from the spy
-                expect(createUniversalConnectionSpy).toHaveBeenCalledOnce();
-                const gotUniversalConnectionResponse = await getMockResultValue(createUniversalConnectionSpy.mock.results[0]);
-                const connectionId = gotUniversalConnectionResponse.connectionId;
-
-                // Grab the DB daemon config from the config store
-                const dbConfig = dbDaemonManagementService.getDaemonConfigs().get(connectionId);
-
-                // If dbConfig is not defined, it means it was never added to the
-                // map of db daemons
-                expect(dbConfig).toBeDefined();
-
-                // Clear the spy, so this function can be called again (in the
-                // same test) without leaking state between the spy's
-                // invocations
-                createUniversalConnectionSpy.mockClear();
-                return {
-                    connectionId: connectionId,
-                    targetId: createdDbTargetDetails.targetId,
-                    dbDaemonDetails: dbConfig
-                };
-            };
-            /**
-             * Connect to the PSQL DB server using a typescript PG client and
-             * execute a SQL query
-             * @param daemonLocalPort The db daemon's local server port
-             */
-            const dbConnectAndExecuteSQL = async (daemonLocalPort: number) => {
-                // Attempt to make our PSQL connection
-                const client = new Client({
-                    // Daemon is spawned on localhost
-                    host: 'localhost',
-                    port: daemonLocalPort,
-                    // Our DB targets have default postgres user
-                    user: 'postgres',
-                    password: '',
-                });
-
-                // Make connection
-                try {
-                    await client.connect();
-                } catch (err) {
-                    logger.error(`Error connecting to db: ${err.stack}`);
-                    throw err;
-                }
-
-                // Make a PSQL query for all connections made to database
-                const PSQL_QUERY = 'SELECT * FROM pg_stat_activity';
-                try {
-                    await client.query(PSQL_QUERY);
-                } catch (err) {
-                    logger.error(`Error running query ${PSQL_QUERY}. Error: ${err.stack}`);
-                    throw err;
-                } finally {
-                    client.end();
-                }
-            };
-            /**
-             * Stops the db daemon by calling the provided closeAction lambda
-             * function. Checks that the daemonPid process is not running with a
-             * 5 second grace period. Ensures connection closed events are
-             * created.
-             * @param connectedDbDaemon The connected daemon to stop
-             * @param closeAction Lambda function that is expected to perform
-             * the logic that stops the db daemon
-             */
-            const stopDbDaemon = async (
-                connectedDbDaemon: ConnectedDbDaemonDetails,
-                closeAction: () => Promise<void>
-            ) => {
-                await closeAction();
-
-                // Ensure the disconnect and close event exist
-                await ensureDisconnectedEvents([connectedDbDaemon]);
-
-                // Expect the daemon process to stop running within 5 seconds
-                await testUtils.waitForExpect(async () => expect(processManager.isProcessRunning(connectedDbDaemon.dbDaemonDetails.localPid)).toBeFalse(), 5 * 1000);
-            };
-
             bzeroTestTargetsToRun.forEach(async (testTarget: TestTarget) => {
                 const caseIds = fromTestTargetToCaseIdMapping(testTarget);
                 it(`${caseIds.multiDbVirtualTargetConnect}: multi-db virtual target connect - ${testTarget.awsRegion} - ${getDOImageName(testTarget.dropletImage)}`, async () => {
@@ -541,6 +582,7 @@ export const dbSuite = () => {
                         type: 'db',
                         connectionId: connectionInfo.connectionId,
                         targetName: createdDbTargetDetails.targetName,
+                        targetUser: null,
                         timeCreated: expect.anything(),
                         remoteHost: `${createdDbTargetDetails.remoteHost}:${createdDbTargetDetails.remotePort}`
                     }));
@@ -603,11 +645,11 @@ export const dbSuite = () => {
                     // Check that the other connection is still open
                     const openDbConnections = await connectionHttpService.ListDbConnections(ConnectionState.Open);
                     // const openDbConnections = await connectionHttpService.ListDbConnections(true);
-                    expect(openDbConnections).toEqual(expect.arrayContaining([expect.objectContaining({ id: connectionToStayOpen.connectionId})]));
+                    expect(openDbConnections).toEqual(expect.arrayContaining([expect.objectContaining({ id: connectionToStayOpen.connectionId })]));
                     // Since we're using arrayContaining, the call above can
                     // still pass even if it contains the connection which
                     // closed. Therefore, we must also check for non-existence
-                    expect(openDbConnections).not.toEqual(expect.arrayContaining([expect.objectContaining({ id: connectionToClose.connectionId})]));
+                    expect(openDbConnections).not.toEqual(expect.arrayContaining([expect.objectContaining({ id: connectionToClose.connectionId })]));
 
                     // Check that the connection meant to stay open is still
                     // running.
@@ -616,8 +658,8 @@ export const dbSuite = () => {
                     const dbStatuses = await dbDaemonManagementService.getAllDaemonStatuses();
                     const gotDbStatusesAsTuples = mapToArrayTuples(dbStatuses);
                     expect(gotDbStatusesAsTuples).toEqual(expect.arrayContaining([
-                        [connectionToStayOpen.connectionId, expect.objectContaining({ type: 'daemon_is_running'})],
-                        [connectionToClose.connectionId, expect.objectContaining({ type: 'daemon_quit_unexpectedly'})]
+                        [connectionToStayOpen.connectionId, expect.objectContaining({ type: 'daemon_is_running' })],
+                        [connectionToClose.connectionId, expect.objectContaining({ type: 'daemon_quit_unexpectedly' })]
                     ]));
 
                     // Check that we can still connect and run SQL
@@ -806,6 +848,61 @@ export const dbSuite = () => {
 
                     await expect(connectZli).rejects.toThrow();
                 }, 60 * 1000);
+            });
+        });
+
+        describe('happy path: passwordless (SplitCert) access', () => {
+            const userSshConfigFile = path.join(
+                process.env.HOME, '.ssh', 'test-config-user'
+            );
+            const bzSshConfigFile = path.join(
+                process.env.HOME, '.ssh', 'test-config'
+            );
+            const pwdbConfigDir = path.join(
+                'src', 'system-tests', 'tests', 'utils', 'pwdb'
+            );
+
+            const pgConfigFile = 'postgresql.conf';
+            const certDir = 'tmpCertDir';
+            const customPort = 55432;
+
+            beforeAll(async () => {
+                fs.rmSync(certDir, { recursive: true, force: true });
+                fs.mkdirSync(certDir);
+                await callZli(['generate', 'sshConfig', '--mySshPath', userSshConfigFile, '--bzSshPath', bzSshConfigFile]);
+            });
+
+            afterAll(async () => {
+                // delete outstanding configuration files
+                removeIfExists(userSshConfigFile);
+                removeIfExists(bzSshConfigFile);
+                removeIfExists(pgConfigFile);
+                fs.rmSync(certDir, { recursive: true, force: true });
+            });
+
+            bzeroTestTargetsToRun.forEach(async (testTarget: TestTarget) => {
+                const caseIds = fromTestTargetToCaseIdMapping(testTarget);
+                it(`${caseIds.passwordlessConnectPostgres}: passwordless db connect postgres - ${testTarget.awsRegion} - ${getDOImageName(testTarget.dropletImage)}`, async () => {
+                    const doTarget = testTargets.get(testTarget) as DigitalOceanBZeroTarget;
+
+                    const targetDetails = await createDbTarget('', doTarget, customPort, true, 'Postgres');
+                    await callZli(['generate', 'certificate', '--targets', targetDetails.targetName, '--selfHosted', '--outputDir', certDir]);
+
+                    // configure the target machine to accept passwordless connections
+                    await configurePostgres(testTarget, doTarget.bzeroTarget.name, userSshConfigFile, pwdbConfigDir, certDir);
+
+                    // connect the daemon
+                    const connectedDbDaemonDetails = await connectToDbTarget(targetDetails, null, 'postgres');
+                    await ensureConnectedEvents([connectedDbDaemonDetails]);
+
+                    // connect locally
+                    await dbConnectAndExecuteSQL(connectedDbDaemonDetails.dbDaemonDetails.localPort);
+
+                    await stopDbDaemon(
+                        connectedDbDaemonDetails,
+                        () => callZli(['close', connectedDbDaemonDetails.connectionId])
+                    );
+                }, 1000 * 5 * 60);
             });
         });
     });

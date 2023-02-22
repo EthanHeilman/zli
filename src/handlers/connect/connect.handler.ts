@@ -49,7 +49,6 @@ export async function connectHandler(
             targetType: parseTargetType(argv.targetType)
         });
 
-
         mixpanelService.TrackNewConnection(createUniversalConnectionResponse.targetType);
 
         switch(createUniversalConnectionResponse.targetType)
@@ -67,7 +66,7 @@ export async function connectHandler(
             }
             return exitCode;
         case TargetType.Db:
-            return await dbConnectHandler(argv, createUniversalConnectionResponse.targetId, createUniversalConnectionResponse, configService, logger, loggerConfigService);
+            return await dbConnectHandler(argv, createUniversalConnectionResponse.splitCert, createUniversalConnectionResponse.targetId, createUniversalConnectionResponse.targetUser, createUniversalConnectionResponse, configService, logger, loggerConfigService);
         case TargetType.Web:
             return await webConnectHandler(argv, createUniversalConnectionResponse.targetId, createUniversalConnectionResponse, configService, logger, loggerConfigService);
         case TargetType.Cluster:
