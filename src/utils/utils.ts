@@ -34,6 +34,7 @@ import { ServiceAccountSummary } from '../../webshell-common-ts/http/v2/service-
 import { ServiceAccountBzeroCredentials } from '../../src/handlers/login/types/service-account-bzero-credentials.types';
 import { baseCreatePolicyCmdBuilderArgs } from '../../src/handlers/policy/policy-create/create-policy.command-builder';
 import { SubjectRole } from '../../webshell-common-ts/http/v2/subject/types/subject-role.types';
+import { AuthorizedGithubActionSummary } from '../../webshell-common-ts/http/v2/authorized-github-action/types/authorized-github-action-summary.types';
 
 // case insensitive substring search, 'find targetString in searchString'
 export function isSubstring(targetString: string, searchString: string) : boolean
@@ -180,7 +181,6 @@ export function parseTargetStatus(targetStatus: string) : TargetStatus {
 export function parseTargetString(targetString: string) : ParsedTargetString
 {
     // case sensitive check for [targetUser@]<targetId | targetName>[:targetPath]
-    // not sure if i need to modify this
     const pattern = /^([a-z_]([a-z0-9_-]{0,31}|[a-z0-9_-]{0,30}\$)@)?(([0-9A-Fa-f]{8}[-][0-9A-Fa-f]{4}[-][0-9A-Fa-f]{4}[-][0-9A-Fa-f]{4}[-][0-9A-Fa-f]{12})|([a-zA-Z0-9_.-]{1,255}))(:{1}|$)/;
 
     if(! pattern.test(targetString)) {
@@ -334,7 +334,7 @@ export function getTableOfTargets(targets: TargetSummary[], envs: EnvironmentSum
         if(showDetail) {
             row.push(target.agentVersion);
             row.push(target.status || 'N/A'); // status is undefined for non-SSM targets
-            row.push(map(target.targetUsers).join(', \n') || 'N/A'); // targetUsers are undefined for now for non-cluster targets
+            row.push(map(target.targetUsers).join(', \n') || 'N/A');
             row.push(target.region);
         }
 
@@ -390,7 +390,6 @@ export function getTableOfServiceAccounts(serviceAccounts: ServiceAccountSummary
     const table = new Table({ head: header, colWidths: columnWidths });
     const dateOptions = {year: '2-digit', month: 'numeric', day: 'numeric', hour:'numeric', minute:'numeric', hour12: true};
     serviceAccounts.forEach(sa => {
-        // const row = [u.fullName, u.email, u.isAdmin ? 'Admin' : 'User', new Date(u.lastLogin).toLocaleString('en-US', dateOptions as any)];
         const row = [sa.email, sa.isAdmin ? 'Admin' : 'User', sa.lastLogin ? sa.lastLogin.toLocaleString('en-US', dateOptions as any) : 'N/A'];
         if(showDetail) {
             row.push(sa.externalId);
@@ -398,6 +397,22 @@ export function getTableOfServiceAccounts(serviceAccounts: ServiceAccountSummary
             row.push(getReadableMultiLineString(sa.jwksUrlPattern, jwksUrlPatternColumnWidth));
             row.push(String(sa.enabled));
         }
+        table.push(row);
+    });
+
+    return table.toString();
+}
+
+export function getTableOfAuthorizedGithubActions(authorizedGithubActions: AuthorizedGithubActionSummary[], userMap: {[id: string]: UserSummary}) : string
+{
+    const actionIdLength = max(authorizedGithubActions.map(a => a.githubActionId.length).concat(36));
+    const header: string[] = ['Github Action ID', 'Created By', 'Time Created'];
+    const columnWidths = [actionIdLength + 2, 29, 19];
+
+    const table = new Table({ head: header, colWidths: columnWidths });
+    const dateOptions = {year: '2-digit', month: 'numeric', day: 'numeric', hour:'numeric', minute:'numeric', hour12: true};
+    authorizedGithubActions.forEach(a => {
+        const row = [a.githubActionId, getUserName(a.createdBy, userMap), a.timeCreated.toLocaleString('en-US', dateOptions as any)];
         table.push(row);
     });
 
@@ -832,8 +847,8 @@ export function getTableOfProxyPolicies(
     serviceAccountMap : {[id: string]: ServiceAccountSummary}
 ) : string
 {
-    const header: string[] = ['Name', 'Type', 'Subject', 'Resource',];
-    const columnWidths = [24, 19, 26, 28];
+    const header: string[] = ['Name', 'Type', 'Subject', 'Resource', 'Target Users'];
+    const columnWidths = [24, 19, 26, 28, 28];
 
     const table = new Table({ head: header, colWidths: columnWidths });
     proxyPolicies.forEach(p => {
@@ -864,6 +879,8 @@ export function getTableOfProxyPolicies(
         }
         formattedSubjects += formattedGroups;
 
+        const formattedTargetUsers = `Users: ${p.targetUsers?.map(u => u.userName).join(',\n')}`;
+
         // Translate the resource ids to human readable resources
         let formattedResource = '';
 
@@ -888,6 +905,7 @@ export function getTableOfProxyPolicies(
             p.type,
             formattedSubjects || 'N/A',
             formattedResource || 'N/A',
+            formattedTargetUsers || 'N/A',
         ];
         table.push(row);
     });
@@ -1093,7 +1111,7 @@ export function dbTargetToTargetSummary(dbTarget: DbTargetSummary): TargetSummar
         name: dbTarget.name,
         status: parseTargetStatus(dbTarget.status.toString()),
         environmentId: dbTarget.environmentId,
-        targetUsers: [],
+        targetUsers: dbTarget.allowedTargetUsers?.map(u => u.userName),
         agentVersion: dbTarget.agentVersion,
         region: dbTarget.region
     };

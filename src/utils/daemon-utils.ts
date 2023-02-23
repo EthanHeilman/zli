@@ -101,7 +101,7 @@ export async function handleServerStart(logPath: string, localPort: number, loca
         await waitUntilUsedOnHost(localPort, localHost, WAIT_UTIL_USED_ON_HOST_RETRY_TIME, WAIT_UNTIL_USED_ON_HOST_TIMEOUT).then(function() {
             resolve();
         }, function(err) {
-            let errMsg = `Error waiting for daemon to start on ${localHost}:${localPort}.\nwaitUntilUsedOnHost error: ${err}.`;
+            let errMsg = `Error waiting for daemon to start on ${localHost}:${localPort}: ${err}`;
             if (fs.existsSync(logPath)) {
                 readLastLines.read(logPath, 1)
                     .then((line: string) => {
@@ -491,7 +491,47 @@ export function waitForDaemonProcessExit(logger: Logger, loggerConfigService: Lo
                 case DAEMON_EXIT_CODES.POLICY_EDITED_DISCONNECT:
                 case DAEMON_EXIT_CODES.POLICY_DELETED_DISCONNECT:
                 case DAEMON_EXIT_CODES.IDLE_TIMEOUT: {
-                    // don't report an error in this case -- handled by upstream processes
+                    // don't report an error in this case -- handled by upstream processes'
+                    break;
+                }
+                case DAEMON_EXIT_CODES.CONNECTION_REFUSED: {
+                    logger.error('Connection Refused. Make sure remote address is correct and that database is active and listening on the other side');
+                    break;
+                }
+                case DAEMON_EXIT_CODES.CONNECTION_FAILED: {
+                    logger.error('Failed to establish connection');
+                    break;
+                }
+                case DAEMON_EXIT_CODES.DB_NO_TLS: {
+                    logger.error('Database misconfiguration: SplitCert requires databases to accept SSL/TLS connections');
+                    break;
+                }
+                case DAEMON_EXIT_CODES.CLIENT_CERT_COSIGN_ERROR: {
+                    logger.error('Bastion failed to cosign certificate: please contact BastionZero help desk');
+                    break;
+                }
+                case DAEMON_EXIT_CODES.PWDB_MISSING_KEY: {
+                    logger.error('Missing SplitCert key, please make sure your agent has been configured with the appropriate key to access the target');
+                    break;
+                }
+                case DAEMON_EXIT_CODES.PWDB_UNKNOWN_AUTHORITY: {
+                    logger.error('Server authenticating with unknown root certificate authority');
+                    break;
+                }
+                case DAEMON_EXIT_CODES.SERVER_CERT_EXPIRED: {
+                    logger.error('Database server certificate has expired or is not yet valid');
+                    break;
+                }
+                case DAEMON_EXIT_CODES.INCORRECT_SERVER_NAME: {
+                    logger.error('Server presented certificate with a different name than expected. There may be a misconfiguration issue');
+                    break;
+                }
+                case DAEMON_EXIT_CODES.DAEMON_PANIC: {
+                    logger.error(`daemon process terminated unexpectedly -- for more details, try running the zli with the --debug flag set`);
+                    break;
+                }
+                case null: {
+                    logger.error(`daemon process terminated while starting up`);
                     break;
                 }
                 default: {

@@ -98,7 +98,7 @@ export class DigitalOceanKubeService {
 
         // NOTE: If cluster delete call fails, then there will also be an
         // extraneous env
-        cleanupPromises.push(this.deleteKubeClusterTargetAndEnv(registeredCluster));
+        cleanupPromises.push(this.deleteKubeClusterTarget(registeredCluster));
 
         // Always attempt to delete the policy for this cluster. It is possible
         // for the policy not to exist (e.g. something broke in helm).
@@ -107,17 +107,13 @@ export class DigitalOceanKubeService {
         await checkAllSettledPromise(Promise.allSettled(cleanupPromises));
     }
 
-    private async deleteKubeClusterTargetAndEnv(registeredCluster: RegisteredDigitalOceanKubernetesCluster): Promise<void> {
+    private async deleteKubeClusterTarget(registeredCluster: RegisteredDigitalOceanKubernetesCluster): Promise<void> {
 
         // Only delete cluster target on BastionZero if it is set.
         // Delete env as well but only after deleting cluster
         if (registeredCluster.bzeroClusterTargetSummary) {
             await this.kubeHttpService.DeleteKubeCluster(registeredCluster.bzeroClusterTargetSummary.id);
         }
-
-        // We cannot delete the env until the target has been deleted as this is
-        // a hard requirement in the backend.
-        await this.deleteClusterEnv(registeredCluster);
     }
 
     private async deleteClusterPolicy(registeredCluster: RegisteredDigitalOceanKubernetesCluster): Promise<void> {
@@ -129,18 +125,6 @@ export class DigitalOceanKubeService {
             await this.policyHttpService.DeleteKubernetesPolicy(kubernetesPolicy.id);
         } else {
             throw new Error(`Unexpected error! Expected to find at least one policy with name: ${policyName}`);
-        }
-    }
-
-    private async deleteClusterEnv(registeredCluster: RegisteredDigitalOceanKubernetesCluster): Promise<void> {
-        // Find the env that Helm creates and delete it
-        const envName = this.getHelmClusterEnvName(registeredCluster.bzeroClusterTargetSummary.name);
-        const envs = await this.envHttpService.ListEnvironments();
-        const kubeEnv = envs.find(e => e.name === envName);
-        if (kubeEnv) {
-            await this.envHttpService.DeleteEnvironment(kubeEnv.id);
-        } else {
-            throw new Error(`Unexpected error! Expected to find at least one env with name: ${envName}`);
         }
     }
 
@@ -265,15 +249,6 @@ export class DigitalOceanKubeService {
 
         const createClusterResp = await this.doClient.kubernetes.createKubernetesCluster(request);
         return createClusterResp.data.kubernetes_cluster;
-    }
-
-    /**
-     * Returns the environment name created by helm for a new cluster
-     * @param clusterName
-     * @returns The environment name
-     */
-    private getHelmClusterEnvName(clusterName: string): string {
-        return `${clusterName}-env`;
     }
 
     /**

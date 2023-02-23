@@ -26,7 +26,11 @@ export async function listDbTargets(logger: Logger, configService: ConfigService
                     localHost: target.localHost,
                     region: target.region,
                     proxyTargetId: target.proxyTargetId,
-                    agentPublicKey: target.agentPublicKey };
+                    agentPublicKey: target.agentPublicKey,
+                    splitCert: target.splitCert,
+                    databaseType: target.databaseType,
+                    allowedTargetUsers: target.allowedTargetUsers,
+                };
             });
 
             res(results);

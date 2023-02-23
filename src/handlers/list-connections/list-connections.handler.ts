@@ -88,8 +88,8 @@ function normalizeConnectionInfos(connections: ConnectionInfo[]): NormalizedConn
         let targetUser: string;
         switch (conn.type) {
         case 'db':
-            // DB connections don't have a concept of target user
-            targetUser = 'N/A';
+            // Target users are only used by SplitCert connections; otherwise will be undefined
+            targetUser = conn.targetUser ? conn.targetUser : 'N/A';
             break;
         case 'shell':
             targetUser = conn.targetUser;

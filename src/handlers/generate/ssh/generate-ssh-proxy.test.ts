@@ -1,7 +1,7 @@
 import mockArgv from 'mock-argv';
-import { CliDriver } from '../../cli-driver';
-import { cleanConsoleLog, unitTestMockSetup } from '../../utils/unit-test-utils';
-import { Logger } from '../../services/logger/logger.service';
+import { CliDriver } from '../../../cli-driver';
+import { cleanConsoleLog, unitTestMockSetup } from '../../../utils/unit-test-utils';
+import { Logger } from '../../../services/logger/logger.service';
 import * as SshProxyMocks from './generate-ssh-proxy.mock';
 
 describe('Generate ssh proxy suite', () => {

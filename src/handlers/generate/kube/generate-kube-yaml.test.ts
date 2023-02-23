@@ -1,10 +1,10 @@
 import fs from 'fs';
 import path from 'path';
 import mockArgv from 'mock-argv';
-import { CliDriver } from '../../cli-driver';
-import { cleanConsoleLog, createTempDirectory, deleteDirectory, mockEnv, unitTestMockSetup } from '../../utils/unit-test-utils';
-import { KubeHttpService } from '../../http-services/targets/kube/kube.http-services';
-import * as CleanExitHandler from '../clean-exit.handler';
+import { CliDriver } from '../../../cli-driver';
+import { cleanConsoleLog, createTempDirectory, deleteDirectory, mockEnv, unitTestMockSetup } from '../../../utils/unit-test-utils';
+import { KubeHttpService } from '../../../http-services/targets/kube/kube.http-services';
+import * as CleanExitHandler from '../../clean-exit.handler';
 import * as KubeYamlMocks from './generate-kube-yaml.mock';
 
 describe('Generate kube yaml suite', () => {

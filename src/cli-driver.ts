@@ -33,11 +33,11 @@ import { connectHandler } from './handlers/connect/connect.handler';
 import { listConnectionsHandler } from './handlers/list-connections/list-connections.handler';
 import { attachHandler } from './handlers/attach/attach.handler';
 import { closeConnectionHandler } from './handlers/close-connection/close-connection.handler';
-import { generateKubeYamlHandler } from './handlers/generate/generate-kube-yaml.handler';
+import { generateKubeYamlHandler } from './handlers/generate/kube/generate-kube-yaml.handler';
 import { disconnectHandler } from './handlers/disconnect/disconnect.handler';
 import { listDaemonsHandler } from './handlers/list-daemons/list-daemons.handler';
 import { bctlHandler } from './handlers/bctl.handler';
-import { generateBashHandler } from './handlers/generate/generate-bash.handler';
+import { generateBashHandler } from './handlers/generate/bash/generate-bash.handler';
 import { quickstartHandler } from './handlers/quickstart/quickstart-handler';
 import { describeClusterPolicyHandler } from './handlers/policy/policy-describe-cluster/describe-cluster-policy.handler';
 import { quickstartCmdBuilder } from './handlers/quickstart/quickstart.command-builder';
@@ -59,10 +59,11 @@ import { listTargetGroupsHandler } from './handlers/policy/policy-targetgroup/li
 import { addTargetGroupToPolicyHandler } from './handlers/policy/policy-targetgroup/add-targetgroup-policy.handler';
 import { deleteTargetGroupFromPolicyHandler } from './handlers/policy/policy-targetgroup/delete-targetgroup-policy.handler';
 import { listPoliciesHandler } from './handlers/policy/policy-list/list-policies.handler';
-import { generateKubeConfigHandler } from './handlers/generate/generate-kube-config.handler';
-import { generateSshConfigHandler } from './handlers/generate/generate-ssh-config.handler';
-import { sshProxyConfigHandler } from './handlers/generate/generate-ssh-proxy.handler';
+import { generateKubeConfigHandler } from './handlers/generate/kube/generate-kube-config.handler';
+import { generateSshConfigHandler } from './handlers/generate/ssh/generate-ssh-config.handler';
+import { sshProxyConfigHandler } from './handlers/generate/ssh/generate-ssh-proxy.handler';
 import { targetRestartHandler } from './handlers/target/target-restart.handler';
+import { certificateHandler } from './handlers/generate/certificate/generate-certificate.handler';
 import { sendLogsHandler } from './handlers/send-logs/send-logs.handler';
 import { createServiceAccountCmdBuilder } from './handlers/service-account/create-service-account.command-builder';
 
@@ -94,10 +95,11 @@ import { listTargetGroupsCmdBuilder } from './handlers/policy/policy-targetgroup
 import { addTargetGroupToPolicyCmdBuilder } from './handlers/policy/policy-targetgroup/add-targetgroup-policy.command-builder';
 import { deleteTargetGroupFromPolicyCmdBuilder } from './handlers/policy/policy-targetgroup/delete-targetgroup-policy.command-builder';
 import { sshProxyCmdBuilder } from './handlers/ssh-proxy/ssh-proxy.command-builder';
-import { generateKubeConfigCmdBuilder, generateKubeYamlCmdBuilder } from './handlers/generate/generate-kube.command-builder';
-import { generateBashCmdBuilder } from './handlers/generate/generate-bash.command-builder';
+import { generateKubeConfigCmdBuilder, generateKubeYamlCmdBuilder } from './handlers/generate/kube/generate-kube.command-builder';
+import { generateBashCmdBuilder } from './handlers/generate/bash/generate-bash.command-builder';
+import { generateCertificateCommandBuilder } from './handlers/generate/certificate/generate-certificate.command-builder';
 import { defaultTargetGroupCmdBuilder } from './handlers/default-target-group/default-target-group.command-builder';
-import { generateSshConfigCmdBuilder } from './handlers/generate/generate-ssh-config.command-builder';
+import { generateSshConfigCmdBuilder } from './handlers/generate/ssh/generate-ssh-config.command-builder';
 import { createApiKeyCmdBuilder } from './handlers/api-key/create-api-key.command-builder';
 import { createApiKeyHandler } from './handlers/api-key/create-api-key.handler';
 import { listDaemonsCmdBuilder } from './handlers/list-daemons/list-daemons.command-builder';
@@ -124,6 +126,12 @@ import { serviceAccountSetRoleCmdHandler } from './handlers/service-account/set-
 import { configureServiceAccountCmdBuilder } from './handlers/service-account/configure-service-account.command-builder';
 import { registerCmdBuilder } from './handlers/register/register.command-builder';
 import { registerHandler } from './handlers/register/register.handler';
+import { createAuthorizedGithubActionCmdBuilder } from './handlers/authorized-github-action/create-authorized-github-action.command-builder';
+import { createAuthorizedGithubActionHandler } from './handlers/authorized-github-action/create-authorized-github-action.handler';
+import { listAuthorizedGithubActionsHandler } from './handlers/authorized-github-action/list-authorized-github-action.handler';
+import { listAuthorizedGithubActionsCmdBuilder } from './handlers/authorized-github-action/list-authorized-github-actions.command-builder';
+import { deleteAuthorizedGithubActionCmdBuilder } from './handlers/authorized-github-action/delete-authorized-github-action.command-builder';
+import { deleteAuthorizedGithubActionHandler } from './handlers/authorized-github-action/delete-authorized-github-action.handler';
 
 export type EnvMap = Readonly<{
     configName: string;
@@ -174,6 +182,7 @@ export class CliDriver
         'api-key',
         'target',
         'service-account',
+        'authorized-action',
     ]);
 
     private oauthCommands: Set<string> = new Set([
@@ -194,6 +203,7 @@ export class CliDriver
         'target',
         'send-logs',
         'service-account',
+        'authorized-action'
     ]);
 
     private GACommands: Set<string> = new Set([
@@ -212,12 +222,14 @@ export class CliDriver
         'policy',
         'target',
         'service-account',
+        'authorized-action',
     ]);
 
     private adminOnlyCommands: Set<string> = new Set([
         'policy',
         'api-key',
         'service-account',
+        'authorized-action',
     ]);
 
     // available options for TargetType autogenerated from enum
@@ -350,6 +362,45 @@ export class CliDriver
                 }
             )
             .command(
+                ['authorized-action'],
+                'List, create, and remove authorized Github Actions (Admin Only)',
+                (yargs) => {
+                    return yargs
+                        .command(
+                            'create <githubActionId>',
+                            'Authorize a new Github Action',
+                            (yargs) => {
+                                return createAuthorizedGithubActionCmdBuilder(yargs);
+                            },
+                            async (argv) => {
+                                await createAuthorizedGithubActionHandler(this.configService, this.logger, argv);
+                            }
+                        )
+                        .command(
+                            'list',
+                            'List all authorized Github Actions in the organization',
+                            (yargs) => {
+                                return listAuthorizedGithubActionsCmdBuilder(yargs);
+                            },
+                            async (argv) => {
+                                await listAuthorizedGithubActionsHandler(argv, this.configService, this.logger);
+                            }
+                        )
+                        .command(
+                            'delete <githubActionId>',
+                            'Delete an authorized Github Action',
+                            (yargs) => {
+                                return deleteAuthorizedGithubActionCmdBuilder(yargs);
+                            },
+                            async (argv) => {
+                                await deleteAuthorizedGithubActionHandler(this.configService, this.logger, argv);
+                            }
+                        )
+                        .demandCommand(1, '')
+                        .strict();
+                },
+            )
+            .command(
                 'close [connectionId]',
                 'Close an open connection',
                 (yargs) => {
@@ -452,6 +503,13 @@ export class CliDriver
                             'Generate a yaml file for Kubernetes.',
                             (yargs) => generateKubeYamlCmdBuilder(yargs),
                             async (argv) => await generateKubeYamlHandler(argv, this.configService, this.logger)
+                        )
+                        .command(
+                            'certificate',
+                            // TODO: CWC-2320: unhide this
+                            false, //'Generate a root certificate and configure targets for SplitCert access',
+                            (yargs) => generateCertificateCommandBuilder(yargs),
+                            async (argv) => await certificateHandler(argv, this.configService, this.logger)
                         )
                         .demandCommand(1, '')
                         .strict();

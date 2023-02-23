@@ -1,4 +1,4 @@
-import { ConfigService } from '../../services/config/config.service';
+import { ConfigService } from '../../../services/config/config.service';
 
 export function sshProxyMockSetup(): void {
     // Mock Config methods used in building ssh config file

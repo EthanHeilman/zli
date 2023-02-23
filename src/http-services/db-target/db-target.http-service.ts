@@ -1,3 +1,5 @@
+import { URLSearchParams } from 'url';
+
 import { ConfigService } from '../../services/config/config.service';
 import { HttpService } from '../../services/http/http.service';
 import { Logger } from '../../services/logger/logger.service';
@@ -23,6 +25,20 @@ export class DbTargetHttpService extends HttpService
 
     public GetDbTarget(targetId: string): Promise<DbTargetSummary> {
         return this.Get(targetId);
+    }
+
+    public GetDbTargets(targetNames: string[], targetIds: string[], envName: string, envId: string): Promise<DbTargetSummary[]> {
+        const queryParams = new URLSearchParams({});
+        targetNames.forEach(t => queryParams.append('targetNames', t));
+        targetIds.forEach(t => queryParams.append('targetIds', t));
+
+        if (envId) {
+            queryParams.append('envId', envId);
+        } else if (envName) {
+            queryParams.append('envName', envName);
+        }
+
+        return this.Get('', queryParams);
     }
 
     public DeleteDbTarget(targetId: string): Promise<void> {

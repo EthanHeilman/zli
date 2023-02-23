@@ -11,12 +11,14 @@ export async function listTargetUsersHandler(configService: ConfigService, logge
     const policyHttpService = new PolicyHttpService(configService, logger);
     const kubePolicies = await policyHttpService.ListKubernetesPolicies();
     const targetPolicies = await policyHttpService.ListTargetConnectPolicies();
+    const proxyPolicies = await policyHttpService.ListProxyPolicies();
 
     // Loop till we find the one we are looking for
     const kubePolicy = kubePolicies.find(p => p.name == policyName);
     const targetPolicy = targetPolicies.find(p => p.name == policyName);
+    const proxyPolicy = proxyPolicies.find(p => p.name == policyName);
 
-    if (!kubePolicy && !targetPolicy) {
+    if (!kubePolicy && !targetPolicy && !proxyPolicy) {
         // Log an error
         logger.error(`Unable to find policy with name: ${policyName}`);
         await cleanExit(1, logger);
@@ -29,6 +31,10 @@ export async function listTargetUsersHandler(configService: ConfigService, logge
         );
     } else if (targetPolicy) {
         targetPolicy.targetUsers.forEach(
+            u => targetUsers.push(u.userName)
+        );
+    } else if (proxyPolicy) {
+        proxyPolicy.targetUsers.forEach(
             u => targetUsers.push(u.userName)
         );
     }

@@ -14,12 +14,16 @@ export const proxyPolicySuite = () => {
         let envHttpService: EnvironmentHttpService;
         let proxyPolicy: ProxyPolicySummary;
         let expectedPolicySummary: ProxyPolicySummary;
+        let proxyPolicyTargetUsers: ProxyPolicySummary;
+        let expectedPolicyTargetUsersSummary: ProxyPolicySummary;
 
         beforeAll(() => {
             policyService = new PolicyHttpService(configService, logger);
             envHttpService = new EnvironmentHttpService(configService, logger);
 
             const originalPolicyName = systemTestPolicyTemplate.replace('$POLICY_TYPE', 'proxy');
+            const proxyPolicyTargetUsersName = systemTestPolicyTemplate.replace('$POLICY_TYPE', 'proxy-target-users');
+
             const currentSubject: Subject = {
                 id: configService.me().id,
                 type: configService.me().type
@@ -41,12 +45,33 @@ export const proxyPolicySuite = () => {
                 description: restApiPolicyDescriptionTemplate.replace('$POLICY_TYPE', 'proxy'),
                 timeExpires: null
             };
+
+            expectedPolicyTargetUsersSummary = {
+                id: expect.any(String),
+                type: PolicyType.Proxy,
+                groups: [],
+                name: proxyPolicyTargetUsersName,
+                subjects: [
+                    currentSubject
+                ],
+                environments: [
+                    {
+                        id: systemTestEnvId
+                    }
+                ],
+                targets: [],
+                description: restApiPolicyDescriptionTemplate.replace('$POLICY_TYPE', 'proxy'),
+                timeExpires: null,
+                targetUsers: [{ userName: 'testuser1' }, { userName: 'testuser2' }]
+            };
         });
 
         afterAll(async () => {
-            if (proxyPolicy) {
-                await policyService.DeleteProxyPolicy(proxyPolicy.id);
-            }
+            [proxyPolicy, proxyPolicyTargetUsers].forEach(async (policy) => {
+                if (policy) {
+                    await policyService.DeleteProxyPolicy(policy.id);
+                }
+            });
         }, 15 * 1000);
 
         test('2276: Create and get proxy policy', async () => {
@@ -67,6 +92,27 @@ export const proxyPolicySuite = () => {
 
             // verify the policy that is retrieved from the back end matches the requested policy
             expect(proxyPolicy).toMatchObject(expectedPolicySummary);
+        }, 15 * 1000);
+
+        test('742489: Create and get proxy policy with target users', async () => {
+            // Need to get environment name for the zli call
+            const environment = await envHttpService.GetEnvironment(systemTestEnvId);
+            const zliArgs = [
+                'policy', 'create-proxy',
+                '-n', expectedPolicyTargetUsersSummary.name,
+                '-a', configService.me().email,
+                '-e', environment.name,
+                '-d', expectedPolicyTargetUsersSummary.description,
+                '--targetUsers', 'testuser1', 'testuser2',
+            ];
+            await callZli(zliArgs);
+
+            const allPolicies = await policyService.ListProxyPolicies();
+            proxyPolicyTargetUsers = allPolicies.find(p => p.name === expectedPolicyTargetUsersSummary.name);
+            expectedPolicyTargetUsersSummary.id = proxyPolicyTargetUsers.id;
+
+            // verify the policy that is retrieved from the back end matches the requested policy
+            expect(proxyPolicyTargetUsers).toMatchObject(expectedPolicyTargetUsersSummary);
         }, 15 * 1000);
 
         test('2277: Edit proxy policy', async () => {

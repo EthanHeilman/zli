@@ -9,11 +9,14 @@ import { DbTargetHttpService } from '../../http-services/db-target/db-target.htt
 import { CreateUniversalConnectionResponse } from '../../../webshell-common-ts/http/v2/connection/responses/create-universal-connection.response';
 import { DbConfig } from '../../services/config/config.service.types';
 import { newDbDaemonManagementService } from '../../services/daemon-management/daemon-management.service';
+import { ProcessManagerService } from '../../services/process-manager/process-manager.service';
 
 
 export async function dbConnectHandler(
     argv: yargs.Arguments<connectArgs>,
+    isPasswordless: boolean,
     targetId: string,
+    targetUser: string,
     createUniversalConnectionResponse: CreateUniversalConnectionResponse,
     configService: ConfigService,
     logger: Logger,
@@ -44,8 +47,12 @@ export async function dbConnectHandler(
         'REMOTE_HOST': dbTarget.remoteHost,
         'PLUGIN': 'db'
     };
+    const actionEnv = {
+        'DB_ACTION': isPasswordless ? 'pwdb' : 'dial',
+        'TARGET_USER': targetUser
+    };
 
-    const runtimeConfig = { ...baseEnv, ...pluginEnv };
+    const runtimeConfig = { ...baseEnv, ...pluginEnv, ...actionEnv };
 
     let cwd = process.cwd();
 
@@ -74,11 +81,18 @@ export async function dbConnectHandler(
                 localPort: localPort,
                 localPid: daemonProcess.pid
             };
-            const dbDaemonManagementService = newDbDaemonManagementService(configService);
-            dbDaemonManagementService.addDaemon(createUniversalConnectionResponse.connectionId, dbConfig);
 
             // Wait for daemon HTTP server to be bound and running
-            await handleServerStart(loggerConfigService.daemonLogPath(), dbConfig.localPort, dbConfig.localHost);
+            try {
+                await handleServerStart(loggerConfigService.daemonLogPath(), dbConfig.localPort, dbConfig.localHost);
+            } catch (error) {
+                const processManager = new ProcessManagerService();
+                await processManager.tryKillProcess(daemonProcess.pid);
+                throw error;
+            }
+
+            const dbDaemonManagementService = newDbDaemonManagementService(configService);
+            dbDaemonManagementService.addDaemon(createUniversalConnectionResponse.connectionId, dbConfig);
 
             logger.info(`Started db daemon at ${localHost}:${localPort} for ${dbTarget.name}`);
 
