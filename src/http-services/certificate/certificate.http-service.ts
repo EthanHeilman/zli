@@ -6,7 +6,7 @@ import { Logger } from '../../services/logger/logger.service';
 
 export class CertificateHttpService extends HttpService {
     constructor(configService: ConfigService, logger: Logger) {
-        super(configService, 'certificate', logger);
+        super(configService, 'api/v2/certificate', logger);
     }
 
     public GenerateCertificate(req: GenerateCertificateRequest): Promise<GenerateCertificateResponse> {

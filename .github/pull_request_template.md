@@ -34,3 +34,10 @@ Does this PR have any security impact?
 - [ ] No
 
 If yes, please explain:
+
+Does this PR add a new/modifies the name/arguments of a `zli` command?
+
+- [ ] Yes
+- [ ] No
+
+If yes, please provide the docs/zli-reference-manual branch reflecting the changes:
