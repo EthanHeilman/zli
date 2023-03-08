@@ -272,12 +272,17 @@ export async function copyExecutableToLocalDir(logger: Logger, configPath: strin
 
     let daemonExecPath = undefined;
     let finalDaemonPath = undefined;
-    if (process.platform === 'linux' || process.platform === 'darwin') {
+    if (process.platform === 'win32') {
+        daemonExecPath = path.join(prefix, DAEMON_PATH);
+
+        finalDaemonPath = path.join(configFileDir, 'daemon.exe');
+    } 
+    else if (process.platform === 'linux' || process.platform === 'darwin') {
         daemonExecPath = path.join(prefix, DAEMON_PATH);
 
         finalDaemonPath = path.join(configFileDir, 'daemon');
     } else {
-        logger.error(`Unsupported operating system: ${process.platform}`);
+        logger.error(`Unsupported operating system: |${process.platform}|`);
         await cleanExit(1, logger);
     }
 
