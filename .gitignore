@@ -358,3 +358,7 @@ coverage-system-tests/
 
 # Ignore service accounts credentials
 bzero-credentials.json
+
+# Ignore any golang work files
+*.work
+*.work.sum
