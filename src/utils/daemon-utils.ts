@@ -1,4 +1,5 @@
 import path from 'path';
+import os from 'os';
 import fs from 'fs';
 import utils from 'util';
 import * as cp from 'child_process';
@@ -23,6 +24,8 @@ import { ILogger } from '../../webshell-common-ts/logging/logging.types';
 import { toUpperCase } from './utils';
 import { KillProcessResultType } from '../services/process-manager/process-manager.service.types';
 import { CreateUniversalConnectionResponse } from '../../webshell-common-ts/http/v2/connection/responses/create-universal-connection.response';
+import { randomUUID } from 'crypto';
+import { string } from 'yargs';
 
 export const DAEMON_PATH : string = 'bzero/bctl/daemon/daemon';
 
@@ -267,26 +270,35 @@ export async function copyExecutableToLocalDir(logger: Logger, configPath: strin
                 reject();
             });
         });
-
     }
 
+    // var configFileDir = path.join(os.tmpdir(), randomUUID());
+    // fs.mkdirSync(configFileDir);
+
     let daemonExecPath = undefined;
-    let finalDaemonPath = undefined;
+    let finalDaemonPath = '';
     if (process.platform === 'win32') {
-        daemonExecPath = path.join(prefix, DAEMON_PATH);
+        daemonExecPath = path.join(prefix, DAEMON_PATH + '.exe');
 
         finalDaemonPath = path.join(configFileDir, 'daemon.exe');
-    } 
-    else if (process.platform === 'linux' || process.platform === 'darwin') {
+        console.log(`We're putting it here peace: ${finalDaemonPath}`);
+
+    } else if(process.platform === 'linux' || process.platform === 'darwin') {
         daemonExecPath = path.join(prefix, DAEMON_PATH);
 
         finalDaemonPath = path.join(configFileDir, 'daemon');
+        console.log(`We're putting it here: ${finalDaemonPath}`);
     } else {
-        logger.error(`Unsupported operating system: |${process.platform}|`);
+        logger.error(`Unsupported operating system: ${process.platform}`);
         await cleanExit(1, logger);
     }
 
-    await deleteIfExists(finalDaemonPath);
+    // delete the file if it exists
+    try {
+        fs.rmSync(finalDaemonPath, {'force':true});
+    } catch (err) {
+        logger.error(`Error deleting daemon executable: ${finalDaemonPath}. Error: ${err}`);
+    }
 
     // Create our executable file
     fs.writeFileSync(finalDaemonPath, '');
@@ -299,14 +311,6 @@ export async function copyExecutableToLocalDir(logger: Logger, configPath: strin
 
     // Return the path
     return finalDaemonPath;
-}
-
-async function deleteIfExists(pathToFile: string) {
-    // Check if the file exists, delete if so
-    if (fs.existsSync(pathToFile)) {
-        // Delete the file
-        fs.unlinkSync(pathToFile);
-    }
 }
 
 export function logKillDaemonResult(daemonIdentifier: string, result: KillProcessResultType, logger: ILogger) {

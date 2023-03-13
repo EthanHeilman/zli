@@ -49,7 +49,7 @@ export default class CustomReporter implements Pick<Reporter, 'onTestCaseResult'
         // Always delete the daemon log file after each test if it exists
         if(daemonFileExists) {
             try {
-                fs.unlinkSync(daemonLogPath);
+                fs.rmSync(daemonLogPath, {force:true});
             } catch(err) {
                 logger.error(`Error deleting daemon log file: ${daemonLogPath}. Error: ${err}`);
             }

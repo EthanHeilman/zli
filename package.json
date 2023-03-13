@@ -15,9 +15,9 @@
   },
   "scripts": {
     "start": "ts-node src/index.ts",
-    "build-binaries-macos": "tsc && rm -rf dist/webshell-common-ts && mv dist/zli/* dist/ && cd bzero/bctl/daemon && GOOS=darwin GOARCH=amd64 go build -o daemon",
+    "build-binaries-macos": "tsc && cd bzero/bctl/daemon && GOOS=darwin GOARCH=amd64 go build -o daemon",
     "build-binaries-linux": "tsc && cd bzero/bctl/daemon && GOOS=linux GOARCH=amd64 go build -buildvcs=false -o daemon",
-    "build-binaries-windows": "tsc && rm -rf dist/webshell-common-ts && mv dist/zli/* dist/ && cd bzero/bctl/daemon && GOOS=windows GOARCH=amd64 go build -o daemon",
+    "build-binaries-windows": "tsc && cd bzero/bctl/daemon && go build",
     "update-daemon-version": "replace '\\$DAEMON_VERSION' \"$(cat bzero/VERSION)\" bzero/bctl/daemon/daemon.go",
     "release-dev": "tsc && npm run package",
     "release": "run-script-os",

@@ -1133,11 +1133,9 @@ export function getZliRunCommand(): string {
 
 export function removeIfExists(file: string): void {
     try {
-        fs.unlinkSync(file);
+        fs.rmSync(file, {force:true});
     } catch (err) {
-        if (err.code !== 'ENOENT') {
-            throw err;
-        }
+        throw (`Error deleting file: ${file}. Error: ${err}`)
     }
 }
 

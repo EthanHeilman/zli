@@ -270,7 +270,7 @@ function deleteBzConfigContents(userConfigFile: string, bzConfigFile: string, lo
 
     // delete the bz config file if it exists
     try {
-        fs.unlinkSync(bzConfigFile);
+        fs.rmSync(bzConfigFile, {force:true});
     } catch(err) {
         if(err.code !== 'ENOENT') {
             console.error(err);
