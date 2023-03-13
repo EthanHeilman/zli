@@ -1,8 +1,8 @@
 import path from 'path';
-import os from 'os';
 import fs from 'fs';
 import utils from 'util';
 import * as cp from 'child_process';
+import forge from 'node-forge';
 
 import { execSync, spawn, ExecSyncOptions } from 'child_process';
 const pids = require('port-pid');
@@ -24,8 +24,6 @@ import { ILogger } from '../../webshell-common-ts/logging/logging.types';
 import { toUpperCase } from './utils';
 import { KillProcessResultType } from '../services/process-manager/process-manager.service.types';
 import { CreateUniversalConnectionResponse } from '../../webshell-common-ts/http/v2/connection/responses/create-universal-connection.response';
-import { randomUUID } from 'crypto';
-import { string } from 'yargs';
 
 export const DAEMON_PATH : string = 'bzero/bctl/daemon/daemon';
 
@@ -158,7 +156,7 @@ export interface DaemonTLSCert {
  * @returns Path to the key, path to the cert, path to the certificate signing request.
  */
 export async function generateNewCert(pathToConfig: string, name: string, configName: string): Promise<DaemonTLSCert> {
-    const options: ExecSyncOptions = { stdio: 'ignore' };
+    // const options: ExecSyncOptions = { stdio: 'ignore' };
 
     // Create and save key/cert
     const createCertPromise = new Promise<DaemonTLSCert>(async (resolve, reject) => {
@@ -172,29 +170,91 @@ export async function generateNewCert(pathToConfig: string, name: string, config
         const pathToCsr = path.join(pathToConfig, `${name}Csr${prefix}.pem`);
         const pathToCert = path.join(pathToConfig, `${name}Cert${prefix}.pem`);
 
-        // Generate a new key
+        const subject = [{
+            type: 'commonName',
+            shortName: 'CN',
+            value: 'bastionzero.com'
+        }, {
+            type: 'countryName',
+            shortName: 'C',
+            value: 'US'
+        }, {
+            type: 'stateOrProvinceName',
+            shortName: 'ST',
+            value: 'Massachusetts'
+        }, {
+            type: 'localityName',
+            shortName: 'L',
+            value: 'Boston'
+        }, {
+            type: 'organizationName',
+            name: 'O',
+            value: 'BastionZero Inc.'
+        }];
+
         try {
-            execSync(`openssl genrsa -out ${pathToKey}`, options);
+            // generate a keypair and create an X.509v3 certificate
+            var keys = forge.pki.rsa.generateKeyPair(2048);
+
+            // write keys to file
+            var pkPem = forge.pki.privateKeyToPem(keys.privateKey);
+            fs.writeFileSync(pathToKey, pkPem);
+
+            // create certificate request
+            var csr = forge.pki.createCertificationRequest();
+            csr.publicKey = keys.publicKey;
+            csr.setSubject(subject as forge.pki.CertificateField[]);   
+            
+            // sign certification request
+            csr.sign(keys.privateKey);
+
+            // write certificate request to file
+            var csrPem = forge.pki.certificationRequestToPem(csr);
+            fs.writeFileSync(pathToCsr, csrPem);
+
+            var cert = forge.pki.createCertificate();
+            cert.publicKey = csr.publicKey;
+            cert.subject = csr.subject;
+            cert.serialNumber = '01';
+            cert.setIssuer(subject);
+
+            // add validity duration
+            cert.validity.notBefore = new Date();
+            cert.validity.notAfter = new Date();
+            cert.validity.notAfter.setFullYear(cert.validity.notBefore.getFullYear() + 5); 
+
+            // sign certificate
+            cert.sign(keys.privateKey);
+
+            var certPem = forge.pki.certificateToPem(cert);
+            fs.writeFileSync(pathToCert, certPem);
         } catch (e: any) {
             reject(e);
         }
 
-        // Generate a new csr
-        // Ref: https://www.openssl.org/docs/man1.0.2/man1/openssl-req.html
-        try {
-            const pass = randtoken.generate(128);
-            execSync(`openssl req -sha256 -passin pass:${pass} -new -key ${pathToKey} -subj "/C=US/ST=Bastionzero/L=Boston/O=Dis/CN=bastionzero.com" -out ${pathToCsr}`, options);
-        } catch (e: any) {
-            reject(e);
-        }
+        // // Generate a new key
+        // try {
+        //     execSync(`openssl genrsa -out ${pathToKey}`, options);
+        // } catch (e: any) {
+        //     reject(e);
+        // }
 
-        // Now generate the certificate
-        // https://www.openssl.org/docs/man1.1.1/man1/x509.html
-        try {
-            execSync(`openssl x509 -req -days 999 -in ${pathToCsr} -signkey ${pathToKey} -out ${pathToCert}`, options);
-        } catch (e: any) {
-            reject(e);
-        }
+        // // Generate a new csr
+        // // Ref: https://www.openssl.org/docs/man1.0.2/man1/openssl-req.html
+        // try {
+        //     const pass = randtoken.generate(128);
+        //     execSync(`openssl req -sha256 -passin pass:${pass} -new -key ${pathToKey} -subj "/C=US/ST=Bastionzero/L=Boston/O=Dis/CN=bastionzero.com" -out ${pathToCsr}`, options);
+        // } catch (e: any) {
+        //     reject(e);
+        // }
+
+        // // Now generate the certificate
+        // // https://www.openssl.org/docs/man1.1.1/man1/x509.html
+        // try {
+        //     execSync(`openssl x509 -req -days 999 -in ${pathToCsr} -signkey ${pathToKey} -out ${pathToCert}`, options);
+        // } catch (e: any) {
+        //     reject(e);
+        // }
 
         resolve({
             pathToKey: pathToKey,
@@ -281,7 +341,7 @@ export async function copyExecutableToLocalDir(logger: Logger, configPath: strin
         daemonExecPath = path.join(prefix, DAEMON_PATH + '.exe');
 
         finalDaemonPath = path.join(configFileDir, 'daemon.exe');
-        console.log(`We're putting it here peace: ${finalDaemonPath}`);
+        // console.log(`We're putting it here peace: ${finalDaemonPath}`);
 
     } else if(process.platform === 'linux' || process.platform === 'darwin') {
         daemonExecPath = path.join(prefix, DAEMON_PATH);
