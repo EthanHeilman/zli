@@ -332,22 +332,14 @@ export async function copyExecutableToLocalDir(logger: Logger, configPath: strin
         });
     }
 
-    // var configFileDir = path.join(os.tmpdir(), randomUUID());
-    // fs.mkdirSync(configFileDir);
-
     let daemonExecPath = undefined;
     let finalDaemonPath = '';
     if (process.platform === 'win32') {
         daemonExecPath = path.join(prefix, DAEMON_PATH + '.exe');
-
         finalDaemonPath = path.join(configFileDir, 'daemon.exe');
-        // console.log(`We're putting it here peace: ${finalDaemonPath}`);
-
     } else if(process.platform === 'linux' || process.platform === 'darwin') {
         daemonExecPath = path.join(prefix, DAEMON_PATH);
-
         finalDaemonPath = path.join(configFileDir, 'daemon');
-        console.log(`We're putting it here: ${finalDaemonPath}`);
     } else {
         logger.error(`Unsupported operating system: ${process.platform}`);
         await cleanExit(1, logger);
@@ -357,7 +349,7 @@ export async function copyExecutableToLocalDir(logger: Logger, configPath: strin
     try {
         fs.rmSync(finalDaemonPath, {'force':true});
     } catch (err) {
-        logger.error(`Error deleting daemon executable: ${finalDaemonPath}. Error: ${err}`);
+        logger.error(`Error deleting existing daemon executable: ${finalDaemonPath}. Error: ${err}`);
     }
 
     // Create our executable file
