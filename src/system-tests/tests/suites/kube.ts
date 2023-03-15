@@ -1,7 +1,7 @@
 import * as k8s from '@kubernetes/client-node';
 import { callZli } from '../utils/zli-utils';
 import { HttpError, V1Pod } from '@kubernetes/client-node';
-import { systemTestPolicyTemplate, systemTestUniqueId, testCluster } from '../system-test';
+import { systemTestEnvName, systemTestPolicyTemplate, systemTestUniqueId, testCluster } from '../system-test';
 import { configService, logger } from '../system-test';
 import { TestUtils } from '../utils/test-utils';
 import { ConnectionEventType } from '../../../../webshell-common-ts/http/v2/event/types/connection-event.types';
@@ -128,12 +128,7 @@ export const kubeSuite = () => {
                     targetUser: daemon.kubeDaemonDetails.targetUser,
                     targetType: 'CLUSTER',
                     environmentId: testCluster.bzeroClusterTargetSummary.environmentId,
-                    // TODO fix this after helm v2 is released to prod The old
-                    // helm chart does not allow specifying an environment to
-                    // put the cluster target in and always creates a new
-                    // environment with name {clusterName}-env
-                    environmentName: `${testCluster.bzeroClusterTargetSummary.name}-env`,
-                    // environmentName: systemTestEnvName
+                    environmentName: systemTestEnvName,
                     connectionEventType: eventType,
                     connectionId: daemon.connectionId
                 }, testStartTime);
