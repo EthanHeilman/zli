@@ -9,6 +9,7 @@ const pids = require('port-pid');
 const readLastLines = require('read-last-lines');
 const randtoken = require('rand-token');
 const findPort = require('find-open-port');
+const lockfile = require('proper-lockfile');
 
 import { cleanExit } from '../handlers/clean-exit.handler';
 import { Logger } from '../services/logger/logger.service';
@@ -315,9 +316,7 @@ export async function copyExecutableToLocalDir(logger: Logger, configPath: strin
     }
 
     // First get the parent dir of the config path
-    const configFileDir = path.dirname(configPath);
-
-    const chmod = utils.promisify(fs.chmod);
+    const configDir = path.dirname(configPath);
 
     // Our copy function as we cannot use fs.copyFileSync
     async function copy(source: string, target: string) {
@@ -332,37 +331,77 @@ export async function copyExecutableToLocalDir(logger: Logger, configPath: strin
         });
     }
 
-    let daemonExecPath = undefined;
-    let finalDaemonPath = '';
+    let daemonExecPath: string;
+    let finalDaemonPath: string;
+
     if (process.platform === 'win32') {
         daemonExecPath = path.join(prefix, DAEMON_PATH + '.exe');
-        finalDaemonPath = path.join(configFileDir, 'daemon.exe');
+        finalDaemonPath = path.join(configDir, 'daemon.exe');
     } else if(process.platform === 'linux' || process.platform === 'darwin') {
         daemonExecPath = path.join(prefix, DAEMON_PATH);
-        finalDaemonPath = path.join(configFileDir, 'daemon');
+        finalDaemonPath = path.join(configDir, 'daemon');
     } else {
         logger.error(`Unsupported operating system: ${process.platform}`);
         await cleanExit(1, logger);
     }
 
-    // delete the file if it exists
-    try {
-        fs.rmSync(finalDaemonPath, {'force':true});
-    } catch (err) {
-        logger.error(`Error deleting existing daemon executable: ${finalDaemonPath}. Error: ${err}`);
+    if (fs.existsSync(finalDaemonPath)) {
+        return finalDaemonPath;
     }
 
-    // Create our executable file
-    fs.writeFileSync(finalDaemonPath, '');
+    await lockfile.lock('copyExecutableToLocalDir', {
+        realpath: false,
+        stale: 5000, // 5 seconds
+        retries: 5
+    })
+    .then(async () => {
+        // If, by the time we get our lock, the file exists because a different process
+        // created it
+        if (fs.existsSync(finalDaemonPath)) {
+            return;
+        }
 
-    // Copy the file to the computers file system
-    await copy(daemonExecPath, finalDaemonPath);
+        // Our copy function as we cannot use fs.copyFileSync
+        async function copy(source: string, target: string) {
+            return new Promise<void>(async function (resolve, reject) {
+                const ret = await fs.createReadStream(source).pipe(fs.createWriteStream(target), { end: true });
+                ret.on('close', () => {
+                    resolve();
+                });
+                ret.on('error', () => {
+                    reject();
+                });
+            });
+        }
 
-    // Grant execute permission
-    await chmod(finalDaemonPath, 0o755);
+        // Best effort removal of any old daemon executables
+        const files = fs.readdirSync(configDir);
+        files.forEach(file => {
+            if (file.includes('daemon')){
+                try {
+                    fs.rmSync(path.join(configDir, file));
+                } catch (e) {
+                    logger.warn(`failed to delete previous daemon executable ${file}: ${e}`);
+                }
+            }
+        });
 
-    // Return the path
-    return finalDaemonPath;
+        // Copy the file to the computers file system
+        await copy(daemonExecPath, finalDaemonPath);
+
+        // Grant execute permission
+        const chmod = utils.promisify(fs.chmod);
+        await chmod(finalDaemonPath, 0o755);
+
+        return lockfile.unlockSync('copyExecutableToLocalDir', {
+            realpath: false,
+            stale: 5000
+        })
+    })
+    .catch((e: Error) => {
+        // either lock could not be acquired or releasing it failed
+        console.error(e)
+    });
 }
 
 export function logKillDaemonResult(daemonIdentifier: string, result: KillProcessResultType, logger: ILogger) {
