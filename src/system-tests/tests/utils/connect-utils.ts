@@ -140,7 +140,12 @@ export class ConnectTestUtils {
             const gotShellAuthDetails = await getMockResultValue(getShellAuthDetailsSpy.mock.results[0]);
             expect(gotShellAuthDetails.region).toBe<string>(connectTarget.awsRegion);
         } else {
-            expect(gotUniversalConnectionResponse.connectionAuthDetails.region).toBe<string>(connectTarget.awsRegion);
+            // Disable region check because even though the target is in a
+            // specific digital ocean region the aws latency record may still
+            // return a different region than we expect due to networking
+            // between DO and aws.
+
+            // expect(gotUniversalConnectionResponse.connectionAuthDetails.region).toBe<string>(connectTarget.awsRegion);
         }
 
 
