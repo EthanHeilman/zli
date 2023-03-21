@@ -852,11 +852,13 @@ export const dbSuite = () => {
         });
 
         describe('happy path: passwordless (SplitCert) access', () => {
+            const homedir = (process.platform === 'win32') ? process.env.HOMEPATH : process.env.HOME;
+
             const userSshConfigFile = path.join(
-                process.env.HOME, '.ssh', 'test-config-user'
+                homedir, '.ssh', 'test-config-user'
             );
             const bzSshConfigFile = path.join(
-                process.env.HOME, '.ssh', 'test-config'
+                homedir, '.ssh', 'test-config'
             );
             const pwdbConfigDir = path.join(
                 'src', 'system-tests', 'tests', 'utils', 'pwdb'

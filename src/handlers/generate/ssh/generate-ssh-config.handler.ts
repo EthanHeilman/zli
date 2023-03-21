@@ -38,7 +38,7 @@ export async function generateSshConfigHandler(argv: yargs.Arguments<generateSsh
         const { proxyCommand: proxyWithoutPrefix } = await buildSshConfigStrings(configService, processName, logger, false);
         const bzConfigContentsFormatted = formatBzConfigContents(configService, sshTargets, identityFile, knownHostsFile, proxyCommand, proxyWithoutPrefix, prefix);
         // Determine the user's ssh and bzero-ssh config path
-        const { userConfigPath, bzConfigPath } = getFilePaths(argv.mySshPath, argv.bzSshPath, prefix);
+        const { userConfigPath, bzConfigPath } = getSshConfigPaths(argv.mySshPath, argv.bzSshPath, prefix);
 
         // write to the user's ssh and bzero-ssh config path
         fs.writeFileSync(bzConfigPath, bzConfigContentsFormatted);
@@ -51,7 +51,7 @@ export async function generateSshConfigHandler(argv: yargs.Arguments<generateSsh
         // Build our ssh config file -- note that by using this function with 'true' we are chosing to add the prefix before our hostname token in the proxycommand
         const { prefix } = await buildSshConfigStrings(configService, processName, logger, true);
         // Determine the user's ssh and bzero-ssh config path
-        const { userConfigPath, bzConfigPath } = getFilePaths(argv.mySshPath, argv.bzSshPath, prefix);
+        const { userConfigPath, bzConfigPath } = getSshConfigPaths(argv.mySshPath, argv.bzSshPath, prefix);
 
         deleteBzConfigContents(userConfigPath, bzConfigPath, logger);
         logger.info('You do not have tunnel or file transfer access to any targets. BZ SSH configuration file not generated.');
@@ -65,9 +65,11 @@ export async function generateSshConfigHandler(argv: yargs.Arguments<generateSsh
  * @param configPrefix {string} assigns a prefix to the bz config filename based on runtime environment (e.g. dev, stage)
  * @returns {{userConfigPath: string, bzConfigPath: string}}
  */
-function getFilePaths(userSshPath: string, bzSshPath: string, configPrefix: string) {
-    const userConfigPath = userSshPath ? userSshPath : path.join(process.env.HOME, '.ssh', 'config');
-    const bzConfigPath = bzSshPath ? bzSshPath : path.join(process.env.HOME, '.ssh', `${configPrefix}bz-config`);
+export function getSshConfigPaths(userSshPath: string, bzSshPath: string, configPrefix: string) {
+    const homedir = (process.platform === 'win32') ? process.env.HOMEPATH : process.env.HOME;
+
+    const userConfigPath = userSshPath ? userSshPath : path.join(homedir, '.ssh', 'config');
+    const bzConfigPath = bzSshPath ? bzSshPath : path.join(homedir, '.ssh', `${configPrefix}bz-config`);
 
     return { userConfigPath, bzConfigPath };
 }
