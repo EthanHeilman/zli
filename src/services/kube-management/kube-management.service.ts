@@ -117,10 +117,10 @@ export function generateKubeConfig(
 }
 
 export interface IKubeDaemonSecurityConfigService {
+    getConfigPath(): string;
+    getConfigName(): string;
     getGlobalKubeConfig(): GlobalKubeConfig;
     setGlobalKubeConfig(config: GlobalKubeConfig): void;
-    configPath(): string;
-    getConfigName(): string;
 }
 
 /**
@@ -142,7 +142,7 @@ export async function getKubeDaemonSecuritySettings(
     const kubeGlobalConfig = configService.getGlobalKubeConfig();
 
     const generateKubeDaemonTLSCert = async (): Promise<DaemonTLSCert> => {
-        const pathToConfig = path.dirname(configService.configPath());
+        const pathToConfig = path.dirname(configService.getConfigPath());
         const configName = configService.getConfigName();
 
         return generateNewCert(pathToConfig, 'kube', configName);

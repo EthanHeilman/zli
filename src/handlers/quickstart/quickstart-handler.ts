@@ -187,7 +187,7 @@ export async function quickstartHandler(
             }
         }, logger, consoleWithTranscript);
 
-        consoleWithTranscript.log(`Check out ${configService.getBastionUrl()} to see your environments, policies, and detailed logs.`);
+        consoleWithTranscript.log(`Check out ${configService.getServiceUrl()} to see your environments, policies, and detailed logs.`);
         consoleWithTranscript.log('Press any key to continue...');
         await waitForKeypress();
     } catch (err) {
@@ -221,7 +221,7 @@ export async function quickstartHandler(
     clearScreen();
 
     // We cannot create the GAService until the user has logged in
-    if (!configService.GAToken()) {
+    if (!configService.getGaToken()) {
         // Fetch the GA token in case it is not set (first time user)
         await configService.fetchGAToken();
     }
@@ -229,7 +229,7 @@ export async function quickstartHandler(
     await gaService.TrackCliCommand();
 
     // We cannot create the MixpanelService until the user has logged in
-    if (!configService.mixpanelToken()) {
+    if (!configService.getMixpanelToken()) {
         // Fetch the mixpanel token in case it is not set (first time user)
         await configService.fetchMixpanelToken();
     }
@@ -361,7 +361,7 @@ export async function quickstartHandler(
 
     const sshHostsSuccessfullyAddedPretty = targetsSuccessfullyAdded.map(target => target.sshHost.name).join(', ');
     const successMessage = `Congratulations! You've secured access to your SSH host(s): ${sshHostsSuccessfullyAddedPretty} with MrTAP using BastionZero.\n
-Log into ${configService.getBastionUrl()} to see your environments, policies, and detailed logs.`;
+Log into ${configService.getServiceUrl()} to see your environments, policies, and detailed logs.`;
     consoleWithTranscript.log(successMessage);
 
     consoleWithTranscript.log('Use `zli connect` to connect to your newly registered targets.');

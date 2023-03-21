@@ -111,7 +111,7 @@ const SERVICE_ACCOUNT_ENABLED =  process.env.SERVICE_ACCOUNT_ENABLED ? (process.
 export const IN_PIPELINE = process.env.IN_PIPELINE ? process.env.IN_PIPELINE === 'true' : false;;
 
 export const IN_CI = process.env.BZERO_IN_CI ? (process.env.BZERO_IN_CI === '1') : false;
-export const SERVICE_URL = configService.serviceUrl();
+export const SERVICE_URL = configService.getServiceUrl();
 
 // Make sure we have defined our groupId if we are configured against cloud-dev or cloud-staging
 export let GROUP_ID: string = undefined;

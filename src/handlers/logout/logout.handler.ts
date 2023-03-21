@@ -31,9 +31,9 @@ export async function logoutHandler(
 
 export interface ILogoutConfigService {
     logout(): void;
-    deleteSessionId(): void;
-    sshKeyPath(): string;
-    sshKnownHostsPath(): string;
+    clearSessionId(): void;
+    getSshKeyPath(): string;
+    getSshKnownHostsPath(): string;
 
     // TODO: CWC-2030 These functions can be removed from the interface once web
     //migrates to the DaemonManagementService to handle disconnects
@@ -55,11 +55,11 @@ export async function handleLogout(
     // Deletes the auth tokens from the config which will force the
     // user to login again before running another command
     configService.logout();
-    configService.deleteSessionId();
+    configService.clearSessionId();
     logger.info('Closing any existing SSH Tunnel Connections');
     logger.info('Clearing temporary SSH files');
-    fileRemover.removeFileIfExists(configService.sshKeyPath());
-    fileRemover.removeFileIfExists(configService.sshKnownHostsPath());
+    fileRemover.removeFileIfExists(configService.getSshKeyPath());
+    fileRemover.removeFileIfExists(configService.getSshKnownHostsPath());
 
     // Close any daemon connections, start with kube
     logger.info('Closing any existing Kube Connections');
