@@ -8,8 +8,6 @@ export type generateSshConfigArgs = { mySshPath: string } &
 export function generateSshConfigCmdBuilder(yargs: yargs.Argv<{}>) : yargs.Argv<generateSshConfigArgs> {
     const { userConfigPath, bzConfigPath } = getSshConfigPaths('', '', '');
 
-
-
     return yargs
         .option('mySshPath', {
             type: 'string',
