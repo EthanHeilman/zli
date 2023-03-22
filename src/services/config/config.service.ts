@@ -1,17 +1,16 @@
 import { TokenSet, TokenSetParameters } from 'openid-client';
 import path from 'path';
 import { Observable, Subject } from 'rxjs';
-import { ILogoutConfigService } from '../../handlers/logout/logout.handler';
 import { IdentityProvider } from '../../../webshell-common-ts/auth-service/auth.types';
 import { SubjectSummary } from '../../../webshell-common-ts/http/v2/subject/types/subject-summary.types';
 import { MrtapConfigInterface, MrtapConfigSchema } from '../../../webshell-common-ts/mrtap.service/mrtap.service.types';
+import { ILogoutConfigService } from '../../handlers/logout/logout.handler';
 import { TokenHttpService } from '../../http-services/token/token.http-services';
 import { DbDaemonStore, KubeDaemonStore } from '../daemon-management/daemon-management.service';
 import { IKubeConfigService, IKubeDaemonSecurityConfigService } from '../kube-management/kube-management.service';
 import { Logger } from '../logger/logger.service';
 import { ConnectConfig, DaemonConfigs, DbConfig, GlobalKubeConfig, KubeConfig, WebConfig } from './config.service.types';
 import { UnixConfig } from './unix-config.service';
-import { app } from 'dots-wrapper/dist/modules';
 
 // refL: https://github.com/sindresorhus/conf/blob/master/test/index.test-d.ts#L5-L14
 export type BastionZeroConfigSchema = {
@@ -106,7 +105,7 @@ export class ConfigService implements IKubeDaemonSecurityConfigService, IKubeCon
 
     public logoutDetected: Observable<boolean> = this.logoutDetectedSubject.asObservable();
 
-    constructor(configName: string, private logger: Logger, configDir?: string, isSystemTest?: boolean) {
+    constructor(configName: string, logger: Logger, configDir?: string, isSystemTest?: boolean) {
         const projectName = 'bastionzero-zli';
 
         // If a custom configDir append the projectName to the path to keep
@@ -116,14 +115,9 @@ export class ConfigService implements IKubeDaemonSecurityConfigService, IKubeCon
             configDir = path.join(configDir, projectName);
         }
 
-        try {
-            const serviceUrl = this.buildServiceUrl(configName);
-            this.config = new UnixConfig(projectName, configName, configDir, isSystemTest, serviceUrl);
-        } catch (e: any) {
-            logger.error(e);
-            process.exit(1);
-        }
+        const serviceUrl = this.buildServiceUrl(configName);
 
+        this.config = new UnixConfig(projectName, configName, configDir, isSystemTest, serviceUrl);
         this.configPath = this.config.path;
         this.configName = configName;
 
@@ -209,7 +203,7 @@ export class ConfigService implements IKubeDaemonSecurityConfigService, IKubeCon
             break;
         default:
             // fail silently because we assign weird values during system tests
-            return appName;
+            return undefined;
         }
 
         return `https://${appName}.bastionzero.com/`;
