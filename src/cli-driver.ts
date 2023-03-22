@@ -277,7 +277,7 @@ export class CliDriver
 
                 // Attempt to re-get the token if we dont have it
                 if(! this.configService.getGaToken()) {
-                    await this.configService.fetchGAToken();
+                    await this.configService.fetchGaToken();
                 }
 
                 let argvPassed: any = [];

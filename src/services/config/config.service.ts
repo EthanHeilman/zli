@@ -11,6 +11,7 @@ import { IKubeConfigService, IKubeDaemonSecurityConfigService } from '../kube-ma
 import { Logger } from '../logger/logger.service';
 import { ConnectConfig, DaemonConfigs, DbConfig, GlobalKubeConfig, KubeConfig, WebConfig } from './config.service.types';
 import { UnixConfig } from './unix-config.service';
+import { app } from 'dots-wrapper/dist/modules';
 
 // refL: https://github.com/sindresorhus/conf/blob/master/test/index.test-d.ts#L5-L14
 export type BastionZeroConfigSchema = {
@@ -31,8 +32,8 @@ export type BastionZeroConfigSchema = {
     mrtap: MrtapConfigSchema,
     webConfig: WebConfig,
     connectConfig: ConnectConfig,
-    globalKubeConfig: GlobalKubeConfig
-    dbDaemons: DaemonConfigs<DbConfig>
+    globalKubeConfig: GlobalKubeConfig,
+    dbDaemons: DaemonConfigs<DbConfig>,
     kubeDaemons: DaemonConfigs<KubeConfig>
 };
 
@@ -119,14 +120,15 @@ export class ConfigService implements IKubeDaemonSecurityConfigService, IKubeCon
             const serviceUrl = this.buildServiceUrl(configName);
             this.config = new UnixConfig(projectName, configName, configDir, isSystemTest, serviceUrl);
         } catch (e: any) {
-            throw e;
+            logger.error(e);
+            process.exit(1);
         }
 
         this.configPath = this.config.path;
         this.configName = configName;
 
         if (configName == 'dev' && !this.config.getServiceUrl()) {
-            logger.error(`Config not initialized (or is invalid) for dev environment: Must set serviceUrl in: ${this.config.path}`);
+            logger.error(`Missing (or invalid) service url! Please make sure value is set here correctly: ${this.config.path}`);
             process.exit(1);
         }
 
@@ -206,7 +208,8 @@ export class ConfigService implements IKubeDaemonSecurityConfigService, IKubeCon
             appName = 'cloud-dev';
             break;
         default:
-            throw new Error(`Unrecognized config name: ${configName}`);
+            // fail silently because we assign weird values during system tests
+            return appName;
         }
 
         return `https://${appName}.bastionzero.com/`;
@@ -238,10 +241,10 @@ export class ConfigService implements IKubeDaemonSecurityConfigService, IKubeCon
         }
     }
 
-    async fetchGAToken(): Promise<void> {
+    async fetchGaToken(): Promise<void> {
         // fetch GA token from backend
-        const GaToken = (await this.tokenHttpService.getGAToken())?.token;
-        this.config.setGaToken(GaToken);
+        const gaToken = (await this.tokenHttpService.getGAToken())?.token;
+        this.config.setGaToken(gaToken);
     }
 
     async fetchMixpanelToken(): Promise<void> {

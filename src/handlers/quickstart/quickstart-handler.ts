@@ -223,7 +223,7 @@ export async function quickstartHandler(
     // We cannot create the GAService until the user has logged in
     if (!configService.getGaToken()) {
         // Fetch the GA token in case it is not set (first time user)
-        await configService.fetchGAToken();
+        await configService.fetchGaToken();
     }
     const gaService = new GAService(configService, logger, 'quickstart', [], version);
     await gaService.TrackCliCommand();
