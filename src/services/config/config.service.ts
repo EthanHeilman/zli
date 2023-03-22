@@ -84,7 +84,7 @@ export interface ConfigInterface {
     setDbDaemons(dbDaemons: DaemonConfigs<DbConfig>): void;
     setKubeDaemons(kubeDaemons: DaemonConfigs<KubeConfig>): void;
     setMrtap(data: MrtapConfigSchema): void;
-    
+
     // "Clear" functions, for clearing values in the config
     clearSshConfigPaths(): void;
     clearSessionId(): void;
@@ -119,11 +119,11 @@ export class ConfigService implements IKubeDaemonSecurityConfigService, IKubeCon
 
         try {
             const serviceUrl = this.buildServiceUrl(configName);
-            this.config = new UnixConfig(projectName, configName, configDir, isSystemTest, serviceUrl)
+            this.config = new UnixConfig(projectName, configName, configDir, isSystemTest, serviceUrl);
         } catch (e: any) {
             throw e;
         }
-        
+
         if (configName == 'dev' && !this.config.getServiceUrl()) {
             logger.error(`Config not initialized (or is invalid) for dev environment: Must set serviceUrl in: ${this.config.path}`);
             process.exit(1);
@@ -260,18 +260,20 @@ export class ConfigService implements IKubeDaemonSecurityConfigService, IKubeCon
 
     getSshKeyPath(): string {
         let keyPath = this.config.getSshKeyPath();
-        if (!keyPath)
+        if (!keyPath) {
             keyPath = path.join(path.dirname(this.config.path), 'bzero-temp-key');
             this.config.setSshKeyPath(keyPath);
+        }
 
         return keyPath;
     }
 
     getSshKnownHostsPath(): string {
         let knownHostsPath = this.config.getSshKnownHostsPath();
-        if (!knownHostsPath)
-            knownHostsPath = path.join(path.dirname(this.config.path), 'bastionzero-known_hosts')
+        if (!knownHostsPath) {
+            knownHostsPath = path.join(path.dirname(this.config.path), 'bastionzero-known_hosts');
             this.config.setSshKnownHostsPath(knownHostsPath);
+        }
 
         return knownHostsPath;
     }
@@ -339,7 +341,7 @@ export class ConfigService implements IKubeDaemonSecurityConfigService, IKubeCon
     getSessionToken(): string {
         return this.config.getSessionToken();
     }
-    
+
     getGlobalKubeConfig(): GlobalKubeConfig {
         return this.config.getGlobalKubeConfig();
     }
@@ -399,7 +401,7 @@ export class ConfigService implements IKubeDaemonSecurityConfigService, IKubeCon
     setMrtap(data: MrtapConfigSchema): void {
         this.config.setMrtap(data);
     }
-    
+
     setTokenSet(tokenSet: TokenSet): void {
         // TokenSet implements TokenSetParameters, makes saving it like
         // this safe to do.

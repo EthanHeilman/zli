@@ -1,14 +1,13 @@
-import { ConfigInterface, BastionZeroConfigSchema } from './config.service';
 import Conf from 'conf/dist/source';
 import { TokenSet, TokenSetParameters } from 'openid-client';
-import { customJsonParser, removeIfExists } from '../../../src/utils/utils';
-import { DaemonConfigs, DbConfig, getDefaultWebConfig, getDefaultConnectConfig, KubeConfig, WebConfig, ConnectConfig, GlobalKubeConfig, getDefaultGlobalKubeConfig } from './config.service.types';
-import { MrtapConfigSchema, MrtapConfigInterface, getDefaultMrtapConfig } from '../../../webshell-common-ts/mrtap.service/mrtap.service.types';
-import { LEGACY_KEY_STRING } from '../../services/daemon-management/daemon-management.service';
-import { SubjectSummary } from '../../../webshell-common-ts/http/v2/subject/types/subject-summary.types';
-import { SubjectType } from '../../../webshell-common-ts/http/v2/common.types/subject.types';
+import { customJsonParser } from '../../../src/utils/utils';
 import { IdentityProvider } from '../../../webshell-common-ts/auth-service/auth.types';
-import { Unsubscribe } from 'conf/dist/source/types';
+import { SubjectType } from '../../../webshell-common-ts/http/v2/common.types/subject.types';
+import { SubjectSummary } from '../../../webshell-common-ts/http/v2/subject/types/subject-summary.types';
+import { getDefaultMrtapConfig, MrtapConfigSchema } from '../../../webshell-common-ts/mrtap.service/mrtap.service.types';
+import { LEGACY_KEY_STRING } from '../../services/daemon-management/daemon-management.service';
+import { BastionZeroConfigSchema, ConfigInterface } from './config.service';
+import { ConnectConfig, DaemonConfigs, DbConfig, getDefaultConnectConfig, getDefaultGlobalKubeConfig, getDefaultWebConfig, GlobalKubeConfig, KubeConfig, WebConfig } from './config.service.types';
 
 export class UnixConfig implements ConfigInterface {
     public readonly path: string;
@@ -250,13 +249,13 @@ export class UnixConfig implements ConfigInterface {
     }
 
     getSshKeyPath(): string {
-        return this.config.get('sshKeyPath')
+        return this.config.get('sshKeyPath');
     }
 
     getSshKnownHostsPath(): string {
         return this.config.get('sshKnownHostsPath');
     }
-    
+
     getGlobalKubeConfig(): GlobalKubeConfig {
         return this.config.get('globalKubeConfig');
     }
