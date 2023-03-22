@@ -5,13 +5,13 @@ import * as CleanExitHandler from '../../../handlers/clean-exit.handler';
 import * as DaemonUtils from '../../../utils/daemon-utils';
 
 import { sleepTimeout, TestUtils } from './test-utils';
-import { bzeroTargetCustomUser } from '../system-test-setup';
+import { bzeroTargetCustomUser, idpUsernameTargetCustomSA, idpUsernameTargetCustomUser } from '../system-test-setup';
 import { DigitalOceanBZeroTarget } from '../../digital-ocean/digital-ocean-target.service.types';
 import { callZli } from './zli-utils';
 import { ConnectionHttpService } from '../../../http-services/connection/connection.http-services';
 import { ConnectionEventType } from '../../../../webshell-common-ts/http/v2/event/types/connection-event.types';
 import { getMockResultValue } from './jest-utils';
-import { configService, testTargets } from '../system-test';
+import { configService, RUN_AS_SERVICE_ACCOUNT, testTargets } from '../system-test';
 import { TestTarget } from '../system-test.types';
 import { TargetUser } from '../../../../webshell-common-ts/http/v2/policy/types/target-user.types';
 import { DynamicAccessConnectionUtils } from '../../../handlers/connect/dynamic-access-connect-utils';
@@ -69,9 +69,15 @@ export class ConnectTestUtils {
      * re-attaching can happen whereas bzero targets will close the connection.
      * @returns The ID of the shell connection created
      */
-    public async runShellConnectTest(testTarget: TestTarget, stringToEcho: string, exit: boolean, appName: string = null): Promise<ConnectTestResult> {
+    public async runShellConnectTest(testTarget: TestTarget, stringToEcho: string, exit: boolean, idpUserName: boolean, appName: string = null): Promise<ConnectTestResult> {
         const doTarget = testTargets.get(testTarget);
         const connectTarget = this.getConnectTarget(doTarget, testTarget.awsRegion);
+        if(RUN_AS_SERVICE_ACCOUNT && idpUserName) {
+            connectTarget.targetUser = idpUsernameTargetCustomSA;
+        } else if(idpUserName){
+            connectTarget.targetUser = idpUsernameTargetCustomUser;
+        }
+
         return await this.runShellConnectTestHelper(connectTarget, stringToEcho, exit, appName);
     }
 
@@ -133,6 +139,9 @@ export class ConnectTestUtils {
 
         expect(createUniversalConnectionSpy).toHaveBeenCalledOnce();
         const gotUniversalConnectionResponse = await getMockResultValue(createUniversalConnectionSpy.mock.results[0]);
+        // Assert that the universal controller was called and the response contains
+        // the idp username as target user which means it passed policy check
+        expect(gotUniversalConnectionResponse.targetUser).toBe<string>(connectTarget.targetUser);
 
         // Assert connection auth details returns expected aws region
         if(connectTarget.type === 'dat-bzero') {
@@ -329,6 +338,7 @@ export class ConnectTestUtils {
     static getPolicyTargetUsers() : TargetUser[] {
         return [
             {userName: bzeroTargetCustomUser }, // bzero targets
+            {userName: '{username}' }, // allow idp username
             {userName: 'root'} // dat targets
         ];
     }

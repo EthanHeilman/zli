@@ -72,19 +72,21 @@ The `zli` uses git submodules, thus you will need to clone these as well
 git submodule update --init --recursive
 ```
 
-Finally, you will need to install the required packages
+The `zli` uses *Node.js* and *Go*. So before proceeding, make sure you have *Node.js* version `v14.18.11` and *Go* version `go1.20.2`
+
+Finally, you will need to install the required *Node.js* packages
 ```
 npm install
 ```
 
 ### Build and Run
 
-Now that everything is ready you can execute any `zli` command you wish by building and running at the same time
+You can now **build** and **run** the `zli` using the following command syntax
 ```
 npm run start -- <cmd> [args] --flag flagArg
 ```
 
-We would suggest
+Some examples are:
 ```
 npm run start -- help
 ```

@@ -79,7 +79,11 @@ export const connectSuite = () => {
 
         allTargets.forEach(async (testTarget: TestTarget) => {
             it(`${testTarget.connectCaseId}: zli connect - ${testTarget.awsRegion} - ${testTarget.installType} - ${getDOImageName(testTarget.dropletImage)}`, async () => {
-                await connectTestUtils.runShellConnectTest(testTarget, `connect test - ${systemTestUniqueId}`, true);
+                await connectTestUtils.runShellConnectTest(testTarget, `connect test - ${systemTestUniqueId}`, true, false);
+            }, 2 * 60 * 1000);
+
+            it(`${testTarget.connectWithIdpUsernameCaseId}: zli connect idp username - ${testTarget.awsRegion} - ${testTarget.installType} - ${getDOImageName(testTarget.dropletImage)}`, async () => {
+                await connectTestUtils.runShellConnectTest(testTarget, `connect test idp username - ${systemTestUniqueId}`, true, true);
             }, 2 * 60 * 1000);
 
             // TODO: Disable attach tests for bzero targets until attach
@@ -90,7 +94,7 @@ export const connectSuite = () => {
 
                 // Run normal connect test first
                 const beforeAttachEchoString = `before attach - ${systemTestUniqueId}`;
-                const connectionTestResult = await connectTestUtils.runShellConnectTest(testTarget, beforeAttachEchoString, false);
+                const connectionTestResult = await connectTestUtils.runShellConnectTest(testTarget, beforeAttachEchoString, false, false);
 
                 // Get a new instance of the ConnectTarget which has a separate
                 // mockstdin/mock pty and captured output buffer
@@ -138,7 +142,7 @@ export const connectSuite = () => {
 
                 // Run normal connect test first but do not exit so the terminal and zli connect command remain running
                 const shouldExit = false;
-                const connectionTestResult = await connectTestUtils.runShellConnectTest(testTarget, `connect test - ${systemTestUniqueId}`, shouldExit);
+                const connectionTestResult = await connectTestUtils.runShellConnectTest(testTarget, `connect test - ${systemTestUniqueId}`, shouldExit, false);
 
                 // Call zli close which should cause the zli connect command to also exit
                 const cleanExitSpy = jest.spyOn(CleanExitHandler, 'cleanExit').mockImplementation(() => Promise.resolve());
