@@ -8,7 +8,9 @@ const pids = require('port-pid');
 const readLastLines = require('read-last-lines');
 const randtoken = require('rand-token');
 const findPort = require('find-open-port');
+const lockfile = require('proper-lockfile');
 
+import { version } from '../../package.json';
 import { cleanExit } from '../handlers/clean-exit.handler';
 import { Logger } from '../services/logger/logger.service';
 import { waitUntilUsedOnHost } from 'tcp-port-used';
@@ -225,7 +227,7 @@ export async function startDaemonInDebugMode(finalDaemonPath: string, cwd: strin
         const processManager = new ProcessManagerService();
 
         process.on('SIGINT', () => {
-            // CNT+C Sent from the user, kill the daemon process, which will trigger an exit
+            // CTL+C sent from the user, kill the daemon process, which will trigger an exit
             processManager.killProcess(daemonProcess.pid);
         });
 
@@ -238,12 +240,11 @@ export async function startDaemonInDebugMode(finalDaemonPath: string, cwd: strin
     await startDaemonPromise;
 }
 
+// Helper function to copy the Daemon executable to a local dir on the file system
+// Ref: https://github.com/vercel/pkg/issues/342
 export async function copyExecutableToLocalDir(logger: Logger, configPath: string): Promise<string> {
-    // Helper function to copy the Daemon executable to a local dir on the file system
-    // Ref: https://github.com/vercel/pkg/issues/342
-
     let prefix = '';
-    if(isPkgProcess()) {
+    if (isPkgProcess()) {
         // /snapshot/zli/dist/src/handlers/tunnel
         prefix = path.join(__dirname, '../../../');
     } else {
@@ -251,57 +252,78 @@ export async function copyExecutableToLocalDir(logger: Logger, configPath: strin
         prefix = path.join(__dirname, '../../');
     }
 
-    // First get the parent dir of the config path
-    const configFileDir = path.dirname(configPath);
+    const daemonName = 'daemon-' + version;
+    const configDir = path.dirname(configPath);
 
-    const chmod = utils.promisify(fs.chmod);
-
-    // Our copy function as we cannot use fs.copyFileSync
-    async function copy(source: string, target: string) {
-        return new Promise<void>(async function (resolve, reject) {
-            const ret = await fs.createReadStream(source).pipe(fs.createWriteStream(target), { end: true });
-            ret.on('close', () => {
-                resolve();
-            });
-            ret.on('error', () => {
-                reject();
-            });
-        });
-
-    }
-
-    let daemonExecPath = undefined;
-    let finalDaemonPath = undefined;
+    let daemonExecPath: string;
+    let finalDaemonPath: string;
     if (process.platform === 'linux' || process.platform === 'darwin') {
         daemonExecPath = path.join(prefix, DAEMON_PATH);
-
-        finalDaemonPath = path.join(configFileDir, 'daemon');
+        finalDaemonPath = path.join(configDir, daemonName);
     } else {
         logger.error(`Unsupported operating system: ${process.platform}`);
         await cleanExit(1, logger);
     }
 
-    await deleteIfExists(finalDaemonPath);
-
-    // Create our executable file
-    fs.writeFileSync(finalDaemonPath, '');
-
-    // Copy the file to the computers file system
-    await copy(daemonExecPath, finalDaemonPath);
-
-    // Grant execute permission
-    await chmod(finalDaemonPath, 0o755);
-
-    // Return the path
-    return finalDaemonPath;
-}
-
-async function deleteIfExists(pathToFile: string) {
-    // Check if the file exists, delete if so
-    if (fs.existsSync(pathToFile)) {
-        // Delete the file
-        fs.unlinkSync(pathToFile);
+    if (fs.existsSync(finalDaemonPath)) {
+        return finalDaemonPath;
     }
+
+    await lockfile.lock('copyExecutableToLocalDir', {
+        realpath: false,
+        stale: 5000, // 5 seconds
+        retries: 5
+    })
+        .then(async () => {
+            // If, by the time we get our lock, the file exists because a different process
+            // created it
+            if (fs.existsSync(finalDaemonPath)) {
+                return;
+            }
+
+            // Our copy function as we cannot use fs.copyFileSync
+            async function copy(source: string, target: string) {
+                return new Promise<void>(async function (resolve, reject) {
+                    const ret = await fs.createReadStream(source).pipe(fs.createWriteStream(target), { end: true });
+                    ret.on('close', () => {
+                        resolve();
+                    });
+                    ret.on('error', () => {
+                        reject();
+                    });
+                });
+            }
+
+            // Best effort removal of any old daemon executables
+            const files = fs.readdirSync(configDir);
+            files.forEach(file => {
+                if (file.includes('daemon')){
+                    try {
+                        fs.rmSync(path.join(configDir, file));
+                    } catch (e) {
+                        logger.warn(`failed to delete previous daemon executable ${file}: ${e}`);
+                    }
+                }
+            });
+
+            // Copy the file to the computers file system
+            await copy(daemonExecPath, finalDaemonPath);
+
+            // Grant execute permission
+            const chmod = utils.promisify(fs.chmod);
+            await chmod(finalDaemonPath, 0o755);
+
+            return lockfile.unlockSync('copyExecutableToLocalDir', {
+                realpath: false,
+                stale: 5000
+            });
+        })
+        .catch((e: Error) => {
+            // either lock could not be acquired or releasing it failed
+            console.error(e);
+        });
+
+    return finalDaemonPath;
 }
 
 export function logKillDaemonResult(daemonIdentifier: string, result: KillProcessResultType, logger: ILogger) {
@@ -527,15 +549,17 @@ export function waitForDaemonProcessExit(logger: Logger, loggerConfigService: Lo
                     break;
                 }
                 case DAEMON_EXIT_CODES.DAEMON_PANIC: {
-                    logger.error(`daemon process terminated unexpectedly -- for more details, try running the zli with the --debug flag set`);
+                    logger.error(`Daemon process terminated unexpectedly -- for more details, try running the zli with the --debug flag set`);
                     break;
                 }
+                case DAEMON_EXIT_CODES.FAILED_TO_START_126:
+                case DAEMON_EXIT_CODES.FAILED_TO_START_127:
                 case null: {
-                    logger.error(`daemon process terminated while starting up`);
+                    logger.error(`Failed to establish connection to target, Please try again or contact your administrator`);
                     break;
                 }
                 default: {
-                    logger.error(`daemon process closed with nonzero exit code ${exitCode} -- for more details, see ${loggerConfigService.daemonLogPath()}`);
+                    logger.error(`Daemon process closed with nonzero exit code ${exitCode} -- for more details, see ${loggerConfigService.daemonLogPath()}`);
                     break;
                 }
                 }

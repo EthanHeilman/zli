@@ -16,5 +16,7 @@ export const enum DAEMON_EXIT_CODES {
     PWDB_UNKNOWN_AUTHORITY          = 15,
     SERVER_CERT_EXPIRED             = 16,
     INCORRECT_SERVER_NAME           = 17,
-    BZCERT_ID_TOKEN_ERROR           = 18
+    BZCERT_ID_TOKEN_ERROR           = 18,
+    FAILED_TO_START_126             = 126,
+    FAILED_TO_START_127             = 127
 }
