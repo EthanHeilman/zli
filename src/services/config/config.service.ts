@@ -102,7 +102,6 @@ export class ConfigService implements IKubeDaemonSecurityConfigService, IKubeCon
 
     private configName: string;
     private configPath: string;
-    private serviceUrl: string;
 
     public logoutDetected: Observable<boolean> = this.logoutDetectedSubject.asObservable();
 
@@ -119,8 +118,8 @@ export class ConfigService implements IKubeDaemonSecurityConfigService, IKubeCon
         this.configName = configName;
 
         try {
-            this.serviceUrl = this.buildServiceUrl(configName);
-            this.config = new UnixConfig(projectName, configName, configDir, isSystemTest, this.serviceUrl)
+            const serviceUrl = this.buildServiceUrl(configName);
+            this.config = new UnixConfig(projectName, configName, configDir, isSystemTest, serviceUrl)
         } catch (e: any) {
             throw e;
         }
@@ -286,7 +285,7 @@ export class ConfigService implements IKubeDaemonSecurityConfigService, IKubeCon
     }
 
     getServiceUrl(): string {
-        return this.serviceUrl;
+        return this.config.getServiceUrl();
     }
 
     getIdToken(): string {
