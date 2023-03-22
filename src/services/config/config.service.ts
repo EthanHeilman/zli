@@ -115,14 +115,15 @@ export class ConfigService implements IKubeDaemonSecurityConfigService, IKubeCon
             configDir = path.join(configDir, projectName);
         }
 
-        this.configName = configName;
-
         try {
             const serviceUrl = this.buildServiceUrl(configName);
             this.config = new UnixConfig(projectName, configName, configDir, isSystemTest, serviceUrl);
         } catch (e: any) {
             throw e;
         }
+
+        this.configPath = this.config.path;
+        this.configName = configName;
 
         if (configName == 'dev' && !this.config.getServiceUrl()) {
             logger.error(`Config not initialized (or is invalid) for dev environment: Must set serviceUrl in: ${this.config.path}`);
