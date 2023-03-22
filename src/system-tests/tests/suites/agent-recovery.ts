@@ -162,7 +162,7 @@ export const agentRecoverySuite = (testRunnerKubeConfigFile: string, testRunnerU
                 await waitForBastionOnline();
 
                 // Run normal shell connect test to ensure that new connections can be made after bastion restarted
-                await connectTestUtils.runShellConnectTest(testTarget, `bastion restart test - ${systemTestUniqueId}`, true);
+                await connectTestUtils.runShellConnectTest(testTarget, `bastion restart test - ${systemTestUniqueId}`, true, false);
             },
             5 * 60 * 1000); // 5 min timeout
         });
@@ -192,7 +192,7 @@ export const agentRecoverySuite = (testRunnerKubeConfigFile: string, testRunnerU
                 await sleepTimeout(5 * 1000);
 
                 // Run normal shell connect test to ensure that new connections can be made after connection orchestrator restarted
-                await connectTestUtils.runShellConnectTest(testTarget, `connection orchestrator restart test - ${systemTestUniqueId}`, true);
+                await connectTestUtils.runShellConnectTest(testTarget, `connection orchestrator restart test - ${systemTestUniqueId}`, true, false);
             },
             5 * 60 * 1000); // 5 min timeout
         });
@@ -230,7 +230,7 @@ export const agentRecoverySuite = (testRunnerKubeConfigFile: string, testRunnerU
                 await waitForAgentOnlineEvent(connectTarget.id, restartTime);
 
                 // Run normal shell connect test to ensure that still works after control channel reconnects
-                await connectTestUtils.runShellConnectTest(testTarget, `connection node restart test - ${systemTestUniqueId}`, true);
+                await connectTestUtils.runShellConnectTest(testTarget, `connection node restart test - ${systemTestUniqueId}`, true, false);
             },
             15 * 60 * 1000); // 15 min timeout
         });
@@ -305,7 +305,7 @@ export const agentRecoverySuite = (testRunnerKubeConfigFile: string, testRunnerU
                 await waitForAgentToRestart(targetId, restartTime);
 
                 // check that we can still connect to the agent
-                await connectTestUtils.runShellConnectTest(testTarget, `zli target restart by name test - ${systemTestUniqueId}`, true);
+                await connectTestUtils.runShellConnectTest(testTarget, `zli target restart by name test - ${systemTestUniqueId}`, true, false);
 
                 // finally, check that the restart was reported correctly
                 const eventsService = new EventsHttpService(configService, logger);
@@ -330,7 +330,7 @@ export const agentRecoverySuite = (testRunnerKubeConfigFile: string, testRunnerU
                 await waitForAgentToRestart(targetId, restartTime);
 
                 // check that we can still connect to the agent
-                await connectTestUtils.runShellConnectTest(testTarget, `zli target restart by name.env test - ${systemTestUniqueId}`, true);
+                await connectTestUtils.runShellConnectTest(testTarget, `zli target restart by name.env test - ${systemTestUniqueId}`, true, false);
             }, 5 * 60 * 1000);
         });
 
@@ -347,7 +347,7 @@ export const agentRecoverySuite = (testRunnerKubeConfigFile: string, testRunnerU
                 await waitForAgentToRestart(targetId, restartTime);
 
                 // check that we can still connect to the agent
-                await connectTestUtils.runShellConnectTest(testTarget, `zli target restart by id test - ${systemTestUniqueId}`, true);
+                await connectTestUtils.runShellConnectTest(testTarget, `zli target restart by id test - ${systemTestUniqueId}`, true, false);
             }, 5 * 60 * 1000);
         });
 

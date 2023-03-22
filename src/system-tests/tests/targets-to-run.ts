@@ -20,9 +20,11 @@ export const bzeroTestTargetsToRun: TestTarget[] = [
         iperfDownload: '14972',
         badWebCaseId: '2374',
         connectCaseId: '6529',
+        connectWithIdpUsernameCaseId: '856790',
         closeCaseId: '6565',
         sshCaseId: '46456',
         sshWithEnvCaseId: '209887',
+        sshWithIdpUsernameCaseId: '856796',
         sshByUuidCaseId: '87909',
         sshBadUserCaseId: '46459',
         sshConnectFailsCaseId: '84381',
@@ -65,6 +67,7 @@ export const extraBzeroTestTargetsToRun: TestTarget[] = [
         badWebCaseId: '2373',
         sshCaseId: '46454',
         sshWithEnvCaseId: '209886',
+        sshWithIdpUsernameCaseId: '856797',
         sshByUuidCaseId: '87910',
         sshBadUserCaseId: '46458',
         sshConnectFailsCaseId: '84389',
@@ -73,6 +76,7 @@ export const extraBzeroTestTargetsToRun: TestTarget[] = [
         sshSftpCaseId: '90260',
         sshScpByUuidCaseId: '87911',
         connectCaseId: '6462',
+        connectWithIdpUsernameCaseId: '856791',
         closeCaseId: '6564',
         badConnectCaseId: '6558',
         groupConnectCaseId: '6560',
@@ -91,6 +95,7 @@ export const extraBzeroTestTargetsToRun: TestTarget[] = [
         badWebCaseId: '352548',
         sshCaseId: '352555',
         sshWithEnvCaseId: '352549',
+        sshWithIdpUsernameCaseId: '856798',
         sshByUuidCaseId: '352550',
         sshBadUserCaseId: '352556',
         sshConnectFailsCaseId: '352557',
@@ -99,6 +104,7 @@ export const extraBzeroTestTargetsToRun: TestTarget[] = [
         sshSftpCaseId: '352553',
         sshScpByUuidCaseId: '352554',
         connectCaseId: '352558',
+        connectWithIdpUsernameCaseId: '856792',
         closeCaseId: '352559',
         badConnectCaseId: '352560',
         groupConnectCaseId: '352561',
@@ -117,6 +123,7 @@ export const extraBzeroTestTargetsToRun: TestTarget[] = [
         badWebCaseId: '375561',
         sshCaseId: '375562',
         sshWithEnvCaseId: '375563',
+        sshWithIdpUsernameCaseId: '856799',
         sshByUuidCaseId: '375564',
         sshBadUserCaseId: '375565',
         sshConnectFailsCaseId: '375566',
@@ -125,6 +132,7 @@ export const extraBzeroTestTargetsToRun: TestTarget[] = [
         sshSftpCaseId: '375569',
         sshScpByUuidCaseId: '375570',
         connectCaseId: '375571',
+        connectWithIdpUsernameCaseId: '856793',
         closeCaseId: '375572',
         badConnectCaseId: '375573',
         groupConnectCaseId: '375574',
@@ -154,8 +162,10 @@ export function initRegionalTargetsTestConfig(logger: Logger): TestTarget[] {
     enabledExtraRegions.forEach(awsRegion => {
         // Depending on the awsRegion we have different ssh and connect caseIds
         let adConnectCaseId = null;
+        let adConnectWithIdpUsernameCaseId = null;
         let adBadConnectCaseId = null;
         let pmConnectCaseId = null;
+        let pmConnectWithIdpUsernameCaseId = null;
         let pmBadConnectBaseId = null;
         let adSshCaseId = null;
         let adSshBadUserCaseId = null;
@@ -193,12 +203,16 @@ export function initRegionalTargetsTestConfig(logger: Logger): TestTarget[] {
         let pmSshTunnelFailsCaseId: string;
         let adSshWithEnvCaseId: string;
         let pmSshWithEnvCaseId: string;
+        let adSshWithIdpUsernameCaseId: string;
+        let pmSshWithIdpUsernameCaseId: string;
 
         switch (awsRegion) {
         case 'ap-northeast-1':
             adConnectCaseId = '2176';
+            adConnectWithIdpUsernameCaseId = '856794';
             adBadConnectCaseId = '2367';
             pmConnectCaseId = '2177';
+            pmConnectWithIdpUsernameCaseId = '856795';
             pmBadConnectBaseId = '2368';
 
             pmCloseCasedId = '3658';
@@ -216,6 +230,7 @@ export function initRegionalTargetsTestConfig(logger: Logger): TestTarget[] {
             adSshSftpCaseId = '648527';
             adSshTunnelFailsCaseId = '648530';
             adSshWithEnvCaseId = '648531';
+            adSshWithIdpUsernameCaseId = '856800';
 
             pmSshCaseId = '2179';
             pmSshBadUserCaseId = '2364';
@@ -226,6 +241,7 @@ export function initRegionalTargetsTestConfig(logger: Logger): TestTarget[] {
             pmSshSftpCaseId = '648528';
             pmSshTunnelFailsCaseId = '648529';
             pmSshWithEnvCaseId = '648532';
+            pmSshWithIdpUsernameCaseId = '856801';
 
             adSessionRecordingCaseId = '5003';
             pmSessionRecordingCaseId = '5004';
@@ -257,6 +273,7 @@ export function initRegionalTargetsTestConfig(logger: Logger): TestTarget[] {
                 doRegion: convertAwsRegionToDigitalOceanRegion(awsRegion),
                 awsRegion: awsRegion,
                 connectCaseId: adConnectCaseId,
+                connectWithIdpUsernameCaseId: adConnectWithIdpUsernameCaseId,
                 badConnectCaseId: adBadConnectCaseId,
                 sshCaseId: adSshCaseId,
                 sshBadUserCaseId: adSshBadUserCaseId,
@@ -275,7 +292,8 @@ export function initRegionalTargetsTestConfig(logger: Logger): TestTarget[] {
                 sshScpCaseId: adSshScpCaseId,
                 sshSftpCaseId: adSshSftpCaseId,
                 sshTunnelFailsCaseId: adSshTunnelFailsCaseId,
-                sshWithEnvCaseId: adSshWithEnvCaseId
+                sshWithEnvCaseId: adSshWithEnvCaseId,
+                sshWithIdpUsernameCaseId: adSshWithIdpUsernameCaseId
             },
             {
                 installType: 'pm-bzero',
@@ -283,6 +301,7 @@ export function initRegionalTargetsTestConfig(logger: Logger): TestTarget[] {
                 doRegion: convertAwsRegionToDigitalOceanRegion(awsRegion),
                 awsRegion: awsRegion,
                 connectCaseId: pmConnectCaseId,
+                connectWithIdpUsernameCaseId: pmConnectWithIdpUsernameCaseId,
                 badConnectCaseId: pmBadConnectBaseId,
                 sshCaseId: pmSshCaseId,
                 sshBadUserCaseId: pmSshBadUserCaseId,
@@ -301,7 +320,8 @@ export function initRegionalTargetsTestConfig(logger: Logger): TestTarget[] {
                 sshScpCaseId: pmSshScpCaseId,
                 sshSftpCaseId: pmSshSftpCaseId,
                 sshTunnelFailsCaseId: pmSshTunnelFailsCaseId,
-                sshWithEnvCaseId: pmSshWithEnvCaseId
+                sshWithEnvCaseId: pmSshWithEnvCaseId,
+                sshWithIdpUsernameCaseId: pmSshWithIdpUsernameCaseId
             }
         );
     });

@@ -95,7 +95,7 @@ export const sessionRecordingSuite = () => {
                 // Dont close the connection so we can test deleting session
                 // recordings before connections are closed
                 const exit = false;
-                const connectTestResult = await connectTestUtils.runShellConnectTest(testTarget, sessionRecordingTestMessage, exit);
+                const connectTestResult = await connectTestUtils.runShellConnectTest(testTarget, sessionRecordingTestMessage, exit, false);
                 allTestConnectionResults.push(connectTestResult);
 
                 // Get session recording and verify the echo'd message is in the asciicast data.

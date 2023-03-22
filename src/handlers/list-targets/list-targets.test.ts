@@ -8,8 +8,6 @@ import { BzeroTargetHttpService } from '../../http-services/targets/bzero/bzero.
 import { DbTargetHttpService } from '../../http-services/db-target/db-target.http-service';
 import { WebTargetHttpService } from '../../http-services/web-target/web-target.http-service';
 
-
-
 describe('List Targets suite', () => {
     beforeEach(() => {
         jest.resetModules();

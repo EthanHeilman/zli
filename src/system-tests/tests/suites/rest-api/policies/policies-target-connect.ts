@@ -42,7 +42,10 @@ export const targetConnectPolicySuite = () => {
                 targetUsers: [
                     {
                         userName: 'test-user'
-                    }
+                    },
+                    {
+                        userName: '{username}'
+                    },
                 ],
                 verbs: [
                     {
@@ -68,7 +71,7 @@ export const targetConnectPolicySuite = () => {
                 '-n', expectedPolicySummary.name,
                 '-a', configService.me().email,
                 '-e', environment.name,
-                '--targetUsers', 'test-user',
+                '--targetUsers', 'test-user', '{username}',
                 '-v', 'shell',
                 '-d', expectedPolicySummary.description
             ];

@@ -38,6 +38,7 @@ export type BzeroTestTargetAnsibleAutoDiscovery = BaseTarget & {
 interface BaseTarget {
     sshCaseId?: string // Zli - Ssh - Successful remote command execution
     sshWithEnvCaseId?: string // Zli - Ssh - Successful remote command execution with environment
+    sshWithIdpUsernameCaseId?: string // // Zli - Ssh - Successful remote command execution with idp username
     sshByUuidCaseId?: string // Zli - Ssh - Ssh by id instead of name
     sshBadUserCaseId?: string // Zli - Ssh - Cannot tunnel as invalid user
     sshConnectFailsCaseId?: string // Zli - Ssh - Connect fails with only tunnel policy
@@ -46,6 +47,7 @@ interface BaseTarget {
     sshSftpCaseId?: string // for Ssh SFTP tests
     sshScpByUuidCaseId?: string // Zli - Ssh - Scp with id instead of name
     connectCaseId?: string; // For our connect test suite
+    connectWithIdpUsernameCaseId?: string; // For our idp user name connect test
     closeCaseId?: string; // For our close test suite
     attachCaseId?: string; //  For our attach test suite
     groupConnectCaseId?: string; // For our group based connect

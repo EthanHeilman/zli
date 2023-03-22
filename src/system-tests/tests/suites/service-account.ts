@@ -129,7 +129,7 @@ export const serviceAccountSuite = () => {
                 });
 
                 const testTarget = bzeroTestTargetsToRun[0];
-                await connectTestUtils.runShellConnectTest(testTarget, `configure service account connect test - ${systemTestUniqueId}`, true, appName);
+                await connectTestUtils.runShellConnectTest(testTarget, `configure service account connect test - ${systemTestUniqueId}`, true, false, appName);
             }
         }, 60 * 1000);
     });
