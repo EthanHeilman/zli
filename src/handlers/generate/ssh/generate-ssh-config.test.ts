@@ -11,7 +11,7 @@ import * as shellConnectHandler from '../../connect/shell-connect.handler';
 import * as ShellUtils from '../../../../src/utils/shell-utils';
 
 describe('Generate ssh config suite', () => {
-    const originalPath: string = process.env.HOME;
+    const originalPath: string = (process.platform === 'win32') ? process.env.HOMEPATH : process.env.HOME;
     const tempDir = path.join(__dirname, 'temp-generate-ssh-config-test');
 
     beforeEach(() => {
@@ -23,7 +23,10 @@ describe('Generate ssh config suite', () => {
         SshConfigMocks.sshConfigMockSetup();
 
         // Set HOME dir to point to our temp dir
-        process.env.HOME = path.join(__dirname, 'temp-generate-ssh-config-test');
+        if (process.platform === 'win32')
+            process.env.HOMEPATH = path.join(__dirname, 'temp-generate-ssh-config-test');
+        else
+            process.env.HOME = path.join(__dirname, 'temp-generate-ssh-config-test');
     });
 
     afterEach(async () => {
@@ -37,7 +40,11 @@ describe('Generate ssh config suite', () => {
 
     afterAll( () => {
         // Reset HOME dir and delete temp dir
-        process.env.HOME = originalPath;
+        if (process.platform === 'win32')
+            process.env.HOMEPATH = originalPath;
+        else
+            process.env.HOME = originalPath;
+            
         deleteDirectory(tempDir);
     });
 

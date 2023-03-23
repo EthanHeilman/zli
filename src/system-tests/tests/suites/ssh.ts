@@ -20,25 +20,26 @@ export const sshSuite = () => {
 
         const targetConnectPolicyName = systemTestPolicyTemplate.replace('$POLICY_TYPE', 'ssh-target-connect');
         const badTargetUser = 'bad-user';
+        const homedir = (process.platform === 'win32') ? process.env.HOMEPATH : process.env.HOME;
 
         const userConfigFile = path.join(
-            process.env.HOME, '.ssh', 'test-config-user'
+            homedir, '.ssh', 'test-config-user'
         );
 
         const bzConfigFile = path.join(
-            process.env.HOME, '.ssh', 'test-config'
+            homedir, '.ssh', 'test-config'
         );
 
         const scpUpFile = path.join(
-            process.env.HOME, '.ssh', 'test-scp-up-file'
+            homedir, '.ssh', 'test-scp-up-file'
         );
 
         const scpDownFile = path.join(
-            process.env.HOME, '.ssh', 'test-scp-down-file'
+            homedir, '.ssh', 'test-scp-down-file'
         );
 
         const sftpBatchFile = path.join(
-            process.env.HOME, '.ssh', 'test-scp-batch-file'
+            homedir, '.ssh', 'test-scp-batch-file'
         );
 
         beforeAll(() => {
