@@ -65,7 +65,7 @@ export async function dbConnectHandler(
         finalDaemonPath = 'go';
         args = ['run', 'daemon.go', 'config.go'];
     } else {
-        finalDaemonPath = await copyExecutableToLocalDir(logger, configService.configPath());
+        finalDaemonPath = await copyExecutableToLocalDir(logger, configService.getConfigPath());
     }
 
     try {

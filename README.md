@@ -60,11 +60,42 @@ brew install bastionzero/tap/zli
 
 ## Developer processes
 
-### Build
+### Clone and setup
 
+It goes without saying, but the first step is to clone the repository
+```
+git clone https://github.com/bastionzero/zli.git
+```
+
+The `zli` uses git submodules, thus you will need to clone these as well
+```
+git submodule update --init --recursive
+```
+
+The `zli` uses *Node.js* and *Go*. So before proceeding, make sure you have *Node.js* version `v14.18.11` and *Go* version `go1.20.2`
+
+Finally, you will need to install the required *Node.js* packages
+```
+npm install
+```
+
+### Build and Run
+
+You can now **build** and **run** the `zli` using the following command syntax
 ```
 npm run start -- <cmd> [args] --flag flagArg
 ```
+
+Some examples are:
+```
+npm run start -- help
+```
+Or
+```
+npm run start -- login
+```
+
+To see further building options feel to explore the `package.json` file
 
 ### Testing
 

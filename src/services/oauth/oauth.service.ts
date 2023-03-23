@@ -169,16 +169,16 @@ export class OAuthService implements IDisposable {
 
     private async setupClient(callbackPort? : number): Promise<void>
     {
-        const authority = await Issuer.discover(this.configService.authUrl());
+        const authority = await Issuer.discover(this.configService.getAuthUrl());
 
         const clientMetadata : ClientMetadata = {
-            client_id: this.configService.clientId(),
+            client_id: this.configService.getClientId(),
             response_types: ['code'],
         };
 
         // Client secret is not used for Okta and OneLogin but it is required for Google/Microsoft
         // https://github.com/panva/node-openid-client/blob/main/docs/README.md#client-authentication-methods
-        const clientSecret = this.configService.clientSecret();
+        const clientSecret = this.configService.getClientSecret();
         if(clientSecret) {
             clientMetadata.client_secret = clientSecret;
             clientMetadata.token_endpoint_auth_method =  'client_secret_basic';
@@ -208,7 +208,7 @@ export class OAuthService implements IDisposable {
             throw new Error('Unable to get authUrl with undefined nonce');
         }
 
-        const idp = this.configService.idp();
+        const idp = this.configService.getIdp();
         if(idp === undefined){
             throw new Error('Unable to get authUrl from undefined idp');
         }
@@ -228,11 +228,11 @@ export class OAuthService implements IDisposable {
         }
 
         const authParams: AuthorizationParameters = {
-            client_id: this.configService.clientId(), // This one gets put in the queryParams
+            client_id: this.configService.getClientId(), // This one gets put in the queryParams
             response_type: 'code',
             code_challenge: code_challenge,
             code_challenge_method: 'S256',
-            scope: this.configService.authScopes(),
+            scope: this.configService.getAuthScopes(),
             // required for google refresh token
             prompt: prompt,
             access_type: 'offline',
@@ -249,7 +249,7 @@ export class OAuthService implements IDisposable {
 
     public isAuthenticated(): boolean
     {
-        const tokenSet = this.configService.tokenSet();
+        const tokenSet = this.configService.getTokenSet();
 
         if(tokenSet === undefined)
             return false;
@@ -265,7 +265,7 @@ export class OAuthService implements IDisposable {
     }
 
     public async login(callback: (tokenSet: TokenSet) => void, nonce?: string): Promise<void> {
-        const portToCheck = this.configService.callbackListenerPort();
+        const portToCheck = this.configService.getCallbackListenerPort();
         let portToUse : number = undefined;
         // If no port has been set by user
         if (portToCheck == 0) {
@@ -303,7 +303,7 @@ export class OAuthService implements IDisposable {
         return new Promise<void>(async (resolve, reject) => {
             setTimeout(() => reject('Login timeout reached'), 60 * 1000);
 
-            const openBrowser = async () => await open(`${this.configService.serviceUrl()}authentication/login?zliLogin=true&port=${portToUse}`);
+            const openBrowser = async () => await open(`${this.configService.getServiceUrl()}authentication/login?zliLogin=true&port=${portToUse}`);
 
             this.setupCallbackListener(portToUse, callback, openBrowser, resolve);
         });
@@ -312,7 +312,7 @@ export class OAuthService implements IDisposable {
     public async refresh(): Promise<TokenSet>
     {
         await this.setupClient();
-        const tokenSet = this.configService.tokenSet();
+        const tokenSet = this.configService.getTokenSet();
         const refreshToken = tokenSet.refresh_token;
         const refreshedTokenSet = await this.oidcClient.refresh(tokenSet);
 
@@ -329,7 +329,7 @@ export class OAuthService implements IDisposable {
      * @returns The current user's id_token
      */
     public async getIdToken(): Promise<string> {
-        const tokenSet = this.configService.tokenSet();
+        const tokenSet = this.configService.getTokenSet();
 
         // Refresh if the token exists and has expired
         if (tokenSet) {
@@ -367,7 +367,7 @@ export class OAuthService implements IDisposable {
             throw new UserNotLoggedInError();
         }
 
-        return this.configService.getAuth();
+        return this.configService.getIdToken();
     }
 
     /**

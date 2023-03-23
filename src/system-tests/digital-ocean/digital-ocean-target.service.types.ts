@@ -23,8 +23,8 @@ export const DigitalOceanDistroImage = {
     // up-to-date and to also rotate the aws credential used by the amazon
     // cloudwatch agent on the snapshot to push agent logs to cloudwatch
     // https://github.com/bastionzero/cwc-infra/wiki/System-Test-Digital-Ocean-Snapshots
-    BzeroVTAL2TestImage: 121900335,
-    BzeroVTUbuntuTestImage: 121901614
+    BzeroVTAL2TestImage: 128263150,
+    BzeroVTUbuntuTestImage: 128320158
 } as const;
 export type DigitalOceanDistroImage = typeof DigitalOceanDistroImage[keyof typeof DigitalOceanDistroImage];
 

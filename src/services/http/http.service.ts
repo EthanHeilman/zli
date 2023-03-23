@@ -20,7 +20,7 @@ export class HttpService {
         this.configService = configService;
         this.authorized = authorized;
         this.logger = logger;
-        this.baseUrl = `${this.configService.serviceUrl()}${serviceRoute}`;
+        this.baseUrl = `${this.configService.getServiceUrl()}${serviceRoute}`;
         this.cookieJar = new CookieJar();
 
         this.httpClient = got.extend({

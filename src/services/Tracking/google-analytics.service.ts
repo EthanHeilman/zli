@@ -19,7 +19,7 @@ export class GAService
     {
         // Set up our user + GA info
         this.userId = this.configService.me().id;
-        const gaToken = configService.GAToken();
+        const gaToken = configService.getGaToken();
 
         this.visitor = ua(gaToken, this.userId, {uid: this.userId});
 
@@ -34,7 +34,7 @@ export class GAService
         this.visitor.set(this.customDimensionMapper['zli-args'], argsToLog);
         this.visitor.set(this.customDimensionMapper['user-id'], this.userId);
         this.visitor.set(this.customDimensionMapper['zli-version'], version);
-        this.visitor.set(this.customDimensionMapper['service-url'], configService.getBastionUrl());
+        this.visitor.set(this.customDimensionMapper['service-url'], configService.getServiceUrl());
     }
 
     /**

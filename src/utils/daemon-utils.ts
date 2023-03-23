@@ -11,6 +11,7 @@ const randtoken = require('rand-token');
 const findPort = require('find-open-port');
 const lockfile = require('proper-lockfile');
 
+import { version } from '../../package.json';
 import { cleanExit } from '../handlers/clean-exit.handler';
 import { Logger } from '../services/logger/logger.service';
 import { waitUntilUsedOnHost } from 'tcp-port-used';
@@ -289,7 +290,7 @@ export async function startDaemonInDebugMode(finalDaemonPath: string, cwd: strin
         const processManager = new ProcessManagerService();
 
         process.on('SIGINT', () => {
-            // CNT+C Sent from the user, kill the daemon process, which will trigger an exit
+            // CTL+C sent from the user, kill the daemon process, which will trigger an exit
             processManager.killProcess(daemonProcess.pid);
         });
 
@@ -302,12 +303,11 @@ export async function startDaemonInDebugMode(finalDaemonPath: string, cwd: strin
     await startDaemonPromise;
 }
 
+// Helper function to copy the Daemon executable to a local dir on the file system
+// Ref: https://github.com/vercel/pkg/issues/342
 export async function copyExecutableToLocalDir(logger: Logger, configPath: string): Promise<string> {
-    // Helper function to copy the Daemon executable to a local dir on the file system
-    // Ref: https://github.com/vercel/pkg/issues/342
-
     let prefix = '';
-    if(isPkgProcess()) {
+    if (isPkgProcess()) {
         // /snapshot/zli/dist/src/handlers/tunnel
         prefix = path.join(__dirname, '../../../');
     } else {
@@ -317,19 +317,6 @@ export async function copyExecutableToLocalDir(logger: Logger, configPath: strin
 
     // First get the parent dir of the config path
     const configDir = path.dirname(configPath);
-
-    // Our copy function as we cannot use fs.copyFileSync
-    async function copy(source: string, target: string) {
-        return new Promise<void>(async function (resolve, reject) {
-            const ret = await fs.createReadStream(source).pipe(fs.createWriteStream(target), { end: true });
-            ret.on('close', () => {
-                resolve();
-            });
-            ret.on('error', () => {
-                reject();
-            });
-        });
-    }
 
     let daemonExecPath: string;
     let finalDaemonPath: string;
@@ -396,12 +383,14 @@ export async function copyExecutableToLocalDir(logger: Logger, configPath: strin
         return lockfile.unlockSync('copyExecutableToLocalDir', {
             realpath: false,
             stale: 5000
-        })
+        });
     })
     .catch((e: Error) => {
         // either lock could not be acquired or releasing it failed
-        console.error(e)
+        console.error(e);
     });
+
+    return finalDaemonPath;
 }
 
 export function logKillDaemonResult(daemonIdentifier: string, result: KillProcessResultType, logger: ILogger) {
@@ -510,9 +499,9 @@ export function getBaseDaemonEnv(configService: ConfigService, loggerConfigServi
     return {
         'SESSION_ID': configService.getSessionId(),
         'SESSION_TOKEN': configService.getSessionToken(),
-        'SERVICE_URL': configService.serviceUrl().slice(0, -1).replace('https://', ''),
+        'SERVICE_URL': configService.getServiceUrl().slice(0, -1).replace('https://', ''),
         'AUTH_HEADER': configService.getAuthHeader(),
-        'CONFIG_PATH': configService.configPath(),
+        'CONFIG_PATH': configService.getConfigPath(),
         'REFRESH_TOKEN_COMMAND': `${execPath} ${entryPoint} refresh`,
         'LOG_PATH': loggerConfigService.daemonLogPath(),
         'AGENT_PUB_KEY': agentPubKey,
@@ -627,15 +616,17 @@ export function waitForDaemonProcessExit(logger: Logger, loggerConfigService: Lo
                     break;
                 }
                 case DAEMON_EXIT_CODES.DAEMON_PANIC: {
-                    logger.error(`daemon process terminated unexpectedly -- for more details, try running the zli with the --debug flag set`);
+                    logger.error(`Daemon process terminated unexpectedly -- for more details, try running the zli with the --debug flag set`);
                     break;
                 }
+                case DAEMON_EXIT_CODES.FAILED_TO_START_126:
+                case DAEMON_EXIT_CODES.FAILED_TO_START_127:
                 case null: {
-                    logger.error(`daemon process terminated while starting up`);
+                    logger.error(`Failed to establish connection to target, Please try again or contact your administrator`);
                     break;
                 }
                 default: {
-                    logger.error(`daemon process closed with nonzero exit code ${exitCode} -- for more details, see ${loggerConfigService.daemonLogPath()}`);
+                    logger.error(`Daemon process closed with nonzero exit code ${exitCode} -- for more details, see ${loggerConfigService.daemonLogPath()}`);
                     break;
                 }
                 }
