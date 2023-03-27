@@ -23,10 +23,14 @@ export async function getTargetInfo(testTarget: TestTarget): Promise<SshTargetIn
  * Helper functions to reduce test redundancy
  */
 export function expectIncludeStmtInConfig(userFile: string, bzFile: string, exists: boolean = true): void {
-    const includeStmt = `Include ${bzFile}`;
+    // add quotes around the file if we're on windows in case the user's file path includes a space
+    const fileString = (process.platform === 'win32') ? "\"" + bzFile + "\"" : bzFile;
+
+    const includeStmt = `Include ${fileString}`;
     const userConfigContents = fs.readFileSync(userFile).toString();
     expect(userConfigContents.includes(includeStmt)).toBe(exists);
 }
+
 export async function expectTargetsInBzConfig(contents: string, toBe: boolean): Promise<void> {
     for (const testTarget of allTargets) {
         const { targetName, environmentName } = await getTargetInfo(testTarget);
