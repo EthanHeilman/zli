@@ -41,6 +41,7 @@ export async function generateSshConfigHandler(argv: yargs.Arguments<generateSsh
         const { userConfigPath, bzConfigPath } = getSshConfigPaths(argv.mySshPath, argv.bzSshPath, prefix);
 
         // write to the user's ssh and bzero-ssh config path
+        fs.mkdirSync(path.dirname(bzConfigPath), { recursive:true });
         fs.writeFileSync(bzConfigPath, bzConfigContentsFormatted);
 
         // Link the ssh config path, with our new bzero-ssh config path
@@ -186,7 +187,7 @@ Host ${configPrefix}*
  * @param logger {Logger}
  */
 function linkNewConfigFile(userConfigFile: string, bzConfigFile: string, logger: Logger) {
-    const includeStmt = `Include ${bzConfigFile}`;
+    const includeStmt = (process.platform === 'win32') ? `Include "${bzConfigFile}"` : `Include ${bzConfigFile}`;
 
     let configContents: string;
     let userConfigExists = true;
@@ -232,7 +233,7 @@ function linkNewConfigFile(userConfigFile: string, bzConfigFile: string, logger:
  * @param logger {Logger}
  */
 function deleteBzConfigContents(userConfigFile: string, bzConfigFile: string, logger: Logger) {
-    const includeStmt = `Include ${bzConfigFile}`;
+    const includeStmt = (process.platform === 'win32') ? `Include "${bzConfigFile}"` : `Include ${bzConfigFile}`;
     const includeStmtWithDes = `${includeStmtDes}${includeStmt}\n\n`;
 
     let configContents: string;

@@ -1,4 +1,4 @@
-import path from 'path';
+import path, { dirname } from 'path';
 import fs from 'fs';
 import utils from 'util';
 import * as cp from 'child_process';
@@ -36,25 +36,27 @@ const WAIT_UTIL_USED_ON_HOST_RETRY_TIME = 100;
  * spawns daemon as a subprocess with inherited stdio and returns a promise that
  * resolves when the daemon process exits with an exit code
  * @param logger the logger service to use to report errors if the daemon exits
- * @param path path to the daemon process
+ * @param daemonPath path to the daemon process
  * @param args args to pass to the daemon
  * @param cwd current working directory to use for the spawned subprocess
  * @param customEnv any custom environment variables to set for the spawned
  * process in addition to parent process environment
  * @returns A promise that resolves with the daemon process exit code
  */
-export function spawnDaemon(logger: Logger, loggerConfigService: LoggerConfigService, path: string, args: string[], customEnv: object, cwd: string): Promise<number> {
+export function spawnDaemon(logger: Logger, loggerConfigService: LoggerConfigService, daemonPath: string, args: string[], customEnv: object, cwd: string): Promise<number> {
     return new Promise((resolve, reject) => {
         try {
             const options: cp.SpawnOptions = {
-                cwd: cwd,
+                cwd: path.dirname(daemonPath),
                 env: { ...customEnv, ...process.env },
                 detached: false,
                 shell: true,
                 stdio: 'inherit',
             };
 
-            const daemonProcess = cp.spawn(path, args, options);
+            console.log(`PROCESS ENV: ${JSON.stringify(customEnv)}`);
+
+            const daemonProcess = cp.spawn(path.basename(daemonPath), args, options);
             resolve(waitForDaemonProcessExit(logger, loggerConfigService, daemonProcess));
         }
         catch(err) {

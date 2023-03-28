@@ -23,8 +23,12 @@ ssh <user>@${prefix}<ssm-target-id-or-name>
 
 export async function buildSshConfigStrings(configService: ConfigService, processName: string, logger: Logger, addProxyPrefix: boolean = false) {
     const keyPath = configService.getSshKeyPath();
-    const identityFile = `IdentityFile ${keyPath}`;
-    const knownHostsFile = `UserKnownHostsFile ${configService.getSshKnownHostsPath()}`;
+    const keyPathString = (process.platform === 'win32') ? `"${keyPath}"` : `${keyPath}`;
+    
+    const identityFile = `IdentityFile ${keyPathString}`;
+
+    const knownHostsPath = configService.getSshKnownHostsPath();
+    const knownHostsFile = (process.platform === 'win32') ? `UserKnownHostsFile "${knownHostsPath}"` : `UserKnownHostsFile ${knownHostsPath}`;
 
     const configName = configService.getConfigName();
     let prefix = 'bzero-';
@@ -35,7 +39,9 @@ export async function buildSshConfigStrings(configService: ConfigService, proces
     }
 
     const hostnameToken = await getHostnameToken(logger);
-    const proxyCommand = `ProxyCommand ${processName} ssh-proxy ${configNameArg} -s ${addProxyPrefix ? prefix : ''}${hostnameToken} %r %p ${keyPath}`;
+
+    const command = (process.platform === 'win32') ? `"${processName}"` : `${processName}`;
+    const proxyCommand = `ProxyCommand ${command} ssh-proxy ${configNameArg} -s ${addProxyPrefix ? prefix : ''}${hostnameToken} %r %p ${keyPathString}`;
 
     return { identityFile, knownHostsFile, proxyCommand, prefix };
 }
