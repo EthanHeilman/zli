@@ -33,7 +33,7 @@ export async function rotateMfaHandler(configService: ConfigService, logger: Log
 
     const serviceAccount = await serviceAccountHttpService.GetServiceAccount(subjectSummary.id);
     const newMfaSecret = await mfaHttpService.RotateSecret(serviceAccount.id);
-    await createBzeroCredsFile(newMfaSecret, configService.me().organizationId, configService.idp(), argv.bzeroCreds);
+    await createBzeroCredsFile(newMfaSecret, configService.me().organizationId, configService.getIdp(), argv.bzeroCreds);
     logger.info(`Successfully rotated mfa secret and created new BastionZero credentials of service account ${serviceAccount.email}`);
     await cleanExit(0, logger);
 }

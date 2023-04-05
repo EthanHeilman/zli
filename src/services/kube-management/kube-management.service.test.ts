@@ -133,7 +133,7 @@ describe('getKubeDaemonSecuritySettings suite', () => {
         tempConfigFilePath = path.join(tempDir.path, 'test.json');
 
         // Create certs in this temp dir
-        mockConfig.configPath.mockReturnValue(tempConfigFilePath);
+        mockConfig.getConfigPath.mockReturnValue(tempConfigFilePath);
         mockConfig.getConfigName.mockReturnValue('test');
     });
 

@@ -163,7 +163,7 @@ async function bzeroOpaueSshProxyHandler(configService: ConfigService, logger: L
         finalDaemonPath = 'go';
         args = ['run', 'daemon.go', 'config.go'];
     } else {
-        finalDaemonPath = await copyExecutableToLocalDir(logger, configService.configPath());
+        finalDaemonPath = await copyExecutableToLocalDir(logger, configService.getConfigPath());
     }
 
     try {
@@ -235,7 +235,7 @@ async function bzeroTransparentSshProxyHandler(configService: ConfigService, log
         finalDaemonPath = 'go';
         args = ['run', 'daemon.go', 'config.go'];
     } else {
-        finalDaemonPath = await copyExecutableToLocalDir(logger, configService.configPath());
+        finalDaemonPath = await copyExecutableToLocalDir(logger, configService.getConfigPath());
     }
 
     try {
@@ -300,7 +300,7 @@ function getBaseSshArgs(configService: ConfigService, sshTunnelParameters: SshTu
         'REMOTE_HOST': 'localhost',
         'REMOTE_PORT': sshTunnelParameters.port,
         'IDENTITY_FILE': sshTunnelParameters.identityFile,
-        'KNOWN_HOSTS_FILE': configService.sshKnownHostsPath(),
+        'KNOWN_HOSTS_FILE': configService.getSshKnownHostsPath(),
         'HOSTNAMES': sshTunnelParameters.hostNames.join(','),
         'PLUGIN': 'ssh',
     };

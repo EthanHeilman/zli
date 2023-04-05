@@ -77,7 +77,7 @@ export async function loginUserHandler(configService: ConfigService, logger: Log
         // Pass it in as we login
         await oAuthService.login((t) => {
             configService.setTokenSet(t);
-            mrtapService.setInitialIdToken(configService.getAuth());
+            mrtapService.setInitialIdToken(configService.getIdToken());
         }, nonce);
     }
 
@@ -148,9 +148,9 @@ export async function loginServiceAccountHandler(configService: ConfigService, l
         const nonce = mrtapService.createNonce();
         const providerCredsFile = JSON.parse(fs.readFileSync(argv.providerCreds, 'utf-8')) as ServiceAccountProviderCredentials;
         bzeroCredsFile = JSON.parse(fs.readFileSync(argv.bzeroCreds, 'utf-8')) as ServiceAccountBzeroCredentials;
-        const t = createGCPServiceAccountTokenSet(providerCredsFile, bzeroCredsFile, nonce, configService.serviceUrl());
+        const t = createGCPServiceAccountTokenSet(providerCredsFile, bzeroCredsFile, nonce, configService.getServiceUrl());
         configService.setTokenSet(t);
-        mrtapService.setInitialIdToken(configService.getAuth());
+        mrtapService.setInitialIdToken(configService.getIdToken());
     }
 
     const serviceAccountHttpService = new ServiceAccountHttpService(configService, logger);

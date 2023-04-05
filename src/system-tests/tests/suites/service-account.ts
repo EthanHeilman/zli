@@ -25,7 +25,7 @@ export const serviceAccountSuite = () => {
     describe('Service Account Suite', () => {
         const targetConnectPolicyName = systemTestPolicyTemplate.replace('$POLICY_TYPE', 'sa-configure-target-connect');
         const appNameRegex = new RegExp('https://(.*).bastionzero.com/');
-        const appNameRegexTokenized = appNameRegex.exec(configService.getBastionUrl());
+        const appNameRegexTokenized = appNameRegex.exec(configService.getServiceUrl());
         const appName = appNameRegexTokenized[1]; // prod/stage/dev/tr-1 etc
 
         let policyService: PolicyHttpService;

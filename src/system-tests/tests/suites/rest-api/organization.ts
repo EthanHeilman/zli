@@ -16,7 +16,7 @@ export const organizationSuite = () => {
         let orgIssuerId: string;
 
         // Set our test caseIds based on the IDP we are configured against
-        switch (configService.idp()) {
+        switch (configService.getIdp()) {
         case 'google':
             orgProvider = 'google';
             // thoum.org google organization
@@ -46,7 +46,7 @@ export const organizationSuite = () => {
             fetchGroupsCaseId = '3101';
             break;
         default:
-            throw new Error(`Unhandled IDP passed: ${configService.idp()}`);
+            throw new Error(`Unhandled IDP passed: ${configService.getIdp()}`);
         }
 
         beforeAll(() => {

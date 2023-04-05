@@ -188,7 +188,7 @@ export async function setupAgentContainer(targetsToRun: BzeroContainerTestTarget
                             } as k8s.V1EnvVar,
                             {
                                 name: 'SERVICE_URL',
-                                value: configService.serviceUrl()
+                                value: configService.getServiceUrl()
                             } as k8s.V1EnvVar,
                             {
                                 name: 'ENVIRONMENT_NAME',
