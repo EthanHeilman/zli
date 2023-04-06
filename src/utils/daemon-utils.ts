@@ -1,31 +1,29 @@
-import path, { dirname } from 'path';
-import fs from 'fs';
-import utils from 'util';
 import * as cp from 'child_process';
+import { spawn } from 'child_process';
+import fs from 'fs';
 import forge from 'node-forge';
+import path from 'path';
+import { check as checkTcpPort, waitUntilUsedOnHost } from 'tcp-port-used';
+import utils from 'util';
+import { version } from '../../package.json';
+import { CreateUniversalConnectionResponse } from '../../webshell-common-ts/http/v2/connection/responses/create-universal-connection.response';
+import { ShellConnectionAuthDetails } from '../../webshell-common-ts/http/v2/connection/types/shell-connection-auth-details.types';
+import { ILogger } from '../../webshell-common-ts/logging/logging.types';
+import { cleanExit } from '../handlers/clean-exit.handler';
+import { ConfigService } from '../services/config/config.service';
+import { DaemonConfig } from '../services/config/config.service.types';
+import { LoggerConfigService } from '../services/logger/logger-config.service';
+import { Logger } from '../services/logger/logger.service';
+import { ProcessManagerService } from '../services/process-manager/process-manager.service';
+import { KillProcessResultType } from '../services/process-manager/process-manager.service.types';
+import { DAEMON_EXIT_CODES } from './daemon-exit-codes';
+import { toUpperCase } from './utils';
 
-import { execSync, spawn, ExecSyncOptions } from 'child_process';
 const pids = require('port-pid');
 const readLastLines = require('read-last-lines');
-const randtoken = require('rand-token');
 const findPort = require('find-open-port');
 const lockfile = require('proper-lockfile');
 
-import { version } from '../../package.json';
-import { cleanExit } from '../handlers/clean-exit.handler';
-import { Logger } from '../services/logger/logger.service';
-import { waitUntilUsedOnHost } from 'tcp-port-used';
-import { ConfigService } from '../services/config/config.service';
-import { LoggerConfigService } from '../services/logger/logger-config.service';
-import { ShellConnectionAuthDetails } from '../../webshell-common-ts/http/v2/connection/types/shell-connection-auth-details.types';
-import { DAEMON_EXIT_CODES } from './daemon-exit-codes';
-import { check as checkTcpPort } from 'tcp-port-used';
-import { ProcessManagerService } from '../services/process-manager/process-manager.service';
-import { DaemonConfig } from '../services/config/config.service.types';
-import { ILogger } from '../../webshell-common-ts/logging/logging.types';
-import { toUpperCase } from './utils';
-import { KillProcessResultType } from '../services/process-manager/process-manager.service.types';
-import { CreateUniversalConnectionResponse } from '../../webshell-common-ts/http/v2/connection/responses/create-universal-connection.response';
 
 export const DAEMON_PATH : string = 'bzero/bctl/daemon/daemon';
 
@@ -43,7 +41,7 @@ const WAIT_UTIL_USED_ON_HOST_RETRY_TIME = 100;
  * process in addition to parent process environment
  * @returns A promise that resolves with the daemon process exit code
  */
-export function spawnDaemon(logger: Logger, loggerConfigService: LoggerConfigService, daemonPath: string, args: string[], customEnv: object, cwd: string): Promise<number> {
+export function spawnDaemon(logger: Logger, loggerConfigService: LoggerConfigService, daemonPath: string, args: string[], customEnv: object): Promise<number> {
     return new Promise((resolve, reject) => {
         try {
             const options: cp.SpawnOptions = {
@@ -196,25 +194,25 @@ export async function generateNewCert(pathToConfig: string, name: string, config
 
         try {
             // generate a keypair and create an X.509v3 certificate
-            var keys = forge.pki.rsa.generateKeyPair(2048);
+            const keys = forge.pki.rsa.generateKeyPair(2048);
 
             // write keys to file
-            var pkPem = forge.pki.privateKeyToPem(keys.privateKey);
+            const pkPem = forge.pki.privateKeyToPem(keys.privateKey);
             fs.writeFileSync(pathToKey, pkPem);
 
             // create certificate request
-            var csr = forge.pki.createCertificationRequest();
+            const csr = forge.pki.createCertificationRequest();
             csr.publicKey = keys.publicKey;
-            csr.setSubject(subject as forge.pki.CertificateField[]);   
-            
+            csr.setSubject(subject as forge.pki.CertificateField[]);
+
             // sign certification request
             csr.sign(keys.privateKey);
 
             // write certificate request to file
-            var csrPem = forge.pki.certificationRequestToPem(csr);
+            const csrPem = forge.pki.certificationRequestToPem(csr);
             fs.writeFileSync(pathToCsr, csrPem);
 
-            var cert = forge.pki.createCertificate();
+            const cert = forge.pki.createCertificate();
             cert.publicKey = csr.publicKey;
             cert.subject = csr.subject;
             cert.serialNumber = '01';
@@ -223,12 +221,12 @@ export async function generateNewCert(pathToConfig: string, name: string, config
             // add validity duration
             cert.validity.notBefore = new Date();
             cert.validity.notAfter = new Date();
-            cert.validity.notAfter.setFullYear(cert.validity.notBefore.getFullYear() + 5); 
+            cert.validity.notAfter.setFullYear(cert.validity.notBefore.getFullYear() + 5);
 
             // sign certificate
             cert.sign(keys.privateKey);
 
-            var certPem = forge.pki.certificateToPem(cert);
+            const certPem = forge.pki.certificateToPem(cert);
             fs.writeFileSync(pathToCert, certPem);
         } catch (e: any) {
             reject(e);
@@ -341,54 +339,54 @@ export async function copyExecutableToLocalDir(logger: Logger, configPath: strin
         stale: 5000, // 5 seconds
         retries: 5
     })
-    .then(async () => {
-        // If, by the time we get our lock, the file exists because a different process
-        // created it
-        if (fs.existsSync(finalDaemonPath)) {
-            return;
-        }
-
-        // Our copy function as we cannot use fs.copyFileSync
-        async function copy(source: string, target: string) {
-            return new Promise<void>(async function (resolve, reject) {
-                const ret = await fs.createReadStream(source).pipe(fs.createWriteStream(target), { end: true });
-                ret.on('close', () => {
-                    resolve();
-                });
-                ret.on('error', () => {
-                    reject();
-                });
-            });
-        }
-
-        // Best effort removal of any old daemon executables
-        const files = fs.readdirSync(configDir);
-        files.forEach(file => {
-            if (file.includes('daemon')){
-                try {
-                    fs.rmSync(path.join(configDir, file));
-                } catch (e) {
-                    logger.warn(`failed to delete previous daemon executable ${file}: ${e}`);
-                }
+        .then(async () => {
+            // If, by the time we get our lock, the file exists because a different process
+            // created it
+            if (fs.existsSync(finalDaemonPath)) {
+                return;
             }
-        });
 
-        // Copy the file to the computers file system
-        await copy(daemonExecPath, finalDaemonPath);
+            // Our copy function as we cannot use fs.copyFileSync
+            async function copy(source: string, target: string) {
+                return new Promise<void>(async function (resolve, reject) {
+                    const ret = await fs.createReadStream(source).pipe(fs.createWriteStream(target), { end: true });
+                    ret.on('close', () => {
+                        resolve();
+                    });
+                    ret.on('error', () => {
+                        reject();
+                    });
+                });
+            }
 
-        // Grant execute permission
-        const chmod = utils.promisify(fs.chmod);
-        await chmod(finalDaemonPath, 0o755);
+            // Best effort removal of any old daemon executables
+            const files = fs.readdirSync(configDir);
+            files.forEach(file => {
+                if (file.includes('daemon')){
+                    try {
+                        fs.rmSync(path.join(configDir, file));
+                    } catch (e) {
+                        logger.warn(`failed to delete previous daemon executable ${file}: ${e}`);
+                    }
+                }
+            });
 
-        return lockfile.unlockSync('copyExecutableToLocalDir', {
-            realpath: false,
+            // Copy the file to the computers file system
+            await copy(daemonExecPath, finalDaemonPath);
+
+            // Grant execute permission
+            const chmod = utils.promisify(fs.chmod);
+            await chmod(finalDaemonPath, 0o755);
+
+            return lockfile.unlockSync('copyExecutableToLocalDir', {
+                realpath: false,
                 stale: 5000
             });
-    })
-    .catch((e: Error) => {
-        // either lock could not be acquired or releasing it failed
-        console.error(e);
-    });
+        })
+        .catch((e: Error) => {
+            // either lock could not be acquired or releasing it failed
+            console.error(e);
+        });
 
     return finalDaemonPath;
 }

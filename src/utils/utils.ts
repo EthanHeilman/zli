@@ -1135,7 +1135,7 @@ export function removeIfExists(file: string): void {
     try {
         fs.rmSync(file, {force:true});
     } catch (err) {
-        throw (`Error deleting file: ${file}. Error: ${err}`)
+        throw (`Error deleting file: ${file}. Error: ${err}`);
     }
 }
 

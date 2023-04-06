@@ -105,7 +105,7 @@ export function getMockSshConfigContents(withBzSshPathOption: boolean): string {
 # regarding the use of the BastionZero SSH configuration file.
 `;
 
-    const sshPath = (!withBzSshPathOption) ? expectedBzConfigPathDefault : expectedBzConfigPathPassedByUser
+    const sshPath = (!withBzSshPathOption) ? expectedBzConfigPathDefault : expectedBzConfigPathPassedByUser;
     const pathString = (process.platform === 'win32') ? `"${sshPath}"` : `${sshPath}`;
     const includeStmt = `Include ${pathString}\n\n`;
 

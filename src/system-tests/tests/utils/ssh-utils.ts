@@ -1,5 +1,3 @@
-import fs from 'fs';
-
 import { allTargets, testTargets, configService, logger } from '../system-test';
 import { DigitalOceanBZeroTarget } from '../../digital-ocean/digital-ocean-target.service.types';
 import { TestTarget } from '../system-test.types';

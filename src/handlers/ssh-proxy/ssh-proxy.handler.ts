@@ -165,11 +165,12 @@ async function bzeroOpaqueSshProxyHandler(configService: ConfigService, logger: 
         args = ['run', 'daemon.go', 'config.go'];
     } else {
         finalDaemonPath = await copyExecutableToLocalDir(logger, configService.getConfigPath());
+        cwd = path.dirname(finalDaemonPath);
     }
 
     try {
         const options = {
-            cwd: path.dirname(finalDaemonPath),
+            cwd: cwd,
             env: { ...runtimeConfig, ...process.env },
             detached: false,
             shell: true,

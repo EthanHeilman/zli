@@ -24,7 +24,7 @@ ssh <user>@${prefix}<ssm-target-id-or-name>
 export async function buildSshConfigStrings(configService: ConfigService, processName: string, logger: Logger, addProxyPrefix: boolean = false) {
     const keyPath = configService.getSshKeyPath();
     const keyPathString = (process.platform === 'win32') ? `"${keyPath}"` : `${keyPath}`;
-    
+
     const identityFile = `IdentityFile ${keyPathString}`;
 
     const knownHostsPath = configService.getSshKnownHostsPath();

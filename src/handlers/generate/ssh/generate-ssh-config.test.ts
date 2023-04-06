@@ -44,7 +44,7 @@ describe('Generate ssh config suite', () => {
             process.env.HOMEPATH = originalPath;
         else
             process.env.HOME = originalPath;
-            
+
         deleteDirectory(tempDir);
     });
 
