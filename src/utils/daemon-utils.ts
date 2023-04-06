@@ -54,8 +54,6 @@ export function spawnDaemon(logger: Logger, loggerConfigService: LoggerConfigSer
                 stdio: 'inherit',
             };
 
-            console.log(`PROCESS ENV: ${JSON.stringify(customEnv)}`);
-
             const daemonProcess = cp.spawn(path.basename(daemonPath), args, options);
             resolve(waitForDaemonProcessExit(logger, loggerConfigService, daemonProcess));
         }
