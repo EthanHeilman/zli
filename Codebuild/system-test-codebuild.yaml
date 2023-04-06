@@ -32,6 +32,9 @@ phases:
           git config --global advice.detachedHead false         # turn the detached message off
           git checkout -f "$CODEBUILD_RESOLVED_SOURCE_VERSION"  # Checkout the specific commit we are building
         fi
+      # Temporary work-around for https://github.com/aws/aws-codebuild-docker-images/issues/612 until AWS rebuilds its codebuild docker images
+      - ssh-keygen -R github.com
+      - curl -L https://api.github.com/meta | jq -r '.ssh_keys | .[]' | sed -e 's/^/github.com /' >> ~/.ssh/known_hosts
       # Now that setup is complete, get submodules
       - git submodule init
       - git submodule update --recursive

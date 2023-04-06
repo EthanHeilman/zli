@@ -315,7 +315,7 @@ export async function copyExecutableToLocalDir(logger: Logger, configPath: strin
         prefix = path.join(__dirname, '../../');
     }
 
-    // First get the parent dir of the config path
+    const daemonName = 'daemon-' + version;
     const configDir = path.dirname(configPath);
 
     let daemonExecPath: string;
@@ -323,10 +323,10 @@ export async function copyExecutableToLocalDir(logger: Logger, configPath: strin
 
     if (process.platform === 'win32') {
         daemonExecPath = path.join(prefix, DAEMON_PATH + '.exe');
-        finalDaemonPath = path.join(configDir, 'daemon.exe');
+        finalDaemonPath = path.join(configDir, daemonName + '.exe');
     } else if(process.platform === 'linux' || process.platform === 'darwin') {
         daemonExecPath = path.join(prefix, DAEMON_PATH);
-        finalDaemonPath = path.join(configDir, 'daemon');
+        finalDaemonPath = path.join(configDir, daemonName);
     } else {
         logger.error(`Unsupported operating system: ${process.platform}`);
         await cleanExit(1, logger);
@@ -382,8 +382,8 @@ export async function copyExecutableToLocalDir(logger: Logger, configPath: strin
 
         return lockfile.unlockSync('copyExecutableToLocalDir', {
             realpath: false,
-            stale: 5000
-        });
+                stale: 5000
+            });
     })
     .catch((e: Error) => {
         // either lock could not be acquired or releasing it failed

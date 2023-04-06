@@ -1,5 +1,5 @@
 import { DigitalOceanDropletSize } from '../digital-ocean/digital-ocean.types';
-import { allTargets, chartsBranch, bzeroAgentBranch, bzeroAgentVersion, bzeroKubeAgentImageName, configService, digitalOceanRegistry, doApiKey, logger, resourceNamePrefix, systemTestEnvId, systemTestEnvName, systemTestRegistrationApiKey, systemTestTags, systemTestUniqueId, testTargets, providerCredsPath, bzeroCredsPath } from './system-test';
+import { allTargets, chartsBranch, bzeroAgentBranch, bzeroAgentVersion, bzeroKubeAgentImageName, configService, digitalOceanRegistry, doApiKey, logger, resourceNamePrefix, systemTestEnvId, systemTestEnvName, systemTestRegistrationApiKey, systemTestTags, systemTestUniqueId, testTargets, providerCredsPath, bzeroCredsPath, RUN_AS_SERVICE_ACCOUNT } from './system-test';
 import { checkAllSettledPromise, stripTrailingSlash } from './utils/utils';
 import * as k8s from '@kubernetes/client-node';
 import { ClusterTargetStatusPollError, RegisteredDigitalOceanKubernetesCluster } from '../digital-ocean/digital-ocean-kube.service.types';
@@ -26,6 +26,12 @@ import os from 'os';
 
 // User to create for bzero targets to use for connect/ssh tests
 export const bzeroTargetCustomUser = 'bzuser';
+
+// Assumes for each IdP the system test user has an email in the form of "roleaccount@..."
+export const idpUsernameTargetCustomUser = 'roleaccount';
+
+// Assumes for each IdP the system test service account uses target user example-sa
+export const idpUsernameTargetCustomSA = 'example-sa';
 
 // Droplet size to create
 const vtDropletSize = DigitalOceanDropletSize.CPU_1_MEM_1GB;
@@ -472,10 +478,23 @@ function getBzeroTargetSetupCommands(): string {
     // -m option will create a home directory with proper permissions
     const createBzeroCustomerUserCmd = `useradd ${bzeroTargetCustomUser} --shell /bin/bash -m`;
 
+    // Add a custom user using idp username for connect/ssh tests
+    // --shell options sets default shell as bash
+    // -m option will create a home directory with proper permissions
+    const createIdpUsernameUserCmd = `useradd ${idpUsernameTargetCustomUser} --shell /bin/bash -m`;
+
+    // Custom user using idp username for service accounts
+    let createIdpUserNameSACmd = ``;
+    if(RUN_AS_SERVICE_ACCOUNT) {
+        createIdpUserNameSACmd += `useradd ${idpUsernameTargetCustomSA} --shell /bin/bash -m`;
+    }
+
     return String.raw`
 ${pythonWebServerCmd}
 ${iperfCmd}
 ${createBzeroCustomerUserCmd}
+${createIdpUsernameUserCmd}
+${createIdpUserNameSACmd}
 `;
 }
 

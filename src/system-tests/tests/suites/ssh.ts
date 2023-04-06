@@ -2,10 +2,10 @@ import path from 'path';
 import fs from 'fs';
 import { promisify } from 'util';
 import { exec } from 'child_process';
-import { allTargets, configService, logger, systemTestEnvId, systemTestPolicyTemplate, systemTestUniqueId } from '../system-test';
+import { RUN_AS_SERVICE_ACCOUNT, allTargets, configService, logger, systemTestEnvId, systemTestPolicyTemplate, systemTestUniqueId } from '../system-test';
 import { callZli } from '../utils/zli-utils';
 import { removeIfExists } from '../../../utils/utils';
-import { bzeroTargetCustomUser } from '../system-test-setup';
+import { bzeroTargetCustomUser, idpUsernameTargetCustomSA, idpUsernameTargetCustomUser } from '../system-test-setup';
 import { Environment } from '../../../../webshell-common-ts/http/v2/policy/types/environment.types';
 import { TestTarget } from '../system-test.types';
 import { cleanupTargetConnectPolicies } from '../system-test-cleanup';
@@ -121,6 +121,47 @@ export const sshSuite = () => {
                 await callZli(['generate', 'sshConfig', '--mySshPath', userConfigFile, '--bzSshPath', bzConfigFile]);
 
                 const command = `ssh -F ${userConfigFile} -o CheckHostIP=no -o StrictHostKeyChecking=no ${userName}@${targetName}.${environmentName} echo success`;
+
+                const pexec = promisify(exec);
+                const { stdout } = await pexec(command);
+                expect(stdout.trim()).toEqual('success');
+            }, 60 * 1000);
+        });
+
+        // adding a success case for connecting to bzero targets via ssh using idp username as target user
+        allTargets.forEach(async (testTarget: TestTarget) => {
+            it(`${testTarget.sshWithIdpUsernameCaseId}: ssh tunnel with idp username - ${testTarget.awsRegion} - ${testTarget.installType} - ${testTarget.dropletImage}`, async () => {
+                const currentSubject: Subject = {
+                    id: configService.me().id,
+                    type: configService.me().type
+                };
+                const environment: Environment = {
+                    id: systemTestEnvId
+                };
+
+                // create our policy
+                await policyService.AddTargetConnectPolicy({
+                    name: targetConnectPolicyName,
+                    subjects: [currentSubject],
+                    groups: [],
+                    description: `Target ssh policy created for system test: ${systemTestUniqueId}`,
+                    environments: [environment],
+                    targets: [],
+                    targetUsers: [{ userName: '{username}' }],
+                    verbs: [{ type: VerbType.Tunnel }]
+                });
+
+                let targetUser = ``;
+                if(RUN_AS_SERVICE_ACCOUNT) {
+                    targetUser += `${idpUsernameTargetCustomSA}`;
+                } else {
+                    targetUser += `${idpUsernameTargetCustomUser}`;
+                }
+
+                const { targetName, environmentName } = await getTargetInfo(testTarget);
+                await callZli(['generate', 'sshConfig', '--mySshPath', userConfigFile, '--bzSshPath', bzConfigFile]);
+
+                const command = `ssh -F ${userConfigFile} -o CheckHostIP=no -o StrictHostKeyChecking=no ${targetUser}@${targetName}.${environmentName} echo success`;
 
                 const pexec = promisify(exec);
                 const { stdout } = await pexec(command);

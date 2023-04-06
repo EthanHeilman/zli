@@ -72,7 +72,7 @@ export const groupsSuite = () => {
         // Attempt to make a connection to targets via our groups based policy
         allTargets.forEach(async (testTarget: TestTarget) => {
             test(`${testTarget.groupConnectCaseId}: zli group connect - ${testTarget.awsRegion} - ${testTarget.installType} - ${getDOImageName(testTarget.dropletImage)}`, async () => {
-                await connectTestUtils.runShellConnectTest(testTarget, `groups test - ${systemTestUniqueId}`, true);
+                await connectTestUtils.runShellConnectTest(testTarget, `groups test - ${systemTestUniqueId}`, true, false);
             }, 2 * 60 * 1000);
         });
     });

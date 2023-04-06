@@ -10,6 +10,7 @@ import { DbDaemonStore, KubeDaemonStore } from '../daemon-management/daemon-mana
 import { IKubeConfigService, IKubeDaemonSecurityConfigService } from '../kube-management/kube-management.service';
 import { Logger } from '../logger/logger.service';
 import { ConnectConfig, DaemonConfigs, DbConfig, GlobalKubeConfig, KubeConfig, WebConfig } from './config.service.types';
+import { removeIfExists } from '../../../src/utils/utils';
 import { UnixConfig } from './unix-config.service';
 
 // refL: https://github.com/sindresorhus/conf/blob/master/test/index.test-d.ts#L5-L14
@@ -179,8 +180,10 @@ export class ConfigService implements IKubeDaemonSecurityConfigService, IKubeCon
         this.config.clearTokenSet();
         this.config.clearMrtap();
         this.config.clearSessionId();
-        this.config.clearSessionToken();
-        this.config.clearSshConfigPaths();
+
+        // clear temporary SSH identity file
+        removeIfExists(this.getSshKeyPath());
+        removeIfExists(this.getSshKnownHostsPath());
     }
 
     getAuthHeader(): string {
@@ -204,6 +207,7 @@ export class ConfigService implements IKubeDaemonSecurityConfigService, IKubeCon
         case '' || undefined:
             return undefined;
         default:
+            // Other config names are used in system tests
             appName = configName;
         }
 
