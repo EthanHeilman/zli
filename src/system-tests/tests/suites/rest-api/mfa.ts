@@ -58,7 +58,8 @@ export const mfaSuite = () => {
             const expectedMfaSummary: MfaSummary = {
                 enabled: true,
                 sessionVerified: false,
-                verified: false
+                verified: false,
+                gracePeriodEndTime: null
             };
 
             const mfaResetResp = await mfaService.ResetSecret(false);

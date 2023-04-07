@@ -29,7 +29,7 @@ export async function  registerHandler(mfaSecret: string, configService: ConfigS
         }
         const totpPasscode = totp(mfaSecret);
         await mfaService.VerifyMfaTotp(totpPasscode);
-    } else if (resp.mfaActionRequired == MfaActionRequired.RESET) {
+    } else if (resp.mfaActionRequired == MfaActionRequired.RESET || resp.mfaActionRequired == MfaActionRequired.RESET_DEFER_ALLOWED) {
         // Call reset to create new mfa secret
         const resetResp = await mfaService.ResetSecret(true);
         const mfaSecretUrl = resetResp.mfaSecretUrl;
