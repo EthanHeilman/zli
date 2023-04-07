@@ -22,9 +22,9 @@ ssh <user>@${prefix}<ssm-target-id-or-name>
 }
 
 export async function buildSshConfigStrings(configService: ConfigService, processName: string, logger: Logger, addProxyPrefix: boolean = false) {
-    const keyPath = configService.sshKeyPath();
+    const keyPath = configService.getSshKeyPath();
     const identityFile = `IdentityFile ${keyPath}`;
-    const knownHostsFile = `UserKnownHostsFile ${configService.sshKnownHostsPath()}`;
+    const knownHostsFile = `UserKnownHostsFile ${configService.getSshKnownHostsPath()}`;
 
     const configName = configService.getConfigName();
     let prefix = 'bzero-';

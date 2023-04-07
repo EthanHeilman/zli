@@ -86,7 +86,7 @@ export class SsmTunnelService
     }
 
     private async setupEphemeralSshKey(identityFile: string): Promise<void> {
-        const bzeroSshKeyPath = this.configService.sshKeyPath();
+        const bzeroSshKeyPath = this.configService.getSshKeyPath();
 
         // Generate a new ssh key for each new tunnel as long as the identity
         // file provided is managed by bzero

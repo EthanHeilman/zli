@@ -276,8 +276,8 @@ export class CliDriver
                 }
 
                 // Attempt to re-get the token if we dont have it
-                if(! this.configService.GAToken()) {
-                    await this.configService.fetchGAToken();
+                if(! this.configService.getGaToken()) {
+                    await this.configService.fetchGaToken();
                 }
 
                 let argvPassed: any = [];
@@ -295,7 +295,7 @@ export class CliDriver
                 const isServiceAccountLogin = argv._[0] == 'service-account' && argv._[1] == 'login';
                 if(!this.GACommands.has(baseCmd) || isServiceAccountLogin)
                     return;
-                if(!this.configService.mixpanelToken()) {
+                if(!this.configService.getMixpanelToken()) {
                     await this.configService.fetchMixpanelToken();
                 }
                 this.mixpanelService = mixpanelTrackingMiddleware(this.configService, argv);

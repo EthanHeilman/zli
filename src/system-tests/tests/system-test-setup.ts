@@ -133,7 +133,7 @@ export async function setupDOTestCluster(): Promise<RegisteredDigitalOceanKubern
     // Set common helm variables
     // helm chart expects the service to not cannot contain a
     // trailing slash and our config service includes the slash
-    helmVariables['serviceUrl'] = { value: stripTrailingSlash(configService.serviceUrl()), type: 'single' };
+    helmVariables['serviceUrl'] = { value: stripTrailingSlash(configService.getServiceUrl()), type: 'single' };
     helmVariables['apiKey'] = { value: systemTestRegistrationApiKey.secret, type: 'single' };
     helmVariables['clusterName'] = { value: clusterTargetName, type: 'single' };
     helmVariables['environmentId'] = { value: systemTestEnvId, type: 'single'};
@@ -455,7 +455,7 @@ sudo yum install ${packageName} -y
         installBlock += getCompileBzeroFromSourceCommands('bzero-beta');
     }
 
-    const registerCommand = `${packageName} --serviceUrl ${configService.serviceUrl()} -registrationKey "${registrationApiKeySecret}" -environmentName "${envName}"`;
+    const registerCommand = `${packageName} --serviceUrl ${configService.getServiceUrl()} -registrationKey "${registrationApiKeySecret}" -environmentName "${envName}"`;
     const initBlock = getBzeroTargetSetupCommands();
 
     return String.raw`#!/bin/bash

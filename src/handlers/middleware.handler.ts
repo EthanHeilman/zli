@@ -74,7 +74,7 @@ export async function initMiddleware(argv: any, logger : Logger, isSystemTest : 
 }
 
 export async function bzCertValidationInfoMiddleware(mrtapService: MrtapService, configService: ConfigService, logger: Logger) {
-    const ksConfig = configService.loadMrtap();
+    const ksConfig = configService.getMrtap();
     if( ! ksConfig.orgProvider) {
         // Update the Org BZCert Validation parameters
         const orgHttpService = new OrganizationHttpService(configService, logger);

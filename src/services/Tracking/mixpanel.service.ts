@@ -14,7 +14,7 @@ export class MixpanelService
 
     constructor(private configService: ConfigService)
     {
-        this.mixpanelClient = mixpanel.init(this.configService.mixpanelToken(), {
+        this.mixpanelClient = mixpanel.init(this.configService.getMixpanelToken(), {
             protocol: 'https',
         });
 

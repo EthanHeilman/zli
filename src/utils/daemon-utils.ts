@@ -432,9 +432,9 @@ export function getBaseDaemonEnv(configService: ConfigService, loggerConfigServi
     return {
         'SESSION_ID': configService.getSessionId(),
         'SESSION_TOKEN': configService.getSessionToken(),
-        'SERVICE_URL': configService.serviceUrl().slice(0, -1).replace('https://', ''),
+        'SERVICE_URL': configService.getServiceUrl().slice(0, -1).replace('https://', ''),
         'AUTH_HEADER': configService.getAuthHeader(),
-        'CONFIG_PATH': configService.configPath(),
+        'CONFIG_PATH': configService.getConfigPath(),
         'REFRESH_TOKEN_COMMAND': `${execPath} ${entryPoint} refresh`,
         'LOG_PATH': loggerConfigService.daemonLogPath(),
         'AGENT_PUB_KEY': agentPubKey,
