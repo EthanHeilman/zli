@@ -43,16 +43,19 @@ const WAIT_UTIL_USED_ON_HOST_RETRY_TIME = 100;
  */
 export function spawnDaemon(logger: Logger, loggerConfigService: LoggerConfigService, daemonPath: string, args: string[], customEnv: object): Promise<number> {
     return new Promise((resolve, reject) => {
+        const daemonDir = path.dirname(daemonPath);
+        const daemonFile = `./${path.basename(daemonPath)}`;
+
         try {
             const options: cp.SpawnOptions = {
-                cwd: path.dirname(daemonPath),
+                cwd: daemonDir,
                 env: { ...customEnv, ...process.env },
                 detached: false,
                 shell: true,
                 stdio: 'inherit',
             };
 
-            const daemonProcess = cp.spawn(path.basename(daemonPath), args, options);
+            const daemonProcess = cp.spawn(daemonFile, args, options);
             resolve(waitForDaemonProcessExit(logger, loggerConfigService, daemonProcess));
         }
         catch(err) {
@@ -312,7 +315,7 @@ export async function copyExecutableToLocalDir(logger: Logger, configPath: strin
         prefix = path.join(__dirname, '../../');
     }
 
-    const daemonName = 'daemon-' + version;
+    const daemonName = 'daemon' + version;
     const configDir = path.dirname(configPath);
 
     let daemonExecPath: string;

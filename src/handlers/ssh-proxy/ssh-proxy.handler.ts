@@ -153,19 +153,20 @@ async function bzeroOpaqueSshProxyHandler(configService: ConfigService, logger: 
 
     const runtimeConfig = { ...baseEnv, ...pluginEnv, ...actionEnv };
 
-    let cwd = process.cwd();
-
     // Copy over our executable to a temp file
-    let finalDaemonPath = '';
+    let cwd: string;
+    let daemonName: string;
     let args: string[] = [];
+
     if (process.env.ZLI_CUSTOM_DAEMON_PATH) {
         // If we set a custom path, we will try to start the daemon from the source code
         cwd = process.env.ZLI_CUSTOM_DAEMON_PATH;
-        finalDaemonPath = 'go';
+        daemonName = 'go';
         args = ['run', 'daemon.go', 'config.go'];
     } else {
-        finalDaemonPath = await copyExecutableToLocalDir(logger, configService.getConfigPath());
-        cwd = path.dirname(finalDaemonPath);
+        const fullDaemonPath = await copyExecutableToLocalDir(logger, configService.getConfigPath());
+        cwd = path.dirname(fullDaemonPath);
+        daemonName = `./${path.basename(fullDaemonPath)}`;
     }
 
     try {
@@ -177,7 +178,7 @@ async function bzeroOpaqueSshProxyHandler(configService: ConfigService, logger: 
             stdio: 'pipe'
         };
 
-        const daemonProcess = spawn(path.basename(finalDaemonPath), args, options);
+        const daemonProcess = spawn(daemonName, args, options);
 
         configService.logoutDetected.subscribe(() => {
             logger.error(`\nLogged out by another zli instance. Terminating ssh tunnel\n`);

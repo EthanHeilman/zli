@@ -1,4 +1,3 @@
-import util from 'util';
 import yargs from 'yargs';
 import fs from 'fs';
 import { ConfigService } from '../../../services/config/config.service';
@@ -50,7 +49,6 @@ export async function generateKubeYamlHandler(
     // Show it to the user or write to file
     if (outputFileArg) {
         fs.writeFileSync(outputFileArg, kubeYaml.yaml, { mode: 600 });
-        // await util.promisify(fs.writeFile)(outputFileArg, kubeYaml.yaml);
         logger.info(`Wrote yaml to output file: ${outputFileArg}`);
     } else {
         console.log(kubeYaml.yaml);
