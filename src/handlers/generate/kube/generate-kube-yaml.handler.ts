@@ -49,7 +49,8 @@ export async function generateKubeYamlHandler(
 
     // Show it to the user or write to file
     if (outputFileArg) {
-        await util.promisify(fs.writeFile)(outputFileArg, kubeYaml.yaml);
+        fs.writeFileSync(outputFileArg, kubeYaml.yaml, { mode: 600 });
+        // await util.promisify(fs.writeFile)(outputFileArg, kubeYaml.yaml);
         logger.info(`Wrote yaml to output file: ${outputFileArg}`);
     } else {
         console.log(kubeYaml.yaml);

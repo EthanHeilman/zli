@@ -266,7 +266,6 @@ export async function generateNewCert(pathToConfig: string, name: string, config
     return await createCertPromise;
 }
 
-
 export function isPkgProcess() {
     const process1 = <any>process;
     return process1.pkg;
