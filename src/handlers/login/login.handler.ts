@@ -119,6 +119,9 @@ export async function loginUserHandler(configService: ConfigService, logger: Log
         }
 
         break;
+    case MfaActionRequired.RESET_DEFER_ALLOWED:
+        // For now, allow user to continue without setting up MFA and don't make them aware of the grace period.
+        break;
     default:
         logger.warn(`Unexpected MFA response ${registerResponse.mfaActionRequired}`);
         break;
