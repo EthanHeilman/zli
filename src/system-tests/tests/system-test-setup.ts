@@ -89,7 +89,7 @@ export async function setupDOTestCluster(): Promise<RegisteredDigitalOceanKubern
     console.log(`Config retrieved for cluster ${clusterSummary.name}!`);
 
     const kubeConfigPath = path.join(os.tmpdir(),`do-kubeconfig-${systemTestUniqueId}.yml`);
-    await promisify(fs.writeFile)(kubeConfigPath, kubeConfigFileContents);
+    fs.writeFileSync(kubeConfigPath, kubeConfigFileContents, { mode: 600 });
     clusterToRegister.kubeConfigFilePath = kubeConfigPath;
 
     // Define dictionary of helm --set variables to use in "helm install"
