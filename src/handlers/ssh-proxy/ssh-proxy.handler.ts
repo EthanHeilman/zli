@@ -166,7 +166,8 @@ async function bzeroOpaqueSshProxyHandler(configService: ConfigService, logger: 
     } else {
         const fullDaemonPath = await copyExecutableToLocalDir(logger, configService.getConfigPath());
         cwd = path.dirname(fullDaemonPath);
-        daemonName = `./${path.basename(fullDaemonPath)}`;
+        // Windows can handle our executable's name, but unix has to have the path reference
+        daemonName = (process.platform === 'win32') ? path.basename(fullDaemonPath) : `./${path.basename(fullDaemonPath)}`;
     }
 
     try {

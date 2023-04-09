@@ -44,7 +44,8 @@ const WAIT_UTIL_USED_ON_HOST_RETRY_TIME = 100;
 export function spawnDaemon(logger: Logger, loggerConfigService: LoggerConfigService, daemonPath: string, args: string[], customEnv: object): Promise<number> {
     return new Promise((resolve, reject) => {
         const daemonDir = path.dirname(daemonPath);
-        const daemonFile = `./${path.basename(daemonPath)}`;
+        // Windows can handle our executable's name, but unix has to have the path reference
+        const daemonFile = (process.platform === 'win32') ? path.basename(daemonPath) : `./${path.basename(daemonPath)}`;
 
         try {
             const options: cp.SpawnOptions = {
