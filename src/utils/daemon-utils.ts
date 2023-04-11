@@ -2,6 +2,7 @@ import path from 'path';
 import fs from 'fs';
 import utils from 'util';
 import * as cp from 'child_process';
+import { Observable } from 'rxjs';
 
 import { execSync, spawn, ExecSyncOptions } from 'child_process';
 const pids = require('port-pid');
@@ -37,12 +38,21 @@ const WAIT_UTIL_USED_ON_HOST_RETRY_TIME = 100;
  * @param logger the logger service to use to report errors if the daemon exits
  * @param path path to the daemon process
  * @param args args to pass to the daemon
- * @param cwd current working directory to use for the spawned subprocess
  * @param customEnv any custom environment variables to set for the spawned
  * process in addition to parent process environment
+ * @param cwd current working directory to use for the spawned subprocess
+ * @param logoutDetected optionally provide an observable that fires when the user logs out
  * @returns A promise that resolves with the daemon process exit code
  */
-export function spawnDaemon(logger: Logger, loggerConfigService: LoggerConfigService, path: string, args: string[], customEnv: object, cwd: string): Promise<number> {
+export function spawnDaemon(
+    logger: Logger,
+    loggerConfigService: LoggerConfigService,
+    path: string,
+    args: string[],
+    customEnv: object,
+    cwd: string,
+    logoutDetected: Observable<boolean> | null,
+): Promise<number> {
     return new Promise((resolve, reject) => {
         try {
             const options: cp.SpawnOptions = {
@@ -54,7 +64,7 @@ export function spawnDaemon(logger: Logger, loggerConfigService: LoggerConfigSer
             };
 
             const daemonProcess = cp.spawn(path, args, options);
-            resolve(waitForDaemonProcessExit(logger, loggerConfigService, daemonProcess));
+            resolve(waitForDaemonProcessExit(logger, loggerConfigService, daemonProcess, logoutDetected));
         }
         catch(err) {
             reject(err);
@@ -72,9 +82,18 @@ export function spawnDaemon(logger: Logger, loggerConfigService: LoggerConfigSer
  * @param args daemon command line args
  * @param customEnv any custom environment variables to set for the spawned
  * process in addition to parent process environment
+ * @param logoutDetected optionally provide an observable that fires when the user logs out
  * @returns The spawned child process
  */
-export async function spawnDaemonInBackground(logger: Logger, loggerConfigService: LoggerConfigService, cwd: string, daemonPath: string, args: string[], customEnv: object): Promise<cp.ChildProcess> {
+export async function spawnDaemonInBackground(
+    logger: Logger,
+    loggerConfigService: LoggerConfigService,
+    cwd: string,
+    daemonPath: string,
+    args: string[],
+    customEnv: object,
+    logoutDetected: Observable<boolean> | null,
+): Promise<cp.ChildProcess> {
     const options: cp.SpawnOptions = {
         cwd: cwd,
         env: { ...customEnv, ...process.env },
@@ -85,15 +104,20 @@ export async function spawnDaemonInBackground(logger: Logger, loggerConfigServic
 
     const daemonProcess = await cp.spawn(daemonPath, args, options);
 
-    reportDaemonExitErrors(logger, loggerConfigService, daemonProcess);
+    reportDaemonExitErrors(logger, loggerConfigService, daemonProcess, logoutDetected);
 
     return daemonProcess;
 }
 
-export async function reportDaemonExitErrors(logger: Logger, loggerConfigService: LoggerConfigService, daemonProcess: cp.ChildProcess ): Promise<void> {
+export async function reportDaemonExitErrors(
+    logger: Logger,
+    loggerConfigService: LoggerConfigService,
+    daemonProcess: cp.ChildProcess,
+    logoutDetected: Observable<boolean> | null,
+): Promise<void> {
     // If the daemon process exits while the zli process is still running then
     // report any custom errors and exit the zli as well
-    waitForDaemonProcessExit(logger, loggerConfigService, daemonProcess)
+    waitForDaemonProcessExit(logger, loggerConfigService, daemonProcess, logoutDetected)
         .then(async exitCode => await cleanExit(exitCode, logger));
 }
 
@@ -477,13 +501,24 @@ export async function getOrDefaultLocalport(passedLocalport: number): Promise<nu
  * also handle any custom error codes by logging specific error messages to the
  * user
  * @param logger logger for reporting custom errors
+ * @param loggerConfigService used to point the user to the daemon log path
  * @param daemonProcess the daemon child process
+ * @param logoutDetected optionally provide an observable that fires when the user logs out
  * @returns The daemon process' exit code
  */
-export function waitForDaemonProcessExit(logger: Logger, loggerConfigService: LoggerConfigService, daemonProcess: cp.ChildProcess): Promise<number> {
+export function waitForDaemonProcessExit(
+    logger: Logger,
+    loggerConfigService: LoggerConfigService,
+    daemonProcess: cp.ChildProcess,
+    logoutDetected: Observable<boolean> | null,
+): Promise<number> {
     return new Promise((resolve) => {
-        daemonProcess.on('close', (exitCode) => {
+        logoutDetected?.subscribe(() => {
+            logger.error(`\nLogged out by another zli instance. Terminating connection...\n`);
+            daemonProcess.kill();
+        });
 
+        daemonProcess.on('close', (exitCode) => {
             if (exitCode !== 0) {
                 // Note: if using the ZLI_CUSTOM_DAEMON_PATH environment variable
                 // while developing we will instead use `go run` to start the daemon

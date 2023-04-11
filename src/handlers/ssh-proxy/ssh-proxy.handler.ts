@@ -196,7 +196,7 @@ async function bzeroOpaueSshProxyHandler(configService: ConfigService, logger: L
             daemonProcess.stdin.end();
         });
 
-        return await waitForDaemonProcessExit(logger, loggerConfigService, daemonProcess);
+        return await waitForDaemonProcessExit(logger, loggerConfigService, daemonProcess, null);
     } catch (err) {
         logger.error(`Error starting ssh daemon: ${err}`);
         await cleanExit(1, logger);
@@ -286,7 +286,7 @@ async function bzeroTransparentSshProxyHandler(configService: ConfigService, log
             process.stdout.end();
         });
 
-        return await waitForDaemonProcessExit(logger, loggerConfigService, daemonProcess);
+        return await waitForDaemonProcessExit(logger, loggerConfigService, daemonProcess, null);
     } catch (err) {
         logger.error(`Error starting ssh daemon: ${err}`);
         await cleanExit(1, logger);

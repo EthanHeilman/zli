@@ -54,9 +54,9 @@ export async function handleLogout(
 ) {
     // Deletes the auth tokens from the config which will force the
     // user to login again before running another command
+    logger.info('Closing any existing SSH tunnels and shell connections');
     configService.logout();
     configService.clearSessionId();
-    logger.info('Closing any existing SSH Tunnel Connections');
     logger.info('Clearing temporary SSH files');
     fileRemover.removeFileIfExists(configService.getSshKeyPath());
     fileRemover.removeFileIfExists(configService.getSshKnownHostsPath());
