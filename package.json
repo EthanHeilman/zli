@@ -1,6 +1,6 @@
 {
   "name": "@bastionzero/zli",
-  "version": "6.18.1",
+  "version": "6.19.0",
   "description": "BastionZero cli",
   "repository": {
     "type": "git",
@@ -108,7 +108,7 @@
     "got": "^11.8.0",
     "humanize-duration": "^3.27.2",
     "jest-extended": "^1.2.0",
-    "jsonwebtoken": "^8.5.1",
+    "jsonwebtoken": "^9.0.0",
     "libp2p-spdy": "^0.13.3",
     "lodash": "^4.17.20",
     "mixpanel": "^0.13.0",
