@@ -236,30 +236,6 @@ export async function generateNewCert(pathToConfig: string, name: string, config
             reject(e);
         }
 
-        // // Generate a new key
-        // try {
-        //     execSync(`openssl genrsa -out ${pathToKey}`, options);
-        // } catch (e: any) {
-        //     reject(e);
-        // }
-
-        // // Generate a new csr
-        // // Ref: https://www.openssl.org/docs/man1.0.2/man1/openssl-req.html
-        // try {
-        //     const pass = randtoken.generate(128);
-        //     execSync(`openssl req -sha256 -passin pass:${pass} -new -key ${pathToKey} -subj "/C=US/ST=Bastionzero/L=Boston/O=Dis/CN=bastionzero.com" -out ${pathToCsr}`, options);
-        // } catch (e: any) {
-        //     reject(e);
-        // }
-
-        // // Now generate the certificate
-        // // https://www.openssl.org/docs/man1.1.1/man1/x509.html
-        // try {
-        //     execSync(`openssl x509 -req -days 999 -in ${pathToCsr} -signkey ${pathToKey} -out ${pathToCert}`, options);
-        // } catch (e: any) {
-        //     reject(e);
-        // }
-
         resolve({
             pathToKey: pathToKey,
             pathToCert: pathToCert,
