@@ -1,5 +1,6 @@
 import { TokenSet, TokenSetParameters } from 'openid-client';
 import path from 'path';
+import fs from 'fs';
 import { Observable, Subject } from 'rxjs';
 import { IdentityProvider } from '../../../webshell-common-ts/auth-service/auth.types';
 import { SubjectSummary } from '../../../webshell-common-ts/http/v2/subject/types/subject-summary.types';
@@ -10,7 +11,6 @@ import { DbDaemonStore, KubeDaemonStore } from '../daemon-management/daemon-mana
 import { IKubeConfigService, IKubeDaemonSecurityConfigService } from '../kube-management/kube-management.service';
 import { Logger } from '../logger/logger.service';
 import { ConnectConfig, DaemonConfigs, DbConfig, GlobalKubeConfig, KubeConfig, WebConfig } from './config.service.types';
-import { removeIfExists } from '../../../src/utils/utils';
 import { UnixConfig } from './unix-config.service';
 
 // refL: https://github.com/sindresorhus/conf/blob/master/test/index.test-d.ts#L5-L14
@@ -182,8 +182,8 @@ export class ConfigService implements IKubeDaemonSecurityConfigService, IKubeCon
         this.config.clearSessionId();
 
         // clear temporary SSH identity file
-        removeIfExists(this.getSshKeyPath());
-        removeIfExists(this.getSshKnownHostsPath());
+        fs.rmSync(this.getSshKeyPath(), {force:true});
+        fs.rmSync(this.getSshKnownHostsPath(), {force:true});
     }
 
     getAuthHeader(): string {

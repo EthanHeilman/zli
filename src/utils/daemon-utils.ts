@@ -36,7 +36,6 @@ const WAIT_UTIL_USED_ON_HOST_RETRY_TIME = 100;
  * @param logger the logger service to use to report errors if the daemon exits
  * @param daemonPath path to the daemon process
  * @param args args to pass to the daemon
- * @param cwd current working directory to use for the spawned subprocess
  * @param customEnv any custom environment variables to set for the spawned
  * process in addition to parent process environment
  * @returns A promise that resolves with the daemon process exit code
@@ -160,8 +159,6 @@ export interface DaemonTLSCert {
  * @returns Path to the key, path to the cert, path to the certificate signing request.
  */
 export async function generateNewCert(pathToConfig: string, name: string, configName: string): Promise<DaemonTLSCert> {
-    // const options: ExecSyncOptions = { stdio: 'ignore' };
-
     // Create and save key/cert
     const createCertPromise = new Promise<DaemonTLSCert>(async (resolve, reject) => {
         // Only add the prefix for non-prod

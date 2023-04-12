@@ -1131,14 +1131,6 @@ export function getZliRunCommand(): string {
     return processName;
 }
 
-export function removeIfExists(file: string): void {
-    try {
-        fs.rmSync(file, {force:true});
-    } catch (err) {
-        throw (`Error deleting file: ${file}. Error: ${err}`);
-    }
-}
-
 export function isZliSilent(silent_flag: boolean, json_flag: boolean) {
     if(silent_flag) return true;
     else if(json_flag) return true;
