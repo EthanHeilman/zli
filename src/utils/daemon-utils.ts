@@ -81,7 +81,8 @@ export async function spawnDaemonInBackground(logger: Logger, loggerConfigServic
         cwd: cwd,
         env: { ...customEnv, ...process.env },
         detached: true,
-        shell: false,
+        shell: true,
+        windowsHide: true,
         stdio: 'ignore',
     };
 
