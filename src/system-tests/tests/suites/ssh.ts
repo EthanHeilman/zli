@@ -4,7 +4,6 @@ import { promisify } from 'util';
 import { exec } from 'child_process';
 import { RUN_AS_SERVICE_ACCOUNT, allTargets, configService, logger, systemTestEnvId, systemTestPolicyTemplate, systemTestUniqueId } from '../system-test';
 import { callZli } from '../utils/zli-utils';
-import { removeIfExists } from '../../../utils/utils';
 import { bzeroTargetCustomUser, idpUsernameTargetCustomSA, idpUsernameTargetCustomUser } from '../system-test-setup';
 import { Environment } from '../../../../webshell-common-ts/http/v2/policy/types/environment.types';
 import { TestTarget } from '../system-test.types';
@@ -54,11 +53,11 @@ export const sshSuite = () => {
         // Cleanup all policy after the tests
         afterAll(async () => {
             // delete outstanding configuration files
-            removeIfExists(userConfigFile);
-            removeIfExists(bzConfigFile);
-            removeIfExists(scpUpFile);
-            removeIfExists(scpDownFile);
-            removeIfExists(sftpBatchFile);
+            fs.rmSync(userConfigFile, { force: true });
+            fs.rmSync(bzConfigFile, { force: true });
+            fs.rmSync(scpUpFile, { force: true });
+            fs.rmSync(scpDownFile, { force: true });
+            fs.rmSync(sftpBatchFile, { force: true });
         });
 
         allTargets.forEach(async (testTarget: TestTarget) => {
