@@ -290,7 +290,7 @@ export async function copyExecutableToLocalDir(logger: Logger, configPath: strin
         prefix = path.join(__dirname, '../../');
     }
 
-    const daemonName = 'daemon' + version;
+    const daemonName = 'daemon-' + version;
     const configDir = path.dirname(configPath);
 
     let daemonExecPath: string;
