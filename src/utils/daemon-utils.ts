@@ -199,7 +199,7 @@ export async function generateNewCert(pathToConfig: string, name: string, config
 
             // write keys to file
             const pkPem = forge.pki.privateKeyToPem(keys.privateKey);
-            fs.writeFileSync(pathToKey, pkPem, { mode: 600 });
+            fs.writeFileSync(pathToKey, pkPem, { mode: 0o600 });
 
             // create certificate request
             const csr = forge.pki.createCertificationRequest();
@@ -211,7 +211,7 @@ export async function generateNewCert(pathToConfig: string, name: string, config
 
             // write certificate request to file
             const csrPem = forge.pki.certificationRequestToPem(csr);
-            fs.writeFileSync(pathToCsr, csrPem, { mode: 600 });
+            fs.writeFileSync(pathToCsr, csrPem, { mode: 0o600 });
 
             const cert = forge.pki.createCertificate();
             cert.publicKey = csr.publicKey;
@@ -228,7 +228,7 @@ export async function generateNewCert(pathToConfig: string, name: string, config
             cert.sign(keys.privateKey);
 
             const certPem = forge.pki.certificateToPem(cert);
-            fs.writeFileSync(pathToCert, certPem, { mode: 600 });
+            fs.writeFileSync(pathToCert, certPem, { mode: 0o600 });
         } catch (e: any) {
             reject(e);
         }
