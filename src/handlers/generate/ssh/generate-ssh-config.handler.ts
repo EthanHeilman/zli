@@ -223,7 +223,7 @@ function linkNewConfigFile(userConfigFile: string, bzConfigFile: string, logger:
         configContents = `${includeStmtDes}${includeStmt}\n\n${note}\n` + configContents;
     }
 
-    const fd = fs.openSync(userConfigFile, 'w+');
+    const fd = fs.openSync(userConfigFile, 'w+', 0o600);
     fs.writeFileSync(fd, configContents);
     fs.close(fd, () => { });
 }
@@ -269,7 +269,7 @@ function deleteBzConfigContents(userConfigFile: string, bzConfigFile: string, lo
             configContents = configContents.replace(`${note}\n`, '');
         }
 
-        const fd = fs.openSync(userConfigFile, 'w+');
+        const fd = fs.openSync(userConfigFile, 'w+', 0o600);
         fs.writeFileSync(fd, configContents);
         fs.close(fd, () => { });
     }
