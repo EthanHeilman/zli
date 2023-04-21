@@ -161,7 +161,7 @@ export class ConfigService implements IKubeDaemonSecurityConfigService, IKubeCon
                 throw new Error(`Unknown organization for email: ${email}`);
 
             this.config.setClientId(oidcClientResponse.clientId);
-            this.config.clearClientSecret;
+            this.config.clearClientSecret();
 
             let domain = oidcClientResponse.domain;
             if(idp == IdentityProvider.OneLogin)
