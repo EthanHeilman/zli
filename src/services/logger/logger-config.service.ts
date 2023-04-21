@@ -21,6 +21,9 @@ export class LoggerConfigService {
         // overlap and use the same configuration file.
         if(configDir) {
             configDir = path.join(configDir, projectName);
+        } else if (process.platform === 'win32') {
+            // conf defaults to roaming app data but our stuff belongs in local
+            configDir = path.join(process.env.LOCALAPPDATA, projectName);
         }
 
         this.config = new Conf<LoggerConfigSchema>({

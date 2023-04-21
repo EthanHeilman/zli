@@ -46,9 +46,10 @@ export class OAuthService implements IDisposable {
 
     private setupCallbackListener(
         callbackPort: number,
-        callback: (tokenSet: TokenSet) => void,
+        callback: (tokenSet: TokenSet) => Promise<void>,
         onListen: () => void,
-        resolve: (value?: void | PromiseLike<void>) => void
+        resolve: (value?: void | PromiseLike<void>) => void,
+        reject: (reason?: any) => void
     ): void {
 
         const requestListener: RequestListener = async (req, res) => {
@@ -61,9 +62,7 @@ export class OAuthService implements IDisposable {
             // http://localhost:3000/login-callback?error=consent_required&error_description=AADSTS65004%3a+User+decline...
             if(!! queryParams.error)
             {
-                this.logger.error('User login failed: ' + queryParams.error);
-                this.logger.info('Please try logging in again');
-                await cleanExit(1, this.logger);
+                reject(queryParams.error);
             }
 
             switch (urlParts[0]) {
@@ -73,8 +72,7 @@ export class OAuthService implements IDisposable {
                 const email = queryParams.email as string;
 
                 if(provider === undefined) {
-                    this.logger.error('The selected identity provider is not currently supported.');
-                    await cleanExit(1, this.logger);
+                    reject('The selected identity provider is not currently supported');
                 }
 
                 try {
@@ -101,23 +99,22 @@ export class OAuthService implements IDisposable {
                     });
                     res.end();
                 } catch(err) {
-                    this.logger.error(`Error occurred when trying to login with ${provider}. ${err.message}.`);
-                    await cleanExit(1, this.logger);
+                    reject(`Error occurred when trying to login with ${provider}. ${err.message}`);
                 }
 
                 break;
 
             case '/login-callback':
                 if(this.oidcClient === undefined){
-                    throw new Error('Unable to parse idp response with undefined OIDC client');
+                    reject('Unable to parse idp response with undefined OIDC client');
                 }
 
                 if(this.codeVerifier === undefined){
-                    throw new Error('Unable to parse idp response with undefined code verifier');
+                    reject('Unable to parse idp response with undefined code verifier');
                 }
 
                 if(this.nonce === undefined){
-                    throw new Error('Unable to parse idp response with undefined nonce');
+                    reject('Unable to parse idp response with undefined nonce');
                 }
 
                 const params = this.oidcClient.callbackParams(req);
@@ -127,16 +124,22 @@ export class OAuthService implements IDisposable {
                     params,
                     { code_verifier: this.codeVerifier, nonce: this.nonce, state: this.state });
 
-                this.logger.info('Login successful');
                 this.logger.debug('callback listener closed');
 
                 // write to config with callback
-                callback(tokenSet);
+                try {
+                    await callback(tokenSet);
+                } catch (e) {
+                    reject(e);
+                }
+
                 this.server.close();
                 res.writeHead(200, {
                     'Access-Control-Allow-Origin': '*',
                     'content-type': 'text/html'
                 });
+
+                this.logger.info('Login successful');
                 res.write(loginHtml);
                 resolve();
                 break;
@@ -247,9 +250,9 @@ export class OAuthService implements IDisposable {
         return this.oidcClient.authorizationUrl(authParams);
     }
 
-    public isAuthenticated(): boolean
+    public async isAuthenticated(): Promise<boolean>
     {
-        const tokenSet = this.configService.getTokenSet();
+        const tokenSet = await this.configService.getTokenSet();
 
         if(tokenSet === undefined)
             return false;
@@ -264,7 +267,7 @@ export class OAuthService implements IDisposable {
         return nowUnixEpochTime + 60 * bufferMinutes >= tokenSet.claims().exp;
     }
 
-    public async login(callback: (tokenSet: TokenSet) => void, nonce?: string): Promise<void> {
+    public async login(callback: (tokenSet: TokenSet) => Promise<void>, nonce?: string): Promise<void> {
         const portToCheck = this.configService.getCallbackListenerPort();
         let portToUse : number = undefined;
         // If no port has been set by user
@@ -305,14 +308,14 @@ export class OAuthService implements IDisposable {
 
             const openBrowser = async () => await open(`${this.configService.getServiceUrl()}authentication/login?zliLogin=true&port=${portToUse}`);
 
-            this.setupCallbackListener(portToUse, callback, openBrowser, resolve);
+            await this.setupCallbackListener(portToUse, callback, openBrowser, resolve, reject);
         });
     }
 
     public async refresh(): Promise<TokenSet>
     {
         await this.setupClient();
-        const tokenSet = this.configService.getTokenSet();
+        const tokenSet = await this.configService.getTokenSet();
         const refreshToken = tokenSet.refresh_token;
         const refreshedTokenSet = await this.oidcClient.refresh(tokenSet);
 
@@ -329,11 +332,11 @@ export class OAuthService implements IDisposable {
      * @returns The current user's id_token
      */
     public async getIdToken(): Promise<string> {
-        const tokenSet = this.configService.getTokenSet();
+        const tokenSet = await this.configService.getTokenSet();
 
         // Refresh if the token exists and has expired
         if (tokenSet) {
-            if (!this.isAuthenticated()) {
+            if (!await this.isAuthenticated()) {
                 if(this.configService.me().type === SubjectType.ServiceAccount){
                     this.logger.error('Service account session has expired, please log in again.');
                     await cleanExit(1, this.logger);
@@ -367,7 +370,7 @@ export class OAuthService implements IDisposable {
             throw new UserNotLoggedInError();
         }
 
-        return this.configService.getIdToken();
+        return await this.configService.getIdToken();
     }
 
     /**

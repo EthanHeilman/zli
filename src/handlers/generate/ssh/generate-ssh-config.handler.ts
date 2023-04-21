@@ -7,6 +7,7 @@ import { PolicyQueryHttpService } from '../../../http-services/policy-query/poli
 import { SshTargetsResponse } from '../../../../webshell-common-ts/http/v2/policy-query/responses/tunnels.response';
 import { buildSshConfigStrings } from './generate-ssh-proxy.handler';
 import { generateSshConfigArgs } from './generate-ssh-config.command-builder';
+import { cleanExit } from '../../clean-exit.handler';
 
 // bound refers to star boundaries set for the comments
 const bound = '*'.repeat(80);
@@ -38,9 +39,10 @@ export async function generateSshConfigHandler(argv: yargs.Arguments<generateSsh
         const { proxyCommand: proxyWithoutPrefix } = await buildSshConfigStrings(configService, processName, logger, false);
         const bzConfigContentsFormatted = formatBzConfigContents(configService, sshTargets, identityFile, knownHostsFile, proxyCommand, proxyWithoutPrefix, prefix);
         // Determine the user's ssh and bzero-ssh config path
-        const { userConfigPath, bzConfigPath } = getFilePaths(argv.mySshPath, argv.bzSshPath, prefix);
+        const { userConfigPath, bzConfigPath } = getSshConfigPaths(argv.mySshPath, argv.bzSshPath, prefix);
 
         // write to the user's ssh and bzero-ssh config path
+        fs.mkdirSync(path.dirname(bzConfigPath), { recursive:true });
         fs.writeFileSync(bzConfigPath, bzConfigContentsFormatted);
 
         // Link the ssh config path, with our new bzero-ssh config path
@@ -51,11 +53,13 @@ export async function generateSshConfigHandler(argv: yargs.Arguments<generateSsh
         // Build our ssh config file -- note that by using this function with 'true' we are chosing to add the prefix before our hostname token in the proxycommand
         const { prefix } = await buildSshConfigStrings(configService, processName, logger, true);
         // Determine the user's ssh and bzero-ssh config path
-        const { userConfigPath, bzConfigPath } = getFilePaths(argv.mySshPath, argv.bzSshPath, prefix);
+        const { userConfigPath, bzConfigPath } = getSshConfigPaths(argv.mySshPath, argv.bzSshPath, prefix);
 
         deleteBzConfigContents(userConfigPath, bzConfigPath, logger);
         logger.info('You do not have tunnel or file transfer access to any targets. BZ SSH configuration file not generated.');
     }
+
+    await cleanExit(0, logger);
 }
 
 /**
@@ -65,9 +69,11 @@ export async function generateSshConfigHandler(argv: yargs.Arguments<generateSsh
  * @param configPrefix {string} assigns a prefix to the bz config filename based on runtime environment (e.g. dev, stage)
  * @returns {{userConfigPath: string, bzConfigPath: string}}
  */
-function getFilePaths(userSshPath: string, bzSshPath: string, configPrefix: string) {
-    const userConfigPath = userSshPath ? userSshPath : path.join(process.env.HOME, '.ssh', 'config');
-    const bzConfigPath = bzSshPath ? bzSshPath : path.join(process.env.HOME, '.ssh', `${configPrefix}bz-config`);
+export function getSshConfigPaths(userSshPath: string, bzSshPath: string, configPrefix: string) {
+    const homedir = (process.platform === 'win32') ? process.env.HOMEPATH : process.env.HOME;
+
+    const userConfigPath = userSshPath ? userSshPath : path.join(homedir, '.ssh', 'config');
+    const bzConfigPath = bzSshPath ? bzSshPath : path.join(homedir, '.ssh', `${configPrefix}bz-config`);
 
     return { userConfigPath, bzConfigPath };
 }
@@ -184,7 +190,7 @@ Host ${configPrefix}*
  * @param logger {Logger}
  */
 function linkNewConfigFile(userConfigFile: string, bzConfigFile: string, logger: Logger) {
-    const includeStmt = `Include ${bzConfigFile}`;
+    const includeStmt = (process.platform === 'win32') ? `Include "${bzConfigFile}"` : `Include ${bzConfigFile}`;
 
     let configContents: string;
     let userConfigExists = true;
@@ -230,7 +236,7 @@ function linkNewConfigFile(userConfigFile: string, bzConfigFile: string, logger:
  * @param logger {Logger}
  */
 function deleteBzConfigContents(userConfigFile: string, bzConfigFile: string, logger: Logger) {
-    const includeStmt = `Include ${bzConfigFile}`;
+    const includeStmt = (process.platform === 'win32') ? `Include "${bzConfigFile}"` : `Include ${bzConfigFile}`;
     const includeStmtWithDes = `${includeStmtDes}${includeStmt}\n\n`;
 
     let configContents: string;
@@ -270,7 +276,7 @@ function deleteBzConfigContents(userConfigFile: string, bzConfigFile: string, lo
 
     // delete the bz config file if it exists
     try {
-        fs.unlinkSync(bzConfigFile);
+        fs.rmSync(bzConfigFile, {force:true});
     } catch(err) {
         if(err.code !== 'ENOENT') {
             console.error(err);

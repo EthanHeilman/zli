@@ -169,6 +169,8 @@ Valid targets: ${dbTargetsToConfigure.map(t => t.name).join(', ')}`);
             logger.error(errorText);
             await cleanExit(1, logger);
         }
+
+        await cleanExit(0, logger);
     }
 
     const certificateService = new CertificateHttpService(configService, logger);
