@@ -16,9 +16,11 @@ export class UserHttpService extends HttpService
 
     public async Register(): Promise<UserRegisterResponse>
     {
+        const tokenSet = await this.configService.getTokenSet();
+
         const requestHeaders = {
-            'AccessToken': this.configService.getAccessToken(),
-            'IdToken': this.configService.getIdToken(),
+            'AccessToken': tokenSet.access_token,
+            'IdToken': tokenSet.id_token,
         };
 
         const resp = await this.Post<{}, UserRegisterResponse>('register', {}, requestHeaders);

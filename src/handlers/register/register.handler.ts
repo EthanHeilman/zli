@@ -9,7 +9,7 @@ import { OAuthService } from '../../../src/services/oauth/oauth.service';
 import { extractMfaSecretFromUrl } from '../../../src/utils/utils';
 import totp from 'totp-generator';
 
-export async function  registerHandler(mfaSecret: string, configService: ConfigService, logger: Logger) {
+export async function registerHandler(mfaSecret: string, configService: ConfigService, logger: Logger) {
     const userHttpService = new UserHttpService(configService, logger);
     const subjectHttpService = new SubjectHttpService(configService, logger);
     const oauthService = new OAuthService(configService, logger);
@@ -17,7 +17,13 @@ export async function  registerHandler(mfaSecret: string, configService: ConfigS
     // Force refresh ID token and access token because it is likely expired in system tests
     // We are force refreshing the tokens so register does not need to be an oauth command
     const newTokenSet = await oauthService.refresh();
-    configService.setTokenSet(newTokenSet);
+
+    try {
+        await configService.setTokenSet(newTokenSet);
+    } catch (e) {
+        logger.error(`Failed to save tokens after oath refresh: ${e}`);
+        await cleanExit(1, logger);
+    }
 
     const resp = await userHttpService.Register();
     const mfaService = new MfaHttpService(configService, logger);

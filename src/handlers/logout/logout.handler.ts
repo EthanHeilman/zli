@@ -1,8 +1,8 @@
 import { cleanExit } from '../clean-exit.handler';
+import fs from 'fs';
 import { DbConfig, KubeConfig, WebConfig } from '../../services/config/config.service.types';
 import { Logger } from '../../services/logger/logger.service';
 import { ConfigService } from '../../services/config/config.service';
-import { removeIfExists } from '../../utils/utils';
 import { ILogger } from '../../../webshell-common-ts/logging/logging.types';
 import { handleDisconnect, IDaemonDisconnector } from '../disconnect/disconnect.handler';
 import { newDbDaemonManagementService, newKubeDaemonManagementService } from '../../services/daemon-management/daemon-management.service';
@@ -16,7 +16,7 @@ export async function logoutHandler(
     const dbDaemonManagementService = newDbDaemonManagementService(configService);
     const kubeDaemonManagementService = newKubeDaemonManagementService(configService);
     const fileRemover: IFileRemover = {
-        removeFileIfExists: (filePath: string) => removeIfExists(filePath)
+        removeFileIfExists: (filePath: string) => fs.rmSync(filePath, {force:true})
     };
 
     await handleLogout(
