@@ -312,7 +312,8 @@ export async function loadUserKubeConfig(): Promise<UserKubeConfig> {
         userKubeConfigFilePath = parsedKubeConfigFilePaths[0];
     } else {
         // Otherwise, set to default kube config file path
-        userKubeConfigFilePath = path.join(process.env.HOME, '.kube', 'config');
+        const homedir = (process.platform === 'win32') ? process.env.HOMEPATH : process.env.HOME;
+        userKubeConfigFilePath = path.join(homedir, '.kube', 'config');
     }
 
     const userKubeConfig = loadKubeConfigFromFile(userKubeConfigFilePath);

@@ -41,7 +41,7 @@ export async function webConnectHandler(
     await killLocalPortAndPid(webConfig, webConfig.localPort, logger);
 
     // Build our runtime config and cwd
-    const baseEnv = getBaseDaemonEnv(configService, loggerConfigService, webTarget.agentPublicKey, createUniversalConnectionResponse.connectionId, createUniversalConnectionResponse.connectionAuthDetails);
+    const baseEnv = await getBaseDaemonEnv(configService, loggerConfigService, webTarget.agentPublicKey, createUniversalConnectionResponse.connectionId, createUniversalConnectionResponse.connectionAuthDetails);
     const pluginEnv = {
         'LOCAL_PORT': localPort,
         'LOCAL_HOST': localHost,

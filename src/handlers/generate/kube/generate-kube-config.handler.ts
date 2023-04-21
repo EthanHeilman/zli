@@ -9,6 +9,7 @@ import { getAllRunningDaemons, IDaemonStatusRetriever, newKubeDaemonManagementSe
 import { KubeConfig as ZliKubeConfig, KubeDaemonSecurityConfig } from '../../../services/config/config.service.types';
 import { ILogger } from '../../../../webshell-common-ts/logging/logging.types';
 import { handleDisconnect, IDaemonDisconnector } from '../../disconnect/disconnect.handler';
+import { cleanExit } from '../../clean-exit.handler';
 
 export async function generateKubeConfigHandler(
     argv: yargs.Arguments<generateKubeConfigArgs>,
@@ -30,6 +31,8 @@ export async function generateKubeConfigHandler(
 
     if (generatedKubeConfigAsYaml)
         console.log(generatedKubeConfigAsYaml);
+
+    await cleanExit(0, logger);
 }
 
 export interface IGenerateKubeConfigManagementService extends IDaemonDisconnector<ZliKubeConfig>, IDaemonStatusRetriever<ZliKubeConfig> {

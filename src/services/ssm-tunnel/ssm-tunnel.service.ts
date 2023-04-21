@@ -93,9 +93,7 @@ export class SsmTunnelService
         // TODO #39: Change the lifetime of this key?
         if(identityFile === bzeroSshKeyPath) {
             const privateKey = await this.generateEphemeralSshKey();
-            await util.promisify(fs.writeFile)(bzeroSshKeyPath, privateKey, {
-                mode: '0600'
-            });
+            await util.promisify(fs.writeFile)(bzeroSshKeyPath, privateKey, { mode: 0o600 });
         }
     }
 

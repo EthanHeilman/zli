@@ -38,7 +38,7 @@ export async function dbConnectHandler(
     await checkIfPortAvailable(localPort);
 
     // Build our runtime config and cwd
-    const baseEnv = getBaseDaemonEnv(configService, loggerConfigService, dbTarget.agentPublicKey, createUniversalConnectionResponse.connectionId, createUniversalConnectionResponse.connectionAuthDetails);
+    const baseEnv = await getBaseDaemonEnv(configService, loggerConfigService, dbTarget.agentPublicKey, createUniversalConnectionResponse.connectionId, createUniversalConnectionResponse.connectionAuthDetails);
     const pluginEnv = {
         'LOCAL_PORT': localPort,
         'LOCAL_HOST': localHost,
