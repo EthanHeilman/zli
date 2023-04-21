@@ -38,7 +38,7 @@ export async function dbConnectHandler(
     await checkIfPortAvailable(localPort);
 
     // Build our runtime config and cwd
-    const baseEnv = getBaseDaemonEnv(configService, loggerConfigService, dbTarget.agentPublicKey, createUniversalConnectionResponse.connectionId, createUniversalConnectionResponse.connectionAuthDetails);
+    const baseEnv = await getBaseDaemonEnv(configService, loggerConfigService, dbTarget.agentPublicKey, createUniversalConnectionResponse.connectionId, createUniversalConnectionResponse.connectionAuthDetails);
     const pluginEnv = {
         'LOCAL_PORT': localPort,
         'LOCAL_HOST': localHost,
@@ -71,7 +71,7 @@ export async function dbConnectHandler(
     try {
         if (!argv.debug) {
             // If we are not debugging, start the go subprocess in the background
-            const daemonProcess = await spawnDaemonInBackground(logger, loggerConfigService, cwd, finalDaemonPath, args, runtimeConfig);
+            const daemonProcess = await spawnDaemonInBackground(logger, loggerConfigService, cwd, finalDaemonPath, args, runtimeConfig, null);
 
             // Add to dictionary of db daemons
             const dbConfig: DbConfig = {

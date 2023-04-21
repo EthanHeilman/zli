@@ -1,20 +1,21 @@
-import { SemVer, lt, parse } from 'semver';
 import net from 'net';
+import path from 'path';
+import { lt, parse, SemVer } from 'semver';
 const { spawn } = require('child_process');
 
+import yargs from 'yargs';
+import { CreateUniversalConnectionResponse } from '../../../webshell-common-ts/http/v2/connection/responses/create-universal-connection.response';
+import { TargetType } from '../../../webshell-common-ts/http/v2/target/types/target.types';
 import { MrtapService } from '../../../webshell-common-ts/mrtap.service/mrtap.service';
+import { ConnectionHttpService } from '../../http-services/connection/connection.http-services';
 import { ConfigService } from '../../services/config/config.service';
+import { LoggerConfigService } from '../../services/logger/logger-config.service';
 import { Logger } from '../../services/logger/logger.service';
 import { SsmTunnelService } from '../../services/ssm-tunnel/ssm-tunnel.service';
-import { cleanExit } from '../clean-exit.handler';
+import { copyExecutableToLocalDir, getBaseDaemonEnv, getOrDefaultLocalport, handleExitCode, waitForDaemonProcessExit } from '../../utils/daemon-utils';
 import { parseTargetString } from '../../utils/utils';
-import { LoggerConfigService } from '../../services/logger/logger-config.service';
-import { copyExecutableToLocalDir, getBaseDaemonEnv, waitForDaemonProcessExit, getOrDefaultLocalport, handleExitCode} from '../../utils/daemon-utils';
+import { cleanExit } from '../clean-exit.handler';
 import { sshProxyArg } from './ssh-proxy.command-builder';
-import yargs from 'yargs';
-import { ConnectionHttpService } from '../../http-services/connection/connection.http-services';
-import { TargetType } from '../../../webshell-common-ts/http/v2/target/types/target.types';
-import { CreateUniversalConnectionResponse } from '../../../webshell-common-ts/http/v2/connection/responses/create-universal-connection.response';
 
 const minimumAgentVersion = '6.1.0';
 const readyMsg = 'BZERO-DAEMON READY-TO-CONNECT';
@@ -90,7 +91,7 @@ export async function sshProxyHandler(
         if (createUniversalConnectionResponse.sshScpOnly) {
             exitCode = await bzeroTransparentSshProxyHandler(configService, logger, sshTunnelParameters, createUniversalConnectionResponse, loggerConfigService);
         } else {
-            exitCode = await bzeroOpaueSshProxyHandler(configService, logger, sshTunnelParameters, createUniversalConnectionResponse, loggerConfigService);
+            exitCode = await bzeroOpaqueSshProxyHandler(configService, logger, sshTunnelParameters, createUniversalConnectionResponse, loggerConfigService);
         }
 
         if (exitCode !== 0) {
@@ -142,9 +143,9 @@ async function ssmSshProxyHandler(configService: ConfigService, logger: Logger, 
 /**
  * Launch an "opaque" SSH tunnel session to a bzero target
  */
-async function bzeroOpaueSshProxyHandler(configService: ConfigService, logger: Logger, sshTunnelParameters: SshTunnelParameters, createUniversalConnectionResponse: CreateUniversalConnectionResponse, loggerConfigService: LoggerConfigService): Promise<number> {
+async function bzeroOpaqueSshProxyHandler(configService: ConfigService, logger: Logger, sshTunnelParameters: SshTunnelParameters, createUniversalConnectionResponse: CreateUniversalConnectionResponse, loggerConfigService: LoggerConfigService): Promise<number> {
     // Build our runtime config and cwd
-    const baseEnv = getBaseDaemonEnv(configService, loggerConfigService, createUniversalConnectionResponse.agentPublicKey, createUniversalConnectionResponse.connectionId, createUniversalConnectionResponse.connectionAuthDetails);
+    const baseEnv = await getBaseDaemonEnv(configService, loggerConfigService, createUniversalConnectionResponse.agentPublicKey, createUniversalConnectionResponse.connectionId, createUniversalConnectionResponse.connectionAuthDetails);
     const pluginEnv = getBaseSshArgs(configService, sshTunnelParameters, createUniversalConnectionResponse);
     const actionEnv = {
         'SSH_ACTION': 'opaque'
@@ -152,18 +153,21 @@ async function bzeroOpaueSshProxyHandler(configService: ConfigService, logger: L
 
     const runtimeConfig = { ...baseEnv, ...pluginEnv, ...actionEnv };
 
-    let cwd = process.cwd();
-
     // Copy over our executable to a temp file
-    let finalDaemonPath = '';
+    let cwd: string;
+    let daemonName: string;
     let args: string[] = [];
+
     if (process.env.ZLI_CUSTOM_DAEMON_PATH) {
         // If we set a custom path, we will try to start the daemon from the source code
         cwd = process.env.ZLI_CUSTOM_DAEMON_PATH;
-        finalDaemonPath = 'go';
+        daemonName = 'go';
         args = ['run', 'daemon.go', 'config.go'];
     } else {
-        finalDaemonPath = await copyExecutableToLocalDir(logger, configService.getConfigPath());
+        const fullDaemonPath = await copyExecutableToLocalDir(logger, configService.getConfigPath());
+        cwd = path.dirname(fullDaemonPath);
+        // Windows can handle our executable's name, but unix has to have the path reference
+        daemonName = (process.platform === 'win32') ? path.basename(fullDaemonPath) : `./${path.basename(fullDaemonPath)}`;
     }
 
     try {
@@ -175,7 +179,7 @@ async function bzeroOpaueSshProxyHandler(configService: ConfigService, logger: L
             stdio: 'pipe'
         };
 
-        const daemonProcess = spawn(finalDaemonPath, args, options);
+        const daemonProcess = spawn(daemonName, args, options);
 
         configService.logoutDetected.subscribe(() => {
             logger.error(`\nLogged out by another zli instance. Terminating ssh tunnel\n`);
@@ -196,7 +200,7 @@ async function bzeroOpaueSshProxyHandler(configService: ConfigService, logger: L
             daemonProcess.stdin.end();
         });
 
-        return await waitForDaemonProcessExit(logger, loggerConfigService, daemonProcess);
+        return await waitForDaemonProcessExit(logger, loggerConfigService, daemonProcess, null);
     } catch (err) {
         logger.error(`Error starting ssh daemon: ${err}`);
         await cleanExit(1, logger);
@@ -215,7 +219,7 @@ async function bzeroTransparentSshProxyHandler(configService: ConfigService, log
     // Build our runtime config and cwd
     const localPort = await getOrDefaultLocalport(null);
 
-    const baseEnv = getBaseDaemonEnv(configService, loggerConfigService, createUniversalConnectionResponse.agentPublicKey, createUniversalConnectionResponse.connectionId, createUniversalConnectionResponse.connectionAuthDetails);
+    const baseEnv = await getBaseDaemonEnv(configService, loggerConfigService, createUniversalConnectionResponse.agentPublicKey, createUniversalConnectionResponse.connectionId, createUniversalConnectionResponse.connectionAuthDetails);
     const pluginEnv = getBaseSshArgs(configService, sshTunnelParameters, createUniversalConnectionResponse);
     const actionEnv = {
         'SSH_ACTION': 'transparent',
@@ -286,7 +290,7 @@ async function bzeroTransparentSshProxyHandler(configService: ConfigService, log
             process.stdout.end();
         });
 
-        return await waitForDaemonProcessExit(logger, loggerConfigService, daemonProcess);
+        return await waitForDaemonProcessExit(logger, loggerConfigService, daemonProcess, null);
     } catch (err) {
         logger.error(`Error starting ssh daemon: ${err}`);
         await cleanExit(1, logger);

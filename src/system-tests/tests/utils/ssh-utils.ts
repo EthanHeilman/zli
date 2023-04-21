@@ -1,5 +1,3 @@
-import fs from 'fs';
-
 import { allTargets, testTargets, configService, logger } from '../system-test';
 import { DigitalOceanBZeroTarget } from '../../digital-ocean/digital-ocean-target.service.types';
 import { TestTarget } from '../system-test.types';
@@ -22,11 +20,6 @@ export async function getTargetInfo(testTarget: TestTarget): Promise<SshTargetIn
 /**
  * Helper functions to reduce test redundancy
  */
-export function expectIncludeStmtInConfig(userFile: string, bzFile: string, exists: boolean = true): void {
-    const includeStmt = `Include ${bzFile}`;
-    const userConfigContents = fs.readFileSync(userFile).toString();
-    expect(userConfigContents.includes(includeStmt)).toBe(exists);
-}
 export async function expectTargetsInBzConfig(contents: string, toBe: boolean): Promise<void> {
     for (const testTarget of allTargets) {
         const { targetName, environmentName } = await getTargetInfo(testTarget);

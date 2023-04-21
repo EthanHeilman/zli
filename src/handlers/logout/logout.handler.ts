@@ -1,8 +1,8 @@
 import { cleanExit } from '../clean-exit.handler';
+import fs from 'fs';
 import { DbConfig, KubeConfig, WebConfig } from '../../services/config/config.service.types';
 import { Logger } from '../../services/logger/logger.service';
 import { ConfigService } from '../../services/config/config.service';
-import { removeIfExists } from '../../utils/utils';
 import { ILogger } from '../../../webshell-common-ts/logging/logging.types';
 import { handleDisconnect, IDaemonDisconnector } from '../disconnect/disconnect.handler';
 import { newDbDaemonManagementService, newKubeDaemonManagementService } from '../../services/daemon-management/daemon-management.service';
@@ -16,7 +16,7 @@ export async function logoutHandler(
     const dbDaemonManagementService = newDbDaemonManagementService(configService);
     const kubeDaemonManagementService = newKubeDaemonManagementService(configService);
     const fileRemover: IFileRemover = {
-        removeFileIfExists: (filePath: string) => removeIfExists(filePath)
+        removeFileIfExists: (filePath: string) => fs.rmSync(filePath, {force:true})
     };
 
     await handleLogout(
@@ -54,9 +54,9 @@ export async function handleLogout(
 ) {
     // Deletes the auth tokens from the config which will force the
     // user to login again before running another command
+    logger.info('Closing any existing SSH tunnels and shell connections');
     configService.logout();
     configService.clearSessionId();
-    logger.info('Closing any existing SSH Tunnel Connections');
     logger.info('Clearing temporary SSH files');
     fileRemover.removeFileIfExists(configService.getSshKeyPath());
     fileRemover.removeFileIfExists(configService.getSshKnownHostsPath());

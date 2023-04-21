@@ -160,9 +160,9 @@ export async function sendLogsHandler(argv: yargs.Arguments<sendLogsArgs>, confi
 
         // delete the temporary files
         try {
-            fs.unlinkSync(tempZliFilePath);
-            fs.unlinkSync(tempDaemonFilePath);
-            fs.unlinkSync(tempZipFilePath);
+            fs.rmSync(tempZliFilePath, {force:true});
+            fs.rmSync(tempDaemonFilePath, {force:true});
+            fs.rmSync(tempZipFilePath, {force:true});
         } catch(err) {
             logger.warn(`Error deleting temporary files: ${err}`);
         }

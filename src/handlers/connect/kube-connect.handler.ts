@@ -75,7 +75,7 @@ export async function startKubeDaemonHandler(
     }
 
     // Build our runtime config and cwd
-    const baseEnv = getBaseDaemonEnv(configService, loggerConfigService, clusterTarget.agentPublicKey, createUniversalConnectionResponse.connectionId, createUniversalConnectionResponse.connectionAuthDetails);
+    const baseEnv = await getBaseDaemonEnv(configService, loggerConfigService, clusterTarget.agentPublicKey, createUniversalConnectionResponse.connectionId, createUniversalConnectionResponse.connectionAuthDetails);
     const pluginEnv = {
         'TARGET_USER': targetUser,
         'TARGET_GROUPS': targetGroups.join(','),
@@ -106,7 +106,7 @@ export async function startKubeDaemonHandler(
     try {
         if (!argv.debug) {
             // If we are not debugging, start the go subprocess in the background
-            const daemonProcess = await spawnDaemonInBackground(logger, loggerConfigService, cwd, finalDaemonPath, args, runtimeConfig);
+            const daemonProcess = await spawnDaemonInBackground(logger, loggerConfigService, cwd, finalDaemonPath, args, runtimeConfig, null);
 
             // Generate kube config for this daemon
             const generatedKubeConfig = generateKubeConfig(

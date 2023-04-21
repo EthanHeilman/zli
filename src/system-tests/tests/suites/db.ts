@@ -30,7 +30,6 @@ import { DbConfig } from '../../../services/config/config.service.types';
 import { setupBackgroundDaemonMocks } from '../utils/connect-utils';
 import { TargetUser } from '../../../../webshell-common-ts/http/v2/policy/types/target-user.types';
 import { VerbType } from '../../../../webshell-common-ts/http/v2/policy/types/verb-type.types';
-import { removeIfExists } from '../../../utils/utils';
 import { configurePostgres } from '../utils/pwdb/pwdb-utils';
 
 // Create mapping object and function for test rails case IDs
@@ -852,11 +851,13 @@ export const dbSuite = () => {
         });
 
         describe('happy path: passwordless (SplitCert) access', () => {
+            const homedir = (process.platform === 'win32') ? process.env.HOMEPATH : process.env.HOME;
+
             const userSshConfigFile = path.join(
-                process.env.HOME, '.ssh', 'test-config-user'
+                homedir, '.ssh', 'test-config-user'
             );
             const bzSshConfigFile = path.join(
-                process.env.HOME, '.ssh', 'test-config'
+                homedir, '.ssh', 'test-config'
             );
             const pwdbConfigDir = path.join(
                 'src', 'system-tests', 'tests', 'utils', 'pwdb'
@@ -874,9 +875,9 @@ export const dbSuite = () => {
 
             afterAll(async () => {
                 // delete outstanding configuration files
-                removeIfExists(userSshConfigFile);
-                removeIfExists(bzSshConfigFile);
-                removeIfExists(pgConfigFile);
+                fs.rmSync(userSshConfigFile, { force: true });
+                fs.rmSync(bzSshConfigFile, { force: true });
+                fs.rmSync(pgConfigFile, { force: true });
                 fs.rmSync(certDir, { recursive: true, force: true });
             });
 
