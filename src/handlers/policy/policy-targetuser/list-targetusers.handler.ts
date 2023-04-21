@@ -51,6 +51,4 @@ export async function listTargetUsersHandler(configService: ConfigService, logge
         const tableString = getTableOfTargetUsers(targetUsers);
         console.log(tableString);
     }
-
-    await cleanExit(0, logger);
 }

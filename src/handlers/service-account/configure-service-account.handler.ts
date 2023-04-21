@@ -91,7 +91,7 @@ export async function configureServiceAccountHandler(configService: ConfigServic
     const request: ConfigureServiceAccountRequest = {
         serviceAccountConfiguration: serviceAccountConfiguration,
         targets: targetIds,
-        BZCert: await mrtapService.getBZECert(await configService.getIdToken()),
+        BZCert: await mrtapService.getBZECert(configService.getIdToken()),
         signature: signature
     };
     await agentHttpService.ConfigureBzeroTarget(request);

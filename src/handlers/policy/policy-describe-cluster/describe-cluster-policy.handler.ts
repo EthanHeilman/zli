@@ -50,6 +50,4 @@ export async function describeClusterPolicyHandler(
     // regular table output
     const tableString = getTableOfDescribeCluster(filteredKubePolicies);
     console.log(tableString);
-
-    await cleanExit(0, logger);
 }

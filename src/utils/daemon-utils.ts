@@ -1,30 +1,30 @@
-import * as cp from 'child_process';
-import { spawn } from 'child_process';
-import fs from 'fs';
-import forge from 'node-forge';
 import path from 'path';
-import { check as checkTcpPort, waitUntilUsedOnHost } from 'tcp-port-used';
+import fs from 'fs';
 import utils from 'util';
-import { version } from '../../package.json';
-import { CreateUniversalConnectionResponse } from '../../webshell-common-ts/http/v2/connection/responses/create-universal-connection.response';
-import { ShellConnectionAuthDetails } from '../../webshell-common-ts/http/v2/connection/types/shell-connection-auth-details.types';
-import { ILogger } from '../../webshell-common-ts/logging/logging.types';
-import { cleanExit } from '../handlers/clean-exit.handler';
-import { ConfigService } from '../services/config/config.service';
-import { DaemonConfig } from '../services/config/config.service.types';
-import { LoggerConfigService } from '../services/logger/logger-config.service';
-import { Logger } from '../services/logger/logger.service';
-import { ProcessManagerService } from '../services/process-manager/process-manager.service';
-import { KillProcessResultType } from '../services/process-manager/process-manager.service.types';
-import { DAEMON_EXIT_CODES } from './daemon-exit-codes';
-import { toUpperCase } from './utils';
-import { Observable } from 'rxjs';
+import * as cp from 'child_process';
 
+import { execSync, spawn, ExecSyncOptions } from 'child_process';
 const pids = require('port-pid');
 const readLastLines = require('read-last-lines');
+const randtoken = require('rand-token');
 const findPort = require('find-open-port');
 const lockfile = require('proper-lockfile');
 
+import { version } from '../../package.json';
+import { cleanExit } from '../handlers/clean-exit.handler';
+import { Logger } from '../services/logger/logger.service';
+import { waitUntilUsedOnHost } from 'tcp-port-used';
+import { ConfigService } from '../services/config/config.service';
+import { LoggerConfigService } from '../services/logger/logger-config.service';
+import { ShellConnectionAuthDetails } from '../../webshell-common-ts/http/v2/connection/types/shell-connection-auth-details.types';
+import { DAEMON_EXIT_CODES } from './daemon-exit-codes';
+import { check as checkTcpPort } from 'tcp-port-used';
+import { ProcessManagerService } from '../services/process-manager/process-manager.service';
+import { DaemonConfig } from '../services/config/config.service.types';
+import { ILogger } from '../../webshell-common-ts/logging/logging.types';
+import { toUpperCase } from './utils';
+import { KillProcessResultType } from '../services/process-manager/process-manager.service.types';
+import { CreateUniversalConnectionResponse } from '../../webshell-common-ts/http/v2/connection/responses/create-universal-connection.response';
 
 export const DAEMON_PATH : string = 'bzero/bctl/daemon/daemon';
 
@@ -35,38 +35,26 @@ const WAIT_UTIL_USED_ON_HOST_RETRY_TIME = 100;
  * spawns daemon as a subprocess with inherited stdio and returns a promise that
  * resolves when the daemon process exits with an exit code
  * @param logger the logger service to use to report errors if the daemon exits
- * @param daemonPath path to the daemon process
+ * @param path path to the daemon process
  * @param args args to pass to the daemon
+ * @param cwd current working directory to use for the spawned subprocess
  * @param customEnv any custom environment variables to set for the spawned
  * process in addition to parent process environment
- * @param cwd current working directory to use for the spawned subprocess
- * @param logoutDetected optionally provide an observable that fires when the user logs out
  * @returns A promise that resolves with the daemon process exit code
  */
-export function spawnDaemon(
-    logger: Logger,
-    loggerConfigService: LoggerConfigService,
-    daemonPath: string,
-    args: string[],
-    customEnv: object,
-    logoutDetected: Observable<boolean> | null,
-): Promise<number> {
+export function spawnDaemon(logger: Logger, loggerConfigService: LoggerConfigService, path: string, args: string[], customEnv: object, cwd: string): Promise<number> {
     return new Promise((resolve, reject) => {
-        const daemonDir = path.dirname(daemonPath);
-        // Windows can handle our executable's name, but unix has to have the path reference
-        const daemonFile = (process.platform === 'win32') ? path.basename(daemonPath) : `./${path.basename(daemonPath)}`;
-
         try {
             const options: cp.SpawnOptions = {
-                cwd: daemonDir,
+                cwd: cwd,
                 env: { ...customEnv, ...process.env },
                 detached: false,
                 shell: true,
                 stdio: 'inherit',
             };
 
-            const daemonProcess = cp.spawn(daemonFile, args, options);
-            resolve(waitForDaemonProcessExit(logger, loggerConfigService, daemonProcess, logoutDetected));
+            const daemonProcess = cp.spawn(path, args, options);
+            resolve(waitForDaemonProcessExit(logger, loggerConfigService, daemonProcess));
         }
         catch(err) {
             reject(err);
@@ -84,42 +72,28 @@ export function spawnDaemon(
  * @param args daemon command line args
  * @param customEnv any custom environment variables to set for the spawned
  * process in addition to parent process environment
- * @param logoutDetected optionally provide an observable that fires when the user logs out
  * @returns The spawned child process
  */
-export async function spawnDaemonInBackground(
-    logger: Logger,
-    loggerConfigService: LoggerConfigService,
-    cwd: string,
-    daemonPath: string,
-    args: string[],
-    customEnv: object,
-    logoutDetected: Observable<boolean> | null,
-): Promise<cp.ChildProcess> {
+export async function spawnDaemonInBackground(logger: Logger, loggerConfigService: LoggerConfigService, cwd: string, daemonPath: string, args: string[], customEnv: object): Promise<cp.ChildProcess> {
     const options: cp.SpawnOptions = {
         cwd: cwd,
         env: { ...customEnv, ...process.env },
         detached: true,
-        shell: false,
+        shell: true,
         stdio: 'ignore',
     };
 
     const daemonProcess = await cp.spawn(daemonPath, args, options);
 
-    reportDaemonExitErrors(logger, loggerConfigService, daemonProcess, logoutDetected);
+    reportDaemonExitErrors(logger, loggerConfigService, daemonProcess);
 
     return daemonProcess;
 }
 
-export async function reportDaemonExitErrors(
-    logger: Logger,
-    loggerConfigService: LoggerConfigService,
-    daemonProcess: cp.ChildProcess,
-    logoutDetected: Observable<boolean> | null,
-): Promise<void> {
+export async function reportDaemonExitErrors(logger: Logger, loggerConfigService: LoggerConfigService, daemonProcess: cp.ChildProcess ): Promise<void> {
     // If the daemon process exits while the zli process is still running then
     // report any custom errors and exit the zli as well
-    waitForDaemonProcessExit(logger, loggerConfigService, daemonProcess, logoutDetected)
+    waitForDaemonProcessExit(logger, loggerConfigService, daemonProcess)
         .then(async exitCode => await cleanExit(exitCode, logger));
 }
 
@@ -183,6 +157,8 @@ export interface DaemonTLSCert {
  * @returns Path to the key, path to the cert, path to the certificate signing request.
  */
 export async function generateNewCert(pathToConfig: string, name: string, configName: string): Promise<DaemonTLSCert> {
+    const options: ExecSyncOptions = { stdio: 'ignore' };
+
     // Create and save key/cert
     const createCertPromise = new Promise<DaemonTLSCert>(async (resolve, reject) => {
         // Only add the prefix for non-prod
@@ -195,64 +171,26 @@ export async function generateNewCert(pathToConfig: string, name: string, config
         const pathToCsr = path.join(pathToConfig, `${name}Csr${prefix}.pem`);
         const pathToCert = path.join(pathToConfig, `${name}Cert${prefix}.pem`);
 
-        const subject = [{
-            type: 'commonName',
-            shortName: 'CN',
-            value: 'bastionzero.com'
-        }, {
-            type: 'countryName',
-            shortName: 'C',
-            value: 'US'
-        }, {
-            type: 'stateOrProvinceName',
-            shortName: 'ST',
-            value: 'Massachusetts'
-        }, {
-            type: 'localityName',
-            shortName: 'L',
-            value: 'Boston'
-        }, {
-            type: 'organizationName',
-            name: 'O',
-            value: 'BastionZero Inc.'
-        }];
-
+        // Generate a new key
         try {
-            // generate a keypair and create an X.509v3 certificate
-            const keys = forge.pki.rsa.generateKeyPair(2048);
+            execSync(`openssl genrsa -out ${pathToKey}`, options);
+        } catch (e: any) {
+            reject(e);
+        }
 
-            // write keys to file
-            const pkPem = forge.pki.privateKeyToPem(keys.privateKey);
-            fs.writeFileSync(pathToKey, pkPem, { mode: 0o600 });
+        // Generate a new csr
+        // Ref: https://www.openssl.org/docs/man1.0.2/man1/openssl-req.html
+        try {
+            const pass = randtoken.generate(128);
+            execSync(`openssl req -sha256 -passin pass:${pass} -new -key ${pathToKey} -subj "/C=US/ST=Bastionzero/L=Boston/O=Dis/CN=bastionzero.com" -out ${pathToCsr}`, options);
+        } catch (e: any) {
+            reject(e);
+        }
 
-            // create certificate request
-            const csr = forge.pki.createCertificationRequest();
-            csr.publicKey = keys.publicKey;
-            csr.setSubject(subject as forge.pki.CertificateField[]);
-
-            // sign certification request
-            csr.sign(keys.privateKey);
-
-            // write certificate request to file
-            const csrPem = forge.pki.certificationRequestToPem(csr);
-            fs.writeFileSync(pathToCsr, csrPem, { mode: 0o600 });
-
-            const cert = forge.pki.createCertificate();
-            cert.publicKey = csr.publicKey;
-            cert.subject = csr.subject;
-            cert.serialNumber = '01';
-            cert.setIssuer(subject);
-
-            // add validity duration
-            cert.validity.notBefore = new Date();
-            cert.validity.notAfter = new Date();
-            cert.validity.notAfter.setFullYear(cert.validity.notBefore.getFullYear() + 5);
-
-            // sign certificate
-            cert.sign(keys.privateKey);
-
-            const certPem = forge.pki.certificateToPem(cert);
-            fs.writeFileSync(pathToCert, certPem, { mode: 0o600 });
+        // Now generate the certificate
+        // https://www.openssl.org/docs/man1.1.1/man1/x509.html
+        try {
+            execSync(`openssl x509 -req -days 999 -in ${pathToCsr} -signkey ${pathToKey} -out ${pathToCert}`, options);
         } catch (e: any) {
             reject(e);
         }
@@ -266,6 +204,7 @@ export async function generateNewCert(pathToConfig: string, name: string, config
 
     return await createCertPromise;
 }
+
 
 export function isPkgProcess() {
     const process1 = <any>process;
@@ -318,14 +257,14 @@ export async function copyExecutableToLocalDir(logger: Logger, configPath: strin
 
     let daemonExecPath: string;
     let finalDaemonPath: string;
-
-    if (process.platform === 'win32') {
-        daemonExecPath = path.join(prefix, DAEMON_PATH + '.exe');
-        finalDaemonPath = path.join(configDir, daemonName + '.exe');
-    } else { // platform is unix
+    if (process.platform === 'linux' || process.platform === 'darwin') {
         daemonExecPath = path.join(prefix, DAEMON_PATH);
         finalDaemonPath = path.join(configDir, daemonName);
+    } else {
+        logger.error(`Unsupported operating system: ${process.platform}`);
+        await cleanExit(1, logger);
     }
+
     if (fs.existsSync(finalDaemonPath)) {
         return finalDaemonPath;
     }
@@ -482,7 +421,7 @@ async function getPidForPort(port: number): Promise<number[]> {
 /**
  * Helper function to get common environment variables to set for the daemon process
  */
-export async function getBaseDaemonEnv(configService: ConfigService, loggerConfigService: LoggerConfigService, agentPubKey: string, connectionId: string, authDetails: ShellConnectionAuthDetails) {
+export function getBaseDaemonEnv(configService: ConfigService, loggerConfigService: LoggerConfigService, agentPubKey: string, connectionId: string, authDetails: ShellConnectionAuthDetails) {
     // Build the refresh command so it works in the case of the pkg'd app which
     // is expecting a second argument set to internal main script
     // This is a work-around for pkg recursive binary issue see https://github.com/vercel/pkg/issues/897
@@ -494,7 +433,7 @@ export async function getBaseDaemonEnv(configService: ConfigService, loggerConfi
         'SESSION_ID': configService.getSessionId(),
         'SESSION_TOKEN': configService.getSessionToken(),
         'SERVICE_URL': configService.getServiceUrl().slice(0, -1).replace('https://', ''),
-        'AUTH_HEADER': await configService.getAuthHeader(),
+        'AUTH_HEADER': configService.getAuthHeader(),
         'CONFIG_PATH': configService.getConfigPath(),
         'REFRESH_TOKEN_COMMAND': `${execPath} ${entryPoint} refresh`,
         'LOG_PATH': loggerConfigService.daemonLogPath(),
@@ -538,24 +477,13 @@ export async function getOrDefaultLocalport(passedLocalport: number): Promise<nu
  * also handle any custom error codes by logging specific error messages to the
  * user
  * @param logger logger for reporting custom errors
- * @param loggerConfigService used to point the user to the daemon log path
  * @param daemonProcess the daemon child process
- * @param logoutDetected optionally provide an observable that fires when the user logs out
  * @returns The daemon process' exit code
  */
-export function waitForDaemonProcessExit(
-    logger: Logger,
-    loggerConfigService: LoggerConfigService,
-    daemonProcess: cp.ChildProcess,
-    logoutDetected: Observable<boolean> | null,
-): Promise<number> {
+export function waitForDaemonProcessExit(logger: Logger, loggerConfigService: LoggerConfigService, daemonProcess: cp.ChildProcess): Promise<number> {
     return new Promise((resolve) => {
-        logoutDetected?.subscribe(() => {
-            logger.error(`\nLogged out by another zli instance. Terminating connection...\n`);
-            daemonProcess.kill();
-        });
-
         daemonProcess.on('close', (exitCode) => {
+
             if (exitCode !== 0) {
                 // Note: if using the ZLI_CUSTOM_DAEMON_PATH environment variable
                 // while developing we will instead use `go run` to start the daemon

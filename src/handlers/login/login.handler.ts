@@ -66,27 +66,19 @@ export async function loginUserHandler(configService: ConfigService, logger: Log
 
     // Clear previous log in info
     configService.logout();
+    await mrtapService.generateMrtapLoginData();
 
-    try {
-        await mrtapService.generateMrtapLoginData();
+    // Can only create oauth service after loginSetup completes
+    const oAuthService = new OAuthService(configService, logger);
 
-        // Can only create oauth service after loginSetup completes
-        const oAuthService = new OAuthService(configService, logger);
-
-        if (!await oAuthService.isAuthenticated()) {
-            // Create our Nonce
-            const nonce = mrtapService.createNonce();
-            // Pass it in as we login
-            await oAuthService.login(async (t) => {
-                await configService.setTokenSet(t);
-                await mrtapService.setInitialIdToken(await configService.getIdToken());
-            }, nonce);
-        }
-    } catch (e) {
-        logger.error(`Failed to login
-        ${e}
-        Please use \'zli send-logs\' to send us your zli and target logs and get in contact with the BastionZero team at support@bastionzero.com.`);
-        return undefined;
+    if (!oAuthService.isAuthenticated()) {
+        // Create our Nonce
+        const nonce = mrtapService.createNonce();
+        // Pass it in as we login
+        await oAuthService.login((t) => {
+            configService.setTokenSet(t);
+            mrtapService.setInitialIdToken(configService.getIdToken());
+        }, nonce);
     }
 
     // Register user log in and get User Session Id and Session Token
@@ -148,29 +140,20 @@ export async function loginServiceAccountHandler(configService: ConfigService, l
 
     // Clear previous log in info
     configService.logout();
+    await mrtapService.generateMrtapLoginData();
 
+    // Can only create oauth service after loginSetup completes
+    const oAuthService = new OAuthService(configService, logger);
 
     let bzeroCredsFile: ServiceAccountBzeroCredentials = null;
-    try {
-        await mrtapService.generateMrtapLoginData();
-
-        // Can only create oauth service after loginSetup completes
-        const oAuthService = new OAuthService(configService, logger);
-
-        if (!await oAuthService.isAuthenticated()) {
-            // Create our Nonce
-            const nonce = mrtapService.createNonce();
-            const providerCredsFile = JSON.parse(fs.readFileSync(argv.providerCreds, 'utf-8')) as ServiceAccountProviderCredentials;
-            bzeroCredsFile = JSON.parse(fs.readFileSync(argv.bzeroCreds, 'utf-8')) as ServiceAccountBzeroCredentials;
-            const t = createGCPServiceAccountTokenSet(providerCredsFile, bzeroCredsFile, nonce, configService.getServiceUrl());
-            await configService.setTokenSet(t);
-            await mrtapService.setInitialIdToken(await configService.getIdToken());
-        }
-    } catch (e) {
-        logger.error(`Failed to login
-        ${e}
-        Please use \'zli send-logs\' to send us your zli and target logs and get in contact with the BastionZero team at support@bastionzero.com.`);
-        return undefined;
+    if (!oAuthService.isAuthenticated()) {
+        // Create our Nonce
+        const nonce = mrtapService.createNonce();
+        const providerCredsFile = JSON.parse(fs.readFileSync(argv.providerCreds, 'utf-8')) as ServiceAccountProviderCredentials;
+        bzeroCredsFile = JSON.parse(fs.readFileSync(argv.bzeroCreds, 'utf-8')) as ServiceAccountBzeroCredentials;
+        const t = createGCPServiceAccountTokenSet(providerCredsFile, bzeroCredsFile, nonce, configService.getServiceUrl());
+        configService.setTokenSet(t);
+        mrtapService.setInitialIdToken(configService.getIdToken());
     }
 
     const serviceAccountHttpService = new ServiceAccountHttpService(configService, logger);

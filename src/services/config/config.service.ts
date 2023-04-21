@@ -1,6 +1,5 @@
-import { TokenSet } from 'openid-client';
+import { TokenSet, TokenSetParameters } from 'openid-client';
 import path from 'path';
-import fs from 'fs';
 import { Observable, Subject } from 'rxjs';
 import { IdentityProvider } from '../../../webshell-common-ts/auth-service/auth.types';
 import { SubjectSummary } from '../../../webshell-common-ts/http/v2/subject/types/subject-summary.types';
@@ -11,15 +10,37 @@ import { DbDaemonStore, KubeDaemonStore } from '../daemon-management/daemon-mana
 import { IKubeConfigService, IKubeDaemonSecurityConfigService } from '../kube-management/kube-management.service';
 import { Logger } from '../logger/logger.service';
 import { ConnectConfig, DaemonConfigs, DbConfig, GlobalKubeConfig, KubeConfig, WebConfig } from './config.service.types';
+import { removeIfExists } from '../../../src/utils/utils';
 import { UnixConfig } from './unix-config.service';
-import { WindowsConfig } from './windows-config.service';
 
-export interface IConfig {
+// refL: https://github.com/sindresorhus/conf/blob/master/test/index.test-d.ts#L5-L14
+export type ConfigSchema = {
+    authUrl: string,
+    clientId: string,
+    clientSecret: string,
+    serviceUrl: string,
+    tokenSet: TokenSetParameters,
+    callbackListenerPort: number,
+    GAToken: string,
+    MixpanelToken: string,
+    idp: IdentityProvider,
+    sessionId: string,
+    sessionToken: string,
+    whoami: SubjectSummary,
+    sshKeyPath: string,
+    sshKnownHostsPath: string,
+    mrtap: MrtapConfigSchema,
+    webConfig: WebConfig,
+    connectConfig: ConnectConfig,
+    globalKubeConfig: GlobalKubeConfig,
+    dbDaemons: DaemonConfigs<DbConfig>,
+    kubeDaemons: DaemonConfigs<KubeConfig>
+};
+
+export interface ConfigInterface {
     readonly path: string;
 
-    // This function is not directly used by the config service, nevertheless
-    // it is required functionality
-    logoutOnTokenSetCleared(logoutDetectedSubject: Subject<boolean>): void;
+    onTokenSetChange(callback: (newValue?: TokenSetParameters, oldValue?: TokenSetParameters) => void): void;
 
     // "Get" functions, for retrieving values from the config
     getWhoami(): SubjectSummary;
@@ -28,7 +49,7 @@ export interface IConfig {
     getCallbackListenerPort(): number;
     getServiceUrl(): string;
     getAuthUrl(): string;
-    getTokenSet(): Promise<TokenSet>;
+    getTokenSet(): TokenSet;
     getIdp(): IdentityProvider;
     getClientId(): string;
     getClientSecret(): string;
@@ -42,7 +63,7 @@ export interface IConfig {
     getConnectConfig(): ConnectConfig;
     getDbDaemons(): DaemonConfigs<DbConfig>;
     getKubeDaemons(): DaemonConfigs<KubeConfig>;
-    getMrtap(): Promise<MrtapConfigSchema>;
+    getMrtap(): MrtapConfigSchema;
 
     // "Set" functions, for setting new values in the config
     setGaToken(token: string): void;
@@ -50,7 +71,7 @@ export interface IConfig {
     setSessionId(sessionId: string): void;
     setSessionToken(sessionToken: string): void;
     setAuthUrl(url: string): void;
-    setTokenSet(tokenSet: TokenSet): Promise<void>;
+    setTokenSet(tokenSet: TokenSet): void;
     setIdp(idp: IdentityProvider): void;
     setClientId(id: string): void;
     setClientSecret(secret: string): void;
@@ -63,7 +84,7 @@ export interface IConfig {
     setGlobalKubeConfig(globalKubeConfig: GlobalKubeConfig): void;
     setDbDaemons(dbDaemons: DaemonConfigs<DbConfig>): void;
     setKubeDaemons(kubeDaemons: DaemonConfigs<KubeConfig>): void;
-    setMrtap(data: MrtapConfigSchema): Promise<void>;
+    setMrtap(data: MrtapConfigSchema): void;
 
     // "Clear" functions, for clearing values in the config
     clearSshConfigPaths(): void;
@@ -76,7 +97,7 @@ export interface IConfig {
 }
 
 export class ConfigService implements IKubeDaemonSecurityConfigService, IKubeConfigService, KubeDaemonStore, DbDaemonStore, ILogoutConfigService, MrtapConfigInterface {
-    private config: IConfig;
+    private config: ConfigInterface;
     private tokenHttpService: TokenHttpService;
     private logoutDetectedSubject: Subject<boolean> = new Subject<boolean>();
 
@@ -97,12 +118,7 @@ export class ConfigService implements IKubeDaemonSecurityConfigService, IKubeCon
 
         const serviceUrl = this.buildServiceUrl(configName);
 
-        if (process.platform === 'win32') {
-            this.config = new WindowsConfig(projectName, configName, configDir, isSystemTest, this.logoutDetectedSubject, serviceUrl);
-        } else { // platform is unix
-            this.config = new UnixConfig(projectName, configName, configDir, isSystemTest, this.logoutDetectedSubject, serviceUrl);
-        }
-
+        this.config = new UnixConfig(projectName, configName, configDir, isSystemTest, serviceUrl);
         this.configPath = this.config.path;
         this.configName = configName;
 
@@ -112,6 +128,13 @@ export class ConfigService implements IKubeDaemonSecurityConfigService, IKubeCon
         }
 
         this.tokenHttpService = new TokenHttpService(this, logger);
+
+        this.config.onTokenSetChange((newValue: TokenSetParameters, oldValue: TokenSetParameters) => {
+            // If the change in the tokenSet is a logout
+            if (newValue === undefined && oldValue) {
+                this.logoutDetectedSubject.next(true);
+            }
+        });
     }
 
     async loginSetup(idp: IdentityProvider, email?: string): Promise<void> {
@@ -159,12 +182,12 @@ export class ConfigService implements IKubeDaemonSecurityConfigService, IKubeCon
         this.config.clearSessionId();
 
         // clear temporary SSH identity file
-        fs.rmSync(this.getSshKeyPath(), {force:true});
-        fs.rmSync(this.getSshKnownHostsPath(), {force:true});
+        removeIfExists(this.getSshKeyPath());
+        removeIfExists(this.getSshKnownHostsPath());
     }
 
-    async getAuthHeader(): Promise<string> {
-        const tokenSet = await this.config.getTokenSet();
+    getAuthHeader(): string {
+        const tokenSet = this.config.getTokenSet();
         return `${tokenSet.token_type} ${tokenSet.id_token}`;
     }
 
@@ -270,9 +293,12 @@ export class ConfigService implements IKubeDaemonSecurityConfigService, IKubeCon
         return this.config.getServiceUrl();
     }
 
-    async getIdToken(): Promise<string> {
-        const tokenSet = await this.config.getTokenSet();
-        return tokenSet ? tokenSet.id_token : undefined;
+    getIdToken(): string {
+        return this.config.getTokenSet().id_token;
+    }
+
+    getAccessToken(): string {
+        return this.config.getTokenSet().access_token;
     }
 
     getGaToken(): string {
@@ -291,8 +317,8 @@ export class ConfigService implements IKubeDaemonSecurityConfigService, IKubeCon
         return this.config.getAuthUrl();
     }
 
-    async getTokenSet(): Promise<TokenSet> {
-        return await this.config.getTokenSet();
+    getTokenSet(): TokenSet {
+        return this.config.getTokenSet();
     }
 
     getIdp(): IdentityProvider{
@@ -339,8 +365,8 @@ export class ConfigService implements IKubeDaemonSecurityConfigService, IKubeCon
         return this.config.getKubeDaemons();
     }
 
-    async getMrtap(): Promise<MrtapConfigSchema> {
-        return await this.config.getMrtap();
+    getMrtap(): MrtapConfigSchema {
+        return this.config.getMrtap();
     }
 
     setSessionId(sessionId: string): void {
@@ -375,15 +401,15 @@ export class ConfigService implements IKubeDaemonSecurityConfigService, IKubeCon
         this.config.setKubeDaemons(kubeDaemons);
     }
 
-    async setMrtap(data: MrtapConfigSchema): Promise<void> {
+    setMrtap(data: MrtapConfigSchema): void {
         this.config.setMrtap(data);
     }
 
-    async setTokenSet(tokenSet: TokenSet): Promise<void> {
+    setTokenSet(tokenSet: TokenSet): void {
         // TokenSet implements TokenSetParameters, makes saving it like
         // this safe to do.
         if (tokenSet)
-            await this.config.setTokenSet(tokenSet);
+            this.config.setTokenSet(tokenSet);
     }
 
     clearSessionId(): void {

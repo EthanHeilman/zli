@@ -8,7 +8,6 @@ import { generateBashArgs } from './generate-bash.command-builder';
 import { getEnvironmentFromName } from '../../../utils/utils';
 import { ScriptTargetNameOption } from '../../../../webshell-common-ts/http/v2/autodiscovery-script/types/script-target-name-option.types';
 import { EnvironmentHttpService } from '../../../http-services/environment/environment.http-services';
-import { cleanExit } from '../../clean-exit.handler';
 
 export async function generateBashHandler(
     argv: yargs.Arguments<generateBashArgs>,
@@ -53,6 +52,4 @@ export async function generateBashHandler(
     } else {
         console.log(script);
     }
-
-    await cleanExit(0, logger);
 }

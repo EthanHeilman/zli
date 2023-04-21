@@ -176,7 +176,7 @@ export async function startShellDaemon(
     return new Promise<number>(async (resolve, reject) => {
 
         // Build our runtime config and cwd
-        const baseEnv = await getBaseDaemonEnv(configService, loggerConfigService, agentPublicKey, connectionId, authDetails);
+        const baseEnv = getBaseDaemonEnv(configService, loggerConfigService, agentPublicKey, connectionId, authDetails);
         let pluginEnv = {
             'TARGET_USER': targetUser,
             'PLUGIN': 'shell'
@@ -189,11 +189,14 @@ export async function startShellDaemon(
 
         const runtimeConfig = { ...baseEnv, ...pluginEnv };
 
+        let cwd = process.cwd();
+
         // Copy over our executable to a temp file
         let finalDaemonPath = '';
         let args: string[] = [];
         if (process.env.ZLI_CUSTOM_DAEMON_PATH) {
             // If we set a custom path, we will try to start the daemon from the source code
+            cwd = process.env.ZLI_CUSTOM_DAEMON_PATH;
             finalDaemonPath = 'go';
             args = ['run', 'daemon.go', 'config.go'];
         } else {
@@ -201,7 +204,7 @@ export async function startShellDaemon(
         }
 
         try {
-            const daemonProcessExitCode = await spawnDaemon(logger, loggerConfigService, finalDaemonPath, args, runtimeConfig, configService.logoutDetected);
+            const daemonProcessExitCode = await spawnDaemon(logger, loggerConfigService, finalDaemonPath, args, runtimeConfig, cwd);
             logger.debug(`Shell Daemon closed with exit code ${daemonProcessExitCode}`);
             resolve(daemonProcessExitCode);
         } catch(err) {

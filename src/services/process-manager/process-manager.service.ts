@@ -1,5 +1,4 @@
 import { KillProcessResultType } from './process-manager.service.types';
-import * as cp from 'child_process';
 
 /**
  * Helper service that provides functionality to safely kill and check processes
@@ -18,13 +17,6 @@ export class ProcessManagerService {
      * @returns True if the process was killed. False if there is no such process running.
      */
     public killProcess(pid: number, hard: boolean = false): boolean {
-        // On Windows, there is no way to send a SIGINT to a detached process
-        // For more explanation, please see CWC-2538
-        if (process.platform === 'win32') {
-            cp.spawnSync('taskkill', ['/pid', pid.toString(), '/f', '/t']);
-            return true;
-        }
-
         // For Unix we kill all processes based on group id by using `kill -2 -$PID`
         // "Please note [the dash] before pid. This converts a pid to a group of pids for process kill() method."
         // https://stackoverflow.com/a/49842576/9186330

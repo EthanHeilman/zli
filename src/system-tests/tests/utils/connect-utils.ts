@@ -1,23 +1,22 @@
-import * as cp from 'child_process';
 import * as pty from 'node-pty';
-import path from 'path';
-import { ConnectionEventType } from '../../../../webshell-common-ts/http/v2/event/types/connection-event.types';
-import { TargetUser } from '../../../../webshell-common-ts/http/v2/policy/types/target-user.types';
+import * as cp from 'child_process';
+
 import * as CleanExitHandler from '../../../handlers/clean-exit.handler';
-import { DynamicAccessConnectionUtils } from '../../../handlers/connect/dynamic-access-connect-utils';
-import { ConnectionHttpService } from '../../../http-services/connection/connection.http-services';
 import * as DaemonUtils from '../../../utils/daemon-utils';
-import { DigitalOceanBZeroTarget } from '../../digital-ocean/digital-ocean-target.service.types';
-import { ContainerBzeroTarget } from '../suites/agent-container';
-import { DATBzeroTarget } from '../suites/dynamic-access';
-import { configService, RUN_AS_SERVICE_ACCOUNT, testTargets } from '../system-test';
-import { bzeroTargetCustomUser, idpUsernameTargetCustomSA, idpUsernameTargetCustomUser } from '../system-test-setup';
-import { TestTarget } from '../system-test.types';
-import { getMockResultValue } from './jest-utils';
+
 import { sleepTimeout, TestUtils } from './test-utils';
+import { bzeroTargetCustomUser, idpUsernameTargetCustomSA, idpUsernameTargetCustomUser } from '../system-test-setup';
+import { DigitalOceanBZeroTarget } from '../../digital-ocean/digital-ocean-target.service.types';
 import { callZli } from './zli-utils';
-
-
+import { ConnectionHttpService } from '../../../http-services/connection/connection.http-services';
+import { ConnectionEventType } from '../../../../webshell-common-ts/http/v2/event/types/connection-event.types';
+import { getMockResultValue } from './jest-utils';
+import { configService, RUN_AS_SERVICE_ACCOUNT, testTargets } from '../system-test';
+import { TestTarget } from '../system-test.types';
+import { TargetUser } from '../../../../webshell-common-ts/http/v2/policy/types/target-user.types';
+import { DynamicAccessConnectionUtils } from '../../../handlers/connect/dynamic-access-connect-utils';
+import { DATBzeroTarget } from '../suites/dynamic-access';
+import { ContainerBzeroTarget } from '../suites/agent-container';
 
 /**
  * Interface that can be used to abstract any differences between bzero
@@ -267,10 +266,10 @@ export class ConnectTestUtils {
         let daemonPty: pty.IPty;
         const capturedOutput: string[] = [];
 
-        jest.spyOn(DaemonUtils, 'spawnDaemon').mockImplementation((logger, loggerConfigService, finalDaemonPath, args, customEnv) => {
+        jest.spyOn(DaemonUtils, 'spawnDaemon').mockImplementation((logger, loggerConfigService, finalDaemonPath, args, customEnv, cwd) => {
             return new Promise((resolve, reject) => {
                 try {
-                    daemonPty = this.spawnDaemonPty(finalDaemonPath, args, customEnv);
+                    daemonPty = this.spawnDaemonPty(finalDaemonPath, args, customEnv, cwd);
                     daemonPty.onData((data: string) => capturedOutput.push(data));
                     daemonPty.onExit((e: { exitCode: number | PromiseLike<number>; }) => resolve(e.exitCode));
                 } catch(err) {
@@ -382,12 +381,12 @@ export class ConnectTestUtils {
      * parent zli process which is itself a tty. This doesn't work however in
      * system-tests where we mock the zli call and the jest test process is not
      * a tty.
-     * @param daemonPath path to the daemon process
+     * @param path path to the daemon process
      * @param args args to pass to the daemon
      * @param cwd current working directory to use for the pty process
      * @returns A promise that resolves with the daemon process exit code
      */
-    private spawnDaemonPty(daemonPath: string, args: string[], env: object) {
+    private spawnDaemonPty(path: string, args: string[], env: object, cwd: string) {
         // Transform args to be suitable for starting as a forked process
         args = args.map(arg => {
             // Remove any nested quotes from the arguments when using fork (not
@@ -397,11 +396,11 @@ export class ConnectTestUtils {
             return arg.replace(/['"]+/g, '');
         });
 
-        const ptyProcess = pty.spawn(daemonPath, args, {
+        const ptyProcess = pty.spawn(path, args, {
             name: 'xterm-color',
             cols: 80,
             rows: 30,
-            cwd: path.dirname(daemonPath),
+            cwd: cwd,
             env: {...env, ...process.env}
         });
 

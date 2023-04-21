@@ -328,7 +328,6 @@ export class CliDriver
                 // first to ensure session token is set
                 if(!this.oauthCommands.has(baseCmd) || baseCmd === 'register' || isServiceAccountLogin)
                     return;
-
                 await bzCertValidationInfoMiddleware(this.mrtapService, this.configService, this.logger);
             })
             .command(

@@ -21,8 +21,6 @@ import { callZli } from './utils/zli-utils';
 import { SubjectHttpService } from '../../http-services/subject/subject.http-services';
 import { ServiceAccountHttpService } from '../../http-services/service-account/service-account.http-services';
 import { MfaHttpService } from '../../http-services/mfa/mfa.http-services';
-import path from 'path';
-import os from 'os';
 
 // User to create for bzero targets to use for connect/ssh tests
 export const bzeroTargetCustomUser = 'bzuser';
@@ -88,8 +86,9 @@ export async function setupDOTestCluster(): Promise<RegisteredDigitalOceanKubern
 
     console.log(`Config retrieved for cluster ${clusterSummary.name}!`);
 
-    const kubeConfigPath = path.join(os.tmpdir(),`do-kubeconfig-${systemTestUniqueId}.yml`);
-    await promisify(fs.writeFile)(kubeConfigPath, kubeConfigFileContents, { mode: 0o600 });
+    // Write to file
+    const kubeConfigPath = `/tmp/do-kubeconfig-${systemTestUniqueId}.yml`;
+    await promisify(fs.writeFile)(kubeConfigPath, kubeConfigFileContents, { mode: '0600' });
     clusterToRegister.kubeConfigFilePath = kubeConfigPath;
 
     // Define dictionary of helm --set variables to use in "helm install"

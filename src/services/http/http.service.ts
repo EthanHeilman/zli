@@ -64,11 +64,11 @@ export class HttpService {
         });
     }
 
-    private async setHeaders(extraHeaders? : Dictionary<string>) {
+    private setHeaders(extraHeaders? : Dictionary<string>) {
         const headers: Dictionary<string> = extraHeaders ?? {};
 
         //TODO : This could eventually be transitioned to a cookie as well
-        if (this.authorized) headers['Authorization'] = await this.configService.getAuthHeader();
+        if (this.authorized) headers['Authorization'] = this.configService.getAuthHeader();
 
         // append headers
         this.httpClient = this.httpClient.extend({ headers: headers });
@@ -132,7 +132,7 @@ export class HttpService {
     }
 
     protected async Get<TResp>(route?: string, queryParams?: Dictionary<string> | URLSearchParams, extraHeaders? : Dictionary<string>): Promise<TResp> {
-        await this.setHeaders(extraHeaders);
+        this.setHeaders(extraHeaders);
 
         try {
             const resp: TResp = await this.httpClient.get(
@@ -150,7 +150,7 @@ export class HttpService {
 
     // Use this Get request when a string response is expected.
     protected async GetText(route?: string, queryParams?: Dictionary<string> | URLSearchParams, extraHeaders?: Dictionary<string>): Promise<string> {
-        await this.setHeaders(extraHeaders);
+        this.setHeaders(extraHeaders);
 
         try {
             const response = await this.httpClient.get(
@@ -167,7 +167,7 @@ export class HttpService {
     }
 
     protected async Delete<TResp>(route?: string, extraHeaders? : Dictionary<string>): Promise<TResp> {
-        await this.setHeaders(extraHeaders);
+        this.setHeaders(extraHeaders);
 
         try {
             const resp: TResp = await this.httpClient.delete(
@@ -181,7 +181,7 @@ export class HttpService {
     }
 
     protected async Post<TReq, TResp>(route: string, body: TReq, extraHeaders? : Dictionary<string>): Promise<TResp> {
-        await this.setHeaders(extraHeaders);
+        this.setHeaders(extraHeaders);
 
         try {
             const resp: TResp = await this.httpClient.post(
@@ -198,7 +198,7 @@ export class HttpService {
     }
 
     protected async Patch<TReq, TResp>(route: string, body?: TReq, extraHeaders? : Dictionary<string>): Promise<TResp> {
-        await this.setHeaders(extraHeaders);
+        this.setHeaders(extraHeaders);
 
         try {
             const resp: TResp = await this.httpClient.patch(
@@ -216,7 +216,7 @@ export class HttpService {
     }
 
     protected async FormPostWithException<TReq, TResp>(route: string, body: TReq): Promise<TResp> {
-        await this.setHeaders();
+        this.setHeaders();
 
         const formBody = this.getFormDataFromRequest(body);
 
@@ -230,7 +230,7 @@ export class HttpService {
     }
 
     protected async FormPost<TReq, TResp>(route: string, body: TReq): Promise<TResp> {
-        await this.setHeaders();
+        this.setHeaders();
 
         const formBody = this.getFormDataFromRequest(body);
 

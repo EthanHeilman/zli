@@ -178,7 +178,10 @@ export const webSuite = () => {
                     expect(testConnectionRequest.statusMessage).toEqual('Not Implemented');
                 } finally {
                     // Always attempt to delete the file
-                    fs.rmSync(filePath, {force:true});
+                    if (fs.existsSync(filePath)) {
+                        // Delete the file
+                        fs.unlinkSync(filePath);
+                    }
                 }
 
                 // Disconnect

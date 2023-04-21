@@ -41,7 +41,7 @@ export async function webConnectHandler(
     await killLocalPortAndPid(webConfig, webConfig.localPort, logger);
 
     // Build our runtime config and cwd
-    const baseEnv = await getBaseDaemonEnv(configService, loggerConfigService, webTarget.agentPublicKey, createUniversalConnectionResponse.connectionId, createUniversalConnectionResponse.connectionAuthDetails);
+    const baseEnv = getBaseDaemonEnv(configService, loggerConfigService, webTarget.agentPublicKey, createUniversalConnectionResponse.connectionId, createUniversalConnectionResponse.connectionAuthDetails);
     const pluginEnv = {
         'LOCAL_PORT': localPort,
         'LOCAL_HOST': localHost,
@@ -69,7 +69,7 @@ export async function webConnectHandler(
     try {
         if (!argv.debug) {
             // If we are not debugging, start the go subprocess in the background
-            const daemonProcess = await spawnDaemonInBackground(logger, loggerConfigService, cwd, finalDaemonPath, args, runtimeConfig, null);
+            const daemonProcess = await spawnDaemonInBackground(logger, loggerConfigService, cwd, finalDaemonPath, args, runtimeConfig);
 
             // Now save the Pid so we can kill the process next time we start it
             webConfig.localPid = daemonProcess.pid;

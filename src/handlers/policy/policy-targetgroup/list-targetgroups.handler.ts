@@ -30,6 +30,4 @@ export async function listTargetGroupsHandler(configService: ConfigService, logg
         const tableString = getTableOfTargetGroups(targetGroups);
         console.log(tableString);
     }
-
-    await cleanExit(0, logger);
 }
