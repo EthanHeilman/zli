@@ -376,7 +376,7 @@ export class ConfigService implements IKubeDaemonSecurityConfigService, IKubeCon
     }
 
     async setMrtap(data: MrtapConfigSchema): Promise<void> {
-        this.config.setMrtap(data);
+        await this.config.setMrtap(data);
     }
 
     async setTokenSet(tokenSet: TokenSet): Promise<void> {
