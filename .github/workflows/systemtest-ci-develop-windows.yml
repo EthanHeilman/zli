@@ -7,9 +7,10 @@ on:
       - "feat/**"
 jobs:
   hello:
+    runs-on: [self-hosted, windows]
     name: Hello
     steps:
-      - name: Say hello
-        id: sayhello
-        run: |
-            echo hello
+    - name: Say hello
+      id: sayhello
+      run: |
+        echo hello
