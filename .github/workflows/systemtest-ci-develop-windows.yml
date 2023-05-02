@@ -1,0 +1,15 @@
+name: System Test Develop Branch CI
+on:
+  pull_request:
+    branches:
+      # Run System Tests on PRs to develop or PRs to feature branches (should be based on develop)
+      - develop
+      - "feat/**"
+jobs:
+  hello:
+    name: Hello
+    steps:
+      - name: Say hello
+        id: sayhello
+        run: |
+            echo hello
