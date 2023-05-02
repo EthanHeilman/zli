@@ -18,7 +18,7 @@ interface ManifestFile {
 const downloadLinks = `
 MacOS:      https://download-zli.bastionzero.com/release/latest/bin/zli-macos
 Linux:      https://download-zli.bastionzero.com/release/latest/bin/zli-linux
-Windows:    https://download-zli.bastionzero.com/release/latest/bin/zli-win.exe`;
+Windows:    https://download-zli.bastionzero.com/release/latest/bin/zli.exe`;
 
 class CheckVersionMiddleware {
     constructor() {}

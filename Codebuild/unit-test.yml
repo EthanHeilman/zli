@@ -39,9 +39,6 @@ phases:
       - git submodule update --init --recursive --depth 50
       # Install npm dependencies
       - apt-get update -y && apt-get install build-essential cmake -y
-      # Temporary work-around for https://github.com/aws/aws-codebuild-docker-images/issues/612 until AWS rebuilds its codebuild docker images
-      - ssh-keygen -R github.com
-      - curl -L https://api.github.com/meta | jq -r '.ssh_keys | .[]' | sed -e 's/^/github.com /' >> ~/.ssh/known_hosts
       # Install Bzero-QA
       - git clone git@github.com:bastionzero/cwc-infra.git --branch develop /cwc-infra/
       - pip3 install -e /cwc-infra/Bzero-Common/. && pip3 install -e /cwc-infra/Bzero-QA/.
