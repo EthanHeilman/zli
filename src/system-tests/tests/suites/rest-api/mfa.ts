@@ -52,6 +52,7 @@ export const mfaSuite = () => {
             const mfaSummary = await mfaService.GetCurrentUserMfaSummary();
             expect(mfaSummary.enabled).toBe(true);
             expect(mfaSummary.verified).toBe(false);
+            expect(mfaSummary.gracePeriodEndTime).toBe(null); // The grace period implementation relies on ths being initialized to null.
         }, 15 * 1000);
 
         testIf(!RUN_AS_SERVICE_ACCOUNT, '5605: Reset MFA and check MfaSummary', async () => {

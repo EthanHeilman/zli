@@ -141,11 +141,12 @@ export class OAuthService implements IDisposable {
 
                 this.logger.info('Login successful');
                 res.write(loginHtml);
+                res.end();
                 resolve();
                 break;
 
             case '/logout-callback':
-                this.logger.info('Login successful');
+                this.logger.info('Logout successful');
                 this.logger.debug('callback listener closed');
                 this.server.close();
                 res.write(logoutHtml);

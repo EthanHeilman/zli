@@ -42,7 +42,7 @@ function interactiveTOTPMFA(): Promise<string | undefined> {
         await prompts({
             type: 'text',
             name: 'value',
-            message: 'Enter MFA token:',
+            message: 'Enter MFA code:',
             validate: value => value ? true : 'Value is required. Use CTRL-C to exit'
         }, { onSubmit: onSubmit, onCancel: onCancel });
     });
@@ -59,6 +59,41 @@ function interactiveResetMfa(): Promise<string> {
             validate: value => value ? true : 'Value is required. Use CTRL-C to exit'
         }, { onSubmit: onSubmit, onCancel: onCancel });
     });
+}
+
+function interactiveSetUpMfaOption(): Promise<boolean> {
+    return new Promise<boolean | undefined>(async (resolve, _) => {
+        const onCancel = () => resolve(undefined);
+        const onSubmit = (_: PromptObject, answer: boolean) => resolve(answer);
+        await prompts({
+            type: 'confirm',
+            name: 'confirmed',
+            message: `Do you want to set up MFA now?`,
+        }, { onSubmit: onSubmit, onCancel: onCancel });
+    });
+}
+
+async function setUpMfa(mfaHttpService: MfaHttpService, logger: Logger): Promise<boolean> {
+    logger.info('Please scan the QR code with your authenticator app or enter the secret key. Then, complete setup by entering an MFA code below.');
+
+    const resp = await mfaHttpService.ResetSecret(true);
+    // Small size rendering is broken on Mac terminals. See https://github.com/soldair/node-qrcode/issues/322.
+    const useSmallQrCode = process.platform !== 'darwin';
+    const data = await qrcode.toString(resp.mfaSecretUrl, { type: 'terminal', small: useSmallQrCode });
+    const secretRegEx = /secret=(?<base32Secret>\w*)\&/;
+    const matches = resp.mfaSecretUrl.match(secretRegEx);
+    const base32Secret = matches?.groups.base32Secret;
+    console.log(data);
+    logger.info(`Secret key: ${base32Secret}`);
+
+    const code = await interactiveResetMfa();
+    if (code) {
+        await mfaHttpService.VerifyMfaTotp(code);
+        logger.info('MFA configured successfully');
+        return true;
+    }
+
+    return false;
 }
 
 export async function loginUserHandler(configService: ConfigService, logger: Logger, mrtapService: MrtapService, argv: yargs.Arguments<loginArgs> = null): Promise<LoginResult | undefined> {
@@ -102,7 +137,7 @@ export async function loginUserHandler(configService: ConfigService, logger: Log
         if (argv?.mfa) {
             await mfaHttpService.VerifyMfaTotp(argv?.mfa);
         } else {
-            logger.info('MFA token required for this account');
+            logger.info('MFA code required for this account');
             const token = await interactiveTOTPMFA();
             if (token) {
                 await mfaHttpService.VerifyMfaTotp(token);
@@ -112,23 +147,32 @@ export async function loginUserHandler(configService: ConfigService, logger: Log
         }
         break;
     case MfaActionRequired.RESET:
-        logger.info('MFA reset detected, requesting new MFA token');
-        logger.info('Please scan the following QR code with your device (Google Authenticator recommended) and enter code below.');
-
-        const resp = await mfaHttpService.ResetSecret(true);
-        const data = await qrcode.toString(resp.mfaSecretUrl, { type: 'terminal', scale: 2 });
-        console.log(data);
-
-        const code = await interactiveResetMfa();
-        if (code) {
-            await mfaHttpService.VerifyMfaTotp(code);
-        } else {
+        logger.info('MFA setup is required before you can continue.');
+        const success = await setUpMfa(mfaHttpService, logger);
+        if (!success) {
             return undefined;
         }
-
         break;
     case MfaActionRequired.RESET_DEFER_ALLOWED:
-        // For now, allow user to continue without setting up MFA and don't make them aware of the grace period.
+        logger.info('BastionZero requires multi-factor authentication (MFA) to provide trustless access to your infrastructure.');
+        const mfaSummary = await mfaHttpService.GetCurrentUserMfaSummary();
+        const millisecondsInADay = 24 * 60 * 60 * 1000;
+        const currentDayAtMidnight = new Date().setUTCHours(0, 0, 0, 0);
+        const targetDayAtMindnight = new Date(mfaSummary.gracePeriodEndTime).setUTCHours(0, 0, 0, 0);
+        const remainingGracePeriodDays = (targetDayAtMindnight - currentDayAtMidnight) / millisecondsInADay;
+        logger.info(`You have ${remainingGracePeriodDays} ${remainingGracePeriodDays === 1 ? 'day' : 'days'} until MFA setup is mandatory.`);
+
+        const setUpNow = await interactiveSetUpMfaOption();
+        if (setUpNow) {
+            const success = await setUpMfa(mfaHttpService, logger);
+            if (!success) {
+                // Since the user is within their MFA setup grace period, they are allowed to log in
+                // regardless of the outcome of the MFA setup.
+                logger.info('MFA setup bypassed. Login successful.');
+            }
+        } else {
+            logger.info('MFA setup postponed');
+        }
         break;
     default:
         logger.warn(`Unexpected MFA response ${registerResponse.mfaActionRequired}`);

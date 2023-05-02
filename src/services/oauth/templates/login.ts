@@ -23,7 +23,7 @@ export const loginHtml = `<html>
         <div class="center-div">
             <img src="https://cloud.bastionzero.com/assets/icons/Wordmark-Horizontal.png" height="28px">
             <br>
-            <p class="text">Log in successful. You may close this window.</p>
+            <p class="text">SSO login successful. Please close this window and return to the ZLI.</p>
         </div>
     </body>
 </html>`;
