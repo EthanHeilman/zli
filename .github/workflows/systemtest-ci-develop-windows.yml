@@ -1,4 +1,4 @@
-name: System Test Develop Branch CI
+name: System Test Develop Branch CI -- Windows
 on:
   pull_request:
     branches:
