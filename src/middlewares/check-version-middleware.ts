@@ -28,22 +28,25 @@ class CheckVersionMiddleware {
         if(configName == 'dev')
             return;
 
-        const manifestFile = await this.getManifestFile();
+        try {
+            const manifestFile = await this.getManifestFile();
 
-        const latestVersion = new SemVer(manifestFile.version);
-        const currentVersion = new SemVer(version);
+            const latestVersion = new SemVer(manifestFile.version);
+            const currentVersion = new SemVer(version);
 
-        if (gt(latestVersion, currentVersion)) {
-            logger.warn(`New version of ${appName} available: ${latestVersion} (current version ${currentVersion})`);
+            if (gt(latestVersion, currentVersion)) {
+                logger.warn(`New version of ${appName} available: ${latestVersion} (current version ${currentVersion})`);
+            }
+
+            if(latestVersion.major > currentVersion.major) {
+                logger.error(`Version ${currentVersion} is no longer supported. Please download latest version of ${appName}`);
+                console.log(chalk.bold(downloadLinks));
+
+                await cleanExit(1, logger);
+            }
+        } catch (e) {
+            logger.debug(`Failed to get latest version of the zli: ${e}`);
         }
-
-        if(latestVersion.major > currentVersion.major) {
-            logger.error(`Version ${currentVersion} is no longer supported. Please download latest version of ${appName}`);
-            console.log(chalk.bold(downloadLinks));
-
-            await cleanExit(1, logger);
-        }
-
     }
 
     private async getManifestFile() : Promise<ManifestFile> {
