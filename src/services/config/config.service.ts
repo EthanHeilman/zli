@@ -130,6 +130,7 @@ export class ConfigService implements IKubeDaemonSecurityConfigService, IKubeCon
             break;
         case IdentityProvider.Okta:
         case IdentityProvider.OneLogin:
+        case IdentityProvider.Keycloak:
             if (!email)
                 throw new Error(`User email is required for ${idp} login`);
 
@@ -212,6 +213,8 @@ export class ConfigService implements IKubeDaemonSecurityConfigService, IKubeCon
             return 'offline_access openid email profile';
         case IdentityProvider.OneLogin:
             return 'openid profile';
+        case IdentityProvider.Keycloak:
+            return 'offline_access openid email profile';
         default:
             throw new Error(`Unknown idp ${idp}`);
         }

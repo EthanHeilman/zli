@@ -38,6 +38,14 @@ export const organizationSuite = () => {
             getGroupsCaseId = '658655';
             fetchGroupsCaseId = '658654';
             break;
+        case 'keycloak':
+            orgProvider = 'keycloak';
+            // https://keycloak.bastionzero.com/realms/bastionzero
+            // For Keycloak IdP, orgIssuerId is the whole domain
+            orgIssuerId = 'https://keycloak.bastionzero.com/realms/bastionzero';
+            getGroupsCaseId = '897193';
+            fetchGroupsCaseId = '897192';
+            break;
         case 'microsoft':
             orgProvider = 'microsoft';
             // Tenant ID for b0demo.onmicrosoft.com

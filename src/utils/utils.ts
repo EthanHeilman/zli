@@ -154,6 +154,8 @@ export function parseIdpType(idp: IdentityProvider) : IdentityProvider
         return IdentityProvider.Okta;
     case IdentityProvider.OneLogin:
         return IdentityProvider.OneLogin;
+    case IdentityProvider.Keycloak:
+        return IdentityProvider.Keycloak;
     default:
         return undefined;
     }
