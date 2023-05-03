@@ -326,11 +326,14 @@ export async function copyExecutableToLocalDir(logger: Logger, configPath: strin
         daemonExecPath = path.join(prefix, DAEMON_PATH);
         finalDaemonPath = path.join(configDir, daemonName);
     }
+
     if (fs.existsSync(finalDaemonPath)) {
         return finalDaemonPath;
     }
 
-    await lockfile.lock('copyExecutableToLocalDir', {
+    const lockName = path.join(configDir, 'copyExecutableToLocalDir');
+
+    await lockfile.lock(lockName, {
         realpath: false,
         stale: 5000, // 5 seconds
         retries: 5
@@ -374,14 +377,16 @@ export async function copyExecutableToLocalDir(logger: Logger, configPath: strin
             const chmod = utils.promisify(fs.chmod);
             await chmod(finalDaemonPath, 0o755);
 
-            return lockfile.unlockSync('copyExecutableToLocalDir', {
+            return lockfile.unlockSync(lockName, {
                 realpath: false,
                 stale: 5000
             });
         })
         .catch((e: Error) => {
             // either lock could not be acquired or releasing it failed
-            console.error(e);
+            logger.debug(`Failed to acquire ${lockName} lock: ${e}`);
+            logger.error(`Runtime error. Please try executing the command again.`);
+            cleanExit(1, logger);
         });
 
     return finalDaemonPath;
