@@ -141,11 +141,12 @@ export class OAuthService implements IDisposable {
 
                 this.logger.info('Login successful');
                 res.write(loginHtml);
+                res.end();
                 resolve();
                 break;
 
             case '/logout-callback':
-                this.logger.info('Login successful');
+                this.logger.info('Logout successful');
                 this.logger.debug('callback listener closed');
                 this.server.close();
                 res.write(logoutHtml);
@@ -179,7 +180,7 @@ export class OAuthService implements IDisposable {
             response_types: ['code'],
         };
 
-        // Client secret is not used for Okta and OneLogin but it is required for Google/Microsoft
+        // Client secret is not used for Okta, OneLogin and Keycloak but it is required for Google/Microsoft
         // https://github.com/panva/node-openid-client/blob/main/docs/README.md#client-authentication-methods
         const clientSecret = this.configService.getClientSecret();
         if(clientSecret) {
@@ -224,6 +225,7 @@ export class OAuthService implements IDisposable {
             break;
         case IdentityProvider.Microsoft:
         case IdentityProvider.OneLogin:
+        case IdentityProvider.Keycloak:
             prompt = 'login';
             break;
         default:
@@ -243,7 +245,7 @@ export class OAuthService implements IDisposable {
             state: state
         };
 
-        if(idp == IdentityProvider.Okta || idp == IdentityProvider.OneLogin) {
+        if(idp == IdentityProvider.Okta || idp == IdentityProvider.OneLogin || idp == IdentityProvider.Keycloak) {
             authParams.login_hint = email;
         }
 

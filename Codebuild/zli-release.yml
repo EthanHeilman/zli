@@ -46,13 +46,15 @@ phases:
       - if ! [ -z "${DRY_RUN}" ]; then echo "Dry run exiting early before publishing" && exit 1; fi
       - echo Post build started `date`
       - Version=$(node -p "require('./package.json').version")
+      - if [ $env = "stage" ]; then ReleaseDir=beta/release; fi
+      - echo "Uploading artifacts to $ReleaseDir"
       - mkdir -p $ReleaseDir/$Version
       - cp -a bin $ReleaseDir/$Version
       - cp -a $ReleaseDir/$Version $ReleaseDir/latest
       - release-scripts/create-manifest.sh > $ReleaseDir/latest/MANIFEST
-      - aws cloudfront create-invalidation --distribution-id=E16AJOUNJ6VWEY --paths '/release/latest/*'
+      - aws cloudfront create-invalidation --distribution-id=E1Z9ZTI1EEU48X --paths '/release/latest/*'
 artifacts:
   files:
     - "**/*"
   base-directory: $ReleaseDir
-  name: release
+  name: $ReleaseDir
