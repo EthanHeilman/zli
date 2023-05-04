@@ -177,7 +177,7 @@ export async function quickstartHandler(
     try {
         // Run standard oauth middleware logic that checks if user is logged in
         // and refreshes token if its expired.
-        await oauthService.getIdToken();
+        await oauthService.getTokenSet();
         if(configService.me().type !== SubjectType.User)
             throw new Error(`Cannot continue as subject ${configService.me().type}`);
         const userSummary = await userHttpService.GetUserById(configService.me().id);

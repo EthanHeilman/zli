@@ -1,5 +1,7 @@
 import { AuthorizationParameters, Client, ClientMetadata, custom, errors, generators, Issuer, TokenSet } from 'openid-client';
+import path from 'path';
 import open from 'open';
+import lockfile from 'proper-lockfile';
 import { IDisposable } from '../../../webshell-common-ts/utility/disposable';
 import { IdentityProvider } from '../../../webshell-common-ts/auth-service/auth.types';
 import { ConfigService } from '../config/config.service';
@@ -330,49 +332,79 @@ export class OAuthService implements IDisposable {
     }
 
     /**
-     * Get the current user's id_token. Refresh it if it has expired.
-     * @returns The current user's id_token
+     * Get the current user's Token Set. Refresh it if it has expired.
+     * @returns The current user's Token Set
      */
-    public async getIdToken(): Promise<string> {
-        const tokenSet = await this.configService.getTokenSet();
-
-        // Refresh if the token exists and has expired
-        if (tokenSet) {
-            if (!await this.isAuthenticated()) {
-                if(this.configService.me().type === SubjectType.ServiceAccount){
-                    this.logger.error('Service account session has expired, please log in again.');
-                    await cleanExit(1, this.logger);
-                }
-                this.logger.debug('Refreshing oauth token');
-
-                let newTokenSet: TokenSet;
-                try {
-                    newTokenSet = await this.refresh();
-                } catch (e) {
-                    this.logger.debug(`Refresh Token Error: ${e.message}`);
-                    if (e instanceof errors.RPError || e instanceof errors.OPError) {
-                        throw new RefreshTokenError();
-                    } else {
-                        throw e;
-                    }
-                }
-
-                this.configService.setTokenSet(newTokenSet);
-                this.logger.debug('Oauth token refreshed');
-
-                const userHttpService = new UserHttpService(this.configService, this.logger);
-                await userHttpService.Register();
-                // Update me section of the config in case this is a new login or any
-                // user information has changed since last login
-                const subjectHttpService = new SubjectHttpService(this.configService, this.logger);
-                const me = await subjectHttpService.Me();
-                this.configService.setMe(me);
-            }
-        } else {
+    public async getTokenSet(): Promise<TokenSet> {
+        let tokenSet = await this.configService.getTokenSet();
+        if (!tokenSet) {
             throw new UserNotLoggedInError();
         }
 
-        return await this.configService.getIdToken();
+        if (await this.isAuthenticated()) {
+            return tokenSet;
+        }
+
+        // Service accounts do not have the ability to automatically refresh
+        if(this.configService.me().type === SubjectType.ServiceAccount){
+            throw new Error('Service account session has expired, please log in again.');
+        }
+
+        const configDir = path.dirname(this.configService.getConfigPath());
+        const lockName = path.join(configDir, 'getTokenSet');
+
+        let release: () => Promise<void>;
+        try {
+            release = await lockfile.lock(lockName, {
+                realpath: false,
+                stale: 5000, // 5 seconds
+                retries: {
+                    retries: 20,
+                    minTimeout: 300, // The number of milliseconds before starting the first retry
+                    maxTimeout: 500, // The maximum number of milliseconds between two retries
+                    maxRetryTime: 5 * 5000 // The maximum time (in milliseconds) that the retried operation is allowed to run
+                }
+            });
+        } catch (e) {
+            // Either lock could not be acquired or releasing it failed
+            this.logger.debug(`Failed to acquire ${lockName} lock: ${e}`);
+            this.logger.error(`Runtime error. Please try executing the command again.`);
+            cleanExit(1, this.logger);
+        }
+
+        // Check if another process refreshed the tokens while we were waiting
+        if (await this.isAuthenticated()) {
+            tokenSet = await this.configService.getTokenSet();
+        } else {
+            this.logger.debug('Refreshing OAuth tokens');
+            try {
+                tokenSet = await this.refresh();
+            } catch (e) {
+                release();
+
+                this.logger.debug(`Failed to refresh OAuth tokens. ${e.message}`);
+                if (e instanceof errors.RPError || e instanceof errors.OPError) {
+                    throw new RefreshTokenError();
+                } else {
+                    throw e;
+                }
+            }
+
+            this.configService.setTokenSet(tokenSet);
+            this.logger.debug('OAuth tokens refreshed');
+
+            const userHttpService = new UserHttpService(this.configService, this.logger);
+            await userHttpService.Register();
+
+            // Update me section of the config in case this is a new login or any
+            // user information has changed since last login
+            const subjectHttpService = new SubjectHttpService(this.configService, this.logger);
+            const me = await subjectHttpService.Me();
+            this.configService.setMe(me);
+        }
+
+        release();
+        return tokenSet;
     }
 
     /**
@@ -384,40 +416,26 @@ export class OAuthService implements IDisposable {
     public async getIdTokenAndExitOnError(): Promise<string> {
         let idToken: string;
         try {
-            idToken = await this.getIdTokenAndCheckSessionToken();
+            const tokenSet = await this.getTokenSet();
+            idToken = tokenSet.id_token;
+
+            // If the OIDC tokens are not expired but there is no sessionId/Token
+            // or the registration did not create/update properly a new set of sessionId/Token
+            if (!this.configService.getSessionId() || !this.configService.getSessionToken()) {
+                throw new UserNotLoggedInError();
+            }
         } catch (e) {
             this.logger.debug(`Get id token error: ${e.message}`);
             if (e instanceof RefreshTokenError) {
                 this.logger.error('Stale log in detected');
-                this.logger.info('You need to log in, please run \'zli login --help\'');
                 this.configService.logout();
-                await cleanExit(1, this.logger);
             } else if (e instanceof UserNotLoggedInError) {
-                this.logger.error('You need to log in, please run \'zli login --help\'');
-                await cleanExit(1, this.logger);
             } else {
-                this.logger.error('Unexpected error during oauth refresh');
-                this.logger.info('Please log in again');
                 this.configService.logout();
-                await cleanExit(1, this.logger);
             }
-        }
 
-        return idToken;
-    }
-
-    /**
-     * Get the current user's id_token. Refresh it if it has expired. And handle session ID
-     * or token not being set by treating it as if the user is not logged in.
-     * @returns The current user's id_token
-     */
-    public async getIdTokenAndCheckSessionToken(): Promise<string> {
-        const idToken = await this.getIdToken();
-
-        // If the OIDC tokens are not expired but there is no sessionId/Token
-        // or the registration did not create/update properly a new set of sessionId/Token
-        if (!this.configService.getSessionId() || !this.configService.getSessionToken()) {
-            throw new UserNotLoggedInError();
+            this.logger.info('You need to log in, please run \'zli login --help\'');
+            await cleanExit(1, this.logger);
         }
 
         return idToken;
