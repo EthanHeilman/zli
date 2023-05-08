@@ -58,6 +58,17 @@ brew install bastionzero/tap/zli
     sudo apt install -y zli
     ```
 
+### Windows
+*   Download the zli.
+```
+curl -LO "https://download-zli.bastionzero.com/release/latest/bin/zli.exe"
+```
+*   Append the zli binary folder to your PATH environment variable. Note, the following example will make the zli commands permanently available to the current user only.
+```
+setx PATH "%PATH%;$pwd"
+```
+*   Exit out of your terminal window and reopen a new one.
+
 ## Developer processes
 
 ### Clone and setup
