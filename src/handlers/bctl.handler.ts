@@ -1,6 +1,5 @@
 import { ConfigService } from '../services/config/config.service';
 import { Logger } from '../services/logger/logger.service';
-import { cleanExit } from './clean-exit.handler';
 import util from 'util';
 import { spawn, exec } from 'child_process';
 import { getKubeDaemonSecuritySettings, getPortFromClusterServer, isKubeContextBastionZero, loadUserKubeConfig } from '../services/kube-management/kube-management.service';
@@ -41,8 +40,7 @@ export async function bctlHandler(configService: ConfigService, logger: Logger, 
     const kubeDaemonManagementService = newKubeDaemonManagementService(configService);
     const matchingDaemon = await findRunningDaemonWithPredicate(kubeDaemonManagementService, (d => d.config.localPort.toString() === getPortFromClusterServer(userCurrentCluster)));
     if (!matchingDaemon) {
-        logger.error(`There is no running daemon that matches your current kube context: ${userCurrentContextName}. Make sure your kube context is correct and that the kube daemon is running! Use \'zli list-daemons kube\' to list your running daemons`);
-        await cleanExit(1, logger);
+        throw new Error(`There is no running daemon that matches your current kube context: ${userCurrentContextName}. Make sure your kube context is correct and that the kube daemon is running! Use \'zli list-daemons kube\' to list your running daemons`);
     }
 
     // Print as what user we are running the command as, and to which container
@@ -81,9 +79,7 @@ export async function bctlHandler(configService: ConfigService, logger: Logger, 
                 break;
             case 'daemon_quit_unexpectedly':
             case 'no_daemon_running':
-                logger.error(`The kube daemon connected to ${daemonStatus.config.targetCluster} as ${daemonStatus.config.targetUser} has quit unexpectedly`);
-                await cleanExit(1, logger);
-                break;
+                throw new Error(`The kube daemon connected to ${daemonStatus.config.targetCluster} as ${daemonStatus.config.targetUser} has quit unexpectedly`);
             default:
                 // Compile-time exhaustive check
                 const exhaustiveCheck: never = daemonStatus;
@@ -94,11 +90,8 @@ export async function bctlHandler(configService: ConfigService, logger: Logger, 
             try {
                 await execPromise('kubectl --help');
             } catch {
-                logger.warn('Please ensure you have kubectl installed!');
+                throw new Error('Please ensure you have kubectl installed!');
             }
-            await cleanExit(1, logger);
-        } else {
-            await cleanExit(0, logger);
         }
     });
 }

@@ -1,6 +1,5 @@
 import { ConfigService } from '../../../services/config/config.service';
 import { Logger } from '../../../services/logger/logger.service';
-import { cleanExit } from '../../clean-exit.handler';
 import { OrganizationHttpService } from '../../../http-services/organization/organization.http-services';
 import { PolicyHttpService } from '../../../http-services/policy/policy.http-services';
 import { GroupSummary } from '../../../../webshell-common-ts/http/v2/organization/types/group-summary.types';
@@ -17,8 +16,7 @@ export async function addGroupToPolicyHandler(groupName: string, policyName: str
             groupSummary = group;
     }
     if (groupSummary == undefined) {
-        logger.error(`Unable to find group with name: ${groupName}`);
-        await cleanExit(1, logger);
+        throw new Error(`Unable to find group with name: ${groupName}`);
     }
 
     const policyHttpService = new PolicyHttpService(configService, logger);
@@ -26,15 +24,13 @@ export async function addGroupToPolicyHandler(groupName: string, policyName: str
 
     if (policy === null) {
         // Log an error
-        logger.error(`Unable to find policy with name: ${policyName}`);
-        await cleanExit(1, logger);
+        throw new Error(`Unable to find policy with name: ${policyName}`);
     }
 
     // If this group exists already
     const group = policy.groups.find((g: Group) => g.name == groupSummary.name);
     if (group) {
-        logger.error(`Group ${groupSummary.name} exists already for policy: ${policyName}`);
-        await cleanExit(1, logger);
+        throw new Error(`Group ${groupSummary.name} exists already for policy: ${policyName}`);
     }
 
     // Then add the group to the policy
@@ -48,5 +44,4 @@ export async function addGroupToPolicyHandler(groupName: string, policyName: str
     await editPolicy(policy, policyHttpService);
 
     logger.info(`Added ${groupName} to ${policyName} policy!`);
-    await cleanExit(0, logger);
 }

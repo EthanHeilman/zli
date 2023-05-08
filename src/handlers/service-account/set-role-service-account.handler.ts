@@ -2,7 +2,6 @@ import { SubjectHttpService } from '../../../src/http-services/subject/subject.h
 import { ConfigService } from '../../../src/services/config/config.service';
 import { SubjectType } from '../../../webshell-common-ts/http/v2/common.types/subject.types';
 import yargs from 'yargs';
-import { cleanExit } from '../clean-exit.handler';
 import { Logger } from '../../../src/services/logger/logger.service';
 import { serviceAccountSetRoleArgs } from './set-role-service-account.command-builder';
 import { parseSubjectRole } from '../../../src/utils/utils';
@@ -15,13 +14,11 @@ export async function serviceAccountSetRoleCmdHandler(configService: ConfigServi
     try {
         subjectSummary = await subjectHttpService.GetSubjectByEmail(argv.serviceAccountEmail);
     } catch (error) {
-        logger.error(`Unable to find subject with email: ${argv.serviceAccountEmail}`);
-        await cleanExit(1, logger);
+        throw new Error(`Unable to find subject with email: ${argv.serviceAccountEmail}`);
     }
     if(subjectSummary.type != SubjectType.ServiceAccount)
     {
-        logger.error(`The provided subject ${argv.serviceAccountEmail} is not a service account.`);
-        await cleanExit(1, logger);
+        throw new Error(`The provided subject ${argv.serviceAccountEmail} is not a service account.`);
     }
 
     const parsedSubjectRole = parseSubjectRole(argv.role);
@@ -29,12 +26,10 @@ export async function serviceAccountSetRoleCmdHandler(configService: ConfigServi
     if(subjectSummary.isAdmin &&  parsedSubjectRole === SubjectRole.Admin ||
        !subjectSummary.isAdmin && parsedSubjectRole === SubjectRole.User)
     {
-        logger.error(`The provided subject ${argv.serviceAccountEmail}'s role is already ${argv.role}.`);
-        await cleanExit(1, logger);
+        throw new Error(`The provided subject ${argv.serviceAccountEmail}'s role is already ${argv.role}.`);
     }
 
     await subjectHttpService.UpdateSubjectRole(subjectSummary.id, {role: parsedSubjectRole });
 
     logger.info(`Successfully updated role of service account ${subjectSummary.email}`);
-    await cleanExit(0, logger);
 }

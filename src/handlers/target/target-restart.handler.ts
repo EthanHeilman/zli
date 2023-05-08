@@ -3,7 +3,6 @@ import { Logger } from '../../services/logger/logger.service';
 import { parseTargetString } from '../../utils/utils';
 import { restartArgs } from './target-restart.command-builder';
 import yargs from 'yargs';
-import { cleanExit } from '../clean-exit.handler';
 import { BzeroTargetHttpService } from '../../http-services/targets/bzero/bzero.http-services';
 
 export async function targetRestartHandler(
@@ -19,19 +18,12 @@ export async function targetRestartHandler(
 
     const bzeroTargetService = new BzeroTargetHttpService(configService, logger);
 
-    try {
-        await bzeroTargetService.RestartBzeroTarget({
-            targetName: parsedTarget.name,
-            targetId: parsedTarget.id,
-            envId: parsedTarget.envId,
-            envName: parsedTarget.envName,
-        });
-    } catch (error) {
-        logger.error(error);
-        await cleanExit(1, logger);
-    }
+    await bzeroTargetService.RestartBzeroTarget({
+        targetName: parsedTarget.name,
+        targetId: parsedTarget.id,
+        envId: parsedTarget.envId,
+        envName: parsedTarget.envName,
+    });
 
     logger.info(`Agent restart initiated. To monitor your target's status, use: zli lt -d${parsedTarget.name ? ` -n ${parsedTarget.name}` : ` -i`} `);
-
-    await cleanExit(0, logger);
 }

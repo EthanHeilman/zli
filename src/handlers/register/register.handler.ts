@@ -2,7 +2,6 @@ import { Logger } from '../../services/logger/logger.service';
 import { ConfigService } from '../../services/config/config.service';
 import { UserHttpService } from '../../../src/http-services/user/user.http-services';
 import { SubjectHttpService } from '../../../src/http-services/subject/subject.http-services';
-import { cleanExit } from '../clean-exit.handler';
 import { MfaActionRequired } from '../../../webshell-common-ts/http/v2/mfa/types/mfa-action-required.types';
 import { MfaHttpService } from '../../http-services/mfa/mfa.http-services';
 import { OAuthService } from '../../../src/services/oauth/oauth.service';
@@ -21,8 +20,7 @@ export async function registerHandler(mfaSecret: string, configService: ConfigSe
     try {
         await configService.setTokenSet(newTokenSet);
     } catch (e) {
-        logger.error(`Failed to save tokens after oath refresh: ${e}`);
-        await cleanExit(1, logger);
+        throw new Error(`Failed to save tokens after oath refresh: ${e}`);
     }
 
     const resp = await userHttpService.Register();
@@ -30,8 +28,7 @@ export async function registerHandler(mfaSecret: string, configService: ConfigSe
 
     if(resp.mfaActionRequired == MfaActionRequired.TOTP) {
         if(!mfaSecret) {
-            logger.error('Mfa secret not provided for totp');
-            await cleanExit(1, logger);
+            throw new Error('Mfa secret not provided for totp');
         }
         const totpPasscode = totp(mfaSecret);
         await mfaService.VerifyMfaTotp(totpPasscode);
@@ -53,5 +50,4 @@ export async function registerHandler(mfaSecret: string, configService: ConfigSe
     // Update me
     const me = await subjectHttpService.Me();
     configService.setMe(me);
-    await cleanExit(0, logger);
 }

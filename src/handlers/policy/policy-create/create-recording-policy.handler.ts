@@ -1,7 +1,6 @@
 import yargs from 'yargs';
 import { ConfigService } from '../../../services/config/config.service';
 import { Logger } from '../../../services/logger/logger.service';
-import { cleanExit } from '../../clean-exit.handler';
 import { createRecordingPolicyArgs } from './create-policy.command-builder';
 import { getGroupsByName, getSubjectsByEmail } from '../../../utils/policy-utils';
 import { PolicyHttpService } from '../../../http-services/policy/policy.http-services';
@@ -37,6 +36,4 @@ export async function createRecordingPolicyHandler(argv: yargs.Arguments<createR
     });
 
     logger.warn(`Successfully created a new Session Recording Policy. Name: ${sessionRecordingPolicy.name} ID: ${sessionRecordingPolicy.id}`);
-
-    await cleanExit(0, logger);
 }

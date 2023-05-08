@@ -4,7 +4,6 @@ import { ServiceAccountHttpService } from '../../../src/http-services/service-ac
 import { Logger } from '../../../src/services/logger/logger.service';
 import { SubjectHttpService } from '../../../src/http-services/subject/subject.http-services';
 import { SubjectType } from '../../../webshell-common-ts/http/v2/common.types/subject.types';
-import { cleanExit } from '../clean-exit.handler';
 import { disableServiceAccountArgs } from './disable-service-account.command-builder';
 import { UpdateServiceAccountRequest } from '../../../webshell-common-ts/http/v2/service-account/requests/update-service-account.requests';
 import { SubjectSummary } from '../../../webshell-common-ts/http/v2/subject/types/subject-summary.types';
@@ -17,19 +16,16 @@ export async function disableServiceAccountHandler(configService: ConfigService,
     try {
         subjectSummary = await subjectHttpService.GetSubjectByEmail(argv.serviceAccountEmail);
     } catch (error) {
-        logger.error(`Unable to find subject with email: ${argv.serviceAccountEmail}`);
-        await cleanExit(1, logger);
+        throw new Error(`Unable to find subject with email: ${argv.serviceAccountEmail}`);
     }
 
     if(subjectSummary.type != SubjectType.ServiceAccount)
     {
-        logger.error(`The provided subject ${argv.serviceAccountEmail} is not a service account.`);
-        await cleanExit(1, logger);
+        throw new Error(`The provided subject ${argv.serviceAccountEmail} is not a service account.`);
     }
     const request: UpdateServiceAccountRequest = {
         enabled: false
     };
     const serviceAccount = await serviceAccountHttpService.UpdateServiceAccount(subjectSummary.id, request);
     logger.info(`Successfully disabled service account ${serviceAccount.email}`);
-    await cleanExit(0, logger);
 }

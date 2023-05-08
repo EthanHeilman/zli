@@ -1,6 +1,5 @@
 import { Logger } from '../../services/logger/logger.service';
 import { ConfigService } from '../../services/config/config.service';
-import { cleanExit } from '../clean-exit.handler';
 import yargs from 'yargs';
 import { AuthorizedGithubActionHttpService } from '../../http-services/authorized-github-action/authorized-github-action.http-services';
 import { deleteAuthorizedGithubActionArgs } from './delete-authorized-github-action.command-builder';
@@ -13,12 +12,9 @@ export async function deleteAuthorizedGithubActionHandler(configService: ConfigS
     // If this action does not exist
     const authorizedGithubAction = authorizedGithubActions.find(a => a.githubActionId === argv.githubActionId);
     if (!authorizedGithubAction) {
-        logger.error(`No authorized Github Action with ID ${argv.githubActionId} exists`);
-        await cleanExit(1, logger);
+        throw new Error(`No authorized Github Action with ID ${argv.githubActionId} exists`);
     }
 
     await authorizedGithubActionHttpService.DeleteAuthorizedGithubAction(authorizedGithubAction.id);
     logger.info(`Successfully deleted Github Action ${authorizedGithubAction.githubActionId}`);
-
-    await cleanExit(0, logger);
 }

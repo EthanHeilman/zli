@@ -1,6 +1,5 @@
 import { Logger } from '../../../services/logger/logger.service';
 import { ConfigService } from '../../../services/config/config.service';
-import { cleanExit } from '../../clean-exit.handler';
 import { getTableOfTargetUsers } from '../../../utils/utils';
 import yargs from 'yargs';
 import { listTargetUserArgs } from './list-targetusers.command-builder';
@@ -20,8 +19,7 @@ export async function listTargetUsersHandler(configService: ConfigService, logge
 
     if (!kubePolicy && !targetPolicy && !proxyPolicy) {
         // Log an error
-        logger.error(`Unable to find policy with name: ${policyName}`);
-        await cleanExit(1, logger);
+        throw new Error(`Unable to find policy with name: ${policyName}`);
     }
 
     const targetUsers : string[] = [];
@@ -45,12 +43,10 @@ export async function listTargetUsersHandler(configService: ConfigService, logge
     } else {
         if (targetUsers.length === 0){
             logger.info('There are no available target users');
-            await cleanExit(0, logger);
+            return;
         }
         // regular table output
         const tableString = getTableOfTargetUsers(targetUsers);
         console.log(tableString);
     }
-
-    await cleanExit(0, logger);
 }

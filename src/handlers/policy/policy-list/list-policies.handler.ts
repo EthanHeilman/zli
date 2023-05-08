@@ -7,7 +7,6 @@ import { listKubernetesPoliciesHandler } from './list-kubernetes-policies.handle
 import { listSessionRecordingPoliciesHandler } from './list-session-recording-policies.handler';
 import { listProxyPoliciesHandler } from './list-proxy-policies.handler';
 import { listOrganizationControlsPoliciesHandler } from './list-organization-controls-policies.handler';
-import { cleanExit } from '../../clean-exit.handler';
 import { parsePolicyType } from '../../../utils/utils';
 
 import yargs from 'yargs';
@@ -76,7 +75,6 @@ export async function listPoliciesHandler(
         printPolicyHelper(argv, orgControlPolicies, PolicyType.OrganizationControls, logger);
         break;
     }
-    await cleanExit(0, logger);
 }
 
 // Helper function to abstract printing to console

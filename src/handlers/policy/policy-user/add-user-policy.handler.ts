@@ -1,6 +1,5 @@
 import { ConfigService } from '../../../services/config/config.service';
 import { Logger } from '../../../services/logger/logger.service';
-import { cleanExit } from '../../clean-exit.handler';
 import { UserHttpService } from '../../../http-services/user/user.http-services';
 import { PolicyHttpService } from '../../../http-services/policy/policy.http-services';
 import { UserSummary } from '../../../../webshell-common-ts/http/v2/user/types/user-summary.types';
@@ -16,8 +15,7 @@ export async function addUserToPolicyHandler(userEmail: string, policyName: stri
     try {
         userSummary = await userHttpService.GetUserByEmail(userEmail);
     } catch (error) {
-        logger.error(`Unable to find user with email: ${userEmail}`);
-        await cleanExit(1, logger);
+        throw new Error(`Unable to find user with email: ${userEmail}`);
 
     }
 
@@ -26,14 +24,12 @@ export async function addUserToPolicyHandler(userEmail: string, policyName: stri
 
     if (policy === null) {
         // Log an error
-        logger.error(`Unable to find policy with name: ${policyName}`);
-        await cleanExit(1, logger);
+        throw new Error(`Unable to find policy with name: ${policyName}`);
     }
 
     // If this user exists already
     if (policy.subjects.find(s => s.type === SubjectType.User && s.id === userSummary.id)) {
-        logger.error(`User ${userEmail} exists already for policy: ${policyName}`);
-        await cleanExit(1, logger);
+        throw new Error(`User ${userEmail} exists already for policy: ${policyName}`);
     }
 
     // Then add the user to the policy
@@ -48,5 +44,4 @@ export async function addUserToPolicyHandler(userEmail: string, policyName: stri
     await editPolicy(policy, policyHttpService);
 
     logger.info(`Added ${userEmail} to ${policyName} policy!`);
-    await cleanExit(0, logger);
 }

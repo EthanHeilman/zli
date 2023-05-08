@@ -1,6 +1,5 @@
 import { Logger } from '../../../services/logger/logger.service';
 import { ConfigService } from '../../../services/config/config.service';
-import { cleanExit } from '../../clean-exit.handler';
 import { getTableOfTargetGroups } from '../../../utils/utils';
 import yargs from 'yargs';
 import { listTargetGroupArgs } from './list-targetgroups.command-builder';
@@ -24,12 +23,10 @@ export async function listTargetGroupsHandler(configService: ConfigService, logg
     } else {
         if (targetGroups.length === 0){
             logger.info('There are no available target groups');
-            await cleanExit(0, logger);
+            return;
         }
         // regular table output
         const tableString = getTableOfTargetGroups(targetGroups);
         console.log(tableString);
     }
-
-    await cleanExit(0, logger);
 }

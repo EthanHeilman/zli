@@ -1,6 +1,5 @@
 import { ConfigService } from '../../../services/config/config.service';
 import { Logger } from '../../../services/logger/logger.service';
-import { cleanExit } from '../../clean-exit.handler';
 import { PolicyHttpService } from '../../../http-services/policy/policy.http-services';
 
 export async function deleteTargetUserFromPolicyHandler(targetUserName: string, policyName: string, configService: ConfigService, logger: Logger) {
@@ -17,15 +16,13 @@ export async function deleteTargetUserFromPolicyHandler(targetUserName: string, 
 
     if (!kubePolicy && !targetPolicy && !proxyPolicy) {
         // Log an error
-        logger.error(`Unable to find policy with name: ${policyName}`);
-        await cleanExit(1, logger);
+        throw new Error(`Unable to find policy with name: ${policyName}`);
     }
 
     if (kubePolicy) {
         // If this cluster targetUser exists already
         if (!kubePolicy.clusterUsers.find(u => u.name === targetUserName)) {
-            logger.error(`No target user ${targetUserName} exists for policy: ${policyName}`);
-            await cleanExit(1, logger);
+            throw new Error(`No target user ${targetUserName} exists for policy: ${policyName}`);
         }
 
         // And finally update the policy
@@ -35,8 +32,7 @@ export async function deleteTargetUserFromPolicyHandler(targetUserName: string, 
     } else if (targetPolicy) {
         // If this cluster targetUser exists already
         if (!targetPolicy.targetUsers.find(u => u.userName === targetUserName)) {
-            logger.error(`No target user ${targetUserName} exists for policy: ${policyName}`);
-            await cleanExit(1, logger);
+            throw new Error(`No target user ${targetUserName} exists for policy: ${policyName}`);
         }
 
         // And finally update the policy
@@ -46,19 +42,16 @@ export async function deleteTargetUserFromPolicyHandler(targetUserName: string, 
     } else if (proxyPolicy) {
         // If this cluster targetUser does not exist in the policy
         if (!proxyPolicy.targetUsers.find(u => u.userName === targetUserName)) {
-            logger.error(`No target user ${targetUserName} exists for policy: ${policyName}`);
-            await cleanExit(1, logger);
+            throw new Error(`No target user ${targetUserName} exists for policy: ${policyName}`);
         }
 
         // update the policy
         proxyPolicy.targetUsers = proxyPolicy.targetUsers.filter(u => u.userName !== targetUserName);
         await policyHttpService.EditProxyPolicy(proxyPolicy);
     } else {
-        logger.error(`Delete target user from policy ${policyName} failed. Deleting target users from this policy type is not currently supported.`);
-        await cleanExit(1, logger);
+        throw new Error(`Delete target user from policy ${policyName} failed. Deleting target users from this policy type is not currently supported.`);
     }
 
     logger.info(`Deleted ${targetUserName} from ${policyName} policy!`);
-    await cleanExit(0, logger);
 }
 

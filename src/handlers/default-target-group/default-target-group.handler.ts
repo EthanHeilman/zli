@@ -2,7 +2,6 @@ import { Logger } from '../../services/logger/logger.service';
 import { ConfigService } from '../../services/config/config.service';
 import yargs from 'yargs';
 import { defaultTargetGroupArgs } from './default-target-group.command-builder';
-import { cleanExit } from '../clean-exit.handler';
 
 export async function defaultTargetGroupHandler(configService: ConfigService, logger: Logger, argv: yargs.Arguments<defaultTargetGroupArgs>) {
     // Open up our global kube config
@@ -24,6 +23,4 @@ export async function defaultTargetGroupHandler(configService: ConfigService, lo
         const currentDefaultGroups = kubeGlobalConfig.defaultTargetGroups;
         logger.info(`Current default group is set to: ${currentDefaultGroups}`);
     }
-
-    await cleanExit(0, logger);
 }

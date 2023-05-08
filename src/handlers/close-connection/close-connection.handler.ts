@@ -1,6 +1,5 @@
 import { ConfigService } from '../../services/config/config.service';
 import { Logger } from '../../services/logger/logger.service';
-import { cleanExit } from '../clean-exit.handler';
 import { ConnectionHttpService } from '../../http-services/connection/connection.http-services';
 import { closeConnectionArgs } from './close-connection.command-builder';
 import yargs from 'yargs';
@@ -62,6 +61,4 @@ export async function closeConnectionHandler(
         await connectionHttpService.CloseConnection(argv.connectionId);
         logger.info(`Connection ${argv.connectionId} successfully closed`);
     }
-
-    await cleanExit(0, logger);
 }

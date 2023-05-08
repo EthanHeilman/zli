@@ -18,7 +18,6 @@ import { ServiceAccountProviderCredentials } from './types/service-account-provi
 import { ServiceAccountHttpService } from '../../http-services/service-account/service-account.http-services';
 import { LoginServiceAccountRequest } from '../../../webshell-common-ts/http/v2/service-account/requests/login-service-account.requests';
 import totp from 'totp-generator';
-import { cleanExit } from '../clean-exit.handler';
 import { ServiceAccountBzeroCredentials } from './types/service-account-bzero-credentials.types';
 import { ServiceAccountAccessToken } from './types/service-account-access-token.types';
 import { ServiceAccountIdToken } from './types/service-account-id-token.types';
@@ -221,9 +220,7 @@ export async function loginServiceAccountHandler(configService: ConfigService, l
     if(bzeroCredsFile == null)
         bzeroCredsFile = JSON.parse(fs.readFileSync(argv.bzeroCreds, 'utf-8')) as ServiceAccountBzeroCredentials;
     if(!bzeroCredsFile.mfa_secret) {
-        logger.error('Invalid mfa secret in the provided bz creds file');
-        await cleanExit(1, logger);
-        return;
+        throw new Error('Invalid mfa secret in the provided bz creds file');
     }
     const totpPasscode = totp(bzeroCredsFile.mfa_secret);
     const req: LoginServiceAccountRequest = {
@@ -231,8 +228,7 @@ export async function loginServiceAccountHandler(configService: ConfigService, l
     };
     const serviceAccountSummary = await serviceAccountHttpService.LoginServiceAccount(req);
     if(!serviceAccountSummary.enabled) {
-        logger.error(`Service account ${serviceAccountSummary.email} is not currently enabled.`);
-        await cleanExit(1, logger);
+        throw new Error(`Service account ${serviceAccountSummary.email} is not currently enabled.`);
     }
     const subjectHttpService = new SubjectHttpService(configService, logger);
     const me = await subjectHttpService.Me();

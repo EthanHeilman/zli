@@ -1,6 +1,5 @@
 import { ConfigService } from '../../../services/config/config.service';
 import { Logger } from '../../../services/logger/logger.service';
-import { cleanExit } from '../../clean-exit.handler';
 import { getTableOfUsers } from '../../../utils/utils';
 import yargs from 'yargs';
 import { listUserArgs } from './list-users.command-builder';
@@ -19,12 +18,10 @@ export async function listUsersHandler(
     } else {
         if (users.length === 0){
             logger.info('There are no available users');
-            await cleanExit(0, logger);
+            return;
         }
         // regular table output
         const tableString = getTableOfUsers(users);
         console.log(tableString);
     }
-
-    await cleanExit(0, logger);
 }

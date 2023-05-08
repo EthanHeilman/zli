@@ -1,4 +1,3 @@
-import { cleanExit } from '../clean-exit.handler';
 import fs from 'fs';
 import { DbConfig, KubeConfig, WebConfig } from '../../services/config/config.service.types';
 import { Logger } from '../../services/logger/logger.service';
@@ -26,7 +25,6 @@ export async function logoutHandler(
         fileRemover,
         logger
     );
-    await cleanExit(0, logger);
 }
 
 export interface ILogoutConfigService {

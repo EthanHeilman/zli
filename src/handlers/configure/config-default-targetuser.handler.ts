@@ -1,7 +1,6 @@
 import yargs from 'yargs';
 import { ConfigService } from '../../services/config/config.service';
 import { Logger } from '../../services/logger/logger.service';
-import { cleanExit } from '../clean-exit.handler';
 import { configDefaultTargetUserArgs } from './config-default-targetuser.command-builder';
 import { ConnectConfig } from '../../services/config/config.service.types';
 
@@ -9,8 +8,7 @@ export async function configDefaultTargetUserHandler(argv: yargs.Arguments<confi
     // This is handled manually so that the user isn't required
     // to have a positional argument to use the --reset flag
     if(argv.targetUser === undefined && argv.reset === undefined) {
-        logger.error('A target user must be provided for this command.');
-        await cleanExit(0, logger);
+        throw new Error('A target user must be provided for this command.');
     }
 
     let connectConfig: ConnectConfig;
@@ -24,5 +22,4 @@ export async function configDefaultTargetUserHandler(argv: yargs.Arguments<confi
     }
     configService.setConnectConfig(connectConfig);
     logger.info(loggerStatement);
-    await cleanExit(0, logger);
 }

@@ -1,6 +1,5 @@
 import { ConfigService } from '../../../services/config/config.service';
 import { Logger } from '../../../services/logger/logger.service';
-import { cleanExit } from '../../clean-exit.handler';
 import { PolicyHttpService } from '../../../http-services/policy/policy.http-services';
 import { SubjectType } from '../../../../webshell-common-ts/http/v2/common.types/subject.types';
 import { editPolicy, getPolicyFromName } from '../../../services/policy/policy.services';
@@ -15,8 +14,7 @@ export async function deleteSubjectFromPolicyHandler(subjectEmail: string, polic
     try {
         subjectSummary = await subjectHttpService.GetSubjectByEmail(subjectEmail);
     } catch (error) {
-        logger.error(`Unable to find subject with email: ${subjectEmail}`);
-        await cleanExit(1, logger);
+        throw new Error(`Unable to find subject with email: ${subjectEmail}`);
     }
 
     const policyHttpService = new PolicyHttpService(configService, logger);
@@ -24,14 +22,12 @@ export async function deleteSubjectFromPolicyHandler(subjectEmail: string, polic
 
     if (!policy) {
         // Log an error
-        logger.error(`Unable to find policy with name: ${policyName}`);
-        await cleanExit(1, logger);
+        throw new Error(`Unable to find policy with name: ${policyName}`);
     }
 
     // If this subject does not exist
     if (!policy.subjects.find(s => (s.type === SubjectType.User || s.type === SubjectType.ServiceAccount) && s.id === subjectSummary.id)) {
-        logger.error(`No subject ${subjectEmail} exists for policy: ${policyName}`);
-        await cleanExit(1, logger);
+        throw new Error(`No subject ${subjectEmail} exists for policy: ${policyName}`);
     }
 
     // And finally update the policy
@@ -39,5 +35,4 @@ export async function deleteSubjectFromPolicyHandler(subjectEmail: string, polic
     await editPolicy(policy, policyHttpService);
 
     logger.info(`Deleted ${subjectEmail} from ${policyName} policy!`);
-    await cleanExit(0, logger);
 }

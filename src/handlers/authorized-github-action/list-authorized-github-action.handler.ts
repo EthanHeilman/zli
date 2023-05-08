@@ -2,7 +2,6 @@ import { AuthorizedGithubActionHttpService } from '../../../src/http-services/au
 import { UserHttpService } from '../../../src/http-services/user/user.http-services';
 import { getTableOfAuthorizedGithubActions } from '../../../src/utils/utils';
 import yargs from 'yargs';
-import { cleanExit } from '../clean-exit.handler';
 import { listAuthorizedGithubActionsArgs } from './list-authorized-github-actions.command-builder';
 import { ConfigService } from '../../../src/services/config/config.service';
 import { Logger } from '../../../src/services/logger/logger.service';
@@ -21,7 +20,7 @@ export async function listAuthorizedGithubActionsHandler(
     } else {
         if (authorizedGithubActions.length === 0){
             logger.info('There are no authorized Github Actions');
-            await cleanExit(0, logger);
+            return;
         }
         const userHttpService = new UserHttpService(configService, logger);
         const users = await userHttpService.ListUsers();
@@ -34,6 +33,4 @@ export async function listAuthorizedGithubActionsHandler(
         const tableString = getTableOfAuthorizedGithubActions(authorizedGithubActions, userMap);
         console.log(tableString);
     }
-
-    await cleanExit(0, logger);
 }

@@ -1,7 +1,6 @@
 import yargs from 'yargs';
 import { ConfigService } from '../../services/config/config.service';
 import { Logger } from '../../services/logger/logger.service';
-import { cleanExit } from '../clean-exit.handler';
 import { disconnectArgs } from './disconnect.command-builder';
 import { newDbDaemonManagementService, newKubeDaemonManagementService } from '../../services/daemon-management/daemon-management.service';
 import { DisconnectResult } from '../../services/daemon-management/types/disconnect-result.types';
@@ -45,7 +44,6 @@ export async function disconnectHandler(
         const dbDaemonManagementService = newDbDaemonManagementService(configService);
         await handleDisconnect(dbDaemonManagementService, logger);
     }
-    await cleanExit(0, logger);
 }
 
 export interface IDaemonDisconnector<T extends DaemonConfig> {

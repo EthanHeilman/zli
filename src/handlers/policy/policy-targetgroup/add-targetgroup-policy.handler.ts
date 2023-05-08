@@ -2,7 +2,6 @@ import { ClusterGroup } from '../../../../webshell-common-ts/http/v2/policy/type
 import { PolicyHttpService } from '../../../http-services/policy/policy.http-services';
 import { ConfigService } from '../../../services/config/config.service';
 import { Logger } from '../../../services/logger/logger.service';
-import { cleanExit } from '../../clean-exit.handler';
 
 export async function addTargetGroupToPolicyHandler(targetGroupName: string, policyName: string, configService: ConfigService, logger: Logger) {
     // First get the existing policy
@@ -14,14 +13,12 @@ export async function addTargetGroupToPolicyHandler(targetGroupName: string, pol
 
     if (!kubePolicy) {
         // Log an error
-        logger.error(`Unable to find Kubernetes Tunnel policy with name: ${policyName}. Please make sure ${policyName} is a Kubernetes Tunnel policy.`);
-        await cleanExit(1, logger);
+        throw new Error(`Unable to find Kubernetes Tunnel policy with name: ${policyName}. Please make sure ${policyName} is a Kubernetes Tunnel policy.`);
     }
 
     // If this cluster Group exists already
     if (kubePolicy.clusterGroups.find(g => g.name === targetGroupName)) {
-        logger.error(`Group ${targetGroupName} exists already for policy: ${policyName}`);
-        await cleanExit(1, logger);
+        throw new Error(`Group ${targetGroupName} exists already for policy: ${policyName}`);
     }
 
     // Then add the clusterGroup to the policy
@@ -35,5 +32,4 @@ export async function addTargetGroupToPolicyHandler(targetGroupName: string, pol
     await policyHttpService.EditKubernetesPolicy(kubePolicy);
 
     logger.info(`Added ${targetGroupName} to ${policyName} policy!`);
-    await cleanExit(0, logger);
 }

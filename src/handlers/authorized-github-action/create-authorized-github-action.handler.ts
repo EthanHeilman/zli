@@ -1,6 +1,5 @@
 import { Logger } from '../../services/logger/logger.service';
 import { ConfigService } from '../../services/config/config.service';
-import { cleanExit } from '../clean-exit.handler';
 import yargs from 'yargs';
 import { createAuthorizedGithubActionArgs } from './create-authorized-github-action.command-builder';
 import { AuthorizedGithubActionHttpService } from '../../http-services/authorized-github-action/authorized-github-action.http-services';
@@ -10,8 +9,7 @@ import { SubjectType } from '../../../webshell-common-ts/http/v2/common.types/su
 export async function createAuthorizedGithubActionHandler(configService: ConfigService, logger: Logger, argv : yargs.Arguments<createAuthorizedGithubActionArgs>) {
 
     if(configService.me().type != SubjectType.User) {
-        logger.error(`You cannot authorize Github Actions when logged in as ${configService.me().type}`);
-        await cleanExit(1, logger);
+        throw new Error(`You cannot authorize Github Actions when logged in as ${configService.me().type}`);
     }
 
     const authorizedGithubActionHttpService = new AuthorizedGithubActionHttpService(configService, logger);
@@ -21,6 +19,4 @@ export async function createAuthorizedGithubActionHandler(configService: ConfigS
     };
     const resp = await authorizedGithubActionHttpService.CreateAuthorizedGithubAction(req);
     logger.info(`Successfully authorized Github Action ${resp.githubActionId}`);
-
-    await cleanExit(0, logger);
 }

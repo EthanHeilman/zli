@@ -14,8 +14,8 @@ import { Logger } from '../../services/logger/logger.service';
 import { SsmTunnelService } from '../../services/ssm-tunnel/ssm-tunnel.service';
 import { copyExecutableToLocalDir, getBaseDaemonEnv, getOrDefaultLocalport, handleExitCode, waitForDaemonProcessExit } from '../../utils/daemon-utils';
 import { parseTargetString } from '../../utils/utils';
-import { cleanExit } from '../clean-exit.handler';
 import { sshProxyArg } from './ssh-proxy.command-builder';
+import { cleanExit } from '../clean-exit.handler';
 
 const minimumAgentVersion = '6.1.0';
 const readyMsg = 'BZERO-DAEMON READY-TO-CONNECT';
@@ -35,8 +35,7 @@ export async function sshProxyHandler(
     }
 
     if (!argv.host.startsWith(prefix)) {
-        logger.error(`Invalid host provided: must have form ${prefix}<target>. Target must be either target id or name`);
-        await cleanExit(1, logger);
+        throw new Error(`Invalid host provided: must have form ${prefix}<target>. Target must be either target id or name`);
     }
 
     // modify argv to have the targetString and targetType params
@@ -44,13 +43,11 @@ export async function sshProxyHandler(
     const parsedTarget = parseTargetString(targetString);
     const targetUser = parsedTarget.user;
     if (!targetUser) {
-        logger.error('No user provided for ssh proxy');
-        await cleanExit(1, logger);
+        throw new Error('No user provided for ssh proxy');
     }
 
     if (argv.port < 1 || argv.port > 65535) {
-        logger.error(`Port ${argv.port} outside of port range [1-65535]`);
-        await cleanExit(1, logger);
+        throw new Error(`Port ${argv.port} outside of port range [1-65535]`);
     }
 
     const connectionHttpService = new ConnectionHttpService(configService, logger);
@@ -82,8 +79,7 @@ export async function sshProxyHandler(
         // agentVersion will be null if this isn't a valid version (i.e if its "$AGENT_VERSION" string during development)
         const agentVersion = parse(createUniversalConnectionResponse.agentVersion);
         if (agentVersion && lt(agentVersion, new SemVer(minimumAgentVersion))) {
-            logger.error(`Tunneling to Bzero Target is only supported on agent versions >= ${minimumAgentVersion}. Agent version is ${agentVersion}`);
-            cleanExit(1, logger);
+            throw new Error(`Tunneling to Bzero Target is only supported on agent versions >= ${minimumAgentVersion}. Agent version is ${agentVersion}`);
         }
 
         let exitCode: number;
@@ -96,13 +92,8 @@ export async function sshProxyHandler(
 
         if (exitCode !== 0) {
             const errMsg = handleExitCode(exitCode, createUniversalConnectionResponse);
-            if (errMsg.length > 0) {
-                logger.error(errMsg);
-            }
+            throw new Error(errMsg);
         }
-
-        cleanExit(exitCode, logger);
-
     default:
         logger.error(`Unhandled ssh target type ${createUniversalConnectionResponse.targetType}`);
         return -1;
@@ -202,8 +193,7 @@ async function bzeroOpaqueSshProxyHandler(configService: ConfigService, logger: 
 
         return await waitForDaemonProcessExit(logger, loggerConfigService, daemonProcess, null);
     } catch (err) {
-        logger.error(`Error starting ssh daemon: ${err}`);
-        await cleanExit(1, logger);
+        throw new Error(`Error starting ssh daemon: ${err}`);
     }
 }
 
@@ -292,8 +282,7 @@ async function bzeroTransparentSshProxyHandler(configService: ConfigService, log
 
         return await waitForDaemonProcessExit(logger, loggerConfigService, daemonProcess, null);
     } catch (err) {
-        logger.error(`Error starting ssh daemon: ${err}`);
-        await cleanExit(1, logger);
+        throw new Error(`Error starting ssh daemon: ${err}`);
     }
 }
 

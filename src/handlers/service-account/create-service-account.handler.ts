@@ -1,6 +1,5 @@
 import { Logger } from '../../services/logger/logger.service';
 import { ConfigService } from '../../services/config/config.service';
-import { cleanExit } from '../clean-exit.handler';
 import yargs from 'yargs';
 import { ServiceAccountHttpService } from '../../http-services/service-account/service-account.http-services';
 import { createServiceAccountArgs } from '../../handlers/service-account/create-service-account.command-builder';
@@ -24,8 +23,7 @@ export async function createServiceAccountHandler(configService: ConfigService, 
     else {
         // If it is a generic service account, expect jwksUrl/Pattern to be provided
         if(!providerCredsFile.jwksURL || !providerCredsFile.jwksURLPattern) {
-            logger.error(`When creating a generic service account a jwksUrl and a jwksURLPattern need to be provider in the provider file.`);
-            await cleanExit(1, logger);
+            throw new Error(`When creating a generic service account a jwksUrl and a jwksURLPattern need to be provider in the provider file.`);
         }
         jwksURL = providerCredsFile.jwksURL;
     }
@@ -33,8 +31,7 @@ export async function createServiceAccountHandler(configService: ConfigService, 
     const serviceAccountEmailParts = providerCredsFile.client_email.split('@');
 
     if(serviceAccountEmailParts.length != 2){
-        logger.error(`The provided email ${providerCredsFile.client_email} is not a valid email.`);
-        await cleanExit(1, logger);
+        throw new Error(`The provided email ${providerCredsFile.client_email} is not a valid email.`);
     }
 
     // If this is a GCP service account construct the pattern, else use the provided one
@@ -52,6 +49,4 @@ export async function createServiceAccountHandler(configService: ConfigService, 
     logger.info(`Successfully created service account ${resp.serviceAccountSummary.email} with JWKS URL ${resp.serviceAccountSummary.jwksUrl}`);
     await createBzeroCredsFile(resp.mfaSecret, configService.me().organizationId, configService.getIdp(), argv.bzeroCreds);
     logger.info('Successfully created the BastionZero credentials of this service account');
-
-    await cleanExit(0, logger);
 }

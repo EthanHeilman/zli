@@ -1,5 +1,4 @@
 import { exec } from 'child_process';
-import { cleanExit } from '../../clean-exit.handler';
 import { promisify } from 'util';
 import { ConfigService } from '../../../services/config/config.service';
 import { Logger } from '../../../services/logger/logger.service';
@@ -20,8 +19,6 @@ Then you can use native ssh to connect to any of your ssm targets using the foll
 
 ssh <user>@${prefix}<ssm-target-id-or-name>
 `);
-
-    await cleanExit(0, logger);
 }
 
 export async function buildSshConfigStrings(configService: ConfigService, processName: string, logger: Logger, addProxyPrefix: boolean = false) {

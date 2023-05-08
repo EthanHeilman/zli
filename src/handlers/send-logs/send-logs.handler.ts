@@ -5,7 +5,6 @@ import { randomUUID } from 'crypto';
 import { ConfigService } from '../../services/config/config.service';
 import { ParsedTargetString } from '../../services/common.types';
 import { Logger } from '../../services/logger/logger.service';
-import { cleanExit } from '../clean-exit.handler';
 import { UploadLogArchiveHttpService } from '../../http-services/upload-logs/upload-log-archive.http-service';
 import { BzeroTargetHttpService } from '../../http-services/targets/bzero/bzero.http-services';
 import { sendLogsArgs } from './send-logs.command-builder';
@@ -44,16 +43,14 @@ async function getFilteredLogContents(logger: Logger, zliLogFilePath: string, da
     try {
         zliLogContents = fs.readFileSync(zliLogFilePath, 'utf-8').split('\n');
     } catch (err) {
-        logger.error('Error reading local zli log files');
-        await cleanExit(1, logger);
+        throw new Error(`Failed to read zli log file ${zliLogFilePath}: ${err}`);
     }
 
     if(fs.existsSync(daemonLogFilePath)) {
         try {
             daemonLogContents = fs.readFileSync(daemonLogFilePath, 'utf-8').split('\n');
         } catch (err) {
-            logger.error('Error reading local daemon log files');
-            await cleanExit(1, logger);
+            throw new Error(`Failed to read daemon log file ${daemonLogFilePath}: ${err}`);
         }
     }
 
@@ -125,8 +122,7 @@ export async function sendLogsHandler(argv: yargs.Arguments<sendLogsArgs>, confi
             fs.writeFileSync(tempZliFilePath, filteredZliContents.join('\n'));
             fs.writeFileSync(tempDaemonFilePath, filteredDaemonContents.join('\n'));
         } catch(err) {
-            logger.error(`Error writing content to temporary log files: ${err}`);
-            await cleanExit(1, logger);
+            throw new Error(`Error writing content to temporary log files: ${err}`);
         }
 
         // zip the temporary zli and daemon log files
@@ -140,8 +136,7 @@ export async function sendLogsHandler(argv: yargs.Arguments<sendLogsArgs>, confi
         try {
             readStream = fs.createReadStream(tempZipFilePath);
         } catch(err) {
-            logger.error(`Error creating read stream from the zip file: ${err}`);
-            await cleanExit(1, logger);
+            throw new Error(`Error creating read stream from the zip file: ${err}`);
         }
 
         // post zli and daemon logs directly to UploadLogArchiveController
@@ -171,5 +166,4 @@ export async function sendLogsHandler(argv: yargs.Arguments<sendLogsArgs>, confi
     if(agentLogsSent || zlidaemonLogsSent) {
         logger.info(`Unique identifier for this request: ${uploadLogsRequestId}`);
     }
-    await cleanExit(0, logger);
 }

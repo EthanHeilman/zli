@@ -1,7 +1,6 @@
 import yargs from 'yargs';
 import { ConfigService } from '../../../services/config/config.service';
 import { Logger } from '../../../services/logger/logger.service';
-import { cleanExit } from '../../clean-exit.handler';
 import { createClusterPolicyArgs } from './create-policy.command-builder';
 import { getGroupsByName, getEnvironmentByName, getSubjectsByEmail, checkAllIdentifiersExist, checkAllIdentifiersAreSingle, getTargetsByNameOrId } from '../../../utils/policy-utils';
 import { PolicyHttpService } from '../../../http-services/policy/policy.http-services';
@@ -27,8 +26,7 @@ export async function createClusterPolicyHandler(argv: yargs.Arguments<createClu
     // If a value is provided for neither then throw an error
     // Yargs will handle when a value is passed in for both
     if(argv.clusters === undefined && argv.environments === undefined) {
-        logger.error('Must exclusively provide a value for clusters or environments');
-        await cleanExit(1, logger);
+        throw new Error('Must exclusively provide a value for clusters or environments');
     }
 
     let subjectsEmails: string[];
@@ -97,6 +95,4 @@ export async function createClusterPolicyHandler(argv: yargs.Arguments<createClu
     });
 
     logger.warn(`Successfully created a new Cluster Policy. Name: ${kubeClusterPolicy.name} ID: ${kubeClusterPolicy.id}`);
-
-    await cleanExit(0, logger);
 }

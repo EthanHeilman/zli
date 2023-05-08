@@ -59,12 +59,10 @@ export async function connectHandler(
             const exitCode = await shellConnectHandler(createUniversalConnectionResponse.targetType, createUniversalConnectionResponse.targetUser, createUniversalConnectionResponse, configService, logger, loggerConfigService);
 
             if (exitCode !== 0) {
-                const errMsg = handleExitCode(exitCode, createUniversalConnectionResponse);
-                if (errMsg.length > 0) {
-                    logger.error(errMsg);
-                }
+                const err = handleExitCode(exitCode, createUniversalConnectionResponse);
+                throw err;
             }
-            return exitCode;
+            return;
         case TargetType.Db:
             return await dbConnectHandler(argv, createUniversalConnectionResponse.splitCert, createUniversalConnectionResponse.targetId, createUniversalConnectionResponse.targetUser, createUniversalConnectionResponse, configService, logger, loggerConfigService);
         case TargetType.Web:
@@ -72,8 +70,7 @@ export async function connectHandler(
         case TargetType.Cluster:
             return await startKubeDaemonHandler(argv, createUniversalConnectionResponse.targetId, createUniversalConnectionResponse.targetUser, createUniversalConnectionResponse, configService, logger, loggerConfigService);
         default:
-            logger.error(`Unhandled target type ${createUniversalConnectionResponse.targetType}`);
-            return -1;
+            throw new Error(`Unhandled target type ${createUniversalConnectionResponse.targetType}`);
         }
     }
     catch(err)

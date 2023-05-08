@@ -1,6 +1,5 @@
 import { ConfigService } from '../../../services/config/config.service';
 import { Logger } from '../../../services/logger/logger.service';
-import { cleanExit } from '../../clean-exit.handler';
 import { OrganizationHttpService } from '../../../http-services/organization/organization.http-services';
 import { PolicyHttpService } from '../../../http-services/policy/policy.http-services';
 import { editPolicy, getPolicyFromName } from '../../../../src/services/policy/policy.services';
@@ -11,8 +10,7 @@ export async function deleteGroupFromPolicyHandler(groupName: string, policyName
     const groups = await organizationHttpService.ListGroups();
     const groupSummary = groups.find(g => g.name == groupName);
     if (groupSummary == undefined) {
-        logger.error(`Unable to find group with name: ${groupName}`);
-        await cleanExit(1, logger);
+        throw new Error(`Unable to find group with name: ${groupName}`);
     }
 
     const policyHttpService = new PolicyHttpService(configService, logger);
@@ -20,14 +18,12 @@ export async function deleteGroupFromPolicyHandler(groupName: string, policyName
 
     if (policy === null) {
         // Log an error
-        logger.error(`Unable to find policy with name: ${policyName}`);
-        await cleanExit(1, logger);
+        throw new Error(`Unable to find policy with name: ${policyName}`);
     }
 
     // If this group does not exist in this policy
     if (!policy.groups.find(g => g.name == groupSummary.name)) {
-        logger.error(`Group ${groupName} does not exist for policy: ${policyName}`);
-        await cleanExit(1, logger);
+        throw new Error(`Group ${groupName} does not exist for policy: ${policyName}`);
     }
 
     // Then delete the group from the policy
@@ -37,5 +33,4 @@ export async function deleteGroupFromPolicyHandler(groupName: string, policyName
     await editPolicy(policy, policyHttpService);
 
     logger.info(`Deleted ${groupName} from ${policyName} policy!`);
-    await cleanExit(0, logger);
 }

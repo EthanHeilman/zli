@@ -1,6 +1,5 @@
 import { ConfigService } from '../../../services/config/config.service';
 import { Logger } from '../../../services/logger/logger.service';
-import { cleanExit } from '../../clean-exit.handler';
 import { PolicyHttpService } from '../../../http-services/policy/policy.http-services';
 import { SubjectType } from '../../../../webshell-common-ts/http/v2/common.types/subject.types';
 import { Subject } from '../../../../webshell-common-ts/http/v2/policy/types/subject.types';
@@ -16,8 +15,7 @@ export async function addSubjectToPolicyHandler(subjectEmail: string, policyName
     try {
         subjectSummary = await subjectHttpService.GetSubjectByEmail(subjectEmail);
     } catch (error) {
-        logger.error(`Unable to find subject with email: ${subjectEmail}`);
-        await cleanExit(1, logger);
+        throw new Error(`Unable to find subject with email: ${subjectEmail}`);
     }
 
     const policyHttpService = new PolicyHttpService(configService, logger);
@@ -25,14 +23,12 @@ export async function addSubjectToPolicyHandler(subjectEmail: string, policyName
 
     if (policy === null) {
         // Log an error
-        logger.error(`Unable to find policy with name: ${policyName}`);
-        await cleanExit(1, logger);
+        throw new Error(`Unable to find policy with name: ${policyName}`);
     }
 
     // If this subject exists already
     if (policy.subjects.find(s => (s.type === SubjectType.User || s.type === SubjectType.ServiceAccount) && s.id === subjectSummary.id)) {
-        logger.error(`Subject ${subjectEmail} exists already for policy: ${policyName}`);
-        await cleanExit(1, logger);
+        throw new Error(`Subject ${subjectEmail} exists already for policy: ${policyName}`);
     }
 
     // Then add the subject to the policy
@@ -47,5 +43,4 @@ export async function addSubjectToPolicyHandler(subjectEmail: string, policyName
     await editPolicy(policy, policyHttpService);
 
     logger.info(`Added ${subjectEmail} to ${policyName} policy!`);
-    await cleanExit(0, logger);
 }

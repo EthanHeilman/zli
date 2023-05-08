@@ -1013,10 +1013,11 @@ Need help? https://cloud.bastionzero.com/support`)
         try {
             const { baseCmd, parsedArgv } = makeCaseInsensitive(this.availableCommands, argv);
             await this.getCliDriver(isSystemTest, baseCmd).parseAsync(parsedArgv, {}, callback);
+            cleanExit(0, this.logger);
         } catch (err) {
             if (this.logger) {
                 if (err) {
-                    if (typeof err === 'string') {
+                    if (typeof err === 'string' && err.length > 0) {
                         this.logger.error(err);
                     } else {
                         this.logger.error(err.message);
@@ -1027,7 +1028,7 @@ Need help? https://cloud.bastionzero.com/support`)
                 await cleanExit(1, this.logger);
             } else {
                 if (err) {
-                    if (typeof err === 'string') {
+                    if (typeof err === 'string' && err.length > 0) {
                         console.error(err);
                     } else {
                         console.error(err.message);

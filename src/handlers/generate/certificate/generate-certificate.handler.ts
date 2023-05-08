@@ -12,7 +12,6 @@ import { ConfigService } from '../../../services/config/config.service';
 import { Logger } from '../../../services/logger/logger.service';
 import { generateCertificateArgs } from './generate-certificate.command-builder';
 import { isGuid } from '../../../utils/utils';
-import { cleanExit } from '../../../handlers/clean-exit.handler';
 import { DbTargetSummary } from '../../../../webshell-common-ts/http/v2/target/db/types/db-target-summary.types';
 import { TargetStatus } from '../../../../webshell-common-ts/http/v2/target/types/targetStatus.types';
 
@@ -27,8 +26,7 @@ export const paths = {
 
 export async function certificateHandler(argv: yargs.Arguments<generateCertificateArgs>, configService: ConfigService, logger: Logger) {
     if (argv.targets.length == 0 && !argv.all) {
-        logger.error(`No targets provided and 'all' flag not set. Please run 'zli generate certificate --help'`);
-        await cleanExit(1, logger);
+        throw new Error(`No targets provided and 'all' flag not set. Please run 'zli generate certificate --help'`);
     }
 
     // validate output directory if provided
@@ -37,21 +35,18 @@ export async function certificateHandler(argv: yargs.Arguments<generateCertifica
     if (outputDir) {
         const outputDirExists = await util.promisify(fs.exists)(outputDir);
         if (!outputDirExists) {
-            logger.error(`outputDir '${outputDir}' does not exist`);
-            await cleanExit(1, logger);
+            throw new Error(`outputDir '${outputDir}' does not exist`);
         }
         else {
             const fileStat = await util.promisify(fs.lstat)(outputDir);
             if (!fileStat.isDirectory()) {
-                logger.error(`path '${outputDir}' is not a directory`);
-                await cleanExit(1, logger);
+                throw new Error(`path '${outputDir}' is not a directory`);
             }
         }
         try {
             await util.promisify(fs.access)(outputDir, fs.constants.W_OK);
         } catch (err) {
-            logger.error(`you do not have permission to write to path '${argv.outputDir}'`);
-            await cleanExit(1, logger);
+            throw new Error(`you do not have permission to write to path '${argv.outputDir}'`);
         }
     } else {
         outputDir = newUniqueOutputDir();
@@ -80,8 +75,7 @@ export async function certificateHandler(argv: yargs.Arguments<generateCertifica
             }
         });
 
-        logger.error(`You must provide either a list of target IDs or of target names. The following are not valid target IDs: ${failures.join(', ')}`);
-        await cleanExit(1, logger);
+        throw new Error(`You must provide either a list of target IDs or of target names. The following are not valid target IDs: ${failures.join(', ')}`);
     }
 
     let envId: string;
@@ -105,11 +99,11 @@ export async function certificateHandler(argv: yargs.Arguments<generateCertifica
 
         // if there are no valid targets, there's nothing we can do
         if (dbTargetsToConfigure.length == 0) {
-            logger.error(`The 'all' flag was provided but you do not have any database targets that are online and have an agent version >= ${minimumAgentVersion}`);
+            let errorMsg = `The 'all' flag was provided but you do not have any database targets that are online and have an agent version >= ${minimumAgentVersion}`;
             if (errorText.length > 0) {
-                logger.error(`The following targets could not be configured: ${errorText}`);
+                errorMsg += `\nThe following targets could not be configured: ${errorText}`;
             }
-            await cleanExit(1, logger);
+            throw new Error(errorMsg);
         }
 
         // however, there might be a mix of valid and invalid targets
@@ -131,7 +125,7 @@ Valid targets: ${dbTargetsToConfigure.map(t => t.name).join(', ')}`);
                     break;
                 default:
                     logger.warn(`Aborting certificate generation`);
-                    await cleanExit(1, logger);
+                    return;
                 }
                 rl.close();
             }
@@ -147,8 +141,7 @@ Valid targets: ${dbTargetsToConfigure.map(t => t.name).join(', ')}`);
                         failures.push(targetId);
                     }
                 });
-                logger.error(`The following targets could not be found by ID: ${failures.join(', ')}`);
-                await cleanExit(1, logger);
+                throw new Error(`The following targets could not be found by ID: ${failures.join(', ')}`);
             }
         } else {
             if (dbTargets.length !== targetNames.length) {
@@ -158,19 +151,15 @@ Valid targets: ${dbTargetsToConfigure.map(t => t.name).join(', ')}`);
                         failures.push(targetName);
                     }
                 });
-                logger.error(`The following targets could not be found by name: ${failures.join(', ')}`);
-                await cleanExit(1, logger);
+                throw new Error(`The following targets could not be found by name: ${failures.join(', ')}`);
             }
         }
 
         // if any of the targets we explicitly asked for are unavailable, fail
         [dbTargetsToConfigure, errorText] = validateDbTargets(dbTargets);
         if (errorText.length > 0) {
-            logger.error(errorText);
-            await cleanExit(1, logger);
+            throw new Error(errorText);
         }
-
-        await cleanExit(0, logger);
     }
 
     const certificateService = new CertificateHttpService(configService, logger);

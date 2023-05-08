@@ -5,7 +5,6 @@ import {
     parseTargetStatus
 } from '../../utils/utils';
 import { Logger } from '../../services/logger/logger.service';
-import { cleanExit } from '../clean-exit.handler';
 import { includes, map, uniq } from 'lodash';
 import { ConfigService } from '../../services/config/config.service';
 import yargs from 'yargs';
@@ -76,6 +75,4 @@ export async function listTargetsHandler(
             console.log(tableString);
         }
     }
-
-    await cleanExit(0, logger);
 }

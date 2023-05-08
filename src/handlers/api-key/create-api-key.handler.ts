@@ -3,7 +3,6 @@ import { ConfigService } from '../../services/config/config.service';
 import yargs from 'yargs';
 import { createApiKeyArgs } from './create-api-key.command-builder';
 import { ApiKeyHttpService } from '../../http-services/api-key/api-key.http-services';
-import { cleanExit } from '../clean-exit.handler';
 
 export async function createApiKeyHandler(
     argv: yargs.Arguments<createApiKeyArgs>,
@@ -21,6 +20,4 @@ export async function createApiKeyHandler(
         logger.info(`Secret: ${createResp.secret}`);
         logger.info('\nPlease write your secret down. It cannot be recovered later.');
     }
-
-    await cleanExit(0, logger);
 }

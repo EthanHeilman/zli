@@ -1,6 +1,5 @@
 import { ConfigService } from '../../../services/config/config.service';
 import { Logger } from '../../../services/logger/logger.service';
-import { cleanExit } from '../../clean-exit.handler';
 import { PolicyHttpService } from '../../../http-services/policy/policy.http-services';
 import { ClusterUser } from '../../../../webshell-common-ts/http/v2/policy/types/cluster-user.types';
 import { TargetUser } from '../../../../webshell-common-ts/http/v2/policy/types/target-user.types';
@@ -19,15 +18,13 @@ export async function addTargetUserToPolicyHandler(targetUserName: string, polic
 
     if (!kubePolicy && !targetPolicy && !proxyPolicy) {
         // Log an error
-        logger.error(`Unable to find policy with name: ${policyName}`);
-        await cleanExit(1, logger);
+        throw new Error(`Unable to find policy with name: ${policyName}`);
     }
 
     if (kubePolicy) {
         // If this cluster targetUser exists already
         if (kubePolicy.clusterUsers.find(u => u.name === targetUserName)) {
-            logger.error(`Target user ${targetUserName} exists already for policy: ${policyName}`);
-            await cleanExit(1, logger);
+            throw new Error(`Target user ${targetUserName} exists already for policy: ${policyName}`);
         }
 
         // Then add the targetUser to the policy
@@ -42,8 +39,7 @@ export async function addTargetUserToPolicyHandler(targetUserName: string, polic
     } else if (targetPolicy) {
         // If this targetUser exists already
         if (targetPolicy.targetUsers.find(u => u.userName === targetUserName)) {
-            logger.error(`Target user ${targetUserName} exists already for policy: ${policyName}`);
-            await cleanExit(1, logger);
+            throw new Error(`Target user ${targetUserName} exists already for policy: ${policyName}`);
         }
 
         // Then add the targetUser to the policy
@@ -57,8 +53,7 @@ export async function addTargetUserToPolicyHandler(targetUserName: string, polic
     } else if (proxyPolicy) {
         // If this targetUser exists already
         if (proxyPolicy.targetUsers.find(u => u.userName === targetUserName)) {
-            logger.error(`Target user ${targetUserName} exists already for policy: ${policyName}`);
-            await cleanExit(1, logger);
+            throw new Error(`Target user ${targetUserName} exists already for policy: ${policyName}`);
         }
 
         // Then add the targetUser to the policy
@@ -70,10 +65,8 @@ export async function addTargetUserToPolicyHandler(targetUserName: string, polic
         proxyPolicy.targetUsers.push(targetUserToAdd);
         await policyHttpService.EditProxyPolicy(proxyPolicy);
     } else {
-        logger.error(`Adding target user to policy ${policyName} failed. Adding target users to this policy type is not currently supported.`);
-        await cleanExit(1, logger);
+        throw new Error(`Adding target user to policy ${policyName} failed. Adding target users to this policy type is not currently supported.`);
     }
 
     logger.info(`Added ${targetUserName} to ${policyName} policy!`);
-    await cleanExit(0, logger);
 }

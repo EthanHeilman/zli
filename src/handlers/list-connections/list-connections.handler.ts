@@ -5,7 +5,6 @@ import { listConnectionsArgs } from './list-connections.command-builder';
 import yargs from 'yargs';
 import { ConnectionInfo } from '../../services/list-connections/list-connections.service.types';
 import { listOpenDbConnections, listOpenKubeConnections, listOpenShellConnections } from '../../services/list-connections/list-connections.service';
-import { cleanExit } from '../clean-exit.handler';
 
 export async function listConnectionsHandler(
     argv: yargs.Arguments<listConnectionsArgs>,
@@ -61,8 +60,6 @@ export async function listConnectionsHandler(
         ]);
         await printTableOrJson('all', normalizeConnectionInfos([...shellConnections, ...dbConnections, ...kubeConnections]));
     }
-
-    await cleanExit(0, logger);
 }
 
 // This type should conform to the table output's columns, so that the --json

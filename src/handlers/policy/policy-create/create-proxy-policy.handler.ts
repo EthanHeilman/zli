@@ -1,7 +1,6 @@
 import yargs from 'yargs';
 import { ConfigService } from '../../../services/config/config.service';
 import { Logger } from '../../../services/logger/logger.service';
-import { cleanExit } from '../../clean-exit.handler';
 import { createProxyPolicyArgs } from './create-policy.command-builder';
 import { getGroupsByName, getEnvironmentByName, getSubjectsByEmail, getTargetsByNameOrId, checkAllIdentifiersExist, checkAllIdentifiersAreSingle } from '../../../utils/policy-utils';
 import { PolicyHttpService } from '../../../http-services/policy/policy.http-services';
@@ -25,8 +24,7 @@ export async function createProxyPolicyHandler(argv: yargs.Arguments<createProxy
     // If a value is provided for neither then throw an error
     // Yargs will handle when a value is passed in for both
     if(argv.targets === undefined && argv.environments === undefined) {
-        logger.error('Must exclusively provide a value for targets or environments');
-        await cleanExit(1, logger);
+        throw new Error('Must exclusively provide a value for targets or environments');
     }
 
     let subjectsEmails: string[];
@@ -78,6 +76,4 @@ export async function createProxyPolicyHandler(argv: yargs.Arguments<createProxy
     });
 
     logger.warn(`Successfully created a new Proxy Policy. Name: ${proxyPolicy.name} ID: ${proxyPolicy.id}`);
-
-    await cleanExit(0, logger);
 }

@@ -3,7 +3,6 @@ import fs from 'fs';
 import util from 'util';
 import { ConfigService } from '../../../services/config/config.service';
 import { Logger } from '../../../services/logger/logger.service';
-import { cleanExit } from '../../clean-exit.handler';
 import { generateKubeYamlArgs } from './generate-kube.command-builder';
 import { getEnvironmentFromName } from '../../../utils/utils';
 import { KubeHttpService } from '../../../http-services/targets/kube/kube.http-services';
@@ -16,8 +15,7 @@ export async function generateKubeYamlHandler(
 ) {
     // First check all the required args
     if (argv.clusterName == null) {
-        logger.error('Please make sure you have passed the clusterName positional argument before trying to generate a yaml!');
-        await cleanExit(1, logger);
+        throw new Error('Please make sure you have passed the clusterName positional argument before trying to generate a yaml!');
     }
 
     const outputFileArg = argv.outputFile;
@@ -54,5 +52,4 @@ export async function generateKubeYamlHandler(
     } else {
         console.log(kubeYaml.yaml);
     }
-    await cleanExit(0, logger);
 }

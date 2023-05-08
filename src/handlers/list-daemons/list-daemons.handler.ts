@@ -1,6 +1,5 @@
 import { Logger } from '../../services/logger/logger.service';
 import { ConfigService } from '../../services/config/config.service';
-import { cleanExit } from '../clean-exit.handler';
 import { createTableWithWordWrap, getTableOfWebStatus, toUpperCase } from '../../utils/utils';
 import { listDaemonsArgs } from './list-daemons.command-builder';
 import yargs from 'yargs';
@@ -28,8 +27,6 @@ export async function listDaemonsHandler(
     if (targetType == 'all' || targetType == 'db') {
         await dbStatusHandler(configService, logger);
     }
-
-    await cleanExit(0, logger);
 }
 
 async function webStatusHandler(

@@ -3,7 +3,6 @@ import yargs from 'yargs';
 import { Logger } from '../../../src/services/logger/logger.service';
 import { SubjectHttpService } from '../../../src/http-services/subject/subject.http-services';
 import { SubjectType } from '../../../webshell-common-ts/http/v2/common.types/subject.types';
-import { cleanExit } from '../clean-exit.handler';
 import { ConfigureServiceAccountRequest } from '../../../webshell-common-ts/http/v2/service-account/requests/configure-service-account.requests';
 import { configureServiceAccountArgs } from './configure-service-account.command-builder';
 import { checkAllIdentifiersAreSingle, checkAllIdentifiersExist, getTargetsByNameOrId } from '../../../src/utils/policy-utils';
@@ -24,8 +23,7 @@ const CONFIGURE_MIN_AGENT_VERSION: SemVer = new SemVer('7.3.0');
 
 export async function configureServiceAccountHandler(configService: ConfigService, logger: Logger, mrtapService: MrtapService, argv : yargs.Arguments<configureServiceAccountArgs>) {
     if(configService.me().type != SubjectType.User) {
-        logger.error(`You cannot configure targets when logged in as ${configService.me().type}`);
-        await cleanExit(1, logger);
+        throw new Error(`You cannot configure targets when logged in as ${configService.me().type}`);
     }
 
     const subjectHttpService = new SubjectHttpService(configService, logger);
@@ -36,14 +34,12 @@ export async function configureServiceAccountHandler(configService: ConfigServic
     try {
         subjectSummary = await subjectHttpService.GetSubjectByEmail(argv.serviceAccount);
     } catch (error) {
-        logger.error(`Unable to find subject with email: ${argv.serviceAccount}`);
-        await cleanExit(1, logger);
+        throw new Error(`Unable to find subject with email: ${argv.serviceAccount}`);
     }
 
     if(subjectSummary.type != SubjectType.ServiceAccount)
     {
-        logger.error(`The provided subject ${argv.serviceAccount} is not a service account.`);
-        await cleanExit(1, logger);
+        throw new Error(`The provided subject ${argv.serviceAccount} is not a service account.`);
     }
 
     // Get all targets if specified otherwise get just the specified ones
@@ -74,14 +70,12 @@ export async function configureServiceAccountHandler(configService: ConfigServic
 
     if(targetIds.length === 0)
     {
-        logger.error(`None of the specified targets is able to be configured with a service account.`);
-        await cleanExit(1, logger);
+        throw new Error(`None of the specified targets is able to be configured with a service account.`);
     }
 
     const serviceAccount = await serviceAccountHttpService.GetServiceAccount(subjectSummary.id);
     if(!serviceAccount.enabled) {
-        logger.error(`Service account ${serviceAccount.email} is not currently enabled.`);
-        await cleanExit(1, logger);
+        throw new Error(`Service account ${serviceAccount.email} is not currently enabled.`);
     }
 
     const serviceAccountConfiguration: ServiceAccountConfiguration = {
@@ -98,5 +92,4 @@ export async function configureServiceAccountHandler(configService: ConfigServic
 
     logger.debug(`Attempting to update targets ${request.targets.join(', ')} with service account ${subjectSummary.email}`);
     logger.info(`Attempting to update the specified targets with service account ${subjectSummary.email}`);
-    await cleanExit(0, logger);
 }

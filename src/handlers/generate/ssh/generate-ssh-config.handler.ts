@@ -7,7 +7,6 @@ import { PolicyQueryHttpService } from '../../../http-services/policy-query/poli
 import { SshTargetsResponse } from '../../../../webshell-common-ts/http/v2/policy-query/responses/tunnels.response';
 import { buildSshConfigStrings } from './generate-ssh-proxy.handler';
 import { generateSshConfigArgs } from './generate-ssh-config.command-builder';
-import { cleanExit } from '../../clean-exit.handler';
 
 // bound refers to star boundaries set for the comments
 const bound = '*'.repeat(80);
@@ -58,8 +57,6 @@ export async function generateSshConfigHandler(argv: yargs.Arguments<generateSsh
         deleteBzConfigContents(userConfigPath, bzConfigPath, logger);
         logger.info('You do not have tunnel or file transfer access to any targets. BZ SSH configuration file not generated.');
     }
-
-    await cleanExit(0, logger);
 }
 
 /**
