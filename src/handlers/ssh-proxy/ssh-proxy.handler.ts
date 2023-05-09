@@ -11,7 +11,6 @@ import { ConnectionHttpService } from '../../http-services/connection/connection
 import { ConfigService } from '../../services/config/config.service';
 import { LoggerConfigService } from '../../services/logger/logger-config.service';
 import { Logger } from '../../services/logger/logger.service';
-import { SsmTunnelService } from '../../services/ssm-tunnel/ssm-tunnel.service';
 import { copyExecutableToLocalDir, getBaseDaemonEnv, getOrDefaultLocalport, handleExitCode, waitForDaemonProcessExit } from '../../utils/daemon-utils';
 import { parseTargetString } from '../../utils/utils';
 import { cleanExit } from '../clean-exit.handler';
@@ -40,6 +39,8 @@ export async function sshProxyHandler(
     }
 
     // modify argv to have the targetString and targetType params
+    logger.error(`argv: ${JSON.stringify(argv)}`);
+    logger.error(`argv.user: ${JSON.stringify(argv.user)}`);
     const targetString = argv.user + '@' + argv.host.substr(prefix.length);
     const parsedTarget = parseTargetString(targetString);
     const targetUser = parsedTarget.user;
@@ -76,68 +77,35 @@ export async function sshProxyHandler(
     };
 
     switch (createUniversalConnectionResponse.targetType) {
-    case TargetType.SsmTarget:
-        return await ssmSshProxyHandler(configService, logger, sshTunnelParameters, createUniversalConnectionResponse, mrtapService);
-    case TargetType.Bzero:
-        // agentVersion will be null if this isn't a valid version (i.e if its "$AGENT_VERSION" string during development)
-        const agentVersion = parse(createUniversalConnectionResponse.agentVersion);
-        if (agentVersion && lt(agentVersion, new SemVer(minimumAgentVersion))) {
-            logger.error(`Tunneling to Bzero Target is only supported on agent versions >= ${minimumAgentVersion}. Agent version is ${agentVersion}`);
-            cleanExit(1, logger);
-        }
-
-        let exitCode: number;
-        // if the user has file transfer access but not tunnel access, give them a transparent connection
-        if (createUniversalConnectionResponse.sshScpOnly) {
-            exitCode = await bzeroTransparentSshProxyHandler(configService, logger, sshTunnelParameters, createUniversalConnectionResponse, loggerConfigService);
-        } else {
-            exitCode = await bzeroOpaqueSshProxyHandler(configService, logger, sshTunnelParameters, createUniversalConnectionResponse, loggerConfigService);
-        }
-
-        if (exitCode !== 0) {
-            const errMsg = handleExitCode(exitCode, createUniversalConnectionResponse);
-            if (errMsg.length > 0) {
-                logger.error(errMsg);
+        case TargetType.Bzero:
+            // agentVersion will be null if this isn't a valid version (i.e if its "$AGENT_VERSION" string during development)
+            const agentVersion = parse(createUniversalConnectionResponse.agentVersion);
+            if (agentVersion && lt(agentVersion, new SemVer(minimumAgentVersion))) {
+                logger.error(`Tunneling to Bzero Target is only supported on agent versions >= ${minimumAgentVersion}. Agent version is ${agentVersion}`);
+                cleanExit(1, logger);
             }
-        }
 
-        cleanExit(exitCode, logger);
+            let exitCode: number;
+            // if the user has file transfer access but not tunnel access, give them a transparent connection
+            if (createUniversalConnectionResponse.sshScpOnly) {
+                exitCode = await bzeroTransparentSshProxyHandler(configService, logger, sshTunnelParameters, createUniversalConnectionResponse, loggerConfigService);
+            } else {
+                exitCode = await bzeroOpaqueSshProxyHandler(configService, logger, sshTunnelParameters, createUniversalConnectionResponse, loggerConfigService);
+            }
 
-    default:
-        logger.error(`Unhandled ssh target type ${createUniversalConnectionResponse.targetType}`);
-        return -1;
+            if (exitCode !== 0) {
+                const errMsg = handleExitCode(exitCode, createUniversalConnectionResponse);
+                if (errMsg.length > 0) {
+                    logger.error(errMsg);
+                }
+            }
+
+            cleanExit(exitCode, logger);
+
+        default:
+            logger.error(`Unhandled ssh target type ${createUniversalConnectionResponse.targetType}`);
+            return -1;
     }
-}
-
-/**
- * Launch an SSH tunnel session to an SSM target
- */
-async function ssmSshProxyHandler(configService: ConfigService, logger: Logger, sshTunnelParameters: SshTunnelParameters, createUniversalConnectionResponse: CreateUniversalConnectionResponse, mrtapService: MrtapService) {
-    const ssmTunnelService = new SsmTunnelService(logger, configService, mrtapService, true);
-    ssmTunnelService.errors.subscribe(async errorMessage => {
-        logger.error(errorMessage);
-        await cleanExit(1, logger);
-    });
-
-    if (await ssmTunnelService.setupWebsocketTunnel(createUniversalConnectionResponse.targetId, sshTunnelParameters.targetUser, sshTunnelParameters.port, sshTunnelParameters.identityFile)) {
-        process.stdin.on('data', async (data) => {
-            ssmTunnelService.sendData(data);
-        });
-        // this explicit close behavior is needed for an edge case
-        // where we use BastionZero as an ssh proxy via `npm run start`
-        // see this discussion for more: https://github.com/bastionzero/zli/pull/329#discussion_r831502123
-        process.stdin.on('close', async () => {
-            // closing the tunnel directly in this callback does not seem to work
-            // await ssmTunnelService.closeTunnel();
-            await cleanExit(0, logger);
-        });
-    }
-
-    configService.logoutDetected.subscribe(async () => {
-        logger.error('\nLogged out by another zli instance. Terminating ssh tunnel\n');
-        await ssmTunnelService.closeTunnel();
-        await cleanExit(0, logger);
-    });
 }
 
 /**

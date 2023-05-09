@@ -327,6 +327,8 @@ export async function copyExecutableToLocalDir(logger: Logger, configPath: strin
         finalDaemonPath = path.join(configDir, daemonName);
     }
 
+    logger.warn(`finalDaemonPath: ${finalDaemonPath}`);
+
     if (fs.existsSync(finalDaemonPath)) {
         return finalDaemonPath;
     }
