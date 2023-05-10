@@ -3,13 +3,22 @@ import { PolicyQueryHttpService } from '../../../http-services/policy-query/poli
 import { ConfigService } from '../../../services/config/config.service';
 import { mockTunnelsResponseList } from '../../../utils/unit-test-utils';
 
+const fakeDir = (process.platform === 'win32') ? `C:\\test`: `/test`;
+const testConfigName = 'test-config';
+const sshKeyPath = path.join(fakeDir, 'sshKeyPath');
+const sshKnownHosts = path.join(fakeDir, 'knownHosts');
+
+const formattedSshKeyPath = (process.platform === 'win32') ? `"${sshKeyPath}"`: sshKeyPath;
+const formattedSshKnownHosts = (process.platform === 'win32') ? `"${sshKnownHosts}"`: sshKnownHosts;
+const formattedRunCommand = (process.platform === 'win32') ? `"npm run start"`: `npm run start`;
+
 export function sshConfigMockSetup(): void {
     // Mock GetTunnels from PolicyQueryHttpService
     jest.spyOn(PolicyQueryHttpService.prototype, 'GetSshTargets').mockImplementation(async () => mockTunnelsResponseList);
     // Mock Config methods used in building ssh config file
-    jest.spyOn(ConfigService.prototype, 'getConfigName').mockImplementation(() => 'test-config');
-    jest.spyOn(ConfigService.prototype, 'getSshKeyPath').mockImplementation(() => '/test/sshKeyPath');
-    jest.spyOn(ConfigService.prototype, 'getSshKnownHostsPath').mockImplementation(() => '/test/knownHosts');
+    jest.spyOn(ConfigService.prototype, 'getConfigName').mockImplementation(() => testConfigName);
+    jest.spyOn(ConfigService.prototype, 'getSshKeyPath').mockImplementation(() => sshKeyPath);
+    jest.spyOn(ConfigService.prototype, 'getSshKnownHostsPath').mockImplementation(() => sshKnownHosts);
 }
 
 const mockBzHelpMessage: string = `#********************************************************************************
@@ -63,29 +72,29 @@ const mockBzHelpMessage: string = `#********************************************
 // Expected BZ config file
 export const mockBzSshConfigContents: string = mockBzHelpMessage + `
 Host test-target-name
-    IdentityFile /test/sshKeyPath
-    UserKnownHostsFile /test/knownHosts
-    ProxyCommand npm run start ssh-proxy --configName=test-config -s test-config-bzero-%n %r %p /test/sshKeyPath
+    IdentityFile ${formattedSshKeyPath}
+    UserKnownHostsFile ${formattedSshKnownHosts}
+    ProxyCommand ${formattedRunCommand} ssh-proxy --configName=${testConfigName} -s ${testConfigName}-bzero-%n %r %p ${formattedSshKeyPath}
     User test-user
 
-Host test-config-bzero-*
-    IdentityFile /test/sshKeyPath
-    UserKnownHostsFile /test/knownHosts
-    ProxyCommand npm run start ssh-proxy --configName=test-config -s %n %r %p /test/sshKeyPath
+Host ${testConfigName}-bzero-*
+    IdentityFile ${formattedSshKeyPath}
+    UserKnownHostsFile ${formattedSshKnownHosts}
+    ProxyCommand ${formattedRunCommand} ssh-proxy --configName=${testConfigName} -s %n %r %p ${formattedSshKeyPath}
 `;
 
 // Expected BZ config file
 export const mockBzSshConfigContentsDefaultUser: string = mockBzHelpMessage + `
 Host test-target-name
-    IdentityFile /test/sshKeyPath
-    UserKnownHostsFile /test/knownHosts
-    ProxyCommand npm run start ssh-proxy --configName=test-config -s test-config-bzero-%n %r %p /test/sshKeyPath
+    IdentityFile ${formattedSshKeyPath}
+    UserKnownHostsFile ${formattedSshKnownHosts}
+    ProxyCommand ${formattedRunCommand} ssh-proxy --configName=${testConfigName} -s ${testConfigName}-bzero-%n %r %p ${formattedSshKeyPath}
     User default-user
 
-Host test-config-bzero-*
-    IdentityFile /test/sshKeyPath
-    UserKnownHostsFile /test/knownHosts
-    ProxyCommand npm run start ssh-proxy --configName=test-config -s %n %r %p /test/sshKeyPath
+Host ${testConfigName}-bzero-*
+    IdentityFile ${formattedSshKeyPath}
+    UserKnownHostsFile ${formattedSshKnownHosts}
+    ProxyCommand ${formattedRunCommand} ssh-proxy --configName=${testConfigName} -s %n %r %p ${formattedSshKeyPath}
 `;
 
 /**
@@ -96,7 +105,7 @@ export function getMockSshConfigContents(withBzSshPathOption: boolean): string {
     const tempDir = (!withBzSshPathOption) ? path.join(__dirname, 'temp-generate-ssh-config-test', '.ssh') : path.join(__dirname, 'temp-generate-ssh-config-test');
 
     // Default config path
-    const expectedBzConfigPathDefault = path.join(tempDir, 'test-config-bzero-bz-config');
+    const expectedBzConfigPathDefault = path.join(tempDir, `${testConfigName}-bzero-bz-config`);
 
     // Config path supplied by user
     const expectedBzConfigPathPassedByUser = path.join(tempDir, 'bzSshPath');

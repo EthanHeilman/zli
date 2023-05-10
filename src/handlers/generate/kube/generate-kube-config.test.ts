@@ -141,8 +141,8 @@ describe('Generate kube config suite', () => {
                     expect(gotKubeConfig.currentContext).toBe(expectedContexts[expectedContexts.length - 1].name)
                     : expect(gotKubeConfig.currentContext).toBeUndefined();
             })
-            , { numRuns: 5000, interruptAfterTimeLimit: 19 * 1000, markInterruptAsFailure: true });
-    }, 20 * 1000);
+            , { numRuns: 5000, interruptAfterTimeLimit: 45 * 1000, markInterruptAsFailure: true });
+    }, 46 * 1000);
 
     test('493843: Generate kube config with --force option and there are no running daemons or configs stored', async () => {
         managementServiceMock.getDaemonConfigs.mockReturnValue(new Map());

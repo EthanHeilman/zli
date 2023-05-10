@@ -154,9 +154,17 @@ describe('getKubeDaemonSecuritySettings suite', () => {
 
         // Ensure paths for generated files match base directory of fake config
         // file
-        expect(settings.certPath).toMatch(new RegExp(`^${path.dirname(tempConfigFilePath)}`));
-        expect(settings.keyPath).toMatch(new RegExp(`^${path.dirname(tempConfigFilePath)}`));
-        expect(settings.csrPath).toMatch(new RegExp(`^${path.dirname(tempConfigFilePath)}`));
+        const dirName = path.dirname(tempConfigFilePath);
+
+        // It seems like the expect statement will auto-escape \ in the expect string
+        // but not in the regular expression which makes the command fail on Windows.
+        // The below replacement compensates for that.
+        const replacedDirName = dirName.split(`\\`).join(`\\\\`);
+
+        const configPathPattern = new RegExp(`^${replacedDirName}`);
+        expect(settings.certPath).toMatch(configPathPattern);
+        expect(settings.keyPath).toMatch(configPathPattern);
+        expect(settings.csrPath).toMatch(configPathPattern);
 
         expect(settings.token).toBeDefined();
 
@@ -184,9 +192,17 @@ describe('getKubeDaemonSecuritySettings suite', () => {
 
         // Ensure paths for generated files match base directory of fake config
         // file
-        expect(settings.certPath).toMatch(new RegExp(`^${path.dirname(tempConfigFilePath)}`));
-        expect(settings.keyPath).toMatch(new RegExp(`^${path.dirname(tempConfigFilePath)}`));
-        expect(settings.csrPath).toMatch(new RegExp(`^${path.dirname(tempConfigFilePath)}`));
+        const dirName = path.dirname(tempConfigFilePath);
+
+        // It seems like the expect statement will auto-escape \ in the expect string
+        // but not in the regular expression which makes the command fail on Windows.
+        // The below replacement compensates for that.
+        const replacedDirName = dirName.split(`\\`).join(`\\\\`);
+
+        const configPathPattern = new RegExp(`^${replacedDirName}`);
+        expect(settings.certPath).toMatch(configPathPattern);
+        expect(settings.keyPath).toMatch(configPathPattern);
+        expect(settings.csrPath).toMatch(configPathPattern);
 
         expect(settings.token).toBeDefined();
 
@@ -265,9 +281,17 @@ describe('getKubeDaemonSecuritySettings suite', () => {
 
             // Ensure paths for generated files match base directory of fake
             // config file
-            expect(settings.certPath).toMatch(new RegExp(`^${path.dirname(tempConfigFilePath)}`));
-            expect(settings.keyPath).toMatch(new RegExp(`^${path.dirname(tempConfigFilePath)}`));
-            expect(settings.csrPath).toMatch(new RegExp(`^${path.dirname(tempConfigFilePath)}`));
+            const dirName = path.dirname(tempConfigFilePath);
+
+            // It seems like the expect statement will auto-escape \ in the expect string
+            // but not in the regular expression which makes the command fail on Windows.
+            // The below replacement compensates for that.
+            const replacedDirName = dirName.split(`\\`).join(`\\\\`);
+
+            const configPathPattern = new RegExp(`^${replacedDirName}`);
+            expect(settings.certPath).toMatch(configPathPattern);
+            expect(settings.keyPath).toMatch(configPathPattern);
+            expect(settings.csrPath).toMatch(configPathPattern);
 
             // Token should not be modified
             expect(settings.token).toBe(fakeToken);
@@ -406,8 +430,8 @@ describe('filterKubeConfig suite', () => {
                 const filterResult = await filterKubeConfig(mockConfig, mockKubeDaemonManagementService, config);
                 expect(filterResult.filteredKubeConfig).toMatchObject(clonedConfig);
             })
-            , { numRuns: 5000, interruptAfterTimeLimit: 19 * 1000, markInterruptAsFailure: true });
-    }, 20 * 1000);
+            , { numRuns: 5000, interruptAfterTimeLimit: 30 * 1000, markInterruptAsFailure: true });
+    }, 31 * 1000);
 });
 
 describe('merge properties', () => {

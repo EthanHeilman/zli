@@ -259,11 +259,15 @@ export function loadKubeConfigFromString(config: string): k8s.KubeConfig {
     // doesn't have issues with certain date-like strings
     // See here: https://github.com/eemeli/yaml/issues/117
     const loadedKubeConfig = new KubeConfig();
-    const obj = yaml.parse(config, { version: '1.2' });
-    loadedKubeConfig.clusters = newClusters(obj.clusters);
-    loadedKubeConfig.contexts = newContexts(obj.contexts);
-    loadedKubeConfig.users = newUsers(obj.users);
-    loadedKubeConfig.currentContext = obj['current-context'];
+
+    if (config.length > 0) {
+        const obj = yaml.parse(config, { version: '1.2' });
+        loadedKubeConfig.clusters = newClusters(obj.clusters);
+        loadedKubeConfig.contexts = newContexts(obj.contexts);
+        loadedKubeConfig.users = newUsers(obj.users);
+        loadedKubeConfig.currentContext = obj['current-context'];
+    }
+
     return loadedKubeConfig;
 }
 
