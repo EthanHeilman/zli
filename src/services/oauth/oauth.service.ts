@@ -428,10 +428,10 @@ export class OAuthService implements IDisposable {
             this.logger.debug(`Get id token error: ${e.message}`);
             if (e instanceof RefreshTokenError) {
                 this.logger.error('Stale log in detected');
-                this.configService.logout();
+                await this.configService.logout();
             } else if (e instanceof UserNotLoggedInError) {
             } else {
-                this.configService.logout();
+                await this.configService.logout();
             }
 
             this.logger.info('You need to log in, please run \'zli login --help\'');

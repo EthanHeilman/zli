@@ -262,7 +262,7 @@ export class Config {
         this.config.delete('clientSecret');
     }
 
-    clearTokenSet(): void {
+    async clearTokenSet(): Promise<void> {
         this.config.delete('tokenSet');
     }
 
@@ -270,7 +270,7 @@ export class Config {
         this.config.delete('whoami');
     }
 
-    clearMrtap(): void {
+    async clearMrtap(): Promise<void> {
         this.config.delete('mrtap');
     }
 }

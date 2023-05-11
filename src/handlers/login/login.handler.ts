@@ -100,7 +100,7 @@ export async function loginUserHandler(configService: ConfigService, logger: Log
     logger.info('Login required, opening browser');
 
     // Clear previous log in info
-    configService.logout();
+    await configService.logout();
 
     try {
         await mrtapService.generateMrtapLoginData();
@@ -191,7 +191,7 @@ export async function loginServiceAccountHandler(configService: ConfigService, l
     logger.info('Login required, reading service account credentials from files');
 
     // Clear previous log in info
-    configService.logout();
+    await configService.logout();
 
 
     let bzeroCredsFile: ServiceAccountBzeroCredentials = null;

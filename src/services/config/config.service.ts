@@ -70,9 +70,9 @@ export interface IConfig {
     clearSessionId(): void;
     clearSessionToken(): void;
     clearClientSecret(): void;
-    clearTokenSet(): void;
+    clearTokenSet(): Promise<void>;
     clearWhoami(): void;
-    clearMrtap(): void;
+    clearMrtap(): Promise<void>;
 }
 
 export class ConfigService implements IKubeDaemonSecurityConfigService, IKubeConfigService, KubeDaemonStore, DbDaemonStore, ILogoutConfigService, MrtapConfigInterface {
@@ -154,9 +154,9 @@ export class ConfigService implements IKubeDaemonSecurityConfigService, IKubeCon
         this.config.clearWhoami();
     }
 
-    logout(): void {
-        this.config.clearTokenSet();
-        this.config.clearMrtap();
+    async logout(): Promise<void> {
+        await this.config.clearTokenSet();
+        await this.config.clearMrtap();
         this.config.clearSessionId();
 
         // clear temporary SSH identity file
@@ -393,8 +393,8 @@ export class ConfigService implements IKubeDaemonSecurityConfigService, IKubeCon
         this.config.clearSessionId();
     }
 
-    clearMrtap(): void {
-        this.config.clearMrtap();
+    async clearMrtap(): Promise<void> {
+        await this.config.clearMrtap();
     }
 
     clearSshConfigPaths(): void {

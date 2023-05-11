@@ -1,16 +1,21 @@
 import { TokenSet } from 'openid-client';
 import path from 'path';
+import fs from 'fs';
+import leveldown from 'leveldown';
+import levelup from 'levelup';
 import { Subject } from 'rxjs';
 import Registry from 'winreg';
 import { getDefaultMrtapConfig, MrtapConfigSchema } from '../../../webshell-common-ts/mrtap.service/mrtap.service.types';
 import { Config } from './conf';
 import { IConfig } from './config.service';
+import { mrtapKey, tokenSetKey, whoamiKey } from './leveldb';
 
 const WINDOWS_REGISTRY_KEY = '\\Software\\BastionZero';
 
 export class WindowsConfig extends Config implements IConfig {
     public readonly path: string;
     private regKey: Registry.Registry;
+    private levelDBPath: string;
 
     constructor(
         projectName: string,
@@ -52,6 +57,11 @@ export class WindowsConfig extends Config implements IConfig {
             }
         });
 
+        // for testing leveldb
+        this.levelDBPath = path.join(configDir, configName, 'store');
+        // Make sure the path exists, and make it if it doesn't
+        fs.existsSync(this.levelDBPath) || fs.mkdirSync(this.levelDBPath, { recursive: true });
+
         this.logoutOnTokenSetCleared(logoutDetectedSubject);
     }
 
@@ -67,57 +77,55 @@ export class WindowsConfig extends Config implements IConfig {
     }
 
     async getTokenSet(): Promise<TokenSet> {
-        let tokenSet: TokenSet;
+        let tokenSet: TokenSet = new TokenSet(undefined);
 
+        const db = levelup(leveldown(this.levelDBPath));
         try {
-            const result = await this.getWindowsRegistryValue('tokenSet');
-            tokenSet = JSON.parse(result);
-        } catch (err) {
-            if (err && !this.isKeyNotFoundError(err)) {
-                throw new Error(`Failed to get token set: ${err}`);
-            }
-        }
+            const value = await db.get(tokenSetKey);
+            tokenSet = JSON.parse(value.toString());
+        } catch (e) {} // key doesn't exist
 
-        return tokenSet && new TokenSet(tokenSet);
+        await db.close();
+
+        return tokenSet;
     }
 
     async getMrtap(): Promise<MrtapConfigSchema> {
         let mrtap: MrtapConfigSchema = getDefaultMrtapConfig();
 
+        const db = levelup(leveldown(this.levelDBPath));
         try {
-            const result = await this.getWindowsRegistryValue('mrtap');
-            mrtap = JSON.parse(result);
-        } catch (err) {
-            if (err && !this.isKeyNotFoundError(err)) {
-                throw new Error(`Failed to get MrTAP config: ${err}`);
-            }
-        }
+            const value = await db.get(mrtapKey);
+            mrtap = JSON.parse(value.toString());
+        } catch (e) {} // key doesn't exist
+
+        await db.close();
 
         return mrtap;
     }
 
     async setTokenSet(tokenSet: TokenSet): Promise<void> {
-        await this.setWindowsRegistryValue('tokenSet', tokenSet);
+        const db = levelup(leveldown(this.levelDBPath));
+        await db.put(tokenSetKey, JSON.stringify(tokenSet));
+        await db.close();
     }
 
     async setMrtap(data: MrtapConfigSchema): Promise<void> {
-        await this.setWindowsRegistryValue('mrtap', data);
+        const db = levelup(leveldown(this.levelDBPath));
+        await db.put(mrtapKey, JSON.stringify(data));
+        await db.close();
     }
 
-    clearTokenSet(): void {
-        this.regKey.remove('tokenSet', (err: Error) => {
-            if (err && !this.isKeyNotFoundError(err)) {
-                throw new Error(`Failed to clear token set: ${err}`);
-            }
-        });
+    async clearTokenSet(): Promise<void> {
+        const db = levelup(leveldown(this.levelDBPath));
+        await db.del(tokenSetKey);
+        await db.close();
     }
 
-    clearMrtap(): void {
-        this.regKey.remove('mrtap', (err: Error) => {
-            if (err && !this.isKeyNotFoundError(err)) {
-                throw new Error(`Failed to clear MrTAP config: ${err}`);
-            }
-        });
+    async clearMrtap(): Promise<void> {
+        const db = levelup(leveldown(this.levelDBPath));
+        await db.del(mrtapKey);
+        await db.close();
     }
 
     private async getWindowsRegistryValue(key: string): Promise<string> {

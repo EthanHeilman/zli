@@ -30,7 +30,7 @@ export async function logoutHandler(
 }
 
 export interface ILogoutConfigService {
-    logout(): void;
+    logout(): Promise<void>;
     clearSessionId(): void;
     getSshKeyPath(): string;
     getSshKnownHostsPath(): string;
@@ -55,7 +55,7 @@ export async function handleLogout(
     // Deletes the auth tokens from the config which will force the
     // user to login again before running another command
     logger.info('Closing any existing SSH tunnels and shell connections');
-    configService.logout();
+    await configService.logout();
     configService.clearSessionId();
     logger.info('Clearing temporary SSH files');
     fileRemover.removeFileIfExists(configService.getSshKeyPath());
