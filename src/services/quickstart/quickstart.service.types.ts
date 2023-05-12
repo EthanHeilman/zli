@@ -1,5 +1,5 @@
 import SSHConfig from 'ssh2-promise/lib/sshConfig';
-import { BzeroAgentSummary } from '../../../webshell-common-ts/http/v2/target/bzero/types/bzero-agent-summary.types';
+import { BzeroAgentSummary } from 'webshell-common-ts/http/v2/target/bzero/types/bzero-agent-summary.types';
 
 // Interface types for SSHConfig parsing package
 export interface SSHHostConfig {

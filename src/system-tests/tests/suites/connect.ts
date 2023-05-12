@@ -1,19 +1,19 @@
-import { configService, logger, systemTestEnvId, systemTestPolicyTemplate, systemTestUniqueId, testTargets, allTargets } from '../system-test';
-import { callZli } from '../utils/zli-utils';
-import { ConnectionHttpService } from '../../../http-services/connection/connection.http-services';
-import { getDOImageName } from '../../digital-ocean/digital-ocean-target.service.types';
-import { TestUtils } from '../utils/test-utils';
-import { Environment } from '../../../../webshell-common-ts/http/v2/policy/types/environment.types';
-import { TestTarget, isBzeroTarget } from '../system-test.types';
-import { cleanupTargetConnectPolicies } from '../system-test-cleanup';
-import { PolicyHttpService } from '../../../http-services/policy/policy.http-services';
-import { Subject } from '../../../../webshell-common-ts/http/v2/policy/types/subject.types';
-import { VerbType } from '../../../../webshell-common-ts/http/v2/policy/types/verb-type.types';
-import { ConnectTestUtils } from '../utils/connect-utils';
-import { ConnectionEventType } from '../../../../webshell-common-ts/http/v2/event/types/connection-event.types';
-import { testIf } from '../utils/utils';
-import * as CleanExitHandler from '../../../handlers/clean-exit.handler';
-import { EventsHttpService } from '../../../http-services/events/events.http-server';
+import { configService, logger, systemTestEnvId, systemTestPolicyTemplate, systemTestUniqueId, testTargets, allTargets } from 'system-tests/tests/system-test';
+import { callZli } from 'system-tests/tests/utils/zli-utils';
+import { ConnectionHttpService } from 'http-services/connection/connection.http-services';
+import { getDOImageName } from 'system-tests/digital-ocean/digital-ocean-target.service.types';
+import { TestUtils } from 'system-tests/tests/utils/test-utils';
+import { Environment } from 'webshell-common-ts/http/v2/policy/types/environment.types';
+import { TestTarget, isBzeroTarget } from 'system-tests/tests/system-test.types';
+import { cleanupTargetConnectPolicies } from 'system-tests/tests/system-test-cleanup';
+import { PolicyHttpService } from 'http-services/policy/policy.http-services';
+import { Subject } from 'webshell-common-ts/http/v2/policy/types/subject.types';
+import { VerbType } from 'webshell-common-ts/http/v2/policy/types/verb-type.types';
+import { ConnectTestUtils } from 'system-tests/tests/utils/connect-utils';
+import { ConnectionEventType } from 'webshell-common-ts/http/v2/event/types/connection-event.types';
+import { testIf } from 'system-tests/tests/utils/utils';
+import * as CleanExitHandler from 'handlers/clean-exit.handler';
+import { EventsHttpService } from 'http-services/events/events.http-server';
 
 export const connectSuite = () => {
     describe('connect suite', () => {

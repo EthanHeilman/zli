@@ -1,15 +1,15 @@
-import { dynamicConfigToTargetSummary, parseTargetStatus, ssmTargetToTargetSummary, bzeroTargetToTargetSummary, dbTargetToTargetSummary } from '../../utils/utils';
-import { TargetSummary } from '../../../webshell-common-ts/http/v2/target/targetSummary.types';
-import { ConfigService } from '../config/config.service';
-import { Logger } from '../logger/logger.service';
-import { BzeroTargetHttpService } from '../../http-services/targets/bzero/bzero.http-services';
-import { WebTargetHttpService } from '../../http-services/web-target/web-target.http-service';
-import { DynamicAccessConfigHttpService } from '../../http-services/targets/dynamic-access/dynamic-access-config.http-services';
-import { TargetType } from '../../../webshell-common-ts/http/v2/target/types/target.types';
-import { KubeHttpService } from '../../http-services/targets/kube/kube.http-services';
-import { SsmTargetHttpService } from '../../http-services/targets/ssm/ssm-target.http-services';
-import { DbTargetHttpService } from '../../http-services/db-target/db-target.http-service';
-import { PolicyQueryHttpService } from '../../http-services/policy-query/policy-query.http-services';
+import { dynamicConfigToTargetSummary, parseTargetStatus, ssmTargetToTargetSummary, bzeroTargetToTargetSummary, dbTargetToTargetSummary } from 'utils/utils';
+import { TargetSummary } from 'webshell-common-ts/http/v2/target/targetSummary.types';
+import { ConfigService } from 'services/config/config.service';
+import { Logger } from 'services/logger/logger.service';
+import { BzeroTargetHttpService } from 'http-services/targets/bzero/bzero.http-services';
+import { WebTargetHttpService } from 'http-services/web-target/web-target.http-service';
+import { DynamicAccessConfigHttpService } from 'http-services/targets/dynamic-access/dynamic-access-config.http-services';
+import { TargetType } from 'webshell-common-ts/http/v2/target/types/target.types';
+import { KubeHttpService } from 'http-services/targets/kube/kube.http-services';
+import { SsmTargetHttpService } from 'http-services/targets/ssm/ssm-target.http-services';
+import { DbTargetHttpService } from 'http-services/db-target/db-target.http-service';
+import { PolicyQueryHttpService } from 'http-services/policy-query/policy-query.http-services';
 import { Dictionary } from 'lodash';
 import { gte, parse, SemVer } from 'semver';
 

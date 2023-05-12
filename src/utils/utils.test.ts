@@ -1,4 +1,4 @@
-import { parseTargetString, parseTargetType } from './utils';
+import { parseTargetString, parseTargetType } from 'utils/utils';
 
 describe('Utils suite', () => {
     test('2489: valid targetType strings', () => {

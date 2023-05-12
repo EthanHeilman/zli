@@ -1,10 +1,10 @@
-import { ConfigService } from '../../../services/config/config.service';
-import { Logger } from '../../../services/logger/logger.service';
+import { ConfigService } from 'services/config/config.service';
+import { Logger } from 'services/logger/logger.service';
 import yargs from 'yargs';
-import { PolicyHttpService } from '../../../http-services/policy/policy.http-services';
-import { getTableOfJustInTimePolicies } from '../../../utils/utils';
-import { policyArgs } from './policy-list.command-builder';
-import { getPolicySubjectDisplayInfo } from '../../../services/policy/policy.services';
+import { PolicyHttpService } from 'http-services/policy/policy.http-services';
+import { getTableOfJustInTimePolicies } from 'utils/utils';
+import { policyArgs } from 'handlers/policy/policy-list/policy-list.command-builder';
+import { getPolicySubjectDisplayInfo } from 'services/policy/policy.services';
 
 export async function listJustInTimePoliciesHandler(
     argv: yargs.Arguments<policyArgs>,

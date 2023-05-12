@@ -1,13 +1,13 @@
-import { PolicyHttpService } from '../../http-services/policy/policy.http-services';
-import { ApiKeyHttpService } from '../../http-services/api-key/api-key.http-services';
-import { DigitalOceanTargetService } from '../digital-ocean/digital-ocean-target-service';
-import { configService, doApiKey, logger, testTargets } from './system-test';
-import { checkAllSettledPromise } from './utils/utils';
-import { uninstall } from './utils/helm/helm-utils';
-import { RegisteredDigitalOceanKubernetesCluster } from '../digital-ocean/digital-ocean-kube.service.types';
+import { PolicyHttpService } from 'http-services/policy/policy.http-services';
+import { ApiKeyHttpService } from 'http-services/api-key/api-key.http-services';
+import { DigitalOceanTargetService } from 'system-tests/digital-ocean/digital-ocean-target-service';
+import { configService, doApiKey, logger, testTargets } from 'system-tests/tests/system-test';
+import { checkAllSettledPromise } from 'system-tests/tests/utils/utils';
+import { uninstall } from 'system-tests/tests/utils/helm/helm-utils';
+import { RegisteredDigitalOceanKubernetesCluster } from 'system-tests/digital-ocean/digital-ocean-kube.service.types';
 import * as k8s from '@kubernetes/client-node';
-import { DigitalOceanKubeService } from '../digital-ocean/digital-ocean-kube-service';
-import { NewApiKeyResponse } from '../../../webshell-common-ts/http/v2/api-key/responses/new-api-key.responses';
+import { DigitalOceanKubeService } from 'system-tests/digital-ocean/digital-ocean-kube-service';
+import { NewApiKeyResponse } from 'webshell-common-ts/http/v2/api-key/responses/new-api-key.responses';
 
 /**
  * Helper function to cleanup our system test api keys

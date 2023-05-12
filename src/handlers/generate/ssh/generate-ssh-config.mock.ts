@@ -1,7 +1,7 @@
 import path from 'path';
-import { PolicyQueryHttpService } from '../../../http-services/policy-query/policy-query.http-services';
-import { ConfigService } from '../../../services/config/config.service';
-import { mockTunnelsResponseList } from '../../../utils/unit-test-utils';
+import { PolicyQueryHttpService } from 'http-services/policy-query/policy-query.http-services';
+import { ConfigService } from 'services/config/config.service';
+import { mockTunnelsResponseList } from 'utils/unit-test-utils';
 
 const fakeDir = (process.platform === 'win32') ? `C:\\test`: `/test`;
 const testConfigName = 'test-config';

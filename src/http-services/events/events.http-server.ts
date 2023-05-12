@@ -1,11 +1,11 @@
-import { ConfigService } from '../../services/config/config.service';
-import { HttpService } from '../../services/http/http.service';
-import { Logger } from '../../services/logger/logger.service';
-import { ConnectionEventDataMessage } from '../../../webshell-common-ts/http/v2/event/types/connection-event-data-message';
-import { CommandEventDataMessage } from '../../../webshell-common-ts/http/v2/event/types/command-event-data-message';
-import { KubeEventDataMessage } from '../../../webshell-common-ts/http/v2/event/types/kube-event-data-message.types';
-import { UserEventDataMessage } from '../../../webshell-common-ts/http/v2/event/types/user-event-data-message.types';
-import { AgentStatusChangeData } from '../../../webshell-common-ts/http/v2/event/types/agent-status-change-data.types';
+import { ConfigService } from 'services/config/config.service';
+import { HttpService } from 'services/http/http.service';
+import { Logger } from 'services/logger/logger.service';
+import { ConnectionEventDataMessage } from 'webshell-common-ts/http/v2/event/types/connection-event-data-message';
+import { CommandEventDataMessage } from 'webshell-common-ts/http/v2/event/types/command-event-data-message';
+import { KubeEventDataMessage } from 'webshell-common-ts/http/v2/event/types/kube-event-data-message.types';
+import { UserEventDataMessage } from 'webshell-common-ts/http/v2/event/types/user-event-data-message.types';
+import { AgentStatusChangeData } from 'webshell-common-ts/http/v2/event/types/agent-status-change-data.types';
 
 
 export class EventsHttpService extends HttpService

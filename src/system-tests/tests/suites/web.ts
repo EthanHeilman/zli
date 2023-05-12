@@ -1,18 +1,18 @@
-import { systemTestEnvId, systemTestEnvName, systemTestPolicyTemplate, systemTestUniqueId, testTargets } from '../system-test';
-import { callZli } from '../utils/zli-utils';
+import { systemTestEnvId, systemTestEnvName, systemTestPolicyTemplate, systemTestUniqueId, testTargets } from 'system-tests/tests/system-test';
+import { callZli } from 'system-tests/tests/utils/zli-utils';
 import got from 'got/dist/source';
 import FormData from 'form-data';
 
-import { configService, logger } from '../system-test';
-import { DigitalOceanBZeroTarget, getDOImageName } from '../../digital-ocean/digital-ocean-target.service.types';
-import { WebTargetHttpService } from '../../../http-services/web-target/web-target.http-service';
-import { TestUtils } from '../utils/test-utils';
-import { Environment } from '../../../../webshell-common-ts/http/v2/policy/types/environment.types';
-import { ConnectionEventType } from '../../../../webshell-common-ts/http/v2/event/types/connection-event.types';
-import { bzeroTestTargetsToRun } from '../targets-to-run';
-import { PolicyHttpService } from '../../../http-services/policy/policy.http-services';
-import { Subject } from '../../../../webshell-common-ts/http/v2/policy/types/subject.types';
-import { setupBackgroundDaemonMocks } from '../utils/connect-utils';
+import { configService, logger } from 'system-tests/tests/system-test';
+import { DigitalOceanBZeroTarget, getDOImageName } from 'system-tests/digital-ocean/digital-ocean-target.service.types';
+import { WebTargetHttpService } from 'http-services/web-target/web-target.http-service';
+import { TestUtils } from 'system-tests/tests/utils/test-utils';
+import { Environment } from 'webshell-common-ts/http/v2/policy/types/environment.types';
+import { ConnectionEventType } from 'webshell-common-ts/http/v2/event/types/connection-event.types';
+import { bzeroTestTargetsToRun } from 'system-tests/tests/targets-to-run';
+import { PolicyHttpService } from 'http-services/policy/policy.http-services';
+import { Subject } from 'webshell-common-ts/http/v2/policy/types/subject.types';
+import { setupBackgroundDaemonMocks } from 'system-tests/tests/utils/connect-utils';
 
 import fs from 'fs';
 

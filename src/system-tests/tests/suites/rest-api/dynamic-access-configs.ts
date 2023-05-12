@@ -1,6 +1,6 @@
-import { RegisterDynamicAccessConfigRequest } from '../../../../../webshell-common-ts/http/v2/target/dynamic/requests/register-dynamic-access-config.requests';
-import { DynamicAccessConfigHttpService } from '../../../../http-services/targets/dynamic-access/dynamic-access-config.http-services';
-import { configService, logger, systemTestEnvId, systemTestUniqueId } from '../../system-test';
+import { RegisterDynamicAccessConfigRequest } from 'webshell-common-ts/http/v2/target/dynamic/requests/register-dynamic-access-config.requests';
+import { DynamicAccessConfigHttpService } from 'http-services/targets/dynamic-access/dynamic-access-config.http-services';
+import { configService, logger, systemTestEnvId, systemTestUniqueId } from 'system-tests/tests/system-test';
 
 export const dynamicAccessConfigRestApiSuite = () => {
     describe('Dynamic Access Config REST API Suite', () => {

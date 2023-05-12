@@ -1,6 +1,6 @@
 import path from 'path';
 import os from 'os';
-import { ConfigService } from '../../../services/config/config.service';
+import { ConfigService } from 'services/config/config.service';
 
 export const testConfigName = 'test-config';
 export const sshKeyPath = path.join(os.tmpdir(), 'sshKeyPath');

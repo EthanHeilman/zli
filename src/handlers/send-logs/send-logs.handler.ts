@@ -2,15 +2,15 @@ import fs from 'fs';
 import AdmZip from 'adm-zip';
 import yargs from 'yargs';
 import { randomUUID } from 'crypto';
-import { ConfigService } from '../../services/config/config.service';
-import { ParsedTargetString } from '../../services/common.types';
-import { Logger } from '../../services/logger/logger.service';
-import { cleanExit } from '../clean-exit.handler';
-import { UploadLogArchiveHttpService } from '../../http-services/upload-logs/upload-log-archive.http-service';
-import { BzeroTargetHttpService } from '../../http-services/targets/bzero/bzero.http-services';
-import { sendLogsArgs } from './send-logs.command-builder';
-import { parseTargetString } from '../../utils/utils';
-import { LoggerConfigService } from '../../services/logger/logger-config.service';
+import { ConfigService } from 'services/config/config.service';
+import { ParsedTargetString } from 'services/common.types';
+import { Logger } from 'services/logger/logger.service';
+import { cleanExit } from 'handlers/clean-exit.handler';
+import { UploadLogArchiveHttpService } from 'http-services/upload-logs/upload-log-archive.http-service';
+import { BzeroTargetHttpService } from 'http-services/targets/bzero/bzero.http-services';
+import { sendLogsArgs } from 'handlers/send-logs/send-logs.command-builder';
+import { parseTargetString } from 'utils/utils';
+import { LoggerConfigService } from 'services/logger/logger-config.service';
 
 export function getDates() {
     const today = new Date();

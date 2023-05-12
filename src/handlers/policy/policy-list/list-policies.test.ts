@@ -1,17 +1,17 @@
 import mockArgv from 'mock-argv';
-import { CliDriver } from '../../../cli-driver';
-import { cleanConsoleLog, mockApiKeySummaryList, mockBzeroSummaryList, mockDatSummaryList, mockDbSummaryList, mockGroupsSummaryList, mockKubernetesPolicySummaryList, mockKubeSummaryList, mockOrganizationControlsPolicySummaryList, mockProxyPolicySummaryList, mockSessionRecordingPolicySummaryList, unitTestMockSetup, mockSsmSummaryList, mockTargetConnectPolicySummaryList, mockUserSummaryList as mockUserSummaryList, mockWebSummaryList, mockJustInTimePolicySummaryList, mockServiceAccountSummaryList } from '../../../utils/unit-test-utils';
-import { OrganizationHttpService } from '../../../http-services/organization/organization.http-services';
-import { ApiKeyHttpService } from '../../../http-services/api-key/api-key.http-services';
-import { UserHttpService } from '../../../http-services/user/user.http-services';
-import { PolicyHttpService } from '../../../http-services/policy/policy.http-services';
-import { KubeHttpService } from '../../../http-services/targets/kube/kube.http-services';
-import { SsmTargetHttpService } from '../../../http-services/targets/ssm/ssm-target.http-services';
-import { DynamicAccessConfigHttpService } from '../../../http-services/targets/dynamic-access/dynamic-access-config.http-services';
-import { BzeroTargetHttpService } from '../../../http-services/targets/bzero/bzero.http-services';
-import { DbTargetHttpService } from '../../../http-services/db-target/db-target.http-service';
-import { WebTargetHttpService } from '../../../http-services/web-target/web-target.http-service';
-import { ServiceAccountHttpService } from '../../../http-services/service-account/service-account.http-services';
+import { CliDriver } from 'cli-driver';
+import { cleanConsoleLog, mockApiKeySummaryList, mockBzeroSummaryList, mockDatSummaryList, mockDbSummaryList, mockGroupsSummaryList, mockKubernetesPolicySummaryList, mockKubeSummaryList, mockOrganizationControlsPolicySummaryList, mockProxyPolicySummaryList, mockSessionRecordingPolicySummaryList, unitTestMockSetup, mockSsmSummaryList, mockTargetConnectPolicySummaryList, mockUserSummaryList as mockUserSummaryList, mockWebSummaryList, mockJustInTimePolicySummaryList, mockServiceAccountSummaryList } from 'utils/unit-test-utils';
+import { OrganizationHttpService } from 'http-services/organization/organization.http-services';
+import { ApiKeyHttpService } from 'http-services/api-key/api-key.http-services';
+import { UserHttpService } from 'http-services/user/user.http-services';
+import { PolicyHttpService } from 'http-services/policy/policy.http-services';
+import { KubeHttpService } from 'http-services/targets/kube/kube.http-services';
+import { SsmTargetHttpService } from 'http-services/targets/ssm/ssm-target.http-services';
+import { DynamicAccessConfigHttpService } from 'http-services/targets/dynamic-access/dynamic-access-config.http-services';
+import { BzeroTargetHttpService } from 'http-services/targets/bzero/bzero.http-services';
+import { DbTargetHttpService } from 'http-services/db-target/db-target.http-service';
+import { WebTargetHttpService } from 'http-services/web-target/web-target.http-service';
+import { ServiceAccountHttpService } from 'http-services/service-account/service-account.http-services';
 
 
 describe('List Policies suite', () => {

@@ -1,13 +1,13 @@
-import { SubjectHttpService } from '../../../../http-services/subject/subject.http-services';
-import { TargetConnectPolicySummary } from '../../../../../webshell-common-ts/http/v2/policy/target-connect/types/target-connect-policy-summary.types';
-import { Environment } from '../../../../../webshell-common-ts/http/v2/policy/types/environment.types';
-import { Subject } from '../../../../../webshell-common-ts/http/v2/policy/types/subject.types';
-import { VerbType } from '../../../../../webshell-common-ts/http/v2/policy/types/verb-type.types';
-import { EventsHttpService } from '../../../../http-services/events/events.http-server';
-import { PolicyHttpService } from '../../../../http-services/policy/policy.http-services';
-import { configService, logger, systemTestEnvId, systemTestPolicyTemplate, systemTestUniqueId } from '../../system-test';
-import { ConnectTestUtils } from '../../utils/connect-utils';
-import { TestUtils } from '../../utils/test-utils';
+import { SubjectHttpService } from 'http-services/subject/subject.http-services';
+import { TargetConnectPolicySummary } from 'webshell-common-ts/http/v2/policy/target-connect/types/target-connect-policy-summary.types';
+import { Environment } from 'webshell-common-ts/http/v2/policy/types/environment.types';
+import { Subject } from 'webshell-common-ts/http/v2/policy/types/subject.types';
+import { VerbType } from 'webshell-common-ts/http/v2/policy/types/verb-type.types';
+import { EventsHttpService } from 'http-services/events/events.http-server';
+import { PolicyHttpService } from 'http-services/policy/policy.http-services';
+import { configService, logger, systemTestEnvId, systemTestPolicyTemplate, systemTestUniqueId } from 'system-tests/tests/system-test';
+import { ConnectTestUtils } from 'system-tests/tests/utils/connect-utils';
+import { TestUtils } from 'system-tests/tests/utils/test-utils';
 
 export const eventsRestApiSuite = () => {
     describe('Events REST API test suite', () => {

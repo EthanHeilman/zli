@@ -2,16 +2,16 @@ import path from 'path';
 import fs from 'fs';
 import { promisify } from 'util';
 import { exec } from 'child_process';
-import { RUN_AS_SERVICE_ACCOUNT, allTargets, configService, logger, systemTestEnvId, systemTestPolicyTemplate, systemTestUniqueId } from '../system-test';
-import { callZli } from '../utils/zli-utils';
-import { bzeroTargetCustomUser, idpUsernameTargetCustomSA, idpUsernameTargetCustomUser } from '../system-test-setup';
-import { Environment } from '../../../../webshell-common-ts/http/v2/policy/types/environment.types';
-import { TestTarget } from '../system-test.types';
-import { cleanupTargetConnectPolicies } from '../system-test-cleanup';
-import { PolicyHttpService } from '../../../http-services/policy/policy.http-services';
-import { Subject } from '../../../../webshell-common-ts/http/v2/policy/types/subject.types';
-import { VerbType } from '../../../../webshell-common-ts/http/v2/policy/types/verb-type.types';
-import { getTargetInfo } from '../utils/ssh-utils';
+import { RUN_AS_SERVICE_ACCOUNT, allTargets, configService, logger, systemTestEnvId, systemTestPolicyTemplate, systemTestUniqueId } from 'system-tests/tests/system-test';
+import { callZli } from 'system-tests/tests/utils/zli-utils';
+import { bzeroTargetCustomUser, idpUsernameTargetCustomSA, idpUsernameTargetCustomUser } from 'system-tests/tests/system-test-setup';
+import { Environment } from 'webshell-common-ts/http/v2/policy/types/environment.types';
+import { TestTarget } from 'system-tests/tests/system-test.types';
+import { cleanupTargetConnectPolicies } from 'system-tests/tests/system-test-cleanup';
+import { PolicyHttpService } from 'http-services/policy/policy.http-services';
+import { Subject } from 'webshell-common-ts/http/v2/policy/types/subject.types';
+import { VerbType } from 'webshell-common-ts/http/v2/policy/types/verb-type.types';
+import { getTargetInfo } from 'system-tests/tests/utils/ssh-utils';
 
 export const sshSuite = () => {
     describe('ssh suite', () => {

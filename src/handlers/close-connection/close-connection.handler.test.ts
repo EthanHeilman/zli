@@ -1,9 +1,9 @@
-import { CliDriver } from '../../cli-driver';
+import { CliDriver } from 'cli-driver';
 import mockArgv from 'mock-argv';
-import * as CleanExitHandler from '../clean-exit.handler';
-import { mockConnectionSummary, mockDbConnectionSummary, mockKubeConnectionSummary, mockSpaceSummary, unitTestMockSetup } from '../../utils/unit-test-utils';
-import { SpaceHttpService } from '../../../src/http-services/space/space.http-services';
-import { ConnectionHttpService } from '../../../src/http-services/connection/connection.http-services';
+import * as CleanExitHandler from 'handlers/clean-exit.handler';
+import { mockConnectionSummary, mockDbConnectionSummary, mockKubeConnectionSummary, mockSpaceSummary, unitTestMockSetup } from 'utils/unit-test-utils';
+import { SpaceHttpService } from 'http-services/space/space.http-services';
+import { ConnectionHttpService } from 'http-services/connection/connection.http-services';
 import { randomUUID } from 'crypto';
 
 

@@ -1,11 +1,11 @@
 import { isError } from 'lodash';
-import { BaseConnectionSummary } from '../../../webshell-common-ts/http/v2/connection/types/base-connection-summary.types';
-import { ConnectionState } from '../../../webshell-common-ts/http/v2/connection/types/connection-state.types';
-import { ConnectionHttpService } from '../../http-services/connection/connection.http-services';
-import { SpaceHttpService } from '../../http-services/space/space.http-services';
-import { getCliSpace } from '../../utils/shell-utils';
-import { ConfigService } from '../config/config.service';
-import { Logger } from '../logger/logger.service';
+import { BaseConnectionSummary } from 'webshell-common-ts/http/v2/connection/types/base-connection-summary.types';
+import { ConnectionState } from 'webshell-common-ts/http/v2/connection/types/connection-state.types';
+import { ConnectionHttpService } from 'http-services/connection/connection.http-services';
+import { SpaceHttpService } from 'http-services/space/space.http-services';
+import { getCliSpace } from 'utils/shell-utils';
+import { ConfigService } from 'services/config/config.service';
+import { Logger } from 'services/logger/logger.service';
 
 /**
  * Close all of the user's shell (Bzero+SSM) connections

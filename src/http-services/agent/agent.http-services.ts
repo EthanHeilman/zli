@@ -1,7 +1,7 @@
-import { HttpService } from '../../../src/services/http/http.service';
-import { ConfigService } from '../../../src/services/config/config.service';
-import { Logger } from '../../../src/services/logger/logger.service';
-import { ConfigureServiceAccountRequest} from '../../../webshell-common-ts/http/v2/service-account/requests/configure-service-account.requests';
+import { HttpService } from 'services/http/http.service';
+import { ConfigService } from 'services/config/config.service';
+import { Logger } from 'services/logger/logger.service';
+import { ConfigureServiceAccountRequest} from 'webshell-common-ts/http/v2/service-account/requests/configure-service-account.requests';
 
 export class AgentHttpService extends HttpService {
     constructor(configService: ConfigService, logger: Logger) {

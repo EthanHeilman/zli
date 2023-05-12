@@ -1,20 +1,20 @@
-import { configService, doApiKey, logger, resourceNamePrefix, systemTestEnvId, systemTestEnvName, systemTestPolicyTemplate, systemTestRegistrationApiKey, systemTestUniqueId, testCluster } from '../system-test';
-import { ConnectionHttpService } from '../../../http-services/connection/connection.http-services';
-import { TestUtils } from '../utils/test-utils';
-import { Environment } from '../../../../webshell-common-ts/http/v2/policy/types/environment.types';
-import { cleanupTargetConnectPolicies } from '../system-test-cleanup';
-import { PolicyHttpService } from '../../../http-services/policy/policy.http-services';
-import { Subject } from '../../../../webshell-common-ts/http/v2/policy/types/subject.types';
-import { VerbType } from '../../../../webshell-common-ts/http/v2/policy/types/verb-type.types';
-import { ConnectTestUtils } from '../utils/connect-utils';
-import { SessionRecordingPolicySummary } from '../../../../webshell-common-ts/http/v2/policy/session-recording/types/session-recording-policy-summary.types';
-import { SessionRecordingHttpService } from '../../../http-services/session-recording/session-recording.http-services';
-import { BzeroAgentSummary } from '../../../../webshell-common-ts/http/v2/target/bzero/types/bzero-agent-summary.types';
+import { configService, doApiKey, logger, resourceNamePrefix, systemTestEnvId, systemTestEnvName, systemTestPolicyTemplate, systemTestRegistrationApiKey, systemTestUniqueId, testCluster } from 'system-tests/tests/system-test';
+import { ConnectionHttpService } from 'http-services/connection/connection.http-services';
+import { TestUtils } from 'system-tests/tests/utils/test-utils';
+import { Environment } from 'webshell-common-ts/http/v2/policy/types/environment.types';
+import { cleanupTargetConnectPolicies } from 'system-tests/tests/system-test-cleanup';
+import { PolicyHttpService } from 'http-services/policy/policy.http-services';
+import { Subject } from 'webshell-common-ts/http/v2/policy/types/subject.types';
+import { VerbType } from 'webshell-common-ts/http/v2/policy/types/verb-type.types';
+import { ConnectTestUtils } from 'system-tests/tests/utils/connect-utils';
+import { SessionRecordingPolicySummary } from 'webshell-common-ts/http/v2/policy/session-recording/types/session-recording-policy-summary.types';
+import { SessionRecordingHttpService } from 'http-services/session-recording/session-recording.http-services';
+import { BzeroAgentSummary } from 'webshell-common-ts/http/v2/target/bzero/types/bzero-agent-summary.types';
 import * as k8s from '@kubernetes/client-node';
-import { agentContainersToRun } from '../../tests/targets-to-run';
-import { checkAllSettledPromise } from '../utils/utils';
-import { DigitalOceanTargetService } from '../../digital-ocean/digital-ocean-target-service';
-import { BzeroTargetStatusPollError } from '../../digital-ocean/digital-ocean-target.service.types';
+import { agentContainersToRun } from 'system-tests/tests/targets-to-run';
+import { checkAllSettledPromise } from 'system-tests/tests/utils/utils';
+import { DigitalOceanTargetService } from 'system-tests/digital-ocean/digital-ocean-target-service';
+import { BzeroTargetStatusPollError } from 'system-tests/digital-ocean/digital-ocean-target.service.types';
 
 /**
  * Represents a BZero target hosted on a specific cluster

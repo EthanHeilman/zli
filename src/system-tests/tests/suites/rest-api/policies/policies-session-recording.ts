@@ -1,10 +1,10 @@
-import { SessionRecordingPolicySummary } from '../../../../../../webshell-common-ts/http/v2/policy/session-recording/types/session-recording-policy-summary.types';
-import { PolicyType } from '../../../../../../webshell-common-ts/http/v2/policy/types/policy-type.types';
-import { Subject } from '../../../../../../webshell-common-ts/http/v2/policy/types/subject.types';
-import { PolicyHttpService } from '../../../../../http-services/policy/policy.http-services';
-import { configService, logger, systemTestPolicyTemplate } from '../../../system-test';
-import { restApiPolicyDescriptionTemplate } from './policies';
-import { callZli } from '../../../utils/zli-utils';
+import { SessionRecordingPolicySummary } from 'webshell-common-ts/http/v2/policy/session-recording/types/session-recording-policy-summary.types';
+import { PolicyType } from 'webshell-common-ts/http/v2/policy/types/policy-type.types';
+import { Subject } from 'webshell-common-ts/http/v2/policy/types/subject.types';
+import { PolicyHttpService } from 'http-services/policy/policy.http-services';
+import { configService, logger, systemTestPolicyTemplate } from 'system-tests/tests/system-test';
+import { restApiPolicyDescriptionTemplate } from 'system-tests/tests/suites/rest-api/policies/policies';
+import { callZli } from 'system-tests/tests/utils/zli-utils';
 
 export const sessionRecordingPolicySuite = () => {
     describe('Session Recording Policies Suite', () => {

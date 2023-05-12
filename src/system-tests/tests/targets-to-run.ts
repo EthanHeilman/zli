@@ -1,8 +1,8 @@
-import { DigitalOceanDistroImage } from '../digital-ocean/digital-ocean-target.service.types';
-import { convertAwsRegionToDigitalOceanRegion } from '../digital-ocean/digital-ocean.types';
-import { TestTarget } from './system-test.types';
-import { Logger } from '../../services/logger/logger.service';
-import { BzeroContainerTestTarget } from './suites/agent-container';
+import { DigitalOceanDistroImage } from 'system-tests/digital-ocean/digital-ocean-target.service.types';
+import { convertAwsRegionToDigitalOceanRegion } from 'system-tests/digital-ocean/digital-ocean.types';
+import { TestTarget } from 'system-tests/tests/system-test.types';
+import { Logger } from 'services/logger/logger.service';
+import { BzeroContainerTestTarget } from 'system-tests/tests/suites/agent-container';
 
 const defaultAwsRegion = 'us-east-1';
 const defaultDigitalOceanRegion = convertAwsRegionToDigitalOceanRegion(defaultAwsRegion);

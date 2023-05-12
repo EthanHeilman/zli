@@ -1,12 +1,12 @@
-import { cleanExit } from '../clean-exit.handler';
+import { cleanExit } from 'handlers/clean-exit.handler';
 import fs from 'fs';
-import { DbConfig, KubeConfig, WebConfig } from '../../services/config/config.service.types';
-import { Logger } from '../../services/logger/logger.service';
-import { ConfigService } from '../../services/config/config.service';
-import { ILogger } from '../../../webshell-common-ts/logging/logging.types';
-import { handleDisconnect, IDaemonDisconnector } from '../disconnect/disconnect.handler';
-import { newDbDaemonManagementService, newKubeDaemonManagementService } from '../../services/daemon-management/daemon-management.service';
-import { killDaemonAndLog } from '../../utils/daemon-utils';
+import { DbConfig, KubeConfig, WebConfig } from 'services/config/config.service.types';
+import { Logger } from 'services/logger/logger.service';
+import { ConfigService } from 'services/config/config.service';
+import { ILogger } from 'webshell-common-ts/logging/logging.types';
+import { handleDisconnect, IDaemonDisconnector } from 'handlers/disconnect/disconnect.handler';
+import { newDbDaemonManagementService, newKubeDaemonManagementService } from 'services/daemon-management/daemon-management.service';
+import { killDaemonAndLog } from 'utils/daemon-utils';
 
 export async function logoutHandler(
     configService: ConfigService,

@@ -1,11 +1,11 @@
-import { ConfigService } from '../../../services/config/config.service';
-import { Logger } from '../../../services/logger/logger.service';
-import { cleanExit } from '../../clean-exit.handler';
-import { PolicyHttpService } from '../../../http-services/policy/policy.http-services';
-import { SubjectType } from '../../../../webshell-common-ts/http/v2/common.types/subject.types';
-import { editPolicy, getPolicyFromName } from '../../../services/policy/policy.services';
-import { SubjectHttpService } from '../../../../src/http-services/subject/subject.http-services';
-import { SubjectSummary } from '../../../../webshell-common-ts/http/v2/subject/types/subject-summary.types';
+import { ConfigService } from 'services/config/config.service';
+import { Logger } from 'services/logger/logger.service';
+import { cleanExit } from 'handlers/clean-exit.handler';
+import { PolicyHttpService } from 'http-services/policy/policy.http-services';
+import { SubjectType } from 'webshell-common-ts/http/v2/common.types/subject.types';
+import { editPolicy, getPolicyFromName } from 'services/policy/policy.services';
+import { SubjectHttpService } from 'http-services/subject/subject.http-services';
+import { SubjectSummary } from 'webshell-common-ts/http/v2/subject/types/subject-summary.types';
 
 export async function deleteSubjectFromPolicyHandler(subjectEmail: string, policyName: string, configService: ConfigService, logger: Logger) {
     // First ensure we can lookup the user

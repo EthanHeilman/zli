@@ -6,15 +6,15 @@ import SshPK from 'sshpk';
 import async from 'async';
 import { Observable, Subject } from 'rxjs';
 
-import { MrtapService } from '../../../webshell-common-ts/mrtap.service/mrtap.service';
-import { SsmTargetInfo } from '../../../webshell-common-ts/mrtap.service/mrtap-types';
+import { MrtapService } from 'webshell-common-ts/mrtap.service/mrtap.service';
+import { SsmTargetInfo } from 'webshell-common-ts/mrtap.service/mrtap-types';
 
-import { Logger } from '../logger/logger.service';
-import { ConfigService } from '../config/config.service';
+import { Logger } from 'services/logger/logger.service';
+import { ConfigService } from 'services/config/config.service';
 
-import { SsmTunnelWebsocketService } from '../../../webshell-common-ts/ssm-tunnel-websocket.service/ssm-tunnel-websocket.service';
-import { ZliAuthConfigService } from '../config/zli-auth-config.service';
-import { SsmTargetHttpService } from '../../http-services/targets/ssm/ssm-target.http-services';
+import { SsmTunnelWebsocketService } from 'webshell-common-ts/ssm-tunnel-websocket.service/ssm-tunnel-websocket.service';
+import { ZliAuthConfigService } from 'services/config/zli-auth-config.service';
+import { SsmTargetHttpService } from 'http-services/targets/ssm/ssm-target.http-services';
 
 export class SsmTunnelService
 {

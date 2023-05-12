@@ -1,11 +1,11 @@
 import { Retrier } from '@jsier/retrier';
-import { ConfigService } from '../../services/config/config.service';
-import { Logger } from '../../services/logger/logger.service';
-import { BzeroTargetStatusPollError, CreateNewDropletParameters, DigitalOceanBZeroTarget, DigitalOceanTargetParameters } from './digital-ocean-target.service.types';
-import { checkAllSettledPromise } from '../tests/utils/utils';
-import { TargetStatus } from '../../../webshell-common-ts/http/v2/target/types/targetStatus.types';
-import { BzeroAgentSummary } from '../../../webshell-common-ts/http/v2/target/bzero/types/bzero-agent-summary.types';
-import { BzeroTargetHttpService } from '../../http-services/targets/bzero/bzero.http-services';
+import { ConfigService } from 'services/config/config.service';
+import { Logger } from 'services/logger/logger.service';
+import { BzeroTargetStatusPollError, CreateNewDropletParameters, DigitalOceanBZeroTarget, DigitalOceanTargetParameters } from 'system-tests/digital-ocean/digital-ocean-target.service.types';
+import { checkAllSettledPromise } from 'system-tests/tests/utils/utils';
+import { TargetStatus } from 'webshell-common-ts/http/v2/target/types/targetStatus.types';
+import { BzeroAgentSummary } from 'webshell-common-ts/http/v2/target/bzero/types/bzero-agent-summary.types';
+import { BzeroTargetHttpService } from 'http-services/targets/bzero/bzero.http-services';
 import { createApiClient } from 'dots-wrapper';
 import { IDroplet } from 'dots-wrapper/dist/droplet/types/droplet';
 
