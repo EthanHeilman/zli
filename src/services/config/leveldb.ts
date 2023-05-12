@@ -1,6 +1,4 @@
 import fs from 'fs';
-import leveldown from 'leveldown';
-import levelup from 'levelup';
 import path from 'path';
 
 import { IConfig } from './config.service';
@@ -37,7 +35,6 @@ export const kubeDaemonsKey: string = "kubeDaemons";
 export class Store {
     public readonly where: string;
     public readonly path: string;
-    private store: levelup.LevelUp;
 
     constructor(
         configName: string,
@@ -51,55 +48,55 @@ export class Store {
         fs.existsSync(this.where) || fs.mkdirSync(this.where, { recursive: true });
     }
 
-    async init(serviceUrl: string) {
-        try {
-            // Because no callback is provided in levelup(), any read & write operations are simply queued internally 
-            // until the store is fully opened, unless it fails to open, in which case an error event will be emitted.
-            this.store = levelup(leveldown(this.where));
+    // async init(serviceUrl: string) {
+    //     try {
+    //         // Because no callback is provided in levelup(), any read & write operations are simply queued internally 
+    //         // until the store is fully opened, unless it fails to open, in which case an error event will be emitted.
+    //         this.store = levelup(leveldown(this.where));
 
-            await this.store.put(serviceUrlKey, serviceUrl);
+    //         await this.store.put(serviceUrlKey, serviceUrl);
 
-            // We always close the store to free up resources since no two instances of levelup can be open at once
-            await this.store.close();
-        } catch (e) {
-            throw new Error(`Failed to open up the store: ${e}`);
-        }
-    }
+    //         // We always close the store to free up resources since no two instances of levelup can be open at once
+    //         await this.store.close();
+    //     } catch (e) {
+    //         throw new Error(`Failed to open up the store: ${e}`);
+    //     }
+    // }
 
-    async getWhoami(): Promise<SubjectSummary> {
-        let whoami: SubjectSummary;
+    // async getWhoami(): Promise<SubjectSummary> {
+    //     let whoami: SubjectSummary;
 
-        await this.store.open();
-        try {
-            const value = await this.store.get(whoamiKey);
-            whoami = JSON.parse(value);
-        } catch (e) {} // key doesn't exist
+    //     await this.store.open();
+    //     try {
+    //         const value = await this.store.get(whoamiKey);
+    //         whoami = JSON.parse(value);
+    //     } catch (e) {} // key doesn't exist
 
-        await this.store.close();
-        return whoami;
+    //     await this.store.close();
+    //     return whoami;
 
-        // let whoami: SubjectSummary;
+    //     // let whoami: SubjectSummary;
 
-        // await this.store.get(whoamiKey, function(err, value) {
-        //     if (!err) {
-        //         whoami = JSON.parse(value);
-        //     }
-        // });
-        // await this.store.close();
+    //     // await this.store.get(whoamiKey, function(err, value) {
+    //     //     if (!err) {
+    //     //         whoami = JSON.parse(value);
+    //     //     }
+    //     // });
+    //     // await this.store.close();
 
-        // return whoami;
-    }
+    //     // return whoami;
+    // }
 
-    async getGaToken(): Promise<string> {
-        let gaToken: string;
+    // async getGaToken(): Promise<string> {
+    //     let gaToken: string;
 
-        await this.store.open();
-        try {
-            const gaToken = await this.store.get(whoamiKey);
-        } catch (e) {} // key doesn't exist
+    //     await this.store.open();
+    //     try {
+    //         const gaToken = await this.store.get(whoamiKey);
+    //     } catch (e) {} // key doesn't exist
 
-        await this.store.close();
-        return gaToken;
-    }
+    //     await this.store.close();
+    //     return gaToken;
+    // }
 
 }
