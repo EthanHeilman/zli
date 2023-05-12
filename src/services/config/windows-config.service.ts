@@ -1,8 +1,7 @@
 import { TokenSet } from 'openid-client';
 import path from 'path';
 import fs from 'fs';
-import leveldown from 'leveldown';
-import levelup from 'levelup';
+import { ClassicLevel } from 'classic-level';
 import { Subject } from 'rxjs';
 import Registry from 'winreg';
 import { getDefaultMrtapConfig, MrtapConfigSchema } from '../../../webshell-common-ts/mrtap.service/mrtap.service.types';
@@ -79,7 +78,7 @@ export class WindowsConfig extends Config implements IConfig {
     async getTokenSet(): Promise<TokenSet> {
         let tokenSet: TokenSet = new TokenSet(undefined);
 
-        const db = levelup(leveldown(this.levelDBPath));
+        const db = new ClassicLevel(this.levelDBPath, { valueEncoding: 'json' })
         try {
             const value = await db.get(tokenSetKey);
             tokenSet = JSON.parse(value.toString());
@@ -93,7 +92,7 @@ export class WindowsConfig extends Config implements IConfig {
     async getMrtap(): Promise<MrtapConfigSchema> {
         let mrtap: MrtapConfigSchema = getDefaultMrtapConfig();
 
-        const db = levelup(leveldown(this.levelDBPath));
+        const db = new ClassicLevel(this.levelDBPath, { valueEncoding: 'json' })
         try {
             const value = await db.get(mrtapKey);
             mrtap = JSON.parse(value.toString());
@@ -105,25 +104,25 @@ export class WindowsConfig extends Config implements IConfig {
     }
 
     async setTokenSet(tokenSet: TokenSet): Promise<void> {
-        const db = levelup(leveldown(this.levelDBPath));
+        const db = new ClassicLevel(this.levelDBPath, { valueEncoding: 'json' })
         await db.put(tokenSetKey, JSON.stringify(tokenSet));
         await db.close();
     }
 
     async setMrtap(data: MrtapConfigSchema): Promise<void> {
-        const db = levelup(leveldown(this.levelDBPath));
+        const db = new ClassicLevel(this.levelDBPath, { valueEncoding: 'json' })
         await db.put(mrtapKey, JSON.stringify(data));
         await db.close();
     }
 
     async clearTokenSet(): Promise<void> {
-        const db = levelup(leveldown(this.levelDBPath));
+        const db = new ClassicLevel(this.levelDBPath, { valueEncoding: 'json' })
         await db.del(tokenSetKey);
         await db.close();
     }
 
     async clearMrtap(): Promise<void> {
-        const db = levelup(leveldown(this.levelDBPath));
+        const db = new ClassicLevel(this.levelDBPath, { valueEncoding: 'json' })
         await db.del(mrtapKey);
         await db.close();
     }
