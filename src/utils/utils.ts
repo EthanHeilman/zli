@@ -8,7 +8,7 @@ import { cleanExit } from 'handlers/clean-exit.handler';
 import { ParsedTargetString } from 'services/common.types';
 import { TargetSummary } from 'webshell-common-ts/http/v2/target/targetSummary.types';
 import { Logger } from 'services/logger/logger.service';
-import { TargetType } from 'webshell-common-ts/http/v2/target/types/target.types';
+import { TargetType, toTargetType } from 'webshell-common-ts/http/v2/target/types/target.types';
 import { TargetStatus } from 'webshell-common-ts/http/v2/target/types/targetStatus.types';
 import { EnvironmentSummary } from 'webshell-common-ts/http/v2/environment/types/environment-summary.responses';
 import { UserSummary } from 'webshell-common-ts/http/v2/user/types/user-summary.types';
@@ -75,8 +75,10 @@ export function parseTargetType(targetType: string) : TargetType
         return TargetType.DynamicAccessConfig;
     case targetTypeDisplay(TargetType.Cluster).toLowerCase():
         return TargetType.Cluster;
-    case targetTypeDisplay(TargetType.Bzero).toLowerCase():
-        return TargetType.Bzero;
+    case targetTypeDisplay(TargetType.Linux).toLowerCase():
+        return TargetType.Linux;
+    case targetTypeDisplay(TargetType.Windows).toLowerCase():
+        return TargetType.Windows;
     case targetTypeDisplay(TargetType.Db).toLowerCase():
         return TargetType.Db;
     case targetTypeDisplay(TargetType.Web).toLowerCase():
@@ -249,8 +251,10 @@ export function targetTypeDisplay(type: TargetType) : string {
         return 'Dynamic';
     case TargetType.Cluster:
         return 'Cluster';
-    case TargetType.Bzero:
-        return 'Bzero';
+    case TargetType.Linux:
+        return 'Linux';
+    case TargetType.Windows:
+        return 'Windows';
     case TargetType.Web:
         return 'Web';
     case TargetType.Db:
@@ -1090,7 +1094,7 @@ export function dynamicConfigToTargetSummary(config: DynamicAccessConfigSummary)
  */
 export function bzeroTargetToTargetSummary(bzeroTarget: BzeroAgentSummary): TargetSummary {
     return {
-        type: TargetType.Bzero,
+        type: toTargetType(bzeroTarget.agentType),
         agentPublicKey: bzeroTarget.agentPublicKey,
         id: bzeroTarget.id,
         name: bzeroTarget.name,

@@ -203,7 +203,7 @@ describe('Connect suite', () => {
             envName: undefined,
             targetUser: 'ec2-user',
             targetGroups: undefined,
-            targetType: TargetType.Bzero*/
+            targetType: TargetType.Linux*/
         expect(getUniversalConnectionSpy).toHaveBeenCalledWith(mockUniversalConnectionRequest);
     });
 });

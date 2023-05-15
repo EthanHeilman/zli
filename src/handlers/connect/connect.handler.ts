@@ -54,7 +54,7 @@ export async function connectHandler(
         switch(createUniversalConnectionResponse.targetType)
         {
         case TargetType.SsmTarget:
-        case TargetType.Bzero:
+        case TargetType.Linux:
         case TargetType.DynamicAccessConfig:
             const exitCode = await shellConnectHandler(createUniversalConnectionResponse.targetType, createUniversalConnectionResponse.targetUser, createUniversalConnectionResponse, configService, logger, loggerConfigService);
 
@@ -65,6 +65,7 @@ export async function connectHandler(
                 }
             }
             return exitCode;
+        /* TODO: RDP handler for Windows */
         case TargetType.Db:
             return await dbConnectHandler(argv, createUniversalConnectionResponse.splitCert, createUniversalConnectionResponse.targetId, createUniversalConnectionResponse.targetUser, createUniversalConnectionResponse, configService, logger, loggerConfigService);
         case TargetType.Web:

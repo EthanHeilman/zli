@@ -47,7 +47,7 @@ export async function createTConnectPolicyHandler(argv: yargs.Arguments<createTC
     let targetIdentifierMap: Dictionary<Target[]> = {};
 
     if(argv.targets !== undefined) {
-        targetIdentifierMap = await getTargetsByNameOrId(configService, logger, [TargetType.Bzero, TargetType.DynamicAccessConfig]);
+        targetIdentifierMap = await getTargetsByNameOrId(configService, logger, [TargetType.Linux, TargetType.Windows, TargetType.DynamicAccessConfig]);
         checkAllIdentifiersExist(logger, 'bzero target or dynamic access config', targetIdentifierMap, argv.targets);
         checkAllIdentifiersAreSingle(logger, 'bzero target or dynamic access config', targetIdentifierMap, argv.targets);
         argv.targets.forEach((target) => {

@@ -89,7 +89,7 @@ export async function listTargetsPerType(
         targetSummaryWork = targetSummaryWork.concat(getDynamicAccessConfigSummaries());
     }
 
-    if (targetTypes.includes(TargetType.Bzero)) {
+    if (targetTypes.includes(TargetType.Linux) || targetTypes.includes(TargetType.Windows)) {
         const bzeroTargetService = new BzeroTargetHttpService(configService, logger);
         const getBzeroAgentTargetSummaries = async () => {
             let bzeroAgents = await bzeroTargetService.ListBzeroTargets();

@@ -78,7 +78,7 @@ export async function sshProxyHandler(
     switch (createUniversalConnectionResponse.targetType) {
     case TargetType.SsmTarget:
         return await ssmSshProxyHandler(configService, logger, sshTunnelParameters, createUniversalConnectionResponse, mrtapService);
-    case TargetType.Bzero:
+    case TargetType.Linux:
         // agentVersion will be null if this isn't a valid version (i.e if its "$AGENT_VERSION" string during development)
         const agentVersion = parse(createUniversalConnectionResponse.agentVersion);
         if (agentVersion && lt(agentVersion, new SemVer(minimumAgentVersion))) {
