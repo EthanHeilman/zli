@@ -1,11 +1,11 @@
 import Conf from 'conf';
 import * as confType from 'conf/dist/source/types';
 import { TokenSet, TokenSetParameters } from 'openid-client';
-import { customJsonParser } from '../../../src/utils/utils';
-import { IdentityProvider } from '../../../webshell-common-ts/auth-service/auth.types';
-import { SubjectSummary } from '../../../webshell-common-ts/http/v2/subject/types/subject-summary.types';
-import { getDefaultMrtapConfig, MrtapConfigSchema } from '../../../webshell-common-ts/mrtap.service/mrtap.service.types';
-import { ConnectConfig, DaemonConfigs, DbConfig, getDefaultConnectConfig, getDefaultGlobalKubeConfig, getDefaultWebConfig, GlobalKubeConfig, KubeConfig, WebConfig } from './config.service.types';
+import { customJsonParser } from 'utils/utils';
+import { IdentityProvider } from 'webshell-common-ts/auth-service/auth.types';
+import { SubjectSummary } from 'webshell-common-ts/http/v2/subject/types/subject-summary.types';
+import { getDefaultMrtapConfig, MrtapConfigSchema } from 'webshell-common-ts/mrtap.service/mrtap.service.types';
+import { ConnectConfig, DaemonConfigs, DbConfig, getDefaultConnectConfig, getDefaultGlobalKubeConfig, getDefaultWebConfig, GlobalKubeConfig, KubeConfig, WebConfig } from 'services/config/config.service.types';
 
 // refL: https://github.com/sindresorhus/conf/blob/master/test/index.test-d.ts#L5-L14
 export type ConfigSchema = {

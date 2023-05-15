@@ -5,14 +5,14 @@ import fs from 'fs';
 import { MockProxy, mock } from 'jest-mock-extended';
 import { cloneDeep } from 'lodash';
 import yaml from 'yaml';
-import { filterKubeConfig, getKubeDaemonSecuritySettings, IFilterKubeConfigService, IFilterKubeDaemonManagementService, IKubeDaemonSecurityConfigService, loadKubeConfigFromFile, mergeKubeConfig } from './kube-management.service';
-import { ILogger } from '../../../webshell-common-ts/logging/logging.types';
+import { filterKubeConfig, getKubeDaemonSecuritySettings, IFilterKubeConfigService, IFilterKubeDaemonManagementService, IKubeDaemonSecurityConfigService, loadKubeConfigFromFile, mergeKubeConfig } from 'services/kube-management/kube-management.service';
+import { ILogger } from 'webshell-common-ts/logging/logging.types';
 import { dir, DirectoryResult, withDir, withFile } from 'tmp-promise';
-import { GlobalKubeConfig, KubeDaemonSecurityConfig, KubeConfig as ZliKubeConfig } from '../config/config.service.types';
+import { GlobalKubeConfig, KubeDaemonSecurityConfig, KubeConfig as ZliKubeConfig } from 'services/config/config.service.types';
 import path from 'path';
 import { randomUUID } from 'crypto';
-import { DaemonIsRunningStatus, DaemonStatus } from '../daemon-management/types/daemon-status.types';
-import { SubjectSummary } from '../../../webshell-common-ts/http/v2/subject/types/subject-summary.types';
+import { DaemonIsRunningStatus, DaemonStatus } from 'services/daemon-management/types/daemon-status.types';
+import { SubjectSummary } from 'webshell-common-ts/http/v2/subject/types/subject-summary.types';
 
 function arbUser(): fc.Arbitrary<User> {
     const baseUser: { [K in keyof User]: fc.Arbitrary<User[K]> } = { name: fc.string() };

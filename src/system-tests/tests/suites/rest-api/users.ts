@@ -1,9 +1,9 @@
-import { SubjectSummary } from '../../../../../webshell-common-ts/http/v2/subject/types/subject-summary.types';
-import { SubjectRole } from '../../../../../webshell-common-ts/http/v2/subject/types/subject-role.types';
-import { UserHttpService } from '../../../../http-services/user/user.http-services';
-import { configService, logger, RUN_AS_SERVICE_ACCOUNT, systemTestUser } from '../../system-test';
-import { SubjectType } from '../../../../../webshell-common-ts/http/v2/common.types/subject.types';
-import { testIf } from '../../utils/utils';
+import { SubjectSummary } from 'webshell-common-ts/http/v2/subject/types/subject-summary.types';
+import { SubjectRole } from 'webshell-common-ts/http/v2/subject/types/subject-role.types';
+import { UserHttpService } from 'http-services/user/user.http-services';
+import { configService, logger, RUN_AS_SERVICE_ACCOUNT, systemTestUser } from 'system-tests/tests/system-test';
+import { SubjectType } from 'webshell-common-ts/http/v2/common.types/subject.types';
+import { testIf } from 'system-tests/tests/utils/utils';
 
 export const userRestApiSuite = () => {
     describe('User REST API Suite', () => {

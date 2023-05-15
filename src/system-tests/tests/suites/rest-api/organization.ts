@@ -1,10 +1,10 @@
-import { OrganizationSummary } from '../../../../../webshell-common-ts/http/v2/organization/types/organization-summary.types';
-import { OrganizationHttpService } from '../../../../http-services/organization/organization.http-services';
-import { configService, GROUP_ID, GROUP_NAME, IN_CI, logger, SERVICE_URL, systemTestRegistrationApiKey } from '../../system-test';
-import { ApiKeyHttpService } from '../../../../http-services/api-key/api-key.http-services';
+import { OrganizationSummary } from 'webshell-common-ts/http/v2/organization/types/organization-summary.types';
+import { OrganizationHttpService } from 'http-services/organization/organization.http-services';
+import { configService, GROUP_ID, GROUP_NAME, IN_CI, logger, SERVICE_URL, systemTestRegistrationApiKey } from 'system-tests/tests/system-test';
+import { ApiKeyHttpService } from 'http-services/api-key/api-key.http-services';
 import 'jest-extended';
-import { GroupSummary } from '../../../../../webshell-common-ts/http/v2/organization/types/group-summary.types';
-import { OrgBZCertValidationInfo } from '../../../../../webshell-common-ts/http/v2/organization/types/organization-bzcert-validation-info.types';
+import { GroupSummary } from 'webshell-common-ts/http/v2/organization/types/group-summary.types';
+import { OrgBZCertValidationInfo } from 'webshell-common-ts/http/v2/organization/types/organization-bzcert-validation-info.types';
 
 export const organizationSuite = () => {
     describe('Organization Suite', () => {

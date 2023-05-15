@@ -4,13 +4,13 @@ import { withDir } from 'tmp-promise';
 import { Cluster, Context, KubeConfig, User } from '@kubernetes/client-node';
 import { MockProxy, mock } from 'jest-mock-extended';
 
-import { ILogger } from '../../../../webshell-common-ts/logging/logging.types';
-import { IFilterKubeConfigService, loadKubeConfigFromString } from '../../../services/kube-management/kube-management.service';
-import { handleGenerateKubeConfig, IGenerateKubeConfigManagementService } from './generate-kube-config.handler';
-import { KubeConfig as ZliKubeConfig, KubeDaemonSecurityConfig } from '../../../services/config/config.service.types';
-import { DaemonIsRunningStatus, DaemonStatus } from '../../../services/daemon-management/types/daemon-status.types';
-import { SubjectSummary } from '../../../../webshell-common-ts/http/v2/subject/types/subject-summary.types';
-import { SubjectType } from '../../../../webshell-common-ts/http/v2/common.types/subject.types';
+import { ILogger } from 'webshell-common-ts/logging/logging.types';
+import { IFilterKubeConfigService, loadKubeConfigFromString } from 'services/kube-management/kube-management.service';
+import { handleGenerateKubeConfig, IGenerateKubeConfigManagementService } from 'handlers/generate/kube/generate-kube-config.handler';
+import { KubeConfig as ZliKubeConfig, KubeDaemonSecurityConfig } from 'services/config/config.service.types';
+import { DaemonIsRunningStatus, DaemonStatus } from 'services/daemon-management/types/daemon-status.types';
+import { SubjectSummary } from 'webshell-common-ts/http/v2/subject/types/subject-summary.types';
+import { SubjectType } from 'webshell-common-ts/http/v2/common.types/subject.types';
 
 function arbZliKubeConfig(): fc.Arbitrary<ZliKubeConfig> {
     return fc.record({

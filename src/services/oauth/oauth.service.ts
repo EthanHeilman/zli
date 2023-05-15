@@ -2,22 +2,22 @@ import { AuthorizationParameters, Client, ClientMetadata, custom, errors, genera
 import path from 'path';
 import open from 'open';
 import lockfile from 'proper-lockfile';
-import { IDisposable } from '../../../webshell-common-ts/utility/disposable';
-import { IdentityProvider } from '../../../webshell-common-ts/auth-service/auth.types';
-import { ConfigService } from '../config/config.service';
+import { IDisposable } from 'webshell-common-ts/utility/disposable';
+import { IdentityProvider } from 'webshell-common-ts/auth-service/auth.types';
+import { ConfigService } from 'services/config/config.service';
 import http, { RequestListener } from 'http';
 import { setTimeout } from 'timers';
-import { Logger } from '../logger/logger.service';
-import { loginHtml } from './templates/login';
-import { logoutHtml } from './templates/logout';
-import { cleanExit } from '../../handlers/clean-exit.handler';
+import { Logger } from 'services/logger/logger.service';
+import { loginHtml } from 'services/oauth/templates/login';
+import { logoutHtml } from 'services/oauth/templates/logout';
+import { cleanExit } from 'handlers/clean-exit.handler';
 import { parse as QueryStringParse } from 'query-string';
-import { parseIdpType, randomAlphaNumericString } from '../../utils/utils';
+import { parseIdpType, randomAlphaNumericString } from 'utils/utils';
 import { check as checkTcpPort } from 'tcp-port-used';
-import { RefreshTokenError, UserNotLoggedInError } from './oauth.service.types';
-import { UserHttpService } from '../../../src/http-services/user/user.http-services';
-import { SubjectType } from '../../../webshell-common-ts/http/v2/common.types/subject.types';
-import { SubjectHttpService } from '../../../src/http-services/subject/subject.http-services';
+import { RefreshTokenError, UserNotLoggedInError } from 'services/oauth/oauth.service.types';
+import { UserHttpService } from 'http-services/user/user.http-services';
+import { SubjectType } from 'webshell-common-ts/http/v2/common.types/subject.types';
+import { SubjectHttpService } from 'http-services/subject/subject.http-services';
 
 // Do not remove any of these, clients have integrations set up based on these!
 const callbackPorts: number[] = [49172, 51252, 58243, 59360, 62109];

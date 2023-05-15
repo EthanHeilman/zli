@@ -1,5 +1,5 @@
 import yargs from 'yargs';
-import { bzeroCredsDefaultPath } from './create-service-account.command-builder';
+import { bzeroCredsDefaultPath } from 'handlers/service-account/create-service-account.command-builder';
 
 export type rotateMfaArgs =
 {serviceAccountEmail: string}  &

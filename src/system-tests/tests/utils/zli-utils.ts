@@ -1,6 +1,6 @@
-import { makeCaseInsensitive } from '../../../utils/utils';
-import { CliDriver } from '../../../cli-driver';
-import * as CleanExitHandler from '../../../handlers/clean-exit.handler';
+import { makeCaseInsensitive } from 'utils/utils';
+import { CliDriver } from 'cli-driver';
+import * as CleanExitHandler from 'handlers/clean-exit.handler';
 
 export async function callZli(zliArgs: string[], callback?: (err: Error, argv: any, output: string) => Promise<void>): Promise<void> {
     const cliDriver = new CliDriver();

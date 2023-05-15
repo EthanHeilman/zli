@@ -2,17 +2,17 @@ import { TokenSet } from 'openid-client';
 import path from 'path';
 import fs from 'fs';
 import { Observable, Subject } from 'rxjs';
-import { IdentityProvider } from '../../../webshell-common-ts/auth-service/auth.types';
-import { SubjectSummary } from '../../../webshell-common-ts/http/v2/subject/types/subject-summary.types';
-import { MrtapConfigInterface, MrtapConfigSchema } from '../../../webshell-common-ts/mrtap.service/mrtap.service.types';
-import { ILogoutConfigService } from '../../handlers/logout/logout.handler';
-import { TokenHttpService } from '../../http-services/token/token.http-services';
-import { DbDaemonStore, KubeDaemonStore } from '../daemon-management/daemon-management.service';
-import { IKubeConfigService, IKubeDaemonSecurityConfigService } from '../kube-management/kube-management.service';
-import { Logger } from '../logger/logger.service';
-import { ConnectConfig, DaemonConfigs, DbConfig, GlobalKubeConfig, KubeConfig, WebConfig } from './config.service.types';
-import { UnixConfig } from './unix-config.service';
-import { WindowsConfig } from './windows-config.service';
+import { IdentityProvider } from 'webshell-common-ts/auth-service/auth.types';
+import { SubjectSummary } from 'webshell-common-ts/http/v2/subject/types/subject-summary.types';
+import { MrtapConfigInterface, MrtapConfigSchema } from 'webshell-common-ts/mrtap.service/mrtap.service.types';
+import { ILogoutConfigService } from 'handlers/logout/logout.handler';
+import { TokenHttpService } from 'http-services/token/token.http-services';
+import { DbDaemonStore, KubeDaemonStore } from 'services/daemon-management/daemon-management.service';
+import { IKubeConfigService, IKubeDaemonSecurityConfigService } from 'services/kube-management/kube-management.service';
+import { Logger } from 'services/logger/logger.service';
+import { ConnectConfig, DaemonConfigs, DbConfig, GlobalKubeConfig, KubeConfig, WebConfig } from 'services/config/config.service.types';
+import { UnixConfig } from 'services/config/unix-config.service';
+import { WindowsConfig } from 'services/config/windows-config.service';
 
 export interface IConfig {
     readonly path: string;

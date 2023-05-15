@@ -1,19 +1,19 @@
 import fs from 'fs';
 import { withFile } from 'tmp-promise';
 import k8s, { KubeConfig } from '@kubernetes/client-node';
-import { ConfigService } from '../config/config.service';
-import { FilterKubeConfigResult, UserKubeConfig } from './kube-management.service.types';
-import { GlobalKubeConfig, KubeConfig as ZliKubeConfig } from '../../services/config/config.service.types';
+import { ConfigService } from 'services/config/config.service';
+import { FilterKubeConfigResult, UserKubeConfig } from 'services/kube-management/kube-management.service.types';
+import { GlobalKubeConfig, KubeConfig as ZliKubeConfig } from 'services/config/config.service.types';
 import path from 'path';
-import { DaemonTLSCert, generateNewCert } from '../../utils/daemon-utils';
+import { DaemonTLSCert, generateNewCert } from 'utils/daemon-utils';
 import randtoken from 'rand-token';
-import { KubeDaemonSecurityConfig } from '../config/config.service.types';
+import { KubeDaemonSecurityConfig } from 'services/config/config.service.types';
 import yaml from 'yaml';
-import { findRunningDaemonWithPredicate, IDaemonStatusRetriever, KubeDaemonStore, newKubeDaemonManagementService } from '../daemon-management/daemon-management.service';
+import { findRunningDaemonWithPredicate, IDaemonStatusRetriever, KubeDaemonStore, newKubeDaemonManagementService } from 'services/daemon-management/daemon-management.service';
 import { cloneDeep } from 'lodash';
-import { ILogger } from '../../../webshell-common-ts/logging/logging.types';
+import { ILogger } from 'webshell-common-ts/logging/logging.types';
 import { newClusters, newContexts, newUsers } from '@kubernetes/client-node/dist/config_types';
-import { SubjectSummary } from '../../../webshell-common-ts/http/v2/subject/types/subject-summary.types';
+import { SubjectSummary } from 'webshell-common-ts/http/v2/subject/types/subject-summary.types';
 
 /**
  * NamedKubeEntry represents a named entry in a standard kubeconfig file, e.g.

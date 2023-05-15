@@ -1,29 +1,29 @@
-import { ConfigService } from '../../services/config/config.service';
-import { Logger } from '../../services/logger/logger.service';
-import { cleanExit } from '../clean-exit.handler';
-import { QuickstartService } from '../../services/quickstart/quickstart.service';
-import { GAService } from '../../services/Tracking/google-analytics.service';
-import { MixpanelService } from '../../services/Tracking/mixpanel.service';
-import { readFile } from '../../utils/utils';
-import { defaultSshConfigFilePath, quickstartArgs } from './quickstart.command-builder';
-import { OAuthService } from '../../services/oauth/oauth.service';
-import { version } from '../../../package.json';
+import { ConfigService } from 'services/config/config.service';
+import { Logger } from 'services/logger/logger.service';
+import { cleanExit } from 'handlers/clean-exit.handler';
+import { QuickstartService } from 'services/quickstart/quickstart.service';
+import { GAService } from 'services/Tracking/google-analytics.service';
+import { MixpanelService } from 'services/Tracking/mixpanel.service';
+import { readFile } from 'utils/utils';
+import { defaultSshConfigFilePath, quickstartArgs } from 'handlers/quickstart/quickstart.command-builder';
+import { OAuthService } from 'services/oauth/oauth.service';
+import { version } from 'package.json';
 
 import prompts, { PromptObject } from 'prompts';
 import yargs from 'yargs';
 import fs from 'fs';
-import { ConsoleWithTranscriptService } from '../../services/consoleWithTranscript/consoleWithTranscript.service';
+import { ConsoleWithTranscriptService } from 'services/consoleWithTranscript/consoleWithTranscript.service';
 import chalk from 'chalk';
-import { TranscriptMessage } from '../../services/consoleWithTranscript/consoleWithTranscript.types';
+import { TranscriptMessage } from 'services/consoleWithTranscript/consoleWithTranscript.types';
 import ora from 'ora';
-import { MrtapService } from '../../../webshell-common-ts/mrtap.service/mrtap.service';
-import { EnvironmentHttpService } from '../../http-services/environment/environment.http-services';
-import { PolicyHttpService } from '../../../src/http-services/policy/policy.http-services';
-import { UserSummary } from '../../../webshell-common-ts/http/v2/user/types/user-summary.types';
-import { RegisteredSSHHost } from '../../services/quickstart/quickstart.service.types';
-import { UserHttpService } from '../../../src/http-services/user/user.http-services';
-import { SubjectType } from '../../../webshell-common-ts/http/v2/common.types/subject.types';
-import { loginUserHandler } from '../login/login.handler';
+import { MrtapService } from 'webshell-common-ts/mrtap.service/mrtap.service';
+import { EnvironmentHttpService } from 'http-services/environment/environment.http-services';
+import { PolicyHttpService } from 'http-services/policy/policy.http-services';
+import { UserSummary } from 'webshell-common-ts/http/v2/user/types/user-summary.types';
+import { RegisteredSSHHost } from 'services/quickstart/quickstart.service.types';
+import { UserHttpService } from 'http-services/user/user.http-services';
+import { SubjectType } from 'webshell-common-ts/http/v2/common.types/subject.types';
+import { loginUserHandler } from 'handlers/login/login.handler';
 
 const welcomeMessage = `Welcome to BastionZero and the journey to zero trust access via our multi-root, trustless access protocol (MrTAP). We're excited to have you!\n
 Our quickstart installer is a fast and easy method for you to try BastionZero using your existing SSH configuration.

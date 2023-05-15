@@ -1,9 +1,9 @@
-import { Logger } from '../../services/logger/logger.service';
-import { ConfigService } from '../../services/config/config.service';
-import { DynamicAccessTargetState } from '../../../webshell-common-ts/http/v2/connection/types/dynamic-access-target-state';
-import { ShellConnectionSummary } from '../../../webshell-common-ts/http/v2/connection/types/shell-connection-summary.types';
-import { ConnectionHttpService } from '../../http-services/connection/connection.http-services';
-import { ConnectionState } from '../../../webshell-common-ts/http/v2/connection/types/connection-state.types';
+import { Logger } from 'services/logger/logger.service';
+import { ConfigService } from 'services/config/config.service';
+import { DynamicAccessTargetState } from 'webshell-common-ts/http/v2/connection/types/dynamic-access-target-state';
+import { ShellConnectionSummary } from 'webshell-common-ts/http/v2/connection/types/shell-connection-summary.types';
+import { ConnectionHttpService } from 'http-services/connection/connection.http-services';
+import { ConnectionState } from 'webshell-common-ts/http/v2/connection/types/connection-state.types';
 import { Retrier } from '@jsier/retrier';
 
 export class DynamicAccessConnectionUtils {

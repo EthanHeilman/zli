@@ -1,15 +1,15 @@
-import { ConfigService } from '../../services/config/config.service';
-import { Logger } from '../../services/logger/logger.service';
-import { cleanExit } from '../clean-exit.handler';
-import { LoggerConfigService } from '../../services/logger/logger-config.service';
-import { handleServerStart, startDaemonInDebugMode, copyExecutableToLocalDir, getOrDefaultLocalhost, getOrDefaultLocalport, checkIfPortAvailable, spawnDaemonInBackground, getBaseDaemonEnv } from '../../utils/daemon-utils';
-import { connectArgs } from './connect.command-builder';
+import { ConfigService } from 'services/config/config.service';
+import { Logger } from 'services/logger/logger.service';
+import { cleanExit } from 'handlers/clean-exit.handler';
+import { LoggerConfigService } from 'services/logger/logger-config.service';
+import { handleServerStart, startDaemonInDebugMode, copyExecutableToLocalDir, getOrDefaultLocalhost, getOrDefaultLocalport, checkIfPortAvailable, spawnDaemonInBackground, getBaseDaemonEnv } from 'utils/daemon-utils';
+import { connectArgs } from 'handlers/connect/connect.command-builder';
 import yargs from 'yargs';
-import { DbTargetHttpService } from '../../http-services/db-target/db-target.http-service';
-import { CreateUniversalConnectionResponse } from '../../../webshell-common-ts/http/v2/connection/responses/create-universal-connection.response';
-import { DbConfig } from '../../services/config/config.service.types';
-import { newDbDaemonManagementService } from '../../services/daemon-management/daemon-management.service';
-import { ProcessManagerService } from '../../services/process-manager/process-manager.service';
+import { DbTargetHttpService } from 'http-services/db-target/db-target.http-service';
+import { CreateUniversalConnectionResponse } from 'webshell-common-ts/http/v2/connection/responses/create-universal-connection.response';
+import { DbConfig } from 'services/config/config.service.types';
+import { newDbDaemonManagementService } from 'services/daemon-management/daemon-management.service';
+import { ProcessManagerService } from 'services/process-manager/process-manager.service';
 
 
 export async function dbConnectHandler(

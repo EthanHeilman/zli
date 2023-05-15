@@ -8,10 +8,10 @@ import {
     RegistrableSSHHost,
     RegisteredSSHHost,
     BzeroAlreadyInstalledError
-} from './quickstart.service.types';
-import { ConfigService } from '../config/config.service';
-import { Logger } from '../logger/logger.service';
-import { readFile } from '../../utils/utils';
+} from 'services/quickstart/quickstart.service.types';
+import { ConfigService } from 'services/config/config.service';
+import { Logger } from 'services/logger/logger.service';
+import { readFile } from 'utils/utils';
 
 import SSHConnection from 'ssh2-promise/lib/sshConnection';
 import path from 'path';
@@ -20,23 +20,23 @@ import prompts, { PromptObject } from 'prompts';
 import { KeyEncryptedError, parsePrivateKey } from 'sshpk';
 import { Retrier } from '@jsier/retrier';
 import chalk from 'chalk';
-import { ConsoleWithTranscriptService } from '../consoleWithTranscript/consoleWithTranscript.service';
-import { TranscriptMessage } from '../consoleWithTranscript/consoleWithTranscript.types';
+import { ConsoleWithTranscriptService } from 'services/consoleWithTranscript/consoleWithTranscript.service';
+import { TranscriptMessage } from 'services/consoleWithTranscript/consoleWithTranscript.types';
 import ora from 'ora';
-import { EnvironmentHttpService } from '../../http-services/environment/environment.http-services';
-import { PolicyHttpService } from '../../http-services/policy/policy.http-services';
-import { Environment } from '../../../webshell-common-ts/http/v2/policy/types/environment.types';
-import { TargetUser } from '../../../webshell-common-ts/http/v2/policy/types/target-user.types';
-import { Verb } from '../../../webshell-common-ts/http/v2/policy/types/verb.types';
-import { VerbType } from '../../../webshell-common-ts/http/v2/policy/types/verb-type.types';
-import { TargetConnectPolicySummary } from '../../../webshell-common-ts/http/v2/policy/target-connect/types/target-connect-policy-summary.types';
-import { ScriptTargetNameOption } from '../../../webshell-common-ts/http/v2/autodiscovery-script/types/script-target-name-option.types';
-import { getBzeroBashAutodiscoveryScript } from '../../http-services/auto-discovery-script/auto-discovery-script.http-services';
-import { TargetStatus } from '../../../webshell-common-ts/http/v2/target/types/targetStatus.types';
-import { Subject } from '../../../webshell-common-ts/http/v2/policy/types/subject.types';
-import { SubjectType } from '../../../webshell-common-ts/http/v2/common.types/subject.types';
-import { BzeroTargetHttpService } from '../../http-services/targets/bzero/bzero.http-services';
-import { BzeroAgentSummary } from '../../../webshell-common-ts/http/v2/target/bzero/types/bzero-agent-summary.types';
+import { EnvironmentHttpService } from 'http-services/environment/environment.http-services';
+import { PolicyHttpService } from 'http-services/policy/policy.http-services';
+import { Environment } from 'webshell-common-ts/http/v2/policy/types/environment.types';
+import { TargetUser } from 'webshell-common-ts/http/v2/policy/types/target-user.types';
+import { Verb } from 'webshell-common-ts/http/v2/policy/types/verb.types';
+import { VerbType } from 'webshell-common-ts/http/v2/policy/types/verb-type.types';
+import { TargetConnectPolicySummary } from 'webshell-common-ts/http/v2/policy/target-connect/types/target-connect-policy-summary.types';
+import { ScriptTargetNameOption } from 'webshell-common-ts/http/v2/autodiscovery-script/types/script-target-name-option.types';
+import { getBzeroBashAutodiscoveryScript } from 'http-services/auto-discovery-script/auto-discovery-script.http-services';
+import { TargetStatus } from 'webshell-common-ts/http/v2/target/types/targetStatus.types';
+import { Subject } from 'webshell-common-ts/http/v2/policy/types/subject.types';
+import { SubjectType } from 'webshell-common-ts/http/v2/common.types/subject.types';
+import { BzeroTargetHttpService } from 'http-services/targets/bzero/bzero.http-services';
+import { BzeroAgentSummary } from 'webshell-common-ts/http/v2/target/bzero/types/bzero-agent-summary.types';
 
 export class QuickstartService {
     constructor(

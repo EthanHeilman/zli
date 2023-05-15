@@ -1,9 +1,9 @@
 
-import { CreateAuthorizedGithubActionRequest } from '../../../webshell-common-ts/http/v2/authorized-github-action/requests/authorized-github-action-create.requests';
-import { AuthorizedGithubActionSummary } from '../../../webshell-common-ts/http/v2/authorized-github-action/types/authorized-github-action-summary.types';
-import { HttpService } from '../../services/http/http.service';
-import { ConfigService } from '../../services/config/config.service';
-import { Logger } from '../../services/logger/logger.service';
+import { CreateAuthorizedGithubActionRequest } from 'webshell-common-ts/http/v2/authorized-github-action/requests/authorized-github-action-create.requests';
+import { AuthorizedGithubActionSummary } from 'webshell-common-ts/http/v2/authorized-github-action/types/authorized-github-action-summary.types';
+import { HttpService } from 'services/http/http.service';
+import { ConfigService } from 'services/config/config.service';
+import { Logger } from 'services/logger/logger.service';
 
 export class AuthorizedGithubActionHttpService extends HttpService
 {

@@ -1,5 +1,5 @@
-import { DigitalOceanDistroImage } from '../digital-ocean/digital-ocean-target.service.types';
-import { DigitalOceanRegion } from '../digital-ocean/digital-ocean.types';
+import { DigitalOceanDistroImage } from 'system-tests/digital-ocean/digital-ocean-target.service.types';
+import { DigitalOceanRegion } from 'system-tests/digital-ocean/digital-ocean.types';
 
 /**
  * BzeroTestTarget represents a bzero test target using an agent installed via

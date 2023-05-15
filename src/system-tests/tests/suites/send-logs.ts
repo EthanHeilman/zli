@@ -1,11 +1,11 @@
-import { configService, testCluster } from '../system-test';
-import { callZli } from '../utils/zli-utils';
-import { bzeroTestTargetsToRun } from '../targets-to-run';
-import { TestTarget } from '../system-test.types';
-import { getTargetInfo } from '../utils/ssh-utils';
+import { configService, testCluster } from 'system-tests/tests/system-test';
+import { callZli } from 'system-tests/tests/utils/zli-utils';
+import { bzeroTestTargetsToRun } from 'system-tests/tests/targets-to-run';
+import { TestTarget } from 'system-tests/tests/system-test.types';
+import { getTargetInfo } from 'system-tests/tests/utils/ssh-utils';
 import { S3 } from 'aws-sdk';
-import { Logger } from '../../../services/logger/logger.service';
-import { sleepTimeout } from '../utils/test-utils';
+import { Logger } from 'services/logger/logger.service';
+import { sleepTimeout } from 'system-tests/tests/utils/test-utils';
 
 const s3 = new S3();
 

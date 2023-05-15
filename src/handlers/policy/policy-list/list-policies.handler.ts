@@ -1,17 +1,17 @@
-import { ConfigService } from '../../../services/config/config.service';
-import { Logger } from '../../../services/logger/logger.service';
-import { PolicyType } from '../../../../webshell-common-ts/http/v2/policy/types/policy-type.types';
-import { policyArgs } from './policy-list.command-builder';
-import { listTargetConnectPoliciesHandler } from './list-target-connect-policies.handler';
-import { listKubernetesPoliciesHandler } from './list-kubernetes-policies.handler';
-import { listSessionRecordingPoliciesHandler } from './list-session-recording-policies.handler';
-import { listProxyPoliciesHandler } from './list-proxy-policies.handler';
-import { listOrganizationControlsPoliciesHandler } from './list-organization-controls-policies.handler';
-import { cleanExit } from '../../clean-exit.handler';
-import { parsePolicyType } from '../../../utils/utils';
+import { ConfigService } from 'services/config/config.service';
+import { Logger } from 'services/logger/logger.service';
+import { PolicyType } from 'webshell-common-ts/http/v2/policy/types/policy-type.types';
+import { policyArgs } from 'handlers/policy/policy-list/policy-list.command-builder';
+import { listTargetConnectPoliciesHandler } from 'handlers/policy/policy-list/list-target-connect-policies.handler';
+import { listKubernetesPoliciesHandler } from 'handlers/policy/policy-list/list-kubernetes-policies.handler';
+import { listSessionRecordingPoliciesHandler } from 'handlers/policy/policy-list/list-session-recording-policies.handler';
+import { listProxyPoliciesHandler } from 'handlers/policy/policy-list/list-proxy-policies.handler';
+import { listOrganizationControlsPoliciesHandler } from 'handlers/policy/policy-list/list-organization-controls-policies.handler';
+import { cleanExit } from 'handlers/clean-exit.handler';
+import { parsePolicyType } from 'utils/utils';
 
 import yargs from 'yargs';
-import { listJustInTimePoliciesHandler } from './list-just-in-time-policies.handler';
+import { listJustInTimePoliciesHandler } from 'handlers/policy/policy-list/list-just-in-time-policies.handler';
 
 export async function listPoliciesHandler(
     argv: yargs.Arguments<policyArgs>,

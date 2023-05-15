@@ -1,21 +1,21 @@
 import * as cp from 'child_process';
 import * as pty from 'node-pty';
 import path from 'path';
-import { ConnectionEventType } from '../../../../webshell-common-ts/http/v2/event/types/connection-event.types';
-import { TargetUser } from '../../../../webshell-common-ts/http/v2/policy/types/target-user.types';
-import * as CleanExitHandler from '../../../handlers/clean-exit.handler';
-import { DynamicAccessConnectionUtils } from '../../../handlers/connect/dynamic-access-connect-utils';
-import { ConnectionHttpService } from '../../../http-services/connection/connection.http-services';
-import * as DaemonUtils from '../../../utils/daemon-utils';
-import { DigitalOceanBZeroTarget } from '../../digital-ocean/digital-ocean-target.service.types';
-import { ContainerBzeroTarget } from '../suites/agent-container';
-import { DATBzeroTarget } from '../suites/dynamic-access';
-import { configService, RUN_AS_SERVICE_ACCOUNT, testTargets } from '../system-test';
-import { bzeroTargetCustomUser, idpUsernameTargetCustomSA, idpUsernameTargetCustomUser } from '../system-test-setup';
-import { TestTarget } from '../system-test.types';
-import { getMockResultValue } from './jest-utils';
-import { sleepTimeout, TestUtils } from './test-utils';
-import { callZli } from './zli-utils';
+import { ConnectionEventType } from 'webshell-common-ts/http/v2/event/types/connection-event.types';
+import { TargetUser } from 'webshell-common-ts/http/v2/policy/types/target-user.types';
+import * as CleanExitHandler from 'handlers/clean-exit.handler';
+import { DynamicAccessConnectionUtils } from 'handlers/connect/dynamic-access-connect-utils';
+import { ConnectionHttpService } from 'http-services/connection/connection.http-services';
+import * as DaemonUtils from 'utils/daemon-utils';
+import { DigitalOceanBZeroTarget } from 'system-tests/digital-ocean/digital-ocean-target.service.types';
+import { ContainerBzeroTarget } from 'system-tests/tests/suites/agent-container';
+import { DATBzeroTarget } from 'system-tests/tests/suites/dynamic-access';
+import { configService, RUN_AS_SERVICE_ACCOUNT, testTargets } from 'system-tests/tests/system-test';
+import { bzeroTargetCustomUser, idpUsernameTargetCustomSA, idpUsernameTargetCustomUser } from 'system-tests/tests/system-test-setup';
+import { TestTarget } from 'system-tests/tests/system-test.types';
+import { getMockResultValue } from 'system-tests/tests/utils/jest-utils';
+import { sleepTimeout, TestUtils } from 'system-tests/tests/utils/test-utils';
+import { callZli } from 'system-tests/tests/utils/zli-utils';
 
 
 
