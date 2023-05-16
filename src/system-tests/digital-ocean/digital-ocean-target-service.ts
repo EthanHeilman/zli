@@ -80,11 +80,11 @@ export class DigitalOceanTargetService {
      * @param bzeroTargetName The name of the target to poll
      * @returns Information about the target
      */
-    public async pollBZeroTargetOnline(bzeroTargetName: string): Promise<BzeroAgentSummary> {
+    public async pollBZeroTargetOnline(bzeroTargetName: string, retryDelay = 10 * 1000, maxRetries = 60): Promise<BzeroAgentSummary> {
         // Try 60 times with a delay of 10 seconds between each attempt (10 min).
         const retrier = new Retrier({
-            limit: 60,
-            delay: 1000 * 10,
+            limit: maxRetries,
+            delay: retryDelay,
             stopRetryingIf: (reason: any) => reason instanceof BzeroTargetStatusPollError && reason.bzeroTarget.status === TargetStatus.Error
         });
 

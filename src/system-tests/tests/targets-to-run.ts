@@ -37,6 +37,7 @@ export const bzeroTestTargetsToRun: TestTarget[] = [
         sessionRecordingCaseId: '6572',
         attachCaseId: '6563',
         sendLogsCaseId: '382476',
+        forceRegisterCaseId: 'C939551'
     }
 ];
 
@@ -82,7 +83,8 @@ export const extraBzeroTestTargetsToRun: TestTarget[] = [
         groupConnectCaseId: '6560',
         sessionRecordingCaseId: '6571',
         attachCaseId: '6562',
-        sendLogsCaseId: '382475'
+        sendLogsCaseId: '382475',
+        forceRegisterCaseId: 'C939550'
     },
     {
         installType: 'ad-bzero',
@@ -110,7 +112,8 @@ export const extraBzeroTestTargetsToRun: TestTarget[] = [
         groupConnectCaseId: '352561',
         sessionRecordingCaseId: '352562',
         attachCaseId: '352563',
-        sendLogsCaseId: '382477'
+        sendLogsCaseId: '382477',
+        forceRegisterCaseId: 'C939552'
     },
     {
         installType: 'as-bzero',
@@ -138,7 +141,8 @@ export const extraBzeroTestTargetsToRun: TestTarget[] = [
         groupConnectCaseId: '375574',
         sessionRecordingCaseId: '375575',
         attachCaseId: '375576',
-        sendLogsCaseId: '382478'
+        sendLogsCaseId: '382478',
+        forceRegisterCaseId: 'C939553'
     }
 ];
 
@@ -205,6 +209,8 @@ export function initRegionalTargetsTestConfig(logger: Logger): TestTarget[] {
         let pmSshWithEnvCaseId: string;
         let adSshWithIdpUsernameCaseId: string;
         let pmSshWithIdpUsernameCaseId: string;
+        let adForceRegisterCaseId: string;
+        let pmForceRegisterCaseId: string;
 
         switch (awsRegion) {
         case 'ap-northeast-1':
@@ -261,6 +267,9 @@ export function initRegionalTargetsTestConfig(logger: Logger): TestTarget[] {
 
             adSendLogsCaseId = '648542';
             pmSendLogsCaseId = '648541';
+            adForceRegisterCaseId = 'C939555';
+            pmForceRegisterCaseId = 'C939554';
+
             break;
         default:
             logger.warn(`Unhandled TestRail awsRegion passed: ${awsRegion}`);
@@ -293,7 +302,8 @@ export function initRegionalTargetsTestConfig(logger: Logger): TestTarget[] {
                 sshSftpCaseId: adSshSftpCaseId,
                 sshTunnelFailsCaseId: adSshTunnelFailsCaseId,
                 sshWithEnvCaseId: adSshWithEnvCaseId,
-                sshWithIdpUsernameCaseId: adSshWithIdpUsernameCaseId
+                sshWithIdpUsernameCaseId: adSshWithIdpUsernameCaseId,
+                forceRegisterCaseId: adForceRegisterCaseId
             },
             {
                 installType: 'pm-bzero',
@@ -321,7 +331,8 @@ export function initRegionalTargetsTestConfig(logger: Logger): TestTarget[] {
                 sshSftpCaseId: pmSshSftpCaseId,
                 sshTunnelFailsCaseId: pmSshTunnelFailsCaseId,
                 sshWithEnvCaseId: pmSshWithEnvCaseId,
-                sshWithIdpUsernameCaseId: pmSshWithIdpUsernameCaseId
+                sshWithIdpUsernameCaseId: pmSshWithIdpUsernameCaseId,
+                forceRegisterCaseId: pmForceRegisterCaseId
             }
         );
     });
