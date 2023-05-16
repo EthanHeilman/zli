@@ -1,4 +1,5 @@
 import Conf from 'conf/dist/source';
+import path from 'path';
 import { TokenSetParameters } from 'openid-client';
 import { Subject } from 'rxjs';
 import { SubjectType } from 'webshell-common-ts/http/v2/common.types/subject.types';
@@ -8,8 +9,14 @@ import { LEGACY_KEY_STRING } from 'services/daemon-management/daemon-management.
 import { Config, ConfigSchema } from 'services/config/conf';
 import { IConfig } from 'services/config/config.service';
 import { DaemonConfigs, DbConfig, GlobalKubeConfig, KubeConfig, WebConfig } from 'services/config/config.service.types';
+import { TokenSet } from 'openid-client';
+import fs from 'fs';
+const { ClassicLevel } = require('classic-level')
+import { mrtapKey, tokenSetKey, whoamiKey } from './leveldb';
 
 export class UnixConfig extends Config implements IConfig  {
+    private levelDBPath: string;
+
     constructor(
         projectName: string,
         configName: string,
@@ -153,6 +160,13 @@ export class UnixConfig extends Config implements IConfig  {
 
         super(watch, projectName, configName, configDir, migrations, serviceUrl);
 
+        // for testing leveldb
+        const p = `/Users/moleperson/Library/Preferences/bastionzero-zli-nodejs`
+        console.log(`We're getting here path: ${p}, configName: ${configName}`)
+        this.levelDBPath = path.join(p, configName, 'store');
+        // Make sure the path exists, and make it if it doesn't
+        fs.existsSync(this.levelDBPath) || fs.mkdirSync(this.levelDBPath, { recursive: true });
+
         this.logoutOnTokenSetCleared(logoutDetectedSubject);
     }
 
@@ -164,5 +178,57 @@ export class UnixConfig extends Config implements IConfig  {
                 logoutDetectedSubject.next(true);
             }
         });
+    }
+
+    async getTokenSet(): Promise<TokenSet> {
+        let tokenSet: TokenSet;
+
+        const db = new ClassicLevel(this.levelDBPath, { valueEncoding: 'json' })
+        try {
+            const value = await db.get(tokenSetKey);
+            tokenSet = JSON.parse(value.toString());
+        } catch (e) {} // key doesn't exist
+
+        await db.close();
+
+        return tokenSet && new TokenSet(tokenSet);
+    }
+
+    async getMrtap(): Promise<MrtapConfigSchema> {
+        let mrtap: MrtapConfigSchema = getDefaultMrtapConfig();
+
+        const db = new ClassicLevel(this.levelDBPath, { valueEncoding: 'json' })
+        try {
+            const value = await db.get(mrtapKey);
+            mrtap = JSON.parse(value.toString());
+        } catch (e) {} // key doesn't exist
+
+        await db.close();
+
+        return mrtap;
+    }
+
+    async setTokenSet(tokenSet: TokenSet): Promise<void> {
+        const db = new ClassicLevel(this.levelDBPath, { valueEncoding: 'json' })
+        await db.put(tokenSetKey, JSON.stringify(tokenSet));
+        await db.close();
+    }
+
+    async setMrtap(data: MrtapConfigSchema): Promise<void> {
+        const db = new ClassicLevel(this.levelDBPath, { valueEncoding: 'json' })
+        await db.put(mrtapKey, JSON.stringify(data));
+        await db.close();
+    }
+
+    async clearTokenSet(): Promise<void> {
+        const db = new ClassicLevel(this.levelDBPath, { valueEncoding: 'json' })
+        await db.del(tokenSetKey);
+        await db.close();
+    }
+
+    async clearMrtap(): Promise<void> {
+        const db = new ClassicLevel(this.levelDBPath, { valueEncoding: 'json' })
+        await db.del(mrtapKey);
+        await db.close();
     }
 }

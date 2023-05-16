@@ -166,7 +166,8 @@
     "assets": [
       "node_modules/figlet/fonts/Standard.flf",
       "bzero/bctl/daemon/daemon",
-      "bzero/bctl/daemon/daemon.exe"
+      "bzero/bctl/daemon/daemon.exe",
+      "node_modules/classic-level/prebuilds/**/*"
     ],
     "outputPath": "bin",
     "targets": [

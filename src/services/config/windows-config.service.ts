@@ -1,7 +1,7 @@
 import { TokenSet } from 'openid-client';
 import path from 'path';
 import fs from 'fs';
-import { ClassicLevel } from 'classic-level';
+const { ClassicLevel } = require('classic-level')
 import { Subject } from 'rxjs';
 import Registry from 'winreg';
 import { getDefaultMrtapConfig, MrtapConfigSchema } from 'webshell-common-ts/mrtap.service/mrtap.service.types';
@@ -76,7 +76,7 @@ export class WindowsConfig extends Config implements IConfig {
     }
 
     async getTokenSet(): Promise<TokenSet> {
-        let tokenSet: TokenSet = new TokenSet(undefined);
+        let tokenSet: TokenSet;
 
         const db = new ClassicLevel(this.levelDBPath, { valueEncoding: 'json' })
         try {
@@ -86,7 +86,7 @@ export class WindowsConfig extends Config implements IConfig {
 
         await db.close();
 
-        return tokenSet;
+        return tokenSet && new TokenSet(tokenSet);
     }
 
     async getMrtap(): Promise<MrtapConfigSchema> {
