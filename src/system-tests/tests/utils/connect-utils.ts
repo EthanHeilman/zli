@@ -28,7 +28,7 @@ interface ConnectTarget {
     id: string;
     name: string;
     environmentId: string;
-    type: 'bzero' | 'dat-bzero' | 'container-bzero';
+    type: 'linux' | 'dat-bzero' | 'container-bzero';
     awsRegion: string;
 
     // The target type is still using the database "ConnectionType" enum from the backend so will either be "SHELL" or "SSM"
@@ -284,11 +284,11 @@ export class ConnectTestUtils {
         let targetUser: string;
         let targetEnvId: string;
 
-        if(target.type === 'bzero' || target.type == 'container-bzero') {
+        if(target.type === 'linux' || target.type == 'container-bzero') {
             targetId = target.bzeroTarget.id;
             targetName = target.bzeroTarget.name;
             targetEnvId = target.bzeroTarget.environmentId;
-            if (target.type === 'bzero') {
+            if (target.type === 'linux') {
                 targetUser = bzeroTargetCustomUser;
             } else if (target.type === 'container-bzero') {
                 targetUser = 'root';

@@ -12,6 +12,7 @@ import { DbTargetHttpService } from 'http-services/db-target/db-target.http-serv
 import { PolicyQueryHttpService } from 'http-services/policy-query/policy-query.http-services';
 import { Dictionary } from 'lodash';
 import { gte, parse, SemVer } from 'semver';
+import { AgentType } from 'webshell-common-ts/http/v2/target/types/agent.types';
 
 export async function listTargets(
     configService: ConfigService,
@@ -93,15 +94,25 @@ export async function listTargetsPerType(
         const bzeroTargetService = new BzeroTargetHttpService(configService, logger);
         const getBzeroAgentTargetSummaries = async () => {
             let bzeroAgents = await bzeroTargetService.ListBzeroTargets();
+            
+            if (!targetTypes.includes(TargetType.Windows)) {
+                bzeroAgents = bzeroAgents.filter(t => t.agentType === AgentType.Linux);
+            } else if (!targetTypes.includes(TargetType.Linux)) {
+                bzeroAgents = bzeroAgents.filter(t => t.agentType === AgentType.Windows);
+            }
+
             if (userEmail) {
                 // Filter bzero targets based on assumed user policy
-                const policyQueryResponse = await policyQueryHttpService.TargetConnectPolicyQuery(bzeroAgents.map(t => t.id), TargetType.Bzero, userEmail);
+                const policyQueryResponse = await policyQueryHttpService.TargetConnectPolicyQuery(bzeroAgents.map(t => t.id), TargetType.Linux, userEmail);
                 bzeroAgents = bzeroAgents.filter(t => policyQueryResponse[t.id].allowed);
 
                 // Update set of allowed target users/verbs
                 bzeroAgents.forEach(t => {
-                    t.allowedTargetUsers = policyQueryResponse[t.id].allowedTargetUsers;
+                    // TODO: when we have an RDP verb in the backend, should filter these between linux/windows
                     t.allowedVerbs = policyQueryResponse[t.id].allowedVerbs;
+                    if (t.agentType === AgentType.Linux) {
+                        t.allowedTargetUsers = policyQueryResponse[t.id].allowedTargetUsers;
+                    }
                 });
             }
 

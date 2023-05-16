@@ -139,7 +139,7 @@ export function getDOImageName(image: DigitalOceanDistroImage) {
  * Represents a BZero target hosted on a specific droplet
  */
 export type DigitalOceanBZeroTarget = {
-    type: 'bzero';
+    type: 'linux';
     droplet: IDroplet;
     bzeroTarget: BzeroAgentSummary;
 };

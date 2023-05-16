@@ -17,8 +17,15 @@ export class PolicyQueryHttpService extends HttpService
 
     public TargetConnectPolicyQuery(targets: string[], targetType: TargetType, userEmail?: string): Promise<{[key: string]: TargetConnectPolicyQueryResponse}>
     {
+        // NOTE: this is a temporary measured, approved by product, unless we have a correct delineation
+        // between targets and agents in the backend
+        let targetTypeParam = '';
+        if (targetType == TargetType.Linux || TargetType.Windows) {
+            targetTypeParam = 'bzero';
+        }
+
         const queryParams: URLSearchParams = new URLSearchParams({
-            targetType: targetType
+            targetType: targetTypeParam
         });
 
         // Add optional userEmail query param if provided
