@@ -1,9 +1,9 @@
-import { ConfigService } from '../config/config.service';
+import { ConfigService } from 'services/config/config.service';
 
-import { TargetType } from '../../../webshell-common-ts/http/v2/target/types/target.types';
+import { TargetType } from 'webshell-common-ts/http/v2/target/types/target.types';
 import { Dictionary } from 'lodash';
 import mixpanel, { Mixpanel } from 'mixpanel';
-import { TrackNewConnection } from './mixpanel.service.types';
+import { TrackNewConnection } from 'services/Tracking/mixpanel.service.types';
 
 
 export class MixpanelService

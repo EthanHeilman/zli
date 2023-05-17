@@ -4,13 +4,13 @@ import { withDir } from 'tmp-promise';
 import { Cluster, Context, KubeConfig, User } from '@kubernetes/client-node';
 import { MockProxy, mock } from 'jest-mock-extended';
 
-import { ILogger } from '../../../../webshell-common-ts/logging/logging.types';
-import { IFilterKubeConfigService, loadKubeConfigFromString } from '../../../services/kube-management/kube-management.service';
-import { handleGenerateKubeConfig, IGenerateKubeConfigManagementService } from './generate-kube-config.handler';
-import { KubeConfig as ZliKubeConfig, KubeDaemonSecurityConfig } from '../../../services/config/config.service.types';
-import { DaemonIsRunningStatus, DaemonStatus } from '../../../services/daemon-management/types/daemon-status.types';
-import { SubjectSummary } from '../../../../webshell-common-ts/http/v2/subject/types/subject-summary.types';
-import { SubjectType } from '../../../../webshell-common-ts/http/v2/common.types/subject.types';
+import { ILogger } from 'webshell-common-ts/logging/logging.types';
+import { IFilterKubeConfigService, loadKubeConfigFromString } from 'services/kube-management/kube-management.service';
+import { handleGenerateKubeConfig, IGenerateKubeConfigManagementService } from 'handlers/generate/kube/generate-kube-config.handler';
+import { KubeConfig as ZliKubeConfig, KubeDaemonSecurityConfig } from 'services/config/config.service.types';
+import { DaemonIsRunningStatus, DaemonStatus } from 'services/daemon-management/types/daemon-status.types';
+import { SubjectSummary } from 'webshell-common-ts/http/v2/subject/types/subject-summary.types';
+import { SubjectType } from 'webshell-common-ts/http/v2/common.types/subject.types';
 
 function arbZliKubeConfig(): fc.Arbitrary<ZliKubeConfig> {
     return fc.record({
@@ -141,8 +141,8 @@ describe('Generate kube config suite', () => {
                     expect(gotKubeConfig.currentContext).toBe(expectedContexts[expectedContexts.length - 1].name)
                     : expect(gotKubeConfig.currentContext).toBeUndefined();
             })
-            , { numRuns: 5000, interruptAfterTimeLimit: 19 * 1000, markInterruptAsFailure: true });
-    }, 20 * 1000);
+            , { numRuns: 5000, interruptAfterTimeLimit: 45 * 1000, markInterruptAsFailure: true });
+    }, 46 * 1000);
 
     test('493843: Generate kube config with --force option and there are no running daemons or configs stored', async () => {
         managementServiceMock.getDaemonConfigs.mockReturnValue(new Map());

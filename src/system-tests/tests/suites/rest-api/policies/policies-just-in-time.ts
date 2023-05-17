@@ -1,12 +1,12 @@
-import { SubjectType } from '../../../../../../webshell-common-ts/http/v2/common.types/subject.types';
-import { JustInTimePolicySummary } from '../../../../../../webshell-common-ts/http/v2/policy/just-in-time/types/just-in-time-policy-summary.types';
-import { TargetConnectPolicySummary } from '../../../../../../webshell-common-ts/http/v2/policy/target-connect/types/target-connect-policy-summary.types';
-import { PolicyType } from '../../../../../../webshell-common-ts/http/v2/policy/types/policy-type.types';
-import { Subject } from '../../../../../../webshell-common-ts/http/v2/policy/types/subject.types';
-import { VerbType } from '../../../../../../webshell-common-ts/http/v2/policy/types/verb-type.types';
-import { PolicyHttpService } from '../../../../../http-services/policy/policy.http-services';
-import { configService, logger, systemTestEnvId, systemTestPolicyTemplate, systemTestUser } from '../../../system-test';
-import { restApiPolicyDescriptionTemplate } from './policies';
+import { SubjectType } from 'webshell-common-ts/http/v2/common.types/subject.types';
+import { JustInTimePolicySummary } from 'webshell-common-ts/http/v2/policy/just-in-time/types/just-in-time-policy-summary.types';
+import { TargetConnectPolicySummary } from 'webshell-common-ts/http/v2/policy/target-connect/types/target-connect-policy-summary.types';
+import { PolicyType } from 'webshell-common-ts/http/v2/policy/types/policy-type.types';
+import { Subject } from 'webshell-common-ts/http/v2/policy/types/subject.types';
+import { VerbType } from 'webshell-common-ts/http/v2/policy/types/verb-type.types';
+import { PolicyHttpService } from 'http-services/policy/policy.http-services';
+import { configService, logger, systemTestEnvId, systemTestPolicyTemplate, systemTestUser } from 'system-tests/tests/system-test';
+import { restApiPolicyDescriptionTemplate } from 'system-tests/tests/suites/rest-api/policies/policies';
 
 export const justInTimePolicySuite = () => {
     describe('Just In Time Policies Suite', () => {

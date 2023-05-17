@@ -1,9 +1,9 @@
-import { MfaSummary } from '../../../../../webshell-common-ts/http/v2/mfa/types/mfa-summary.types';
-import { MfaHttpService } from '../../../../http-services/mfa/mfa.http-services';
-import { configService, logger, RUN_AS_SERVICE_ACCOUNT } from '../../system-test';
-import { ensureMfaEnabled } from '../../system-test-setup';
-import { extractMfaSecretFromUrl } from '../../../../../src/utils/utils';
-import { testIf } from '../../utils/utils';
+import { MfaSummary } from 'webshell-common-ts/http/v2/mfa/types/mfa-summary.types';
+import { MfaHttpService } from 'http-services/mfa/mfa.http-services';
+import { configService, logger, RUN_AS_SERVICE_ACCOUNT } from 'system-tests/tests/system-test';
+import { ensureMfaEnabled } from 'system-tests/tests/system-test-setup';
+import { extractMfaSecretFromUrl } from 'utils/utils';
+import { testIf } from 'system-tests/tests/utils/utils';
 import totp from 'totp-generator';
 
 export const mfaSuite = () => {

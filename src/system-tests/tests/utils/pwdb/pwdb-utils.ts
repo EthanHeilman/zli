@@ -2,8 +2,8 @@ import { exec } from 'child_process';
 import path from 'path';
 import { promisify } from 'util';
 
-import { getPostgresServiceName, getPostgresConfigRoot, getOsName } from '../../../digital-ocean/digital-ocean-target.service.types';
-import { TestTarget } from '../../system-test.types';
+import { getPostgresServiceName, getPostgresConfigRoot, getOsName } from 'system-tests/digital-ocean/digital-ocean-target.service.types';
+import { TestTarget } from 'system-tests/tests/system-test.types';
 
 /**
  * Prepares a target machine for passwordless access of a postgres database

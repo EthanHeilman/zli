@@ -1,10 +1,10 @@
-import { ConfigService } from '../services/config/config.service';
-import { DbTargetHttpService } from '../http-services/db-target/db-target.http-service';
-import { Logger } from '../services/logger/logger.service';
-import { DbTargetSummary } from '../../webshell-common-ts/http/v2/target/db/types/db-target-summary.types';
-import { TargetType } from '../../webshell-common-ts/http/v2/target/types/target.types';
-import { WebTargetHttpService } from '../http-services/web-target/web-target.http-service';
-import { WebTargetSummary } from '../../webshell-common-ts/http/v2/target/web/types/web-target-summary.types';
+import { ConfigService } from 'services/config/config.service';
+import { DbTargetHttpService } from 'http-services/db-target/db-target.http-service';
+import { Logger } from 'services/logger/logger.service';
+import { DbTargetSummary } from 'webshell-common-ts/http/v2/target/db/types/db-target-summary.types';
+import { TargetType } from 'webshell-common-ts/http/v2/target/types/target.types';
+import { WebTargetHttpService } from 'http-services/web-target/web-target.http-service';
+import { WebTargetSummary } from 'webshell-common-ts/http/v2/target/web/types/web-target-summary.types';
 
 export async function listDbTargets(logger: Logger, configService: ConfigService): Promise<DbTargetSummary[]> {
     const dbTargetService = new DbTargetHttpService(configService, logger);

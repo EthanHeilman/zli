@@ -1,7 +1,7 @@
-import { BzeroTargetHttpService } from '../../../../http-services/targets/bzero/bzero.http-services';
-import { DigitalOceanBZeroTarget } from '../../../digital-ocean/digital-ocean-target.service.types';
-import { configService, logger, testTargets } from '../../system-test';
-import { bzeroTestTargetsToRun } from '../../targets-to-run';
+import { BzeroTargetHttpService } from 'http-services/targets/bzero/bzero.http-services';
+import { DigitalOceanBZeroTarget } from 'system-tests/digital-ocean/digital-ocean-target.service.types';
+import { configService, logger, testTargets } from 'system-tests/tests/system-test';
+import { bzeroTestTargetsToRun } from 'system-tests/tests/targets-to-run';
 
 export const bzeroTargetRestApiSuite = () => {
     describe('Bzero Target REST API Suite', () => {

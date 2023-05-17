@@ -1,10 +1,10 @@
-import { ConfigService } from '../../../../src/services/config/config.service';
-import { Logger } from '../../../services/logger/logger.service';
-import { EventsHttpService } from '../../../../src/http-services/events/events.http-server';
-import { CommandEventDataMessage } from '../../../../webshell-common-ts/http/v2/event/types/command-event-data-message';
-import { ConnectionEventDataMessage } from '../../../../webshell-common-ts/http/v2/event/types/connection-event-data-message';
-import { EnvironmentHttpService } from '../../../../src/http-services/environment/environment.http-services';
-import { AgentStatusChangeData } from '../../../../webshell-common-ts/http/v2/event/types/agent-status-change-data.types';
+import { ConfigService } from 'services/config/config.service';
+import { Logger } from 'services/logger/logger.service';
+import { EventsHttpService } from 'http-services/events/events.http-server';
+import { CommandEventDataMessage } from 'webshell-common-ts/http/v2/event/types/command-event-data-message';
+import { ConnectionEventDataMessage } from 'webshell-common-ts/http/v2/event/types/connection-event-data-message';
+import { EnvironmentHttpService } from 'http-services/environment/environment.http-services';
+import { AgentStatusChangeData } from 'webshell-common-ts/http/v2/event/types/agent-status-change-data.types';
 
 const pids = require('port-pid');
 

@@ -1,15 +1,15 @@
 import yargs from 'yargs';
-import { ConfigService } from '../../services/config/config.service';
-import { Logger } from '../../services/logger/logger.service';
-import { cleanExit } from '../clean-exit.handler';
-import { disconnectArgs } from './disconnect.command-builder';
-import { newDbDaemonManagementService, newKubeDaemonManagementService } from '../../services/daemon-management/daemon-management.service';
-import { DisconnectResult } from '../../services/daemon-management/types/disconnect-result.types';
-import { ILogger } from '../../../webshell-common-ts/logging/logging.types';
-import { DaemonConfig, DaemonConfigType } from '../../services/config/config.service.types';
-import { filterAndOverwriteUserKubeConfig } from '../../services/kube-management/kube-management.service';
-import { killDaemonAndLog, logKillDaemonResult } from '../../utils/daemon-utils';
-import { toUpperCase } from '../../utils/utils';
+import { ConfigService } from 'services/config/config.service';
+import { Logger } from 'services/logger/logger.service';
+import { cleanExit } from 'handlers/clean-exit.handler';
+import { disconnectArgs } from 'handlers/disconnect/disconnect.command-builder';
+import { newDbDaemonManagementService, newKubeDaemonManagementService } from 'services/daemon-management/daemon-management.service';
+import { DisconnectResult } from 'services/daemon-management/types/disconnect-result.types';
+import { ILogger } from 'webshell-common-ts/logging/logging.types';
+import { DaemonConfig, DaemonConfigType } from 'services/config/config.service.types';
+import { filterAndOverwriteUserKubeConfig } from 'services/kube-management/kube-management.service';
+import { killDaemonAndLog, logKillDaemonResult } from 'utils/daemon-utils';
+import { toUpperCase } from 'utils/utils';
 
 export async function disconnectHandler(
     argv: yargs.Arguments<disconnectArgs>,

@@ -1,7 +1,7 @@
-import { AuthConfigService } from '../../../webshell-common-ts/auth-config-service/auth-config.service';
-import { ConfigService } from './config.service';
-import { Logger } from '../logger/logger.service';
-import { OAuthService } from '../oauth/oauth.service';
+import { AuthConfigService } from 'webshell-common-ts/auth-config-service/auth-config.service';
+import { ConfigService } from 'services/config/config.service';
+import { Logger } from 'services/logger/logger.service';
+import { OAuthService } from 'services/oauth/oauth.service';
 
 export class ZliAuthConfigService implements AuthConfigService {
 

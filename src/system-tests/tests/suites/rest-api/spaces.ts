@@ -1,7 +1,7 @@
-import { SpaceState } from '../../../../../webshell-common-ts/http/v2/space/types/space-state.types';
-import { SpaceSummary } from '../../../../../webshell-common-ts/http/v2/space/types/space-summary.types';
-import { SpaceHttpService } from '../../../../http-services/space/space.http-services';
-import { configService, logger } from '../../system-test';
+import { SpaceState } from 'webshell-common-ts/http/v2/space/types/space-state.types';
+import { SpaceSummary } from 'webshell-common-ts/http/v2/space/types/space-summary.types';
+import { SpaceHttpService } from 'http-services/space/space.http-services';
+import { configService, logger } from 'system-tests/tests/system-test';
 
 export const spacesRestApiSuite = () => {
     describe('Spaces REST API test suite', () => {

@@ -1,8 +1,8 @@
 import { exec } from 'child_process';
-import { cleanExit } from '../../clean-exit.handler';
+import { cleanExit } from 'handlers/clean-exit.handler';
 import { promisify } from 'util';
-import { ConfigService } from '../../../services/config/config.service';
-import { Logger } from '../../../services/logger/logger.service';
+import { ConfigService } from 'services/config/config.service';
+import { Logger } from 'services/logger/logger.service';
 
 export async function sshProxyConfigHandler(configService: ConfigService, processName: string, logger: Logger) {
 

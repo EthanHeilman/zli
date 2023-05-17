@@ -1,6 +1,6 @@
 import { IKubernetesCluster } from 'dots-wrapper/dist/kubernetes/types/kubernetes-cluster';
-import { KubeClusterSummary } from '../../../webshell-common-ts/http/v2/target/kube/types/kube-cluster-summary.types';
-import { DigitalOceanDropletSize, DigitalOceanRegion } from './digital-ocean.types';
+import { KubeClusterSummary } from 'webshell-common-ts/http/v2/target/kube/types/kube-cluster-summary.types';
+import { DigitalOceanDropletSize, DigitalOceanRegion } from 'system-tests/digital-ocean/digital-ocean.types';
 
 /**
  * Represents a DigitalOcean Kubernetes cluster that has been registered with

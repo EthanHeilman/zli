@@ -1,17 +1,17 @@
-import { systemTestEnvId, systemTestEnvName, systemTestPolicyTemplate, systemTestUniqueId, testTargets } from '../system-test';
-import { callZli } from '../utils/zli-utils';
-import { DbTargetHttpService } from '..../../../http-services/db-target/db-target.http-service';
+import { systemTestEnvId, systemTestEnvName, systemTestPolicyTemplate, systemTestUniqueId, testTargets } from 'system-tests/tests/system-test';
+import { callZli } from 'system-tests/tests/utils/zli-utils';
+import { DbTargetHttpService } from 'http-services/db-target/db-target.http-service';
 import { promisify } from 'util';
 import { exec } from 'child_process';
 
-import { configService, logger } from '../system-test';
-import { DigitalOceanBZeroTarget, getDOImageName } from '../../digital-ocean/digital-ocean-target.service.types';
-import { Environment } from '../../../../webshell-common-ts/http/v2/policy/types/environment.types';
-import { bzeroTestTargetsToRun } from '../targets-to-run';
-import { TestTarget } from '../system-test.types';
-import { PolicyHttpService } from '../../../http-services/policy/policy.http-services';
-import { Subject } from '../../../../webshell-common-ts/http/v2/policy/types/subject.types';
-import { setupBackgroundDaemonMocks } from '../utils/connect-utils';
+import { configService, logger } from 'system-tests/tests/system-test';
+import { DigitalOceanBZeroTarget, getDOImageName } from 'system-tests/digital-ocean/digital-ocean-target.service.types';
+import { Environment } from 'webshell-common-ts/http/v2/policy/types/environment.types';
+import { bzeroTestTargetsToRun } from 'system-tests/tests/targets-to-run';
+import { TestTarget } from 'system-tests/tests/system-test.types';
+import { PolicyHttpService } from 'http-services/policy/policy.http-services';
+import { Subject } from 'webshell-common-ts/http/v2/policy/types/subject.types';
+import { setupBackgroundDaemonMocks } from 'system-tests/tests/utils/connect-utils';
 
 const findPort = require('find-open-port');
 

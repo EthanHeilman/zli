@@ -1,9 +1,9 @@
-import { systemTestEnvId, testCluster, testTargets } from '../system-test';
-import * as ListTargetsService from '../../../services/list-targets/list-targets.service';
-import { getMockResultValue } from '../utils/jest-utils';
-import { TargetSummary } from '../../../../webshell-common-ts/http/v2/target/targetSummary.types';
-import { callZli } from '../utils/zli-utils';
-import { TargetType } from '../../../../webshell-common-ts/http/v2/target/types/target.types';
+import { systemTestEnvId, testCluster, testTargets } from 'system-tests/tests/system-test';
+import * as ListTargetsService from 'services/list-targets/list-targets.service';
+import { getMockResultValue } from 'system-tests/tests/utils/jest-utils';
+import { TargetSummary } from 'webshell-common-ts/http/v2/target/targetSummary.types';
+import { callZli } from 'system-tests/tests/utils/zli-utils';
+import { TargetType } from 'webshell-common-ts/http/v2/target/types/target.types';
 
 export const listTargetsSuite = () => {
     describe('list targets suite', () => {

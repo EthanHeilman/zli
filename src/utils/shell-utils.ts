@@ -1,20 +1,20 @@
 import termsize from 'term-size';
 import readline from 'readline';
 
-import { ConfigService } from '../services/config/config.service';
-import { Logger } from '../services/logger/logger.service';
-import { SsmShellTerminal } from '../terminal/terminal';
-import { ShellConnectionSummary } from '../../webshell-common-ts/http/v2/connection/types/shell-connection-summary.types';
-import { SpaceHttpService } from '../http-services/space/space.http-services';
-import { SpaceState } from '../../webshell-common-ts/http/v2/space/types/space-state.types';
-import { SpaceSummary } from '../../webshell-common-ts/http/v2/space/types/space-summary.types';
-import { TargetType } from '../../webshell-common-ts/http/v2/target/types/target.types';
+import { ConfigService } from 'services/config/config.service';
+import { Logger } from 'services/logger/logger.service';
+import { SsmShellTerminal } from 'terminal/terminal';
+import { ShellConnectionSummary } from 'webshell-common-ts/http/v2/connection/types/shell-connection-summary.types';
+import { SpaceHttpService } from 'http-services/space/space.http-services';
+import { SpaceState } from 'webshell-common-ts/http/v2/space/types/space-state.types';
+import { SpaceSummary } from 'webshell-common-ts/http/v2/space/types/space-summary.types';
+import { TargetType } from 'webshell-common-ts/http/v2/target/types/target.types';
 
-import { copyExecutableToLocalDir, getBaseDaemonEnv, spawnDaemon } from '../utils/daemon-utils';
-import { LoggerConfigService } from '../services/logger/logger-config.service';
-import { ShellConnectionAttachDetails } from '../../webshell-common-ts/http/v2/connection/types/shell-connection-attach-details.types';
-import { pushToStdOut } from './shell-util-wrappers';
-import { ShellConnectionAuthDetails } from '../../webshell-common-ts/http/v2/connection/types/shell-connection-auth-details.types';
+import { copyExecutableToLocalDir, getBaseDaemonEnv, spawnDaemon } from 'utils/daemon-utils';
+import { LoggerConfigService } from 'services/logger/logger-config.service';
+import { ShellConnectionAttachDetails } from 'webshell-common-ts/http/v2/connection/types/shell-connection-attach-details.types';
+import { pushToStdOut } from 'utils/shell-util-wrappers';
+import { ShellConnectionAuthDetails } from 'webshell-common-ts/http/v2/connection/types/shell-connection-auth-details.types';
 
 export async function createAndRunShell(
     configService: ConfigService,

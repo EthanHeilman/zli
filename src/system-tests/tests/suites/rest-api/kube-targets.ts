@@ -1,5 +1,5 @@
-import { KubeHttpService } from '../../../../http-services/targets/kube/kube.http-services';
-import { configService, logger, testCluster } from '../../system-test';
+import { KubeHttpService } from 'http-services/targets/kube/kube.http-services';
+import { configService, logger, testCluster } from 'system-tests/tests/system-test';
 
 export const kubeClusterRestApiSuite = () => {
     describe('Kubernetes Cluster REST API Suite', () => {

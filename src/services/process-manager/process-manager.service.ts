@@ -1,4 +1,4 @@
-import { KillProcessResultType } from './process-manager.service.types';
+import { KillProcessResultType } from 'services/process-manager/process-manager.service.types';
 import * as cp from 'child_process';
 
 /**

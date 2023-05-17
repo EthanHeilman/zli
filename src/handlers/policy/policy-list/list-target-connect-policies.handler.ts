@@ -1,15 +1,15 @@
 import yargs from 'yargs';
-import { Logger } from '../../../services/logger/logger.service';
-import { policyArgs } from './policy-list.command-builder';
-import { getTableOfTargetConnectPolicies } from '../../../utils/utils';
-import { ConfigService } from '../../../services/config/config.service';
-import { PolicyHttpService } from '../../../http-services/policy/policy.http-services';
-import { SsmTargetHttpService } from '../../../http-services/targets/ssm/ssm-target.http-services';
-import { DynamicAccessConfigHttpService } from '../../../http-services/targets/dynamic-access/dynamic-access-config.http-services';
-import { BzeroTargetHttpService } from '../../../http-services/targets/bzero/bzero.http-services';
-import { EnvironmentHttpService } from '../../../http-services/environment/environment.http-services';
-import { EnvironmentSummary } from '../../../../webshell-common-ts/http/v2/environment/types/environment-summary.responses';
-import { getPolicySubjectDisplayInfo } from '../../../services/policy/policy.services';
+import { Logger } from 'services/logger/logger.service';
+import { policyArgs } from 'handlers/policy/policy-list/policy-list.command-builder';
+import { getTableOfTargetConnectPolicies } from 'utils/utils';
+import { ConfigService } from 'services/config/config.service';
+import { PolicyHttpService } from 'http-services/policy/policy.http-services';
+import { SsmTargetHttpService } from 'http-services/targets/ssm/ssm-target.http-services';
+import { DynamicAccessConfigHttpService } from 'http-services/targets/dynamic-access/dynamic-access-config.http-services';
+import { BzeroTargetHttpService } from 'http-services/targets/bzero/bzero.http-services';
+import { EnvironmentHttpService } from 'http-services/environment/environment.http-services';
+import { EnvironmentSummary } from 'webshell-common-ts/http/v2/environment/types/environment-summary.responses';
+import { getPolicySubjectDisplayInfo } from 'services/policy/policy.services';
 
 
 export async function listTargetConnectPoliciesHandler(

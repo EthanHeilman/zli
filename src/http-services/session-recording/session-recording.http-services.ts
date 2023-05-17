@@ -1,7 +1,7 @@
-import { ConfigService } from '../../services/config/config.service';
-import { HttpService } from '../../services/http/http.service';
-import { Logger } from '../../services/logger/logger.service';
-import { SessionRecordingSummary } from '../../../webshell-common-ts/http/v2/session-recording/types/session-recording-summary.types';
+import { ConfigService } from 'services/config/config.service';
+import { HttpService } from 'services/http/http.service';
+import { Logger } from 'services/logger/logger.service';
+import { SessionRecordingSummary } from 'webshell-common-ts/http/v2/session-recording/types/session-recording-summary.types';
 
 export class SessionRecordingHttpService extends HttpService {
     constructor(configService: ConfigService, logger: Logger) {

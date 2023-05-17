@@ -1,10 +1,10 @@
-import { Logger } from '../../../services/logger/logger.service';
-import { ConfigService } from '../../../services/config/config.service';
-import { cleanExit } from '../../clean-exit.handler';
-import { getTableOfTargetGroups } from '../../../utils/utils';
+import { Logger } from 'services/logger/logger.service';
+import { ConfigService } from 'services/config/config.service';
+import { cleanExit } from 'handlers/clean-exit.handler';
+import { getTableOfTargetGroups } from 'utils/utils';
 import yargs from 'yargs';
-import { listTargetGroupArgs } from './list-targetgroups.command-builder';
-import { PolicyHttpService } from '../../../http-services/policy/policy.http-services';
+import { listTargetGroupArgs } from 'handlers/policy/policy-targetgroup/list-targetgroups.command-builder';
+import { PolicyHttpService } from 'http-services/policy/policy.http-services';
 
 export async function listTargetGroupsHandler(configService: ConfigService, logger: Logger, argv : yargs.Arguments<listTargetGroupArgs>, policyName: string) {
 

@@ -1,8 +1,8 @@
-import { ScriptResponse } from '../../../webshell-common-ts/http/v2/autodiscovery-script/responses/script.responses';
-import { ScriptTargetNameOption } from '../../../webshell-common-ts/http/v2/autodiscovery-script/types/script-target-name-option.types';
-import { ConfigService } from '../../services/config/config.service';
-import { HttpService } from '../../services/http/http.service';
-import { Logger } from '../../services/logger/logger.service';
+import { ScriptResponse } from 'webshell-common-ts/http/v2/autodiscovery-script/responses/script.responses';
+import { ScriptTargetNameOption } from 'webshell-common-ts/http/v2/autodiscovery-script/types/script-target-name-option.types';
+import { ConfigService } from 'services/config/config.service';
+import { HttpService } from 'services/http/http.service';
+import { Logger } from 'services/logger/logger.service';
 
 
 export async function getAutodiscoveryScript(

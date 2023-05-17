@@ -1,7 +1,7 @@
-import { ApiKeyHttpService } from '../../../../http-services/api-key/api-key.http-services';
-import { NewApiKeyResponse } from '../../../../../webshell-common-ts/http/v2/api-key/responses/new-api-key.responses';
-import { ApiKeySummary } from '../../../../../webshell-common-ts/http/v2/api-key/types/api-key-summary.types';
-import { configService, logger, resourceNamePrefix } from '../../system-test';
+import { ApiKeyHttpService } from 'http-services/api-key/api-key.http-services';
+import { NewApiKeyResponse } from 'webshell-common-ts/http/v2/api-key/responses/new-api-key.responses';
+import { ApiKeySummary } from 'webshell-common-ts/http/v2/api-key/types/api-key-summary.types';
+import { configService, logger, resourceNamePrefix } from 'system-tests/tests/system-test';
 
 export const apiKeySuite = () => {
     describe('API Keys Suite', () => {

@@ -1,7 +1,7 @@
-import { DbTargetHttpService } from '../../../../http-services/db-target/db-target.http-service';
-import { DigitalOceanBZeroTarget } from '../../../digital-ocean/digital-ocean-target.service.types';
-import { configService, logger, systemTestEnvId, systemTestUniqueId, testTargets } from '../../system-test';
-import { bzeroTestTargetsToRun } from '../../targets-to-run';
+import { DbTargetHttpService } from 'http-services/db-target/db-target.http-service';
+import { DigitalOceanBZeroTarget } from 'system-tests/digital-ocean/digital-ocean-target.service.types';
+import { configService, logger, systemTestEnvId, systemTestUniqueId, testTargets } from 'system-tests/tests/system-test';
+import { bzeroTestTargetsToRun } from 'system-tests/tests/targets-to-run';
 
 export const databaseTargetRestApiSuite = () => {
     describe('Database Target REST API Suite', () => {

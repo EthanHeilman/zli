@@ -1,13 +1,13 @@
 import { Retrier } from '@jsier/retrier';
-import { ConfigService } from '../../services/config/config.service';
-import { Logger } from '../../services/logger/logger.service';
-import { ClusterTargetStatusPollError, CreateNewKubeClusterParameters, DigitalOceanRegistryCredentials, RegisteredDigitalOceanKubernetesCluster } from './digital-ocean-kube.service.types';
-import { checkAllSettledPromise } from '../tests/utils/utils';
-import { EnvironmentHttpService } from '../../http-services/environment/environment.http-services';
-import { KubeHttpService } from '../../http-services/targets/kube/kube.http-services';
-import { KubeClusterSummary } from '../../../webshell-common-ts/http/v2/target/kube/types/kube-cluster-summary.types';
-import { PolicyHttpService } from '../../../src/http-services/policy/policy.http-services';
-import { TargetStatus } from '../../../webshell-common-ts/http/v2/target/types/targetStatus.types';
+import { ConfigService } from 'services/config/config.service';
+import { Logger } from 'services/logger/logger.service';
+import { ClusterTargetStatusPollError, CreateNewKubeClusterParameters, DigitalOceanRegistryCredentials, RegisteredDigitalOceanKubernetesCluster } from 'system-tests/digital-ocean/digital-ocean-kube.service.types';
+import { checkAllSettledPromise } from 'system-tests/tests/utils/utils';
+import { EnvironmentHttpService } from 'http-services/environment/environment.http-services';
+import { KubeHttpService } from 'http-services/targets/kube/kube.http-services';
+import { KubeClusterSummary } from 'webshell-common-ts/http/v2/target/kube/types/kube-cluster-summary.types';
+import { PolicyHttpService } from 'http-services/policy/policy.http-services';
+import { TargetStatus } from 'webshell-common-ts/http/v2/target/types/targetStatus.types';
 import { createApiClient } from 'dots-wrapper';
 import { ICreateKubernetesClusterNodePoolApiRequest, IKubernetesCluster } from 'dots-wrapper/dist/kubernetes';
 

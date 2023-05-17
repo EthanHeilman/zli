@@ -1,9 +1,9 @@
 import yargs from 'yargs';
-import { ConfigService } from '../../services/config/config.service';
-import { Logger } from '../../services/logger/logger.service';
-import { cleanExit } from '../clean-exit.handler';
-import { configDefaultTargetUserArgs } from './config-default-targetuser.command-builder';
-import { ConnectConfig } from '../../services/config/config.service.types';
+import { ConfigService } from 'services/config/config.service';
+import { Logger } from 'services/logger/logger.service';
+import { cleanExit } from 'handlers/clean-exit.handler';
+import { configDefaultTargetUserArgs } from 'handlers/configure/config-default-targetuser.command-builder';
+import { ConnectConfig } from 'services/config/config.service.types';
 
 export async function configDefaultTargetUserHandler(argv: yargs.Arguments<configDefaultTargetUserArgs>, configService: ConfigService, logger: Logger) {
     // This is handled manually so that the user isn't required
