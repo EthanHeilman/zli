@@ -2,17 +2,17 @@ import yargs from 'yargs';
 import got from 'got/dist/source';
 import { Retrier } from '@jsier/retrier';
 
-import { ConfigService } from '../../services/config/config.service';
-import { Logger } from '../../services/logger/logger.service';
-import { cleanExit } from '../clean-exit.handler';
-import { LoggerConfigService } from '../../services/logger/logger-config.service';
-import { connectArgs } from './connect.command-builder';
-import { startDaemonInDebugMode, copyExecutableToLocalDir, handleServerStart, getBaseDaemonEnv, spawnDaemonInBackground, checkIfPortAvailable } from '../../utils/daemon-utils';
-import { KubeHttpService } from '../../http-services/targets/kube/kube.http-services';
-import { CreateUniversalConnectionResponse } from '../../../webshell-common-ts/http/v2/connection/responses/create-universal-connection.response';
-import { findRunningDaemonWithPredicate, newKubeDaemonManagementService } from '../../services/daemon-management/daemon-management.service';
-import { KubeConfig } from '../../services/config/config.service.types';
-import { buildMapOfNamedKubeEntries, findMatchingKubeContext, generateKubeConfig, getKubeDaemonSecuritySettings, loadUserKubeConfig, updateUserKubeConfigWith } from '../../services/kube-management/kube-management.service';
+import { ConfigService } from 'services/config/config.service';
+import { Logger } from 'services/logger/logger.service';
+import { cleanExit } from 'handlers/clean-exit.handler';
+import { LoggerConfigService } from 'services/logger/logger-config.service';
+import { connectArgs } from 'handlers/connect/connect.command-builder';
+import { startDaemonInDebugMode, copyExecutableToLocalDir, handleServerStart, getBaseDaemonEnv, spawnDaemonInBackground, checkIfPortAvailable } from 'utils/daemon-utils';
+import { KubeHttpService } from 'http-services/targets/kube/kube.http-services';
+import { CreateUniversalConnectionResponse } from 'webshell-common-ts/http/v2/connection/responses/create-universal-connection.response';
+import { findRunningDaemonWithPredicate, newKubeDaemonManagementService } from 'services/daemon-management/daemon-management.service';
+import { KubeConfig } from 'services/config/config.service.types';
+import { buildMapOfNamedKubeEntries, findMatchingKubeContext, generateKubeConfig, getKubeDaemonSecuritySettings, loadUserKubeConfig, updateUserKubeConfigWith } from 'services/kube-management/kube-management.service';
 
 const findPort = require('find-open-port');
 

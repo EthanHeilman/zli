@@ -1,10 +1,10 @@
-import { AddNewAgentRequest } from '../../../../webshell-common-ts/http/v2/target/kube/requests/add-new-agent.requests';
-import { EditClusterRequest } from '../../../../webshell-common-ts/http/v2/target/kube/requests/edit-cluster.request';
-import { KubeGetAgentYamlResponse } from '../../../../webshell-common-ts/http/v2/target/kube/responses/kube-get-agent-yaml.response';
-import { KubeClusterSummary } from '../../../../webshell-common-ts/http/v2/target/kube/types/kube-cluster-summary.types';
-import { ConfigService } from '../../../services/config/config.service';
-import { HttpService } from '../../../services/http/http.service';
-import { Logger } from '../../../services/logger/logger.service';
+import { AddNewAgentRequest } from 'webshell-common-ts/http/v2/target/kube/requests/add-new-agent.requests';
+import { EditClusterRequest } from 'webshell-common-ts/http/v2/target/kube/requests/edit-cluster.request';
+import { KubeGetAgentYamlResponse } from 'webshell-common-ts/http/v2/target/kube/responses/kube-get-agent-yaml.response';
+import { KubeClusterSummary } from 'webshell-common-ts/http/v2/target/kube/types/kube-cluster-summary.types';
+import { ConfigService } from 'services/config/config.service';
+import { HttpService } from 'services/http/http.service';
+import { Logger } from 'services/logger/logger.service';
 
 export class KubeHttpService extends HttpService
 {

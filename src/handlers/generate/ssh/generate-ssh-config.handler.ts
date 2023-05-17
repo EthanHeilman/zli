@@ -1,13 +1,13 @@
 import fs from 'fs';
 import path from 'path';
 import yargs from 'yargs';
-import { ConfigService } from '../../../services/config/config.service';
-import { Logger } from '../../../services/logger/logger.service';
-import { PolicyQueryHttpService } from '../../../http-services/policy-query/policy-query.http-services';
-import { SshTargetsResponse } from '../../../../webshell-common-ts/http/v2/policy-query/responses/tunnels.response';
-import { buildSshConfigStrings } from './generate-ssh-proxy.handler';
-import { generateSshConfigArgs } from './generate-ssh-config.command-builder';
-import { cleanExit } from '../../clean-exit.handler';
+import { ConfigService } from 'services/config/config.service';
+import { Logger } from 'services/logger/logger.service';
+import { PolicyQueryHttpService } from 'http-services/policy-query/policy-query.http-services';
+import { SshTargetsResponse } from 'webshell-common-ts/http/v2/policy-query/responses/tunnels.response';
+import { buildSshConfigStrings } from 'handlers/generate/ssh/generate-ssh-proxy.handler';
+import { generateSshConfigArgs } from 'handlers/generate/ssh/generate-ssh-config.command-builder';
+import { cleanExit } from 'handlers/clean-exit.handler';
 
 // bound refers to star boundaries set for the comments
 const bound = '*'.repeat(80);

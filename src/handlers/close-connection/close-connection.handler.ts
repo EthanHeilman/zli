@@ -1,10 +1,10 @@
-import { ConfigService } from '../../services/config/config.service';
-import { Logger } from '../../services/logger/logger.service';
-import { cleanExit } from '../clean-exit.handler';
-import { ConnectionHttpService } from '../../http-services/connection/connection.http-services';
-import { closeConnectionArgs } from './close-connection.command-builder';
+import { ConfigService } from 'services/config/config.service';
+import { Logger } from 'services/logger/logger.service';
+import { cleanExit } from 'handlers/clean-exit.handler';
+import { ConnectionHttpService } from 'http-services/connection/connection.http-services';
+import { closeConnectionArgs } from 'handlers/close-connection/close-connection.command-builder';
 import yargs from 'yargs';
-import { closeConnections, closeShellConnections } from '../../services/close-connections/close-connections.service';
+import { closeConnections, closeShellConnections } from 'services/close-connections/close-connections.service';
 import { isError } from 'lodash';
 
 export async function closeConnectionHandler(

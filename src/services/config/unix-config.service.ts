@@ -1,13 +1,13 @@
 import Conf from 'conf/dist/source';
 import { TokenSetParameters } from 'openid-client';
 import { Subject } from 'rxjs';
-import { SubjectType } from '../../../webshell-common-ts/http/v2/common.types/subject.types';
-import { SubjectSummary } from '../../../webshell-common-ts/http/v2/subject/types/subject-summary.types';
-import { getDefaultMrtapConfig, MrtapConfigSchema } from '../../../webshell-common-ts/mrtap.service/mrtap.service.types';
-import { LEGACY_KEY_STRING } from '../../services/daemon-management/daemon-management.service';
-import { Config, ConfigSchema } from './conf';
-import { IConfig } from './config.service';
-import { DaemonConfigs, DbConfig, GlobalKubeConfig, KubeConfig, WebConfig } from './config.service.types';
+import { SubjectType } from 'webshell-common-ts/http/v2/common.types/subject.types';
+import { SubjectSummary } from 'webshell-common-ts/http/v2/subject/types/subject-summary.types';
+import { getDefaultMrtapConfig, MrtapConfigSchema } from 'webshell-common-ts/mrtap.service/mrtap.service.types';
+import { LEGACY_KEY_STRING } from 'services/daemon-management/daemon-management.service';
+import { Config, ConfigSchema } from 'services/config/conf';
+import { IConfig } from 'services/config/config.service';
+import { DaemonConfigs, DbConfig, GlobalKubeConfig, KubeConfig, WebConfig } from 'services/config/config.service.types';
 
 export class UnixConfig extends Config implements IConfig  {
     constructor(

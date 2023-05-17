@@ -1,25 +1,25 @@
-import { callZli } from '../utils/zli-utils';
+import { callZli } from 'system-tests/tests/utils/zli-utils';
 import fs from 'fs';
-import { ServiceAccountBzeroCredentials } from '../../../../src/handlers/login/types/service-account-bzero-credentials.types';
-import { bzeroCredsPath, configService, IN_PIPELINE, logger, providerCredsPath, setSystemTestServiceAccount, systemTestEnvId, systemTestPolicyTemplate, systemTestUniqueId } from '../system-test';
-import { ServiceAccountProviderCredentials } from '../../../../src/handlers/login/types/service-account-provider-credentials.types';
-import { Logger } from '../../../../src/services/logger/logger.service';
-import { ServiceAccountHttpService } from '../../../http-services/service-account/service-account.http-services';
-import { ConnectionHttpService } from '../../../http-services/connection/connection.http-services';
-import { TestUtils } from '../utils/test-utils';
-import { ConnectTestUtils } from '../utils/connect-utils';
-import { bzeroTestTargetsToRun } from '../targets-to-run';
-import { getMockResultValue } from '../utils/jest-utils';
-import { ConfigService } from '../../../services/config/config.service';
-import { envMap } from '../../../cli-driver';
-import { PolicyHttpService } from '../../../http-services/policy/policy.http-services';
-import { Subject } from '../../../../webshell-common-ts/http/v2/policy/types/subject.types';
-import { Environment } from '../../../../webshell-common-ts/http/v2/policy/types/environment.types';
-import { VerbType } from '../../../../webshell-common-ts/http/v2/policy/types/verb-type.types';
-import { cleanupTargetConnectPolicies } from '../system-test-cleanup';
-import { testIf } from '../utils/utils';
-import { ensureServiceAccountExistsForLogin, ensureServiceAccountRole } from '../system-test-setup';
-import { SubjectHttpService } from '../../../http-services/subject/subject.http-services';
+import { ServiceAccountBzeroCredentials } from 'handlers/login/types/service-account-bzero-credentials.types';
+import { bzeroCredsPath, configService, IN_PIPELINE, logger, providerCredsPath, setSystemTestServiceAccount, systemTestEnvId, systemTestPolicyTemplate, systemTestUniqueId } from 'system-tests/tests/system-test';
+import { ServiceAccountProviderCredentials } from 'handlers/login/types/service-account-provider-credentials.types';
+import { Logger } from 'services/logger/logger.service';
+import { ServiceAccountHttpService } from 'http-services/service-account/service-account.http-services';
+import { ConnectionHttpService } from 'http-services/connection/connection.http-services';
+import { TestUtils } from 'system-tests/tests/utils/test-utils';
+import { ConnectTestUtils } from 'system-tests/tests/utils/connect-utils';
+import { bzeroTestTargetsToRun } from 'system-tests/tests/targets-to-run';
+import { getMockResultValue } from 'system-tests/tests/utils/jest-utils';
+import { ConfigService } from 'services/config/config.service';
+import { envMap } from 'cli-driver';
+import { PolicyHttpService } from 'http-services/policy/policy.http-services';
+import { Subject } from 'webshell-common-ts/http/v2/policy/types/subject.types';
+import { Environment } from 'webshell-common-ts/http/v2/policy/types/environment.types';
+import { VerbType } from 'webshell-common-ts/http/v2/policy/types/verb-type.types';
+import { cleanupTargetConnectPolicies } from 'system-tests/tests/system-test-cleanup';
+import { testIf } from 'system-tests/tests/utils/utils';
+import { ensureServiceAccountExistsForLogin, ensureServiceAccountRole } from 'system-tests/tests/system-test-setup';
+import { SubjectHttpService } from 'http-services/subject/subject.http-services';
 
 export const serviceAccountSuite = () => {
     describe('Service Account Suite', () => {

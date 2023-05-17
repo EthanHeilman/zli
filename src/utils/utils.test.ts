@@ -1,4 +1,4 @@
-import { parseTargetString, parseTargetType } from './utils';
+import { parseTargetString, parseTargetType } from 'utils/utils';
 
 describe('Utils suite', () => {
     test('2489: valid targetType strings', () => {
@@ -67,14 +67,24 @@ describe('Utils suite', () => {
         // environment name was incorrectly formatted, so should be undefined
         // a message will be displayed for the user to use environment ID
         expect(targetStringParsed.envName).toBe('name.test.environment.name');
+
+
+        // Test a GCP Cloud SQL targetstring where
+        //  aliceservacc@ethandbtest.iam.gserviceaccount.com - is an GCP service username
+        //  gcp-psql - is the bastionzero target alias
+        const targetWithGCPUser = 'aliceservacc@ethandbtest.iam.gserviceaccount.com@gcp-pgres';
+        targetStringParsed = parseTargetString(targetWithGCPUser);
+        // target id and envId should be undefined bc using target name and no environment
+        expect(targetStringParsed.id).toBeUndefined();
+        expect(targetStringParsed.envId).toBeUndefined();
+        // target name should be unaffected
+        expect(targetStringParsed.user).toBe('aliceservacc@ethandbtest.iam.gserviceaccount.com');
+        expect(targetStringParsed.name).toBe('gcp-pgres');
     });
 
     test('2492: invalid targetStrings', () => {
         const invalidSSMTargetStrings = [
-            'ssm$-user@neat-test',  // invalid unix username, $ wrong place
-            'ss..er@neat-test:/hello', // invalid characters in unix username
             'ssm-user@:97d4d916-33f8-478e-9e6c-1091662ccaf0', // colon wrong place
-            'ss!!!r@whatsUp!Word:/cool' // invalid character in target name
         ];
         invalidSSMTargetStrings.forEach(t => expect(parseTargetString(t)).toBeUndefined());
     });

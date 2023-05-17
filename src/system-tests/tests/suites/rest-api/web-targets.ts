@@ -1,7 +1,7 @@
-import { WebTargetHttpService } from '../../../../http-services/web-target/web-target.http-service';
-import { DigitalOceanBZeroTarget } from '../../../digital-ocean/digital-ocean-target.service.types';
-import { configService, logger, systemTestEnvId, systemTestUniqueId, testTargets } from '../../system-test';
-import { bzeroTestTargetsToRun } from '../../targets-to-run';
+import { WebTargetHttpService } from 'http-services/web-target/web-target.http-service';
+import { DigitalOceanBZeroTarget } from 'system-tests/digital-ocean/digital-ocean-target.service.types';
+import { configService, logger, systemTestEnvId, systemTestUniqueId, testTargets } from 'system-tests/tests/system-test';
+import { bzeroTestTargetsToRun } from 'system-tests/tests/targets-to-run';
 
 export const webTargetRestApiSuite = () => {
     describe('Web Target REST API Suite', () => {

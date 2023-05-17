@@ -1,8 +1,8 @@
-import { ClusterGroup } from '../../../../webshell-common-ts/http/v2/policy/types/cluster-group.types';
-import { PolicyHttpService } from '../../../http-services/policy/policy.http-services';
-import { ConfigService } from '../../../services/config/config.service';
-import { Logger } from '../../../services/logger/logger.service';
-import { cleanExit } from '../../clean-exit.handler';
+import { ClusterGroup } from 'webshell-common-ts/http/v2/policy/types/cluster-group.types';
+import { PolicyHttpService } from 'http-services/policy/policy.http-services';
+import { ConfigService } from 'services/config/config.service';
+import { Logger } from 'services/logger/logger.service';
+import { cleanExit } from 'handlers/clean-exit.handler';
 
 export async function addTargetGroupToPolicyHandler(targetGroupName: string, policyName: string, configService: ConfigService, logger: Logger) {
     // First get the existing policy

@@ -1,7 +1,7 @@
 import { promisify } from 'util';
 import childProcess from 'child_process';
 
-import { Release } from './helm.types';
+import { Release } from 'system-tests/tests/utils/helm/helm.types';
 
 const exec = promisify(childProcess.exec);
 

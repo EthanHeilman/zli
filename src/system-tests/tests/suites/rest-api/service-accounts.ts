@@ -1,9 +1,9 @@
-import { ServiceAccountHttpService } from '../../../../../src/http-services/service-account/service-account.http-services';
-import { configService, logger, RUN_AS_SERVICE_ACCOUNT, systemTestServiceAccount } from '../../system-test';
-import { MfaHttpService } from '../../../../../src/http-services/mfa/mfa.http-services';
-import { testIf } from '../../utils/utils';
-import { ensureServiceAccountRole } from '../../system-test-setup';
-import { SubjectHttpService } from '../../../../http-services/subject/subject.http-services';
+import { ServiceAccountHttpService } from 'http-services/service-account/service-account.http-services';
+import { configService, logger, RUN_AS_SERVICE_ACCOUNT, systemTestServiceAccount } from 'system-tests/tests/system-test';
+import { MfaHttpService } from 'http-services/mfa/mfa.http-services';
+import { testIf } from 'system-tests/tests/utils/utils';
+import { ensureServiceAccountRole } from 'system-tests/tests/system-test-setup';
+import { SubjectHttpService } from 'http-services/subject/subject.http-services';
 
 export const serviceAccountRestApiSuite = () => {
     describe('Service Account REST API Suite', () => {

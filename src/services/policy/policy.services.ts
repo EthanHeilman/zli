@@ -1,18 +1,18 @@
-import { PolicyHttpService } from '../../http-services/policy/policy.http-services';
-import { KubernetesPolicySummary } from '../../../webshell-common-ts/http/v2/policy/kubernetes/types/kubernetes-policy-summary.types';
-import { TargetConnectPolicySummary } from '../../../webshell-common-ts/http/v2/policy/target-connect/types/target-connect-policy-summary.types';
-import { ProxyPolicySummary } from '../../../webshell-common-ts/http/v2/policy/proxy/types/proxy-policy-summary.types';
-import { JustInTimePolicySummary } from '../../../webshell-common-ts/http/v2/policy/just-in-time/types/just-in-time-policy-summary.types';
-import { PolicyType } from '../../../webshell-common-ts/http/v2/policy/types/policy-type.types';
-import { ConfigService } from '../config/config.service';
-import { Logger } from '../logger/logger.service';
-import { UserHttpService } from '../..//http-services/user/user.http-services';
-import { OrganizationHttpService } from '../../http-services/organization/organization.http-services';
-import { UserSummary } from '../../../webshell-common-ts/http/v2/user/types/user-summary.types';
-import { GroupSummary } from '../../../webshell-common-ts/http/v2/organization/types/group-summary.types';
-import { SessionRecordingPolicySummary } from '../../../webshell-common-ts/http/v2/policy/session-recording/types/session-recording-policy-summary.types';
-import { ServiceAccountHttpService } from '../../../src/http-services/service-account/service-account.http-services';
-import { ServiceAccountSummary } from '../../../webshell-common-ts/http/v2/service-account/types/service-account-summary.types';
+import { PolicyHttpService } from 'http-services/policy/policy.http-services';
+import { KubernetesPolicySummary } from 'webshell-common-ts/http/v2/policy/kubernetes/types/kubernetes-policy-summary.types';
+import { TargetConnectPolicySummary } from 'webshell-common-ts/http/v2/policy/target-connect/types/target-connect-policy-summary.types';
+import { ProxyPolicySummary } from 'webshell-common-ts/http/v2/policy/proxy/types/proxy-policy-summary.types';
+import { JustInTimePolicySummary } from 'webshell-common-ts/http/v2/policy/just-in-time/types/just-in-time-policy-summary.types';
+import { PolicyType } from 'webshell-common-ts/http/v2/policy/types/policy-type.types';
+import { ConfigService } from 'services/config/config.service';
+import { Logger } from 'services/logger/logger.service';
+import { UserHttpService } from 'http-services/user/user.http-services';
+import { OrganizationHttpService } from 'http-services/organization/organization.http-services';
+import { UserSummary } from 'webshell-common-ts/http/v2/user/types/user-summary.types';
+import { GroupSummary } from 'webshell-common-ts/http/v2/organization/types/group-summary.types';
+import { SessionRecordingPolicySummary } from 'webshell-common-ts/http/v2/policy/session-recording/types/session-recording-policy-summary.types';
+import { ServiceAccountHttpService } from 'http-services/service-account/service-account.http-services';
+import { ServiceAccountSummary } from 'webshell-common-ts/http/v2/service-account/types/service-account-summary.types';
 
 export async function getPolicyFromName(policyName: string, policyHttpService: PolicyHttpService) :
 Promise<KubernetesPolicySummary | TargetConnectPolicySummary | ProxyPolicySummary | JustInTimePolicySummary | SessionRecordingPolicySummary> {

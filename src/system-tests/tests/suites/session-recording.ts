@@ -1,25 +1,25 @@
-import { SessionRecordingPolicySummary } from '../../../../webshell-common-ts/http/v2/policy/session-recording/types/session-recording-policy-summary.types';
-import { TargetConnectPolicySummary } from '../../../../webshell-common-ts/http/v2/policy/target-connect/types/target-connect-policy-summary.types';
-import { Environment } from '../../../../webshell-common-ts/http/v2/policy/types/environment.types';
-import { Subject } from '../../../../webshell-common-ts/http/v2/policy/types/subject.types';
-import { VerbType } from '../../../../webshell-common-ts/http/v2/policy/types/verb-type.types';
-import { PolicyHttpService } from '../../../http-services/policy/policy.http-services';
-import { SessionRecordingHttpService } from '../../../http-services/session-recording/session-recording.http-services';
-import { getDOImageName } from '../../digital-ocean/digital-ocean-target.service.types';
+import { SessionRecordingPolicySummary } from 'webshell-common-ts/http/v2/policy/session-recording/types/session-recording-policy-summary.types';
+import { TargetConnectPolicySummary } from 'webshell-common-ts/http/v2/policy/target-connect/types/target-connect-policy-summary.types';
+import { Environment } from 'webshell-common-ts/http/v2/policy/types/environment.types';
+import { Subject } from 'webshell-common-ts/http/v2/policy/types/subject.types';
+import { VerbType } from 'webshell-common-ts/http/v2/policy/types/verb-type.types';
+import { PolicyHttpService } from 'http-services/policy/policy.http-services';
+import { SessionRecordingHttpService } from 'http-services/session-recording/session-recording.http-services';
+import { getDOImageName } from 'system-tests/digital-ocean/digital-ocean-target.service.types';
 import {
     configService,
     logger,
     systemTestEnvId,
     systemTestPolicyTemplate,
     systemTestUniqueId
-} from '../system-test';
-import { TestUtils } from '../utils/test-utils';
-import { ConnectionHttpService } from '../../../http-services/connection/connection.http-services';
-import { TestTarget } from '../system-test.types';
-import { ConnectTestResult, ConnectTestUtils } from '../utils/connect-utils';
-import { checkAllSettledPromise, checkAllSettledPromiseRejected } from '../utils/utils';
-import * as CleanExitHandler from '../../../handlers/clean-exit.handler';
-import { bzeroTestTargetsToRun } from '../targets-to-run';
+} from 'system-tests/tests/system-test';
+import { TestUtils } from 'system-tests/tests/utils/test-utils';
+import { ConnectionHttpService } from 'http-services/connection/connection.http-services';
+import { TestTarget } from 'system-tests/tests/system-test.types';
+import { ConnectTestResult, ConnectTestUtils } from 'system-tests/tests/utils/connect-utils';
+import { checkAllSettledPromise, checkAllSettledPromiseRejected } from 'system-tests/tests/utils/utils';
+import * as CleanExitHandler from 'handlers/clean-exit.handler';
+import { bzeroTestTargetsToRun } from 'system-tests/tests/targets-to-run';
 
 export const sessionRecordingSuite = () => {
     describe('Session Recording Suite', () => {

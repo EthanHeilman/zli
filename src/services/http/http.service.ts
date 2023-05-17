@@ -1,11 +1,11 @@
 import got, { Got, HTTPError } from 'got/dist/source';
 import { Dictionary } from 'lodash';
-import { ConfigService } from '../config/config.service';
+import { ConfigService } from 'services/config/config.service';
 import FormData from 'form-data';
-import { Logger } from '../logger/logger.service';
+import { Logger } from 'services/logger/logger.service';
 import { URLSearchParams } from 'url';
 import {Cookie, CookieJar} from 'tough-cookie';
-import { customJsonParser } from '../..//utils/utils';
+import { customJsonParser } from 'utils/utils';
 
 export class HttpService {
     // ref for got: https://github.com/sindresorhus/got

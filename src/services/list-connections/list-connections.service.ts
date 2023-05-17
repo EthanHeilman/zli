@@ -1,14 +1,14 @@
-import { SpaceHttpService } from '../../http-services/space/space.http-services';
-import { BzeroTargetHttpService } from '../../http-services/targets/bzero/bzero.http-services';
-import { SsmTargetHttpService } from '../../http-services/targets/ssm/ssm-target.http-services';
-import { ConnectionState } from '../../../webshell-common-ts/http/v2/connection/types/connection-state.types';
-import { getCliSpace } from '../../utils/shell-utils';
-import { ConfigService } from '../config/config.service';
-import { Logger } from '../logger/logger.service';
-import { DbConnectionInfo, KubeConnectionInfo, ShellConnectionInfo } from './list-connections.service.types';
-import { ConnectionHttpService } from '../../http-services/connection/connection.http-services';
-import { SsmTargetSummary } from '../../../webshell-common-ts/http/v2/target/ssm/types/ssm-target-summary.types';
-import { BzeroAgentSummary } from '../../../webshell-common-ts/http/v2/target/bzero/types/bzero-agent-summary.types';
+import { SpaceHttpService } from 'http-services/space/space.http-services';
+import { BzeroTargetHttpService } from 'http-services/targets/bzero/bzero.http-services';
+import { SsmTargetHttpService } from 'http-services/targets/ssm/ssm-target.http-services';
+import { ConnectionState } from 'webshell-common-ts/http/v2/connection/types/connection-state.types';
+import { getCliSpace } from 'utils/shell-utils';
+import { ConfigService } from 'services/config/config.service';
+import { Logger } from 'services/logger/logger.service';
+import { DbConnectionInfo, KubeConnectionInfo, ShellConnectionInfo } from 'services/list-connections/list-connections.service.types';
+import { ConnectionHttpService } from 'http-services/connection/connection.http-services';
+import { SsmTargetSummary } from 'webshell-common-ts/http/v2/target/ssm/types/ssm-target-summary.types';
+import { BzeroAgentSummary } from 'webshell-common-ts/http/v2/target/bzero/types/bzero-agent-summary.types';
 
 export async function listOpenShellConnections(
     configService: ConfigService,

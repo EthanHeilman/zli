@@ -1,12 +1,12 @@
-import { Logger } from '../../services/logger/logger.service';
-import { ConfigService } from '../../services/config/config.service';
-import { UserHttpService } from '../../../src/http-services/user/user.http-services';
-import { SubjectHttpService } from '../../../src/http-services/subject/subject.http-services';
-import { cleanExit } from '../clean-exit.handler';
-import { MfaActionRequired } from '../../../webshell-common-ts/http/v2/mfa/types/mfa-action-required.types';
-import { MfaHttpService } from '../../http-services/mfa/mfa.http-services';
-import { OAuthService } from '../../../src/services/oauth/oauth.service';
-import { extractMfaSecretFromUrl } from '../../../src/utils/utils';
+import { Logger } from 'services/logger/logger.service';
+import { ConfigService } from 'services/config/config.service';
+import { UserHttpService } from 'http-services/user/user.http-services';
+import { SubjectHttpService } from 'http-services/subject/subject.http-services';
+import { cleanExit } from 'handlers/clean-exit.handler';
+import { MfaActionRequired } from 'webshell-common-ts/http/v2/mfa/types/mfa-action-required.types';
+import { MfaHttpService } from 'http-services/mfa/mfa.http-services';
+import { OAuthService } from 'services/oauth/oauth.service';
+import { extractMfaSecretFromUrl } from 'utils/utils';
 import totp from 'totp-generator';
 
 export async function registerHandler(mfaSecret: string, configService: ConfigService, logger: Logger) {

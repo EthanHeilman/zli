@@ -1,4 +1,4 @@
-import { DaemonConfig } from '../../../services/config/config.service.types';
+import { DaemonConfig } from 'services/config/config.service.types';
 
 export type DaemonStatusType = 'no_daemon_running' | 'daemon_quit_unexpectedly' | 'daemon_is_running';
 

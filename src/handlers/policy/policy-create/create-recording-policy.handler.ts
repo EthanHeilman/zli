@@ -1,14 +1,14 @@
 import yargs from 'yargs';
-import { ConfigService } from '../../../services/config/config.service';
-import { Logger } from '../../../services/logger/logger.service';
-import { cleanExit } from '../../clean-exit.handler';
-import { createRecordingPolicyArgs } from './create-policy.command-builder';
-import { getGroupsByName, getSubjectsByEmail } from '../../../utils/policy-utils';
-import { PolicyHttpService } from '../../../http-services/policy/policy.http-services';
-import { OrganizationHttpService } from '../../../http-services/organization/organization.http-services';
-import { Subject } from '../../../../webshell-common-ts/http/v2/policy/types/subject.types';
-import { Group } from '../../../../webshell-common-ts/http/v2/policy/types/group.types';
-import { SubjectHttpService } from '../../../../src/http-services/subject/subject.http-services';
+import { ConfigService } from 'services/config/config.service';
+import { Logger } from 'services/logger/logger.service';
+import { cleanExit } from 'handlers/clean-exit.handler';
+import { createRecordingPolicyArgs } from 'handlers/policy/policy-create/create-policy.command-builder';
+import { getGroupsByName, getSubjectsByEmail } from 'utils/policy-utils';
+import { PolicyHttpService } from 'http-services/policy/policy.http-services';
+import { OrganizationHttpService } from 'http-services/organization/organization.http-services';
+import { Subject } from 'webshell-common-ts/http/v2/policy/types/subject.types';
+import { Group } from 'webshell-common-ts/http/v2/policy/types/group.types';
+import { SubjectHttpService } from 'http-services/subject/subject.http-services';
 
 export async function createRecordingPolicyHandler(argv: yargs.Arguments<createRecordingPolicyArgs>, configService: ConfigService, logger: Logger){
     const policyService = new PolicyHttpService(configService, logger);

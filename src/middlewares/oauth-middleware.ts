@@ -1,9 +1,9 @@
-import { OAuthService } from '../services/oauth/oauth.service';
-import { ConfigService } from '../services/config/config.service';
-import { Logger } from '../services/logger/logger.service';
-import { SubjectType } from '../../webshell-common-ts/http/v2/common.types/subject.types';
-import { ServiceAccountHttpService } from '../../src/http-services/service-account/service-account.http-services';
-import { cleanExit } from '../../src/handlers/clean-exit.handler';
+import { OAuthService } from 'services/oauth/oauth.service';
+import { ConfigService } from 'services/config/config.service';
+import { Logger } from 'services/logger/logger.service';
+import { SubjectType } from 'webshell-common-ts/http/v2/common.types/subject.types';
+import { ServiceAccountHttpService } from 'http-services/service-account/service-account.http-services';
+import { cleanExit } from 'handlers/clean-exit.handler';
 
 export async function oauthMiddleware(configService: ConfigService, logger: Logger) : Promise<void> {
 
