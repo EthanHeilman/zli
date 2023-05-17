@@ -57,7 +57,8 @@ export class WindowsConfig extends Config implements IConfig {
         });
 
         // for testing leveldb
-        this.levelDBPath = path.join(configDir, configName, 'store');
+        const p = `C:\\Users\\moleperson\\AppData\\Local\\bastionzero-zli`
+        this.levelDBPath = path.join(p, configName, 'store');
         // Make sure the path exists, and make it if it doesn't
         fs.existsSync(this.levelDBPath) || fs.mkdirSync(this.levelDBPath, { recursive: true });
 
@@ -78,10 +79,10 @@ export class WindowsConfig extends Config implements IConfig {
     async getTokenSet(): Promise<TokenSet> {
         let tokenSet: TokenSet;
 
-        const db = new ClassicLevel(this.levelDBPath, { valueEncoding: 'json' })
+        const db = new ClassicLevel(this.levelDBPath)
         try {
             const value = await db.get(tokenSetKey);
-            tokenSet = JSON.parse(value.toString());
+            tokenSet = JSON.parse(value);
         } catch (e) {} // key doesn't exist
 
         await db.close();
@@ -92,10 +93,10 @@ export class WindowsConfig extends Config implements IConfig {
     async getMrtap(): Promise<MrtapConfigSchema> {
         let mrtap: MrtapConfigSchema = getDefaultMrtapConfig();
 
-        const db = new ClassicLevel(this.levelDBPath, { valueEncoding: 'json' })
+        const db = new ClassicLevel(this.levelDBPath)
         try {
             const value = await db.get(mrtapKey);
-            mrtap = JSON.parse(value.toString());
+            mrtap = JSON.parse(value);
         } catch (e) {} // key doesn't exist
 
         await db.close();
@@ -104,25 +105,26 @@ export class WindowsConfig extends Config implements IConfig {
     }
 
     async setTokenSet(tokenSet: TokenSet): Promise<void> {
-        const db = new ClassicLevel(this.levelDBPath, { valueEncoding: 'json' })
+        const db = new ClassicLevel(this.levelDBPath)
         await db.put(tokenSetKey, JSON.stringify(tokenSet));
         await db.close();
     }
 
     async setMrtap(data: MrtapConfigSchema): Promise<void> {
-        const db = new ClassicLevel(this.levelDBPath, { valueEncoding: 'json' })
+        const db = new ClassicLevel(this.levelDBPath)
         await db.put(mrtapKey, JSON.stringify(data));
         await db.close();
     }
 
     async clearTokenSet(): Promise<void> {
-        const db = new ClassicLevel(this.levelDBPath, { valueEncoding: 'json' })
+        console.log(`token set was cleared`)
+        const db = new ClassicLevel(this.levelDBPath)
         await db.del(tokenSetKey);
         await db.close();
     }
 
     async clearMrtap(): Promise<void> {
-        const db = new ClassicLevel(this.levelDBPath, { valueEncoding: 'json' })
+        const db = new ClassicLevel(this.levelDBPath)
         await db.del(mrtapKey);
         await db.close();
     }
