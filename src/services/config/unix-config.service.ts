@@ -11,7 +11,7 @@ import { IConfig } from 'services/config/config.service';
 import { DaemonConfigs, DbConfig, GlobalKubeConfig, KubeConfig, WebConfig } from 'services/config/config.service.types';
 import { TokenSet } from 'openid-client';
 import fs from 'fs';
-const { ClassicLevel } = require('classic-level')
+import { ClassicLevel } from 'classic-level';
 import { mrtapKey, tokenSetKey, whoamiKey } from './leveldb';
 
 export class UnixConfig extends Config implements IConfig  {
@@ -183,10 +183,10 @@ export class UnixConfig extends Config implements IConfig  {
     async getTokenSet(): Promise<TokenSet> {
         let tokenSet: TokenSet;
 
-        const db = new ClassicLevel(this.levelDBPath, { valueEncoding: 'json' })
+        const db = new ClassicLevel(this.levelDBPath)
         try {
             const value = await db.get(tokenSetKey);
-            tokenSet = JSON.parse(value.toString());
+            tokenSet = JSON.parse(value);
         } catch (e) {} // key doesn't exist
 
         await db.close();
@@ -197,10 +197,10 @@ export class UnixConfig extends Config implements IConfig  {
     async getMrtap(): Promise<MrtapConfigSchema> {
         let mrtap: MrtapConfigSchema = getDefaultMrtapConfig();
 
-        const db = new ClassicLevel(this.levelDBPath, { valueEncoding: 'json' })
+        const db = new ClassicLevel(this.levelDBPath)
         try {
             const value = await db.get(mrtapKey);
-            mrtap = JSON.parse(value.toString());
+            mrtap = JSON.parse(value);
         } catch (e) {} // key doesn't exist
 
         await db.close();
@@ -209,25 +209,25 @@ export class UnixConfig extends Config implements IConfig  {
     }
 
     async setTokenSet(tokenSet: TokenSet): Promise<void> {
-        const db = new ClassicLevel(this.levelDBPath, { valueEncoding: 'json' })
+        const db = new ClassicLevel(this.levelDBPath)
         await db.put(tokenSetKey, JSON.stringify(tokenSet));
         await db.close();
     }
 
     async setMrtap(data: MrtapConfigSchema): Promise<void> {
-        const db = new ClassicLevel(this.levelDBPath, { valueEncoding: 'json' })
+        const db = new ClassicLevel(this.levelDBPath)
         await db.put(mrtapKey, JSON.stringify(data));
         await db.close();
     }
 
     async clearTokenSet(): Promise<void> {
-        const db = new ClassicLevel(this.levelDBPath, { valueEncoding: 'json' })
+        const db = new ClassicLevel(this.levelDBPath)
         await db.del(tokenSetKey);
         await db.close();
     }
 
     async clearMrtap(): Promise<void> {
-        const db = new ClassicLevel(this.levelDBPath, { valueEncoding: 'json' })
+        const db = new ClassicLevel(this.levelDBPath)
         await db.del(mrtapKey);
         await db.close();
     }
