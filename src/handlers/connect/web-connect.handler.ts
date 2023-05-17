@@ -1,13 +1,13 @@
-import { ConfigService } from '../../services/config/config.service';
-import { Logger } from '../../services/logger/logger.service';
-import { cleanExit } from '../clean-exit.handler';
-import { LoggerConfigService } from '../../services/logger/logger-config.service';
+import { ConfigService } from 'services/config/config.service';
+import { Logger } from 'services/logger/logger.service';
+import { cleanExit } from 'handlers/clean-exit.handler';
+import { LoggerConfigService } from 'services/logger/logger-config.service';
 import yargs from 'yargs';
 import open from 'open';
-import { handleServerStart, startDaemonInDebugMode, copyExecutableToLocalDir, getBaseDaemonEnv, getOrDefaultLocalhost, getOrDefaultLocalport, killLocalPortAndPid, spawnDaemonInBackground } from '../../utils/daemon-utils';
-import { connectArgs } from './connect.command-builder';
-import { WebTargetHttpService } from '../../http-services/web-target/web-target.http-service';
-import { CreateUniversalConnectionResponse } from '../../../webshell-common-ts/http/v2/connection/responses/create-universal-connection.response';
+import { handleServerStart, startDaemonInDebugMode, copyExecutableToLocalDir, getBaseDaemonEnv, getOrDefaultLocalhost, getOrDefaultLocalport, killLocalPortAndPid, spawnDaemonInBackground } from 'utils/daemon-utils';
+import { connectArgs } from 'handlers/connect/connect.command-builder';
+import { WebTargetHttpService } from 'http-services/web-target/web-target.http-service';
+import { CreateUniversalConnectionResponse } from 'webshell-common-ts/http/v2/connection/responses/create-universal-connection.response';
 
 
 export async function webConnectHandler(

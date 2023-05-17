@@ -1,12 +1,12 @@
-import { ProxyPolicySummary } from '../../../../../../webshell-common-ts/http/v2/policy/proxy/types/proxy-policy-summary.types';
-import { PolicyType } from '../../../../../../webshell-common-ts/http/v2/policy/types/policy-type.types';
-import { Subject } from '../../../../../../webshell-common-ts/http/v2/policy/types/subject.types';
-import { TargetType } from '../../../../../../webshell-common-ts/http/v2/target/types/target.types';
-import { PolicyHttpService } from '../../../../../http-services/policy/policy.http-services';
-import { EnvironmentHttpService } from '../../../../../http-services/environment/environment.http-services';
-import { configService, logger, systemTestEnvId, systemTestPolicyTemplate } from '../../../system-test';
-import { restApiPolicyDescriptionTemplate } from './policies';
-import { callZli } from '../../../utils/zli-utils';
+import { ProxyPolicySummary } from 'webshell-common-ts/http/v2/policy/proxy/types/proxy-policy-summary.types';
+import { PolicyType } from 'webshell-common-ts/http/v2/policy/types/policy-type.types';
+import { Subject } from 'webshell-common-ts/http/v2/policy/types/subject.types';
+import { TargetType } from 'webshell-common-ts/http/v2/target/types/target.types';
+import { PolicyHttpService } from 'http-services/policy/policy.http-services';
+import { EnvironmentHttpService } from 'http-services/environment/environment.http-services';
+import { configService, logger, systemTestEnvId, systemTestPolicyTemplate } from 'system-tests/tests/system-test';
+import { restApiPolicyDescriptionTemplate } from 'system-tests/tests/suites/rest-api/policies/policies';
+import { callZli } from 'system-tests/tests/utils/zli-utils';
 
 export const proxyPolicySuite = () => {
     describe('Proxy Policies Suite', () => {

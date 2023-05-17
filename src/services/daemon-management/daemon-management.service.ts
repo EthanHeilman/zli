@@ -1,8 +1,8 @@
-import { DaemonConfig, DaemonConfigs, DaemonConfigType, DbConfig, getDefaultDbConfig, getDefaultKubeConfig, KubeConfig } from '../config/config.service.types';
-import { ProcessManagerService } from '../process-manager/process-manager.service';
-import { DaemonIsRunningStatus, DaemonRunningStatus, DaemonStatus } from './types/daemon-status.types';
-import { KillProcessResultType } from '../process-manager/process-manager.service.types';
-import { DisconnectResult } from './types/disconnect-result.types';
+import { DaemonConfig, DaemonConfigs, DaemonConfigType, DbConfig, getDefaultDbConfig, getDefaultKubeConfig, KubeConfig } from 'services/config/config.service.types';
+import { ProcessManagerService } from 'services/process-manager/process-manager.service';
+import { DaemonIsRunningStatus, DaemonRunningStatus, DaemonStatus } from 'services/daemon-management/types/daemon-status.types';
+import { KillProcessResultType } from 'services/process-manager/process-manager.service.types';
+import { DisconnectResult } from 'services/daemon-management/types/disconnect-result.types';
 
 export interface DaemonStore<T extends DaemonConfig> {
     setDaemons(daemons: DaemonConfigs<T>): void;

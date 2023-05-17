@@ -1,14 +1,14 @@
-import { ConfigService } from '../../../services/config/config.service';
-import { Logger } from '../../../services/logger/logger.service';
+import { ConfigService } from 'services/config/config.service';
+import { Logger } from 'services/logger/logger.service';
 import yargs from 'yargs';
-import { policyArgs } from './policy-list.command-builder';
-import { PolicyHttpService } from '../../../http-services/policy/policy.http-services';
-import { getTableOfProxyPolicies } from '../../../utils/utils';
-import { EnvironmentSummary } from '../../../../webshell-common-ts/http/v2/environment/types/environment-summary.responses';
-import { DbTargetHttpService } from '../../../http-services/db-target/db-target.http-service';
-import { WebTargetHttpService } from '../../../http-services/web-target/web-target.http-service';
-import { EnvironmentHttpService } from '../../../http-services/environment/environment.http-services';
-import { getPolicySubjectDisplayInfo } from '../../../services/policy/policy.services';
+import { policyArgs } from 'handlers/policy/policy-list/policy-list.command-builder';
+import { PolicyHttpService } from 'http-services/policy/policy.http-services';
+import { getTableOfProxyPolicies } from 'utils/utils';
+import { EnvironmentSummary } from 'webshell-common-ts/http/v2/environment/types/environment-summary.responses';
+import { DbTargetHttpService } from 'http-services/db-target/db-target.http-service';
+import { WebTargetHttpService } from 'http-services/web-target/web-target.http-service';
+import { EnvironmentHttpService } from 'http-services/environment/environment.http-services';
+import { getPolicySubjectDisplayInfo } from 'services/policy/policy.services';
 
 export async function listProxyPoliciesHandler(
     argv: yargs.Arguments<policyArgs>,

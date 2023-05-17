@@ -1,7 +1,7 @@
-import { EnvironmentSummary } from '../../../../../webshell-common-ts/http/v2/environment/types/environment-summary.responses';
-import { CreateEnvironmentResponse } from '../../../../../webshell-common-ts/http/v2/environment/responses/create-environment.responses';
-import { configService, logger, resourceNamePrefix, systemTestUniqueId } from '../../system-test';
-import { EnvironmentHttpService } from '../../../../http-services/environment/environment.http-services';
+import { EnvironmentSummary } from 'webshell-common-ts/http/v2/environment/types/environment-summary.responses';
+import { CreateEnvironmentResponse } from 'webshell-common-ts/http/v2/environment/responses/create-environment.responses';
+import { configService, logger, resourceNamePrefix, systemTestUniqueId } from 'system-tests/tests/system-test';
+import { EnvironmentHttpService } from 'http-services/environment/environment.http-services';
 
 export const environmentsSuite = () => {
     describe('Environments Suite', () => {

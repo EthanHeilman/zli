@@ -1,11 +1,11 @@
 import chalk from 'chalk';
 import got from 'got/dist/source';
 import { SemVer, gt } from 'semver';
-import { cleanExit } from '../handlers/clean-exit.handler';
+import { cleanExit } from 'handlers/clean-exit.handler';
 
-import { name as appName, version } from '../../package.json';
-import { Logger } from '../services/logger/logger.service';
-import { ConfigService } from '../services/config/config.service';
+import { name as appName, version } from 'package.json';
+import { Logger } from 'services/logger/logger.service';
+import { ConfigService } from 'services/config/config.service';
 
 export async function checkVersionMiddleware(configService: ConfigService, logger: Logger) {
     await new CheckVersionMiddleware().checkNewVersion(configService, logger);

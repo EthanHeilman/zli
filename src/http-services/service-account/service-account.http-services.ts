@@ -1,13 +1,13 @@
-import { CreateServiceAccountRequest } from '../../../webshell-common-ts/http/v2/service-account/requests/create-service-account.requests';
-import { LoginServiceAccountRequest } from '../../../webshell-common-ts/http/v2/service-account/requests/login-service-account.requests';
-import { ServiceAccountSummary } from '../../../webshell-common-ts/http/v2/service-account/types/service-account-summary.types';
+import { CreateServiceAccountRequest } from 'webshell-common-ts/http/v2/service-account/requests/create-service-account.requests';
+import { LoginServiceAccountRequest } from 'webshell-common-ts/http/v2/service-account/requests/login-service-account.requests';
+import { ServiceAccountSummary } from 'webshell-common-ts/http/v2/service-account/types/service-account-summary.types';
 
-import { CreateServiceAccountResponse } from '../../../webshell-common-ts/http/v2/service-account/responses/create-service-account.responses';
-import { UpdateServiceAccountRequest } from '../../../webshell-common-ts/http/v2/service-account/requests/update-service-account.requests';
+import { CreateServiceAccountResponse } from 'webshell-common-ts/http/v2/service-account/responses/create-service-account.responses';
+import { UpdateServiceAccountRequest } from 'webshell-common-ts/http/v2/service-account/requests/update-service-account.requests';
 
-import { ConfigService } from '../../services/config/config.service';
-import { HttpService } from '../../services/http/http.service';
-import { Logger } from '../../services/logger/logger.service';
+import { ConfigService } from 'services/config/config.service';
+import { HttpService } from 'services/http/http.service';
+import { Logger } from 'services/logger/logger.service';
 import { Dictionary } from 'lodash';
 import { Cookie } from 'tough-cookie';
 

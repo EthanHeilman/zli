@@ -1,8 +1,8 @@
-import { SubjectSummary } from '../../../webshell-common-ts/http/v2/subject/types/subject-summary.types';
-import { UpdateSubjectRequest } from '../../../webshell-common-ts/http/v2/subject/requests/update-subject.requests';
-import { ConfigService } from '../../services/config/config.service';
-import { HttpService } from '../../services/http/http.service';
-import { Logger } from '../../services/logger/logger.service';
+import { SubjectSummary } from 'webshell-common-ts/http/v2/subject/types/subject-summary.types';
+import { UpdateSubjectRequest } from 'webshell-common-ts/http/v2/subject/requests/update-subject.requests';
+import { ConfigService } from 'services/config/config.service';
+import { HttpService } from 'services/http/http.service';
+import { Logger } from 'services/logger/logger.service';
 
 export class SubjectHttpService extends HttpService
 {

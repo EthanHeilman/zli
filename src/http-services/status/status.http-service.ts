@@ -1,6 +1,6 @@
 import got, { Got } from 'got/dist/source';
-import { Logger } from '../../services/logger/logger.service';
-import { ConfigService } from '../../services/config/config.service';
+import { Logger } from 'services/logger/logger.service';
+import { ConfigService } from 'services/config/config.service';
 
 interface connectionServiceUrlResponse {
     connectionServiceUrl: string;

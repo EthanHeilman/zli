@@ -1,4 +1,4 @@
-import { TranscriptMessage } from './consoleWithTranscript.types';
+import { TranscriptMessage } from 'services/consoleWithTranscript/consoleWithTranscript.types';
 
 import { Chalk } from 'chalk';
 

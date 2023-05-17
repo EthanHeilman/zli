@@ -1,10 +1,10 @@
-import { ConfigService } from '../../../services/config/config.service';
-import { Logger } from '../../../services/logger/logger.service';
-import { cleanExit } from '../../clean-exit.handler';
-import { getTableOfUsers } from '../../../utils/utils';
+import { ConfigService } from 'services/config/config.service';
+import { Logger } from 'services/logger/logger.service';
+import { cleanExit } from 'handlers/clean-exit.handler';
+import { getTableOfUsers } from 'utils/utils';
 import yargs from 'yargs';
-import { listUserArgs } from './list-users.command-builder';
-import { UserHttpService } from '../../../http-services/user/user.http-services';
+import { listUserArgs } from 'handlers/policy/policy-user/list-users.command-builder';
+import { UserHttpService } from 'http-services/user/user.http-services';
 
 export async function listUsersHandler(
     argv: yargs.Arguments<listUserArgs>,

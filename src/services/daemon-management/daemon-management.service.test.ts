@@ -1,10 +1,10 @@
 import { randomUUID } from 'crypto';
 import { MockProxy, mock } from 'jest-mock-extended';
-import { mapToArrayTuples } from '../../utils/unit-test-utils';
-import { DaemonConfig, DaemonConfigs, getDefaultDbConfig, getDefaultKubeConfig } from '../config/config.service.types';
-import { DaemonManagementService, DaemonStore, LEGACY_KEY_STRING, ProcessManager } from './daemon-management.service';
-import { DaemonStatus } from './types/daemon-status.types';
-import { DisconnectResult } from './types/disconnect-result.types';
+import { mapToArrayTuples } from 'utils/unit-test-utils';
+import { DaemonConfig, DaemonConfigs, getDefaultDbConfig, getDefaultKubeConfig } from 'services/config/config.service.types';
+import { DaemonManagementService, DaemonStore, LEGACY_KEY_STRING, ProcessManager } from 'services/daemon-management/daemon-management.service';
+import { DaemonStatus } from 'services/daemon-management/types/daemon-status.types';
+import { DisconnectResult } from 'services/daemon-management/types/disconnect-result.types';
 
 // Create mapping objects for test rails case IDs
 

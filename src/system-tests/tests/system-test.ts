@@ -1,55 +1,56 @@
 import path from 'path';
 
-import { envMap } from '../../cli-driver';
-import { DigitalOceanBZeroTarget } from '../digital-ocean/digital-ocean-target.service.types';
-import { LoggerConfigService } from '../../services/logger/logger-config.service';
-import { Logger } from '../../services/logger/logger.service';
-import { ConfigService } from '../../services/config/config.service';
-import { randomAlphaNumericString } from '../../utils/utils';
-import { listTargetsSuite } from './suites/list-targets';
-import { versionSuite } from './suites/version';
-import { RegisteredDigitalOceanKubernetesCluster } from '../digital-ocean/digital-ocean-kube.service.types';
-import { kubeSuite } from './suites/kube';
-import { checkAllSettledPromise } from './utils/utils';
-import { NewApiKeyResponse } from '../../../webshell-common-ts/http/v2/api-key/responses/new-api-key.responses';
-import { TestTarget } from './system-test.types';
-import { EnvironmentHttpService } from '../../http-services/environment/environment.http-services';
-import { iperfSuite } from './suites/iperf';
-import { extraBzeroTestTargetsToRun, bzeroTestTargetsToRun, initRegionalTargetsTestConfig } from './targets-to-run';
-import { setupDOTestCluster, createDOTestTargets, setupSystemTestApiKeys, ensureServiceAccountExistsForLogin, ensureServiceAccountRole } from './system-test-setup';
-import { cleanupDOTestCluster, cleanupDOTestTargets, cleanupSystemTestApiKeys } from './system-test-cleanup';
-import { apiKeySuite } from './suites/rest-api/api-keys';
-import { organizationSuite } from './suites/rest-api/organization';
-import { environmentsSuite } from './suites/rest-api/environments';
-import { policySuite } from './suites/rest-api/policies/policies';
-import { groupsSuite } from './suites/groups';
-import { callZli, mockCleanExit } from './utils/zli-utils';
-import { UserHttpService } from '../../http-services/user/user.http-services';
-import { bzeroTargetRestApiSuite } from './suites/rest-api/bzero-targets';
-import { kubeClusterRestApiSuite } from './suites/rest-api/kube-targets';
-import { databaseTargetRestApiSuite } from './suites/rest-api/database-targets';
-import { webTargetRestApiSuite } from './suites/rest-api/web-targets';
-import { dynamicAccessConfigRestApiSuite } from './suites/rest-api/dynamic-access-configs';
-import { agentContainerSuite } from './suites/agent-container';
-import { userRestApiSuite } from './suites/rest-api/users';
-import { spacesRestApiSuite } from './suites/rest-api/spaces';
-import { mfaSuite } from './suites/rest-api/mfa';
-import { eventsRestApiSuite } from './suites/rest-api/events';
-import { webSuite } from './suites/web';
-import { dbSuite } from './suites/db';
-import { agentRecoverySuite } from './suites/agent-recovery';
-import { connectSuite } from './suites/connect';
-import { sessionRecordingSuite } from './suites/session-recording';
-import { sshSuite } from './suites/ssh';
-import { dynamicAccessSuite } from './suites/dynamic-access';
-import { sendLogsSuite } from './suites/send-logs';
-import { clearAllTimeouts } from './utils/test-utils';
-import { SubjectHttpService } from '../../../src/http-services/subject/subject.http-services';
-import { serviceAccountRestApiSuite } from './suites/rest-api/service-accounts';
-import { serviceAccountSuite } from './suites/service-account';
-import { UserSummary } from '../../../webshell-common-ts/http/v2/user/types/user-summary.types';
-import { ServiceAccountSummary } from '../../../webshell-common-ts/http/v2/service-account/types/service-account-summary.types';
-import { ServiceAccountHttpService } from '../..//http-services/service-account/service-account.http-services';
+import { envMap } from 'cli-driver';
+import { DigitalOceanBZeroTarget } from 'system-tests/digital-ocean/digital-ocean-target.service.types';
+import { LoggerConfigService } from 'services/logger/logger-config.service';
+import { Logger } from 'services/logger/logger.service';
+import { ConfigService } from 'services/config/config.service';
+import { randomAlphaNumericString } from 'utils/utils';
+import { listTargetsSuite } from 'system-tests/tests/suites/list-targets';
+import { versionSuite } from 'system-tests/tests/suites/version';
+import { RegisteredDigitalOceanKubernetesCluster } from 'system-tests/digital-ocean/digital-ocean-kube.service.types';
+import { kubeSuite } from 'system-tests/tests/suites/kube';
+import { checkAllSettledPromise } from 'system-tests/tests/utils/utils';
+import { NewApiKeyResponse } from 'webshell-common-ts/http/v2/api-key/responses/new-api-key.responses';
+import { TestTarget } from 'system-tests/tests/system-test.types';
+import { EnvironmentHttpService } from 'http-services/environment/environment.http-services';
+import { iperfSuite } from 'system-tests/tests/suites/iperf';
+import { extraBzeroTestTargetsToRun, bzeroTestTargetsToRun, initRegionalTargetsTestConfig } from 'system-tests/tests/targets-to-run';
+import { setupDOTestCluster, createDOTestTargets, setupSystemTestApiKeys, ensureServiceAccountExistsForLogin, ensureServiceAccountRole } from 'system-tests/tests/system-test-setup';
+import { cleanupDOTestCluster, cleanupDOTestTargets, cleanupSystemTestApiKeys } from 'system-tests/tests/system-test-cleanup';
+import { apiKeySuite } from 'system-tests/tests/suites/rest-api/api-keys';
+import { organizationSuite } from 'system-tests/tests/suites/rest-api/organization';
+import { environmentsSuite } from 'system-tests/tests/suites/rest-api/environments';
+import { policySuite } from 'system-tests/tests/suites/rest-api/policies/policies';
+import { groupsSuite } from 'system-tests/tests/suites/groups';
+import { callZli, mockCleanExit } from 'system-tests/tests/utils/zli-utils';
+import { UserHttpService } from 'http-services/user/user.http-services';
+import { bzeroTargetRestApiSuite } from 'system-tests/tests/suites/rest-api/bzero-targets';
+import { kubeClusterRestApiSuite } from 'system-tests/tests/suites/rest-api/kube-targets';
+import { databaseTargetRestApiSuite } from 'system-tests/tests/suites/rest-api/database-targets';
+import { webTargetRestApiSuite } from 'system-tests/tests/suites/rest-api/web-targets';
+import { dynamicAccessConfigRestApiSuite } from 'system-tests/tests/suites/rest-api/dynamic-access-configs';
+import { agentContainerSuite } from 'system-tests/tests/suites/agent-container';
+import { userRestApiSuite } from 'system-tests/tests/suites/rest-api/users';
+import { spacesRestApiSuite } from 'system-tests/tests/suites/rest-api/spaces';
+import { mfaSuite } from 'system-tests/tests/suites/rest-api/mfa';
+import { eventsRestApiSuite } from 'system-tests/tests/suites/rest-api/events';
+import { webSuite } from 'system-tests/tests/suites/web';
+import { dbSuite } from 'system-tests/tests/suites/db';
+import { agentRecoverySuite } from 'system-tests/tests/suites/agent-recovery';
+import { connectSuite } from 'system-tests/tests/suites/connect';
+import { sessionRecordingSuite } from 'system-tests/tests/suites/session-recording';
+import { sshSuite } from 'system-tests/tests/suites/ssh';
+import { dynamicAccessSuite } from 'system-tests/tests/suites/dynamic-access';
+import { sendLogsSuite } from 'system-tests/tests/suites/send-logs';
+import { clearAllTimeouts } from 'system-tests/tests/utils/test-utils';
+import { SubjectHttpService } from 'http-services/subject/subject.http-services';
+import { serviceAccountRestApiSuite } from 'system-tests/tests/suites/rest-api/service-accounts';
+import { serviceAccountSuite } from 'system-tests/tests/suites/service-account';
+import { UserSummary } from 'webshell-common-ts/http/v2/user/types/user-summary.types';
+import { ServiceAccountSummary } from 'webshell-common-ts/http/v2/service-account/types/service-account-summary.types';
+import { ServiceAccountHttpService } from 'http-services/service-account/service-account.http-services';
+import { forceRegisterSuite } from './suites/force-register';
 
 // Uses config name from ZLI_CONFIG_NAME environment variable (defaults to prod
 // if unset) This can be run against dev/stage/prod when running system tests
@@ -399,6 +400,7 @@ if (API_ENABLED) {
     } else {
         logger.info('Skipping kube cluster REST API suite because kube cluster creation is disabled.');
     }
+
 }
 
 if (AGENT_RECOVERY_ENABLED && BZERO_ENABLED && KUBE_ENABLED && process.env.TEST_RUNNER_KUBE_CONFIG) {
@@ -410,3 +412,7 @@ if (AGENT_RECOVERY_ENABLED && BZERO_ENABLED && KUBE_ENABLED && process.env.TEST_
 
 // Always run the version suite
 versionSuite();
+
+// Always run the force register suite last because this causes the test targets
+// to be re-registered with a new id
+forceRegisterSuite();

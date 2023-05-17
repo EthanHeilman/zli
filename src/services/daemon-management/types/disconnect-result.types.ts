@@ -1,5 +1,5 @@
-import { KillProcessResultType } from '../../../services/process-manager/process-manager.service.types';
-import { DaemonConfig } from '../../../services/config/config.service.types';
+import { KillProcessResultType } from 'services/process-manager/process-manager.service.types';
+import { DaemonConfig } from 'services/config/config.service.types';
 
 export type DisconnectResultType = 'daemon_success_killed' | 'daemon_fail_killed' | 'daemon_pid_not_set';
 

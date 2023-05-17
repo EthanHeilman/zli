@@ -1,11 +1,11 @@
 import fs from 'fs';
 import path from 'path';
 import mockArgv from 'mock-argv';
-import { CliDriver } from '../../../cli-driver';
-import { cleanConsoleLog, createTempDirectory, deleteDirectory, mockEnv, mockScript, unitTestMockSetup } from '../../../utils/unit-test-utils';
-import { ScriptTargetNameOption } from '../../../../webshell-common-ts/http/v2/autodiscovery-script/types/script-target-name-option.types';
-import * as BashMockSetup from './generate-bash.mock';
-import * as AutoDiscoveryScriptHttpService from '../../../http-services/auto-discovery-script/auto-discovery-script.http-services';
+import { CliDriver } from 'cli-driver';
+import { cleanConsoleLog, createTempDirectory, deleteDirectory, mockEnv, mockScript, unitTestMockSetup } from 'utils/unit-test-utils';
+import { ScriptTargetNameOption } from 'webshell-common-ts/http/v2/autodiscovery-script/types/script-target-name-option.types';
+import * as BashMockSetup from 'handlers/generate/bash/generate-bash.mock';
+import * as AutoDiscoveryScriptHttpService from 'http-services/auto-discovery-script/auto-discovery-script.http-services';
 
 describe('Generate Bash suite', () => {
     let autoDiscoveryScriptHttpServiceSpy: jest.SpyInstance;

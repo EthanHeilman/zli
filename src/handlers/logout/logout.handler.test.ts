@@ -1,12 +1,12 @@
 import { MockProxy, mock } from 'jest-mock-extended';
-import { handleLogout, IFileRemover, ILogoutConfigService } from './logout.handler';
-import { ILogger } from '../../../webshell-common-ts/logging/logging.types';
+import { handleLogout, IFileRemover, ILogoutConfigService } from 'handlers/logout/logout.handler';
+import { ILogger } from 'webshell-common-ts/logging/logging.types';
 
 // TODO: CWC-2030 Remove these imports once kube and web have been refactored to
 // use DaemonManagementService
-import { DbConfig, KubeConfig, getDefaultWebConfig } from '../../services/config/config.service.types';
-import { IDaemonDisconnector } from '../disconnect/disconnect.handler';
-import { DisconnectResult } from '../../services/daemon-management/types/disconnect-result.types';
+import { DbConfig, KubeConfig, getDefaultWebConfig } from 'services/config/config.service.types';
+import { IDaemonDisconnector } from 'handlers/disconnect/disconnect.handler';
+import { DisconnectResult } from 'services/daemon-management/types/disconnect-result.types';
 
 describe('Logout handler suite', () => {
     // Mocks

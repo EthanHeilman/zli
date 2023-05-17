@@ -1,15 +1,15 @@
-import { ConfigService } from '../../services/config/config.service';
-import { Logger } from '../../services/logger/logger.service';
+import { ConfigService } from 'services/config/config.service';
+import { Logger } from 'services/logger/logger.service';
 import { SemVer, lt, parse } from 'semver';
 
-import { createAndRunShell, startShellDaemon } from '../../utils/shell-utils';
-import { ConnectionHttpService } from '../../http-services/connection/connection.http-services';
-import { TargetType } from '../../../webshell-common-ts/http/v2/target/types/target.types';
-import { BzeroTargetHttpService } from '../../http-services/targets/bzero/bzero.http-services';
-import { LoggerConfigService } from '../../services/logger/logger-config.service';
-import { ConnectionState } from '../../../webshell-common-ts/http/v2/connection/types/connection-state.types';
-import { DynamicAccessConnectionUtils } from './dynamic-access-connect-utils';
-import { CreateUniversalConnectionResponse } from '../../../webshell-common-ts/http/v2/connection/responses/create-universal-connection.response';
+import { createAndRunShell, startShellDaemon } from 'utils/shell-utils';
+import { ConnectionHttpService } from 'http-services/connection/connection.http-services';
+import { TargetType } from 'webshell-common-ts/http/v2/target/types/target.types';
+import { BzeroTargetHttpService } from 'http-services/targets/bzero/bzero.http-services';
+import { LoggerConfigService } from 'services/logger/logger-config.service';
+import { ConnectionState } from 'webshell-common-ts/http/v2/connection/types/connection-state.types';
+import { DynamicAccessConnectionUtils } from 'handlers/connect/dynamic-access-connect-utils';
+import { CreateUniversalConnectionResponse } from 'webshell-common-ts/http/v2/connection/responses/create-universal-connection.response';
 
 
 export async function shellConnectHandler(

@@ -1,4 +1,4 @@
-import { ILogger } from '../../webshell-common-ts/logging/logging.types';
+import { ILogger } from 'webshell-common-ts/logging/logging.types';
 
 export interface IExitableLogger extends ILogger {
     flushLogs(): Promise<void>;

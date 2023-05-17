@@ -1,8 +1,8 @@
-import { allTargets, testTargets, configService, logger } from '../system-test';
-import { DigitalOceanBZeroTarget } from '../../digital-ocean/digital-ocean-target.service.types';
-import { TestTarget } from '../system-test.types';
-import { bzeroTargetCustomUser } from '../system-test-setup';
-import { EnvironmentHttpService } from '../../../../src/http-services/environment/environment.http-services';
+import { allTargets, testTargets, configService, logger } from 'system-tests/tests/system-test';
+import { DigitalOceanBZeroTarget } from 'system-tests/digital-ocean/digital-ocean-target.service.types';
+import { TestTarget } from 'system-tests/tests/system-test.types';
+import { bzeroTargetCustomUser } from 'system-tests/tests/system-test-setup';
+import { EnvironmentHttpService } from 'http-services/environment/environment.http-services';
 
 // get information about a target
 export async function getTargetInfo(testTarget: TestTarget): Promise<SshTargetInfo> {

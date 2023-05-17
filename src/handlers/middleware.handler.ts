@@ -1,13 +1,13 @@
-import { Logger } from '../services/logger/logger.service';
-import { ConfigService } from '../services/config/config.service';
-import { version } from '../../package.json';
-import { oauthMiddleware } from '../middlewares/oauth-middleware';
-import { LoggerConfigService } from '../services/logger/logger-config.service';
-import { MrtapService } from '../../webshell-common-ts/mrtap.service/mrtap.service';
-import { GAService } from '../services/Tracking/google-analytics.service';
-import { MixpanelService } from '../services/Tracking/mixpanel.service';
-import { isZliSilent } from '../utils/utils';
-import { OrganizationHttpService } from '.../../../http-services/organization/organization.http-services';
+import { Logger } from 'services/logger/logger.service';
+import { ConfigService } from 'services/config/config.service';
+import { version } from 'package.json';
+import { oauthMiddleware } from 'middlewares/oauth-middleware';
+import { LoggerConfigService } from 'services/logger/logger-config.service';
+import { MrtapService } from 'webshell-common-ts/mrtap.service/mrtap.service';
+import { GAService } from 'services/Tracking/google-analytics.service';
+import { MixpanelService } from 'services/Tracking/mixpanel.service';
+import { isZliSilent } from 'utils/utils';
+import { OrganizationHttpService } from 'http-services/organization/organization.http-services';
 
 /*
  * Helper function to get our GA tracking middleware and track our cli command

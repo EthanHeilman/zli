@@ -1,8 +1,8 @@
-import { SsmTargetSummary } from '../../../../webshell-common-ts/http/v2/target/ssm/types/ssm-target-summary.types';
-import { EditSsmTargetRequest } from '../../../../webshell-common-ts/http/v2/target/ssm/requests/edit-ssm-target.requests';
-import { ConfigService } from '../../../services/config/config.service';
-import { HttpService } from '../../../services/http/http.service';
-import { Logger } from '../../../services/logger/logger.service';
+import { SsmTargetSummary } from 'webshell-common-ts/http/v2/target/ssm/types/ssm-target-summary.types';
+import { EditSsmTargetRequest } from 'webshell-common-ts/http/v2/target/ssm/requests/edit-ssm-target.requests';
+import { ConfigService } from 'services/config/config.service';
+import { HttpService } from 'services/http/http.service';
+import { Logger } from 'services/logger/logger.service';
 
 export class SsmTargetHttpService extends HttpService {
     constructor(configService: ConfigService, logger: Logger) {

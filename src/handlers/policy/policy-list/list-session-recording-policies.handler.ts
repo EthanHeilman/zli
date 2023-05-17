@@ -1,10 +1,10 @@
-import { ConfigService } from '../../../services/config/config.service';
-import { Logger } from '../../../services/logger/logger.service';
+import { ConfigService } from 'services/config/config.service';
+import { Logger } from 'services/logger/logger.service';
 import yargs from 'yargs';
-import { policyArgs } from './policy-list.command-builder';
-import { PolicyHttpService } from '../../../http-services/policy/policy.http-services';
-import { getTableOfSessionRecordingPolicies } from '../../../utils/utils';
-import { getPolicySubjectDisplayInfo } from '../../../services/policy/policy.services';
+import { policyArgs } from 'handlers/policy/policy-list/policy-list.command-builder';
+import { PolicyHttpService } from 'http-services/policy/policy.http-services';
+import { getTableOfSessionRecordingPolicies } from 'utils/utils';
+import { getPolicySubjectDisplayInfo } from 'services/policy/policy.services';
 
 export async function listSessionRecordingPoliciesHandler(
     argv: yargs.Arguments<policyArgs>,

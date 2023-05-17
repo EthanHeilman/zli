@@ -2,9 +2,9 @@ import *  as fs from 'fs';
 
 import { Reporter, Test } from '@jest/reporters';
 import { TestCaseResult } from '@jest/test-result';
-import { envMap } from '../cli-driver';
-import { LoggerConfigService } from '../services/logger/logger-config.service';
-import { Logger } from '../services/logger/logger.service';
+import { envMap } from 'cli-driver';
+import { LoggerConfigService } from 'services/logger/logger-config.service';
+import { Logger } from 'services/logger/logger.service';
 
 const configName = envMap.configName;
 

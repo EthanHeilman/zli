@@ -14,12 +14,50 @@
         "outDir": "dist",
         "baseUrl": ".",
         "paths": {
-            "*": [
-                "node_modules/*",
-                "src/types/*"
+            "webshell-common-ts/*": [
+                "./webshell-common-ts/*"
+            ],
+            "services/*": [
+                "./src/services/*"
+            ],
+            "handlers/*": [
+                "./src/handlers/*"
+            ],
+            "http-services/*": [
+                "./src/http-services/*"
+            ],
+            "utils/*": [
+                "./src/utils/*"
+            ],
+            "system-tests/*": [
+                "./src/system-tests/*"
+            ],
+            "middlewares/*": [
+                "./src/middlewares/*"
+            ],
+            "terminal/*": [
+                "./src/terminal/*"
+            ],
+            "cli-driver": [
+                "./src/cli-driver"
+            ],
+            "package.json": [
+                "./package.json"
             ]
         },
-        "declaration": true
+        "declaration": true,
+        /* List of language service plugins */
+        "plugins":[
+            /* Transform paths in output .js files */
+            {
+                "transform":"typescript-transform-paths"
+            },
+            /* Transform paths in output .d.ts files */
+            {
+                "transform":"typescript-transform-paths",
+                "afterDeclarations": true
+            }
+        ]
     },
     "include": [
         "src/**/*"

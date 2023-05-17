@@ -1,31 +1,31 @@
 import * as k8s from '@kubernetes/client-node';
 
-import { configService, logger, systemTestEnvId, systemTestPolicyTemplate, systemTestUniqueId, testCluster, testTargets, systemTestEnvName } from '../system-test';
-import { ConnectionHttpService } from '../../../http-services/connection/connection.http-services';
-import { DigitalOceanDistroImage, getDOImageName } from '../../digital-ocean/digital-ocean-target.service.types';
-import { sleepTimeout, TestUtils } from '../utils/test-utils';
-import { ConnectTestUtils, setupBackgroundDaemonMocks } from '../utils/connect-utils';
-import { bzeroTestTargetsToRun } from '../targets-to-run';
-import { execOnPod, getKubeConfig } from '../utils/kube-utils';
-import { getPodWithLabelSelector } from '../utils/kube-utils';
-import { PolicyHttpService } from '../../../http-services/policy/policy.http-services';
-import { Subject } from '../../../../webshell-common-ts/http/v2/policy/types/subject.types';
-import { Environment } from '../../../../webshell-common-ts/http/v2/policy/types/environment.types';
-import { VerbType } from '../../../../webshell-common-ts/http/v2/policy/types/verb-type.types';
-import { TestTarget } from '../system-test.types';
-import { callZli } from '../utils/zli-utils';
-import { KubeTestUserName } from './kube';
-import { KubeHttpService } from '../../../http-services/targets/kube/kube.http-services';
-import { BzeroTargetHttpService } from '../../../http-services/targets/bzero/bzero.http-services';
-import { TargetStatus } from '../../../../webshell-common-ts/http/v2/target/types/targetStatus.types';
-import { StatusHttpService } from '../../../http-services/status/status.http-service';
-import { BzeroAgentSummary } from '../../../../webshell-common-ts/http/v2/target/bzero/types/bzero-agent-summary.types';
-import { KubeClusterSummary } from '../../../../webshell-common-ts/http/v2/target/kube/types/kube-cluster-summary.types';
-import { EventsHttpService } from '../../../http-services/events/events.http-server';
-import { getTargetInfo } from '../utils/ssh-utils';
+import { configService, logger, systemTestEnvId, systemTestPolicyTemplate, systemTestUniqueId, testCluster, testTargets, systemTestEnvName } from 'system-tests/tests/system-test';
+import { ConnectionHttpService } from 'http-services/connection/connection.http-services';
+import { DigitalOceanDistroImage, getDOImageName } from 'system-tests/digital-ocean/digital-ocean-target.service.types';
+import { sleepTimeout, TestUtils } from 'system-tests/tests/utils/test-utils';
+import { ConnectTestUtils, setupBackgroundDaemonMocks } from 'system-tests/tests/utils/connect-utils';
+import { bzeroTestTargetsToRun } from 'system-tests/tests/targets-to-run';
+import { execOnPod, getKubeConfig } from 'system-tests/tests/utils/kube-utils';
+import { getPodWithLabelSelector } from 'system-tests/tests/utils/kube-utils';
+import { PolicyHttpService } from 'http-services/policy/policy.http-services';
+import { Subject } from 'webshell-common-ts/http/v2/policy/types/subject.types';
+import { Environment } from 'webshell-common-ts/http/v2/policy/types/environment.types';
+import { VerbType } from 'webshell-common-ts/http/v2/policy/types/verb-type.types';
+import { TestTarget } from 'system-tests/tests/system-test.types';
+import { callZli } from 'system-tests/tests/utils/zli-utils';
+import { KubeTestUserName } from 'system-tests/tests/suites/kube';
+import { KubeHttpService } from 'http-services/targets/kube/kube.http-services';
+import { BzeroTargetHttpService } from 'http-services/targets/bzero/bzero.http-services';
+import { TargetStatus } from 'webshell-common-ts/http/v2/target/types/targetStatus.types';
+import { StatusHttpService } from 'http-services/status/status.http-service';
+import { BzeroAgentSummary } from 'webshell-common-ts/http/v2/target/bzero/types/bzero-agent-summary.types';
+import { KubeClusterSummary } from 'webshell-common-ts/http/v2/target/kube/types/kube-cluster-summary.types';
+import { EventsHttpService } from 'http-services/events/events.http-server';
+import { getTargetInfo } from 'system-tests/tests/utils/ssh-utils';
 import { dir, DirectoryResult } from 'tmp-promise';
 import path from 'path';
-import { cleanupTargetConnectPolicies } from '../system-test-cleanup';
+import { cleanupTargetConnectPolicies } from 'system-tests/tests/system-test-cleanup';
 
 // Container and Systemd Service Names
 // https://github.com/bastionzero/cwc-infra/blob/7b17c303f4acec7553e05688958354c70a7444c1/Bzero-Common/bzero_common/utils.py#L58-L59

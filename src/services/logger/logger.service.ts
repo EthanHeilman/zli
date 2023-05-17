@@ -1,9 +1,9 @@
 import chalk from 'chalk';
 import figlet from 'figlet';
 import winston, { Logger as WinstonLogger, format } from 'winston';
-import { LoggerConfigService } from './logger-config.service';
-import { ILogger } from '../../../webshell-common-ts/logging/logging.types';
-import { GAService } from '../Tracking/google-analytics.service';
+import { LoggerConfigService } from 'services/logger/logger-config.service';
+import { ILogger } from 'webshell-common-ts/logging/logging.types';
+import { GAService } from 'services/Tracking/google-analytics.service';
 const { printf } = format;
 
 // Not an enum, must be dictionary for winston
