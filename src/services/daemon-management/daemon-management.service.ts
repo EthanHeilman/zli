@@ -1,4 +1,4 @@
-import { DaemonConfig, DaemonConfigs, DaemonConfigType, DbConfig, getDefaultDbConfig, getDefaultKubeConfig, KubeConfig } from 'services/config/config.service.types';
+import { DaemonConfig, DaemonConfigs, DaemonConfigType, DbConfig, getDefaultDbConfig, getDefaultKubeConfig, getDefaultRDPConfig, KubeConfig, RDPConfig } from 'services/config/config.service.types';
 import { ProcessManagerService } from 'services/process-manager/process-manager.service';
 import { DaemonIsRunningStatus, DaemonRunningStatus, DaemonStatus } from 'services/daemon-management/types/daemon-status.types';
 import { KillProcessResultType } from 'services/process-manager/process-manager.service.types';
@@ -136,6 +136,7 @@ export class DaemonManagementService<T extends DaemonConfig> {
             switch (config.type) {
             case 'web':
             case 'db':
+            case 'rdp':
                 return {
                     type: 'daemon_is_running',
                     connectionId: connectionId,
@@ -231,6 +232,31 @@ export class DaemonManagementService<T extends DaemonConfig> {
 export interface DbDaemonStore {
     setDbDaemons(dbDaemons: DaemonConfigs<DbConfig>): void;
     getDbDaemons(): DaemonConfigs<DbConfig>;
+}
+
+export function newRDPDaemonManagementService(
+    rdpDaemonStore: RDPDaemonStore,
+    processManager?: ProcessManager
+): DaemonManagementService<RDPConfig> {
+    // Default implementation
+    if (!processManager) {
+        processManager = new ProcessManagerService();
+    }
+
+    return new DaemonManagementService(
+        getDefaultRDPConfig,
+        processManager,
+        // Construct a mapping from DbDaemonStore to DaemonStore
+        {
+            setDaemons: (daemons: DaemonConfigs<RDPConfig>) => rdpDaemonStore.setRDPDaemons(daemons),
+            getDaemons: () => rdpDaemonStore.getRDPDaemons(),
+        }
+    );
+}
+
+export interface RDPDaemonStore {
+    setRDPDaemons(rdpDaemons: DaemonConfigs<RDPConfig>): void;
+    getRDPDaemons(): DaemonConfigs<RDPConfig>;
 }
 
 export function newDbDaemonManagementService(

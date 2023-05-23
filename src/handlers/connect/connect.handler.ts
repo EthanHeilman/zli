@@ -13,6 +13,7 @@ import { startKubeDaemonHandler } from 'handlers/connect/kube-connect.handler';
 import { MixpanelService } from 'services/Tracking/mixpanel.service';
 import { CreateUniversalConnectionResponse } from 'webshell-common-ts/http/v2/connection/responses/create-universal-connection.response';
 import { handleExitCode } from 'utils/daemon-utils';
+import { rdpConnectHandler } from './rdp-connect.handler';
 
 export async function connectHandler(
     argv: yargs.Arguments<connectArgs>,
@@ -65,9 +66,10 @@ export async function connectHandler(
                 }
             }
             return exitCode;
-        /* TODO: RDP handler for Windows */
         case TargetType.Db:
             return await dbConnectHandler(argv, createUniversalConnectionResponse.splitCert, createUniversalConnectionResponse.targetId, createUniversalConnectionResponse.targetUser, createUniversalConnectionResponse, configService, logger, loggerConfigService);
+        case TargetType.Windows:
+            return await rdpConnectHandler(argv, createUniversalConnectionResponse.targetId, createUniversalConnectionResponse, configService, logger, loggerConfigService);
         case TargetType.Web:
             return await webConnectHandler(argv, createUniversalConnectionResponse.targetId, createUniversalConnectionResponse, configService, logger, loggerConfigService);
         case TargetType.Cluster:

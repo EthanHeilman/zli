@@ -2,6 +2,7 @@ export type DaemonConfigs<T extends DaemonConfig> = { [connectionId: string]: T 
 
 export const DaemonConfigType = {
     Db: 'db',
+    RDP: 'rdp',
     Kube: 'kube',
     Web: 'web'
 } as const;
@@ -10,7 +11,8 @@ export type DaemonConfigType = typeof DaemonConfigType[keyof typeof DaemonConfig
 export type DaemonConfig =
     | WebConfig
     | DbConfig
-    | KubeConfig;
+    | KubeConfig
+    | RDPConfig;
 
 interface BaseDaemonConfig {
     type: DaemonConfigType,
@@ -26,6 +28,11 @@ export interface WebConfig extends BaseDaemonConfig {
 
 export interface DbConfig extends BaseDaemonConfig {
     type: 'db',
+    name: string,
+}
+
+export interface RDPConfig extends BaseDaemonConfig {
+    type: 'rdp',
     name: string,
 }
 
@@ -68,6 +75,16 @@ export function getDefaultKubeConfig(): KubeConfig {
 export function getDefaultDbConfig(): DbConfig {
     return {
         type: 'db',
+        name: null,
+        localHost: null,
+        localPort: null,
+        localPid: null
+    };
+}
+
+export function getDefaultRDPConfig(): RDPConfig {
+    return {
+        type: 'rdp',
         name: null,
         localHost: null,
         localPort: null,
