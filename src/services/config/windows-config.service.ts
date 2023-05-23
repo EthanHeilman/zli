@@ -1,13 +1,14 @@
 import { TokenSet } from 'openid-client';
 import path from 'path';
 import fs from 'fs';
-const { ClassicLevel } = require('classic-level')
+import { ClassicLevel } from 'classic-level';
 import { Subject } from 'rxjs';
 import Registry from 'winreg';
 import { getDefaultMrtapConfig, MrtapConfigSchema } from 'webshell-common-ts/mrtap.service/mrtap.service.types';
 import { Config } from 'services/config/conf';
 import { IConfig } from 'services/config/config.service';
 import { mrtapKey, tokenSetKey, whoamiKey } from './leveldb';
+const ModuleError = require('module-error')
 
 const WINDOWS_REGISTRY_KEY = '\\Software\\BastionZero';
 
@@ -73,17 +74,54 @@ export class WindowsConfig extends Config implements IConfig {
                 logoutDetectedSubject.next(true);
             }
             oldValue = newValue;
-        }, 1000);
+        }, 10);
+    }
+
+    private async open(): Promise<ClassicLevel<string, string>> {
+        const db = new ClassicLevel(this.levelDBPath)
+
+        let count: number = 1;
+        while(true) {
+            switch (db.status) {
+                case 'open':
+                    console.log(`it worked we're open now took ${count} tries`)
+                    return db
+                case 'closed':
+                    try {
+                        await db.open()
+                    } catch (err) {
+                        if (err instanceof ModuleError) {
+                            // console.error(`We hit an error!!! ${err.code}:${err.cause}`)
+                            if (err.cause && err.cause.code === 'LEVEL_LOCKED') {
+                                // Another process or instance has opened the database
+                                // console.log(`LOCKED!!!!`)
+                            }
+                        }
+                    }
+            }
+            count ++
+            // console.log(`db status = ${db.status}`)
+
+            await new Promise(resolve => setTimeout(resolve, 5))
+        }
     }
 
     async getTokenSet(): Promise<TokenSet> {
         let tokenSet: TokenSet;
 
-        const db = new ClassicLevel(this.levelDBPath)
+        const db = await this.open()
         try {
             const value = await db.get(tokenSetKey);
             tokenSet = JSON.parse(value);
-        } catch (e) {} // key doesn't exist
+        } catch (err) {
+            if (err instanceof ModuleError) {
+                console.error(`We hit an error!!! ${err.code}:${err.cause}`)
+                if (err.cause && err.cause.code === 'LEVEL_LOCKED') {
+                    // Another process or instance has opened the database
+                    console.log(`LOCKED!!!!`)
+                }
+            }
+        } // key doesn't exist
 
         await db.close();
 
@@ -93,11 +131,20 @@ export class WindowsConfig extends Config implements IConfig {
     async getMrtap(): Promise<MrtapConfigSchema> {
         let mrtap: MrtapConfigSchema = getDefaultMrtapConfig();
 
-        const db = new ClassicLevel(this.levelDBPath)
+        const db = await this.open()
         try {
+            // await db.open()
             const value = await db.get(mrtapKey);
             mrtap = JSON.parse(value);
-        } catch (e) {} // key doesn't exist
+        } catch (err) {
+            if (err instanceof ModuleError) {
+                console.error(`We hit an error!!! ${err.code}:${err.cause}`)
+                if (err.cause && err.cause.code === 'LEVEL_LOCKED') {
+                    // Another process or instance has opened the database
+                    console.log(`LOCKED!!!!`)
+                }
+            }
+        } // key doesn't exist
 
         await db.close();
 
@@ -105,63 +152,27 @@ export class WindowsConfig extends Config implements IConfig {
     }
 
     async setTokenSet(tokenSet: TokenSet): Promise<void> {
-        const db = new ClassicLevel(this.levelDBPath)
+        const db = await this.open()
         await db.put(tokenSetKey, JSON.stringify(tokenSet));
         await db.close();
     }
 
     async setMrtap(data: MrtapConfigSchema): Promise<void> {
-        const db = new ClassicLevel(this.levelDBPath)
+        const db = await this.open()
         await db.put(mrtapKey, JSON.stringify(data));
         await db.close();
     }
 
     async clearTokenSet(): Promise<void> {
         console.log(`token set was cleared`)
-        const db = new ClassicLevel(this.levelDBPath)
+        const db = await this.open()
         await db.del(tokenSetKey);
         await db.close();
     }
 
     async clearMrtap(): Promise<void> {
-        const db = new ClassicLevel(this.levelDBPath)
+        const db = await this.open()
         await db.del(mrtapKey);
         await db.close();
-    }
-
-    private async getWindowsRegistryValue(key: string): Promise<string> {
-        return new Promise((resolve, reject) => {
-            this.regKey.get(key, (err: Error, result: Registry.RegistryItem) => {
-                if (err) {
-                    reject(err);
-                }
-
-                if (result != null) {
-                    resolve(result.value);
-                } else {
-                    // If our result is null then it means the value exists but it's been cleared
-                    resolve(undefined);
-                }
-            });
-        });
-    }
-
-    private async setWindowsRegistryValue(key: string, value: any): Promise<void> {
-        return new Promise((resolve, reject) => {
-            this.regKey.set(key, Registry.REG_SZ, JSON.stringify(value), (err: Error) => {
-                if (err) {
-                    reject(new Error(`Failed to save ${key} configuration: ${err}`));
-                }
-                resolve();
-            });
-        });
-    }
-
-    private isKeyNotFoundError(err: Error): boolean {
-        // Sometimes we try to clear or get a token that has already been cleared, which means
-        // we'll hit an error letting us know the key doesn't exist. This is a result of the
-        // nature of the winreg remove() function.
-        // ref: https://fresc81.github.io/node-winreg/Registry.html#remove__anchor
-        return err.message.includes('The system was unable to find the specified registry key or value');
     }
 }
