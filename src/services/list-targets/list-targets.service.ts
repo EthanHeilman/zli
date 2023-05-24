@@ -108,7 +108,6 @@ export async function listTargetsPerType(
 
                 // Update set of allowed target users/verbs
                 bzeroAgents.forEach(t => {
-                    // TODO: when we have an RDP verb in the backend, should filter these between linux/windows
                     t.allowedVerbs = policyQueryResponse[t.id].allowedVerbs;
                     if (t.agentType === AgentType.Linux) {
                         t.allowedTargetUsers = policyQueryResponse[t.id].allowedTargetUsers;
