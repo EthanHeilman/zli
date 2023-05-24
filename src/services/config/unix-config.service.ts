@@ -13,6 +13,7 @@ import { TokenSet } from 'openid-client';
 import fs from 'fs';
 import { ClassicLevel } from 'classic-level';
 import { mrtapKey, tokenSetKey, whoamiKey } from './leveldb';
+const ModuleError = require('module-error')
 
 export class UnixConfig extends Config implements IConfig  {
     private levelDBPath: string;
@@ -168,6 +169,7 @@ export class UnixConfig extends Config implements IConfig  {
         fs.existsSync(this.levelDBPath) || fs.mkdirSync(this.levelDBPath, { recursive: true });
 
         this.logoutOnTokenSetCleared(logoutDetectedSubject);
+        this.test();
     }
 
     logoutOnTokenSetCleared(logoutDetectedSubject: Subject<boolean>): void {
@@ -180,10 +182,50 @@ export class UnixConfig extends Config implements IConfig  {
         });
     }
 
+    async test() {
+        let oldValue: TokenSet;
+        setInterval(async () => {
+            const newValue = await this.getTokenSet();
+            if (newValue === undefined && oldValue) {
+                console.log(`detected logout in test function`)
+            }
+            oldValue = newValue;
+        }, 10);
+    }
+
+    private async open(): Promise<ClassicLevel<string, string>> {
+        const db = new ClassicLevel(this.levelDBPath)
+
+        let count: number = 1;
+        while(true) {
+            switch (db.status) {
+                case 'open':
+                    console.log(`it worked we're open now took ${count} tries`)
+                    return db
+                case 'closed':
+                    try {
+                        await db.open()
+                    } catch (err) {
+                        if (err instanceof ModuleError) {
+                            // console.error(`We hit an error!!! ${err.code}:${err.cause}`)
+                            if (err.cause && err.cause.code === 'LEVEL_LOCKED') {
+                                // Another process or instance has opened the database
+                                // console.log(`LOCKED!!!!`)
+                            }
+                        }
+                    }
+            }
+            count ++
+            // console.log(`db status = ${db.status}`)
+
+            await new Promise(resolve => setTimeout(resolve, 1))
+        }
+    }
+
     async getTokenSet(): Promise<TokenSet> {
         let tokenSet: TokenSet;
 
-        const db = new ClassicLevel(this.levelDBPath)
+        const db = await this.open()
         try {
             const value = await db.get(tokenSetKey);
             tokenSet = JSON.parse(value);
@@ -197,7 +239,7 @@ export class UnixConfig extends Config implements IConfig  {
     async getMrtap(): Promise<MrtapConfigSchema> {
         let mrtap: MrtapConfigSchema = getDefaultMrtapConfig();
 
-        const db = new ClassicLevel(this.levelDBPath)
+        const db = await this.open()
         try {
             const value = await db.get(mrtapKey);
             mrtap = JSON.parse(value);
@@ -209,25 +251,25 @@ export class UnixConfig extends Config implements IConfig  {
     }
 
     async setTokenSet(tokenSet: TokenSet): Promise<void> {
-        const db = new ClassicLevel(this.levelDBPath)
+        const db = await this.open()
         await db.put(tokenSetKey, JSON.stringify(tokenSet));
         await db.close();
     }
 
     async setMrtap(data: MrtapConfigSchema): Promise<void> {
-        const db = new ClassicLevel(this.levelDBPath)
+        const db = await this.open()
         await db.put(mrtapKey, JSON.stringify(data));
         await db.close();
     }
 
     async clearTokenSet(): Promise<void> {
-        const db = new ClassicLevel(this.levelDBPath)
+        const db = await this.open()
         await db.del(tokenSetKey);
         await db.close();
     }
 
     async clearMrtap(): Promise<void> {
-        const db = new ClassicLevel(this.levelDBPath)
+        const db = await this.open()
         await db.del(mrtapKey);
         await db.close();
     }

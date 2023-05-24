@@ -14,6 +14,28 @@ import { ConnectConfig, DaemonConfigs, DbConfig, GlobalKubeConfig, KubeConfig, W
 import { UnixConfig } from 'services/config/unix-config.service';
 import { WindowsConfig } from 'services/config/windows-config.service';
 
+// All keys defined for our key, value store
+export const authUrlKey: string = "authUrl";
+export const clientIdKey: string = "clientId";
+export const clientSecretKey: string = "clientSecret";
+export const serviceUrlKey: string = "serviceUrl";
+export const tokenSetKey: string = "tokenSet";
+export const callbackListenerPortKey: string = "callbackListenerPort";
+export const gaTokenKey: string = "GAToken"; // LUCIE: we should make this camelCase to match everything else
+export const mixpanelTokenKey: string = "mixpanelToken";
+export const idpKey: string = "idp";
+export const sessionIdKey: string = "sessionId";
+export const sessionTokenKey: string = "sessionToken";
+export const whoamiKey: string = "whoami";
+export const sshKeyPathKey: string = "sshKeyPath";
+export const sshKnownHostsPathKey: string = "sshKnownHostsPath";
+export const mrtapKey: string = "mrtap";
+export const webConfigKey: string = "webConfig";
+export const connectConfigKey: string = "connectConfig";
+export const globalKubeConfigKey: string = "globalKubeConfig";
+export const dbDaemonsKey: string = "dbDaemons";
+export const kubeDaemonsKey: string = "kubeDaemons";
+
 export interface IConfig {
     readonly path: string;
 
