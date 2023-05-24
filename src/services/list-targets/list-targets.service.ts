@@ -122,7 +122,7 @@ export async function listTargetsPerType(
         targetSummaryWork = targetSummaryWork.concat(getBzeroAgentTargetSummaries());
     }
 
-    if (targetTypes.includes(TargetType.Cluster)) {
+    if (targetTypes.includes(TargetType.Kubernetes) || targetTypes.includes(TargetType.Cluster)) {
         const kubeHttpService = new KubeHttpService(configService, logger);
         const getKubeClusterSummaries = async () => {
             let kubeClusterSummaries = await kubeHttpService.ListKubeClusters();
@@ -140,7 +140,7 @@ export async function listTargetsPerType(
 
             return kubeClusterSummaries.map<TargetSummary>((cluster) => {
                 return {
-                    type: TargetType.Cluster,
+                    type: TargetType.Kubernetes,
                     agentPublicKey: cluster.agentPublicKey,
                     id: cluster.id,
                     name: cluster.name,

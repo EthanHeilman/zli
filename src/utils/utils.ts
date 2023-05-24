@@ -73,8 +73,8 @@ export function parseTargetType(targetType: string) : TargetType
         return TargetType.SsmTarget;
     case targetTypeDisplay(TargetType.DynamicAccessConfig).toLowerCase():
         return TargetType.DynamicAccessConfig;
-    case targetTypeDisplay(TargetType.Cluster).toLowerCase():
-        return TargetType.Cluster;
+    case targetTypeDisplay(TargetType.Kubernetes).toLowerCase():
+        return TargetType.Kubernetes;
     case targetTypeDisplay(TargetType.Linux).toLowerCase():
         return TargetType.Linux;
     case targetTypeDisplay(TargetType.Windows).toLowerCase():
@@ -250,7 +250,8 @@ export function targetTypeDisplay(type: TargetType) : string {
     case TargetType.DynamicAccessConfig:
         return 'Dynamic';
     case TargetType.Cluster:
-        return 'Cluster';
+    case TargetType.Kubernetes:
+        return 'Kubernetes';
     case TargetType.Linux:
         return 'Linux';
     case TargetType.Windows:
@@ -273,6 +274,8 @@ export function verbTypeDisplay(type: VerbType) : string {
         return 'FileTransfer';
     case VerbType.Tunnel:
         return 'Tunnel';
+    case VerbType.RDP:
+        return 'RDP';
     default:
         const _exhaustiveCheck: never = type;
         return _exhaustiveCheck;
