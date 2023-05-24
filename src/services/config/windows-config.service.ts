@@ -68,13 +68,17 @@ export class WindowsConfig extends Config implements IConfig {
 
     logoutOnTokenSetCleared(logoutDetectedSubject: Subject<boolean>) {
         let oldValue: TokenSet;
-        setInterval(async () => {
-            const newValue = await this.getTokenSet();
-            if (newValue === undefined && oldValue) {
-                logoutDetectedSubject.next(true);
+
+        const a = async() => {
+            while (true) {
+                await new Promise(resolve => setTimeout(resolve, 10))
+                const newValue = await this.getTokenSet();
+                if (newValue === undefined && oldValue) {
+                    logoutDetectedSubject.next(true);
+                }
+                oldValue = newValue;
             }
-            oldValue = newValue;
-        }, 10);
+        }
     }
 
     private async open(): Promise<ClassicLevel<string, string>> {
@@ -102,7 +106,7 @@ export class WindowsConfig extends Config implements IConfig {
             count ++
             // console.log(`db status = ${db.status}`)
 
-            await new Promise(resolve => setTimeout(resolve, 5))
+            await new Promise(resolve => setTimeout(resolve, 1))
         }
     }
 
