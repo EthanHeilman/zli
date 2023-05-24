@@ -255,7 +255,7 @@ export const dbSuite = () => {
                 environmentName: systemTestEnvName,
                 connectionEventType: eventType,
                 connectionId: daemon.connectionId,
-                targetUser: daemon.targetUser
+                targetUser: daemon.targetUser ?? expect.anything()
             }, testStartTime);
         };
 
