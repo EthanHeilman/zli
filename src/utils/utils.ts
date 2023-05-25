@@ -73,8 +73,8 @@ export function parseTargetType(targetType: string) : TargetType
         return TargetType.SsmTarget;
     case targetTypeDisplay(TargetType.DynamicAccessConfig).toLowerCase():
         return TargetType.DynamicAccessConfig;
-    case targetTypeDisplay(TargetType.Cluster).toLowerCase():
-        return TargetType.Cluster;
+    case targetTypeDisplay(TargetType.Kubernetes).toLowerCase():
+        return TargetType.Kubernetes;
     case targetTypeDisplay(TargetType.Linux).toLowerCase():
         return TargetType.Linux;
     case targetTypeDisplay(TargetType.Windows).toLowerCase():

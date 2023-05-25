@@ -48,7 +48,7 @@ export async function createClusterPolicyHandler(argv: yargs.Arguments<createClu
     const clusters: Cluster[] = [];
 
     if(argv.clusters !== undefined) {
-        clustersIdentifierMap = await getTargetsByNameOrId(configService, logger, [TargetType.Cluster]);
+        clustersIdentifierMap = await getTargetsByNameOrId(configService, logger, [TargetType.Kubernetes]);
         checkAllIdentifiersExist(logger, 'cluster', clustersIdentifierMap, argv.clusters);
         checkAllIdentifiersAreSingle(logger, 'cluster', clustersIdentifierMap, argv.clusters);
         argv.clusters.forEach((cluster) => {
