@@ -38,6 +38,12 @@ export interface DbDaemonRunningStatus {
     localUrl: string;
 }
 
+export interface RDPDaemonRunningStatus {
+    type: 'rdp';
+    targetName: string;
+    localUrl: string;
+}
+
 export interface KubeDaemonRunningStatus {
     type: 'kube';
     targetCluster: string;
@@ -49,4 +55,5 @@ export interface KubeDaemonRunningStatus {
 export type DaemonRunningStatus =
     | WebDaemonRunningStatus
     | DbDaemonRunningStatus
+    | RDPDaemonRunningStatus
     | KubeDaemonRunningStatus;

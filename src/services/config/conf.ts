@@ -28,6 +28,7 @@ export type ConfigSchema = {
     connectConfig: ConnectConfig,
     globalKubeConfig: GlobalKubeConfig,
     dbDaemons: DaemonConfigs<DbConfig>,
+    rdpDaemons: DaemonConfigs<RDPConfig>,
     kubeDaemons: DaemonConfigs<KubeConfig>
 };
 
@@ -73,6 +74,7 @@ export class Config {
                 connectConfig: getDefaultConnectConfig(),
                 globalKubeConfig: getDefaultGlobalKubeConfig(),
                 dbDaemons: {},
+                rdpDaemons: {},
                 kubeDaemons: {}
             },
             accessPropertiesByDotNotation: true,

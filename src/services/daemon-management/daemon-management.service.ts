@@ -234,31 +234,6 @@ export interface DbDaemonStore {
     getDbDaemons(): DaemonConfigs<DbConfig>;
 }
 
-export function newRDPDaemonManagementService(
-    rdpDaemonStore: RDPDaemonStore,
-    processManager?: ProcessManager
-): DaemonManagementService<RDPConfig> {
-    // Default implementation
-    if (!processManager) {
-        processManager = new ProcessManagerService();
-    }
-
-    return new DaemonManagementService(
-        getDefaultRDPConfig,
-        processManager,
-        // Construct a mapping from DbDaemonStore to DaemonStore
-        {
-            setDaemons: (daemons: DaemonConfigs<RDPConfig>) => rdpDaemonStore.setRDPDaemons(daemons),
-            getDaemons: () => rdpDaemonStore.getRDPDaemons(),
-        }
-    );
-}
-
-export interface RDPDaemonStore {
-    setRDPDaemons(rdpDaemons: DaemonConfigs<RDPConfig>): void;
-    getRDPDaemons(): DaemonConfigs<RDPConfig>;
-}
-
 export function newDbDaemonManagementService(
     dbDaemonStore: DbDaemonStore,
     processManager?: ProcessManager
@@ -275,6 +250,31 @@ export function newDbDaemonManagementService(
         {
             setDaemons: (daemons: DaemonConfigs<DbConfig>) => dbDaemonStore.setDbDaemons(daemons),
             getDaemons: () => dbDaemonStore.getDbDaemons(),
+        }
+    );
+}
+
+export interface IRDPDaemonStore {
+    setRDPDaemons(rdpDaemons: DaemonConfigs<RDPConfig>): void;
+    getRDPDaemons(): DaemonConfigs<RDPConfig>;
+}
+
+export function newRDPDaemonManagementService(
+    rdpDaemonStore: IRDPDaemonStore,
+    processManager?: ProcessManager
+): DaemonManagementService<RDPConfig> {
+    // Default implementation
+    if (!processManager) {
+        processManager = new ProcessManagerService();
+    }
+
+    return new DaemonManagementService(
+        getDefaultRDPConfig,
+        processManager,
+        // Construct a mapping from RDPDaemonStore to DaemonStore
+        {
+            setDaemons: (daemons: DaemonConfigs<RDPConfig>) => rdpDaemonStore.setRDPDaemons(daemons),
+            getDaemons: () => rdpDaemonStore.getRDPDaemons(),
         }
     );
 }

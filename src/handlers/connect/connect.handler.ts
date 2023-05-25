@@ -14,6 +14,7 @@ import { MixpanelService } from 'services/Tracking/mixpanel.service';
 import { CreateUniversalConnectionResponse } from 'webshell-common-ts/http/v2/connection/responses/create-universal-connection.response';
 import { handleExitCode } from 'utils/daemon-utils';
 import { rdpConnectHandler } from './rdp-connect.handler';
+import { AgentType } from 'webshell-common-ts/http/v2/target/types/agent.types';
 
 export async function connectHandler(
     argv: yargs.Arguments<connectArgs>,
@@ -54,8 +55,21 @@ export async function connectHandler(
 
         switch(createUniversalConnectionResponse.targetType)
         {
+        case TargetType.Bzero:
+            if(createUniversalConnectionResponse.agentType == AgentType.Windows)
+                return await rdpConnectHandler(argv, createUniversalConnectionResponse.targetId, createUniversalConnectionResponse, configService, logger, loggerConfigService);
+            else {
+                const exitCode = await shellConnectHandler(createUniversalConnectionResponse.targetType, createUniversalConnectionResponse.targetUser, createUniversalConnectionResponse, configService, logger, loggerConfigService);
+
+                if (exitCode !== 0) {
+                    const errMsg = handleExitCode(exitCode, createUniversalConnectionResponse);
+                    if (errMsg.length > 0) {
+                        logger.error(errMsg);
+                    }
+                }
+                return exitCode;
+            }
         case TargetType.SsmTarget:
-        case TargetType.Linux:
         case TargetType.DynamicAccessConfig:
             const exitCode = await shellConnectHandler(createUniversalConnectionResponse.targetType, createUniversalConnectionResponse.targetUser, createUniversalConnectionResponse, configService, logger, loggerConfigService);
 
@@ -68,8 +82,6 @@ export async function connectHandler(
             return exitCode;
         case TargetType.Db:
             return await dbConnectHandler(argv, createUniversalConnectionResponse.splitCert, createUniversalConnectionResponse.targetId, createUniversalConnectionResponse.targetUser, createUniversalConnectionResponse, configService, logger, loggerConfigService);
-        case TargetType.Windows:
-            return await rdpConnectHandler(argv, createUniversalConnectionResponse.targetId, createUniversalConnectionResponse, configService, logger, loggerConfigService);
         case TargetType.Web:
             return await webConnectHandler(argv, createUniversalConnectionResponse.targetId, createUniversalConnectionResponse, configService, logger, loggerConfigService);
         case TargetType.Cluster:

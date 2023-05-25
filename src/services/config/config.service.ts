@@ -7,7 +7,7 @@ import { SubjectSummary } from 'webshell-common-ts/http/v2/subject/types/subject
 import { MrtapConfigInterface, MrtapConfigSchema } from 'webshell-common-ts/mrtap.service/mrtap.service.types';
 import { ILogoutConfigService } from 'handlers/logout/logout.handler';
 import { TokenHttpService } from 'http-services/token/token.http-services';
-import { DbDaemonStore, KubeDaemonStore } from 'services/daemon-management/daemon-management.service';
+import { DbDaemonStore, KubeDaemonStore, IRDPDaemonStore } from 'services/daemon-management/daemon-management.service';
 import { IKubeConfigService, IKubeDaemonSecurityConfigService } from 'services/kube-management/kube-management.service';
 import { Logger } from 'services/logger/logger.service';
 import { ConnectConfig, DaemonConfigs, DbConfig, GlobalKubeConfig, KubeConfig, RDPConfig, WebConfig } from 'services/config/config.service.types';
@@ -77,7 +77,7 @@ export interface IConfig {
     clearMrtap(): void;
 }
 
-export class ConfigService implements IKubeDaemonSecurityConfigService, IKubeConfigService, KubeDaemonStore, DbDaemonStore, ILogoutConfigService, MrtapConfigInterface {
+export class ConfigService implements IKubeDaemonSecurityConfigService, IKubeConfigService, KubeDaemonStore, DbDaemonStore, IRDPDaemonStore, ILogoutConfigService, MrtapConfigInterface {
     private config: IConfig;
     private tokenHttpService: TokenHttpService;
     private logoutDetectedSubject: Subject<boolean> = new Subject<boolean>();

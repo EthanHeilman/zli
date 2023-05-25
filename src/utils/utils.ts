@@ -245,12 +245,15 @@ export function isGuid(id: string): boolean{
 
 export function targetTypeDisplay(type: TargetType) : string {
     switch(type) {
+    case TargetType.Bzero:
+        return 'Bzero';
     case TargetType.SsmTarget:
         return 'SSM';
     case TargetType.DynamicAccessConfig:
         return 'Dynamic';
     case TargetType.Cluster:
-        return 'Cluster';
+    case TargetType.Kubernetes:
+        return 'Kubernetes';
     case TargetType.Linux:
         return 'Linux';
     case TargetType.Windows:
@@ -273,6 +276,8 @@ export function verbTypeDisplay(type: VerbType) : string {
         return 'FileTransfer';
     case VerbType.Tunnel:
         return 'Tunnel';
+    case VerbType.RDP:
+        return 'RDP';
     default:
         const _exhaustiveCheck: never = type;
         return _exhaustiveCheck;

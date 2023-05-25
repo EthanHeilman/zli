@@ -462,7 +462,7 @@ export class CliDriver
             )
             .command(
                 'disconnect [targetType]',
-                'Disconnect a zli daemon (db, web or kube)',
+                'Disconnect a zli daemon (db, rdp, web or kube)',
                 (yargs) => {
                     return disconnectCmdBuilder(yargs);
                 },
