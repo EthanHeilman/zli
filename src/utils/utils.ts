@@ -185,11 +185,7 @@ export function parseTargetStatus(targetStatus: string) : TargetStatus {
 export function parseTargetString(targetString: string) : ParsedTargetString
 {
     // case sensitive check for [targetUser@]<targetId | targetName>[:targetPath]
-    const pattern = /^([a-z_]([a-z0-9_-]{0,31}|[a-z0-9_-]{0,30}\$)@)?(([0-9A-Fa-f]{8}[-][0-9A-Fa-f]{4}[-][0-9A-Fa-f]{4}[-][0-9A-Fa-f]{4}[-][0-9A-Fa-f]{12})|([a-zA-Z0-9_.-]{1,255}))(:{1}|$)/;
-
-    if(! pattern.test(targetString)) {
-        return undefined;
-    }
+    // const pattern = /^([a-z_]([a-z0-9_-]{0,31}|[a-z0-9_-]{0,30}\$)@)?(([0-9A-Fa-f]{8}[-][0-9A-Fa-f]{4}[-][0-9A-Fa-f]{4}[-][0-9A-Fa-f]{4}[-][0-9A-Fa-f]{12})|([a-zA-Z0-9_.-]{1,255}))(:{1}|$)/;
 
     const result : ParsedTargetString = {
         type: undefined,
@@ -200,26 +196,39 @@ export function parseTargetString(targetString: string) : ParsedTargetString
         envName: undefined
     };
 
-    let atSignSplit = targetString.split('@', 2);
+    const userTargetSeparator = targetString.lastIndexOf('@');
 
-    // if targetUser@ is present, extract username
-    if(atSignSplit.length == 2)
+    // Extract the target role user if one is provided. Since target role users
+    //  can contain `@` the targetString might contain two `@` we use the last
+    //  `@` as the seperator. For instance not the two @ in the following
+    //  targetString:
+    //  aliceservacc@ethandbtest.iam.gserviceaccount.com@gcp-psql
+    //
+    //  aliceservacc@ethandbtest.iam.gserviceaccount.com
+    //  - is the GCP posgreSQL username
+    //
+    //  gcp-psql - is the bastionzero target alias
+    if (userTargetSeparator != -1)
     {
-        result.user = atSignSplit[0];
-        atSignSplit = atSignSplit.slice(1);
+        result.user = targetString.slice(0, userTargetSeparator);
+        targetString = targetString.slice(userTargetSeparator+1);
+    }
+    const targetNamePattern = /^(([0-9A-Fa-f]{8}[-][0-9A-Fa-f]{4}[-][0-9A-Fa-f]{4}[-][0-9A-Fa-f]{4}[-][0-9A-Fa-f]{12})|([a-zA-Z0-9_.-]{1,255}))(:{1}|$)/;
+    if(! targetNamePattern.test(targetString)) {
+        return undefined;
     }
 
     // extract the environment id or name
     // split only on the first period
     // everything before is the targetName and everything after is the environment
-    const firstSeparatorIndex = atSignSplit[0].indexOf('.');
+    const firstSeparatorIndex = targetString.indexOf('.');
     let targetIdOrName = '';
     let environmentIdOrName = '';
     if(firstSeparatorIndex >= 0) {
-        targetIdOrName = atSignSplit[0].slice(0, firstSeparatorIndex);
-        environmentIdOrName = atSignSplit[0].slice(firstSeparatorIndex + 1);
+        targetIdOrName = targetString.slice(0, firstSeparatorIndex);
+        environmentIdOrName = targetString.slice(firstSeparatorIndex + 1);
     } else {
-        targetIdOrName = atSignSplit[0];
+        targetIdOrName = targetString;
     }
 
     // test if targetSomething is GUID

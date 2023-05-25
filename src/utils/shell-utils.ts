@@ -201,7 +201,7 @@ export async function startShellDaemon(
         }
 
         try {
-            const daemonProcessExitCode = await spawnDaemon(logger, loggerConfigService, finalDaemonPath, args, runtimeConfig, configService.logoutDetected);
+            const daemonProcessExitCode = await spawnDaemon(logger, loggerConfigService, finalDaemonPath, args, runtimeConfig, baseEnv['CONTROL_PORT'], configService.logoutDetected);
             logger.debug(`Shell Daemon closed with exit code ${daemonProcessExitCode}`);
             resolve(daemonProcessExitCode);
         } catch(err) {

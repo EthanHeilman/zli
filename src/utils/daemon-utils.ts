@@ -17,6 +17,7 @@ import { Logger } from 'services/logger/logger.service';
 import { ProcessManagerService } from 'services/process-manager/process-manager.service';
 import { KillProcessResultType } from 'services/process-manager/process-manager.service.types';
 import { DAEMON_EXIT_CODES } from 'utils/daemon-exit-codes';
+import { DaemonProcess } from 'utils/types/daemon-process';
 import { toUpperCase } from 'utils/utils';
 import { Observable } from 'rxjs';
 
@@ -39,7 +40,7 @@ const WAIT_UTIL_USED_ON_HOST_RETRY_TIME = 100;
  * @param args args to pass to the daemon
  * @param customEnv any custom environment variables to set for the spawned
  * process in addition to parent process environment
- * @param cwd current working directory to use for the spawned subprocess
+ * @param controlPort the randomly-generated port used to send requests to the daemon
  * @param logoutDetected optionally provide an observable that fires when the user logs out
  * @returns A promise that resolves with the daemon process exit code
  */
@@ -49,6 +50,7 @@ export function spawnDaemon(
     daemonPath: string,
     args: string[],
     customEnv: object,
+    controlPort: number,
     logoutDetected: Observable<boolean> | null,
 ): Promise<number> {
     return new Promise((resolve, reject) => {
@@ -66,7 +68,13 @@ export function spawnDaemon(
             };
 
             const daemonProcess = cp.spawn(daemonFile, args, options);
-            resolve(waitForDaemonProcessExit(logger, loggerConfigService, daemonProcess, logoutDetected));
+            const daemon: DaemonProcess = {
+                process: daemonProcess,
+                pid: process.pid,
+                controlPort,
+            };
+
+            resolve(waitForDaemonProcessExit(logger, loggerConfigService, daemon, logoutDetected));
         }
         catch(err) {
             reject(err);
@@ -84,6 +92,7 @@ export function spawnDaemon(
  * @param args daemon command line args
  * @param customEnv any custom environment variables to set for the spawned
  * process in addition to parent process environment
+ * @param controlPort the randomly-generated port used to send requests to the daemon
  * @param logoutDetected optionally provide an observable that fires when the user logs out
  * @returns The spawned child process
  */
@@ -94,6 +103,7 @@ export async function spawnDaemonInBackground(
     daemonPath: string,
     args: string[],
     customEnv: object,
+    controlPort: number,
     logoutDetected: Observable<boolean> | null,
 ): Promise<cp.ChildProcess> {
     const options: cp.SpawnOptions = {
@@ -104,9 +114,14 @@ export async function spawnDaemonInBackground(
         stdio: 'ignore',
     };
 
-    const daemonProcess = await cp.spawn(daemonPath, args, options);
+    const daemonProcess = cp.spawn(daemonPath, args, options);
+    const daemon: DaemonProcess = {
+        process: daemonProcess,
+        pid: process.pid,
+        controlPort,
+    };
 
-    reportDaemonExitErrors(logger, loggerConfigService, daemonProcess, logoutDetected);
+    reportDaemonExitErrors(logger, loggerConfigService, daemon, logoutDetected);
 
     return daemonProcess;
 }
@@ -114,12 +129,12 @@ export async function spawnDaemonInBackground(
 export async function reportDaemonExitErrors(
     logger: Logger,
     loggerConfigService: LoggerConfigService,
-    daemonProcess: cp.ChildProcess,
+    daemon: DaemonProcess,
     logoutDetected: Observable<boolean> | null,
 ): Promise<void> {
     // If the daemon process exits while the zli process is still running then
     // report any custom errors and exit the zli as well
-    waitForDaemonProcessExit(logger, loggerConfigService, daemonProcess, logoutDetected)
+    waitForDaemonProcessExit(logger, loggerConfigService, daemon, logoutDetected)
         .then(async exitCode => await cleanExit(exitCode, logger));
 }
 
@@ -272,7 +287,7 @@ export function isPkgProcess() {
     return process1.pkg;
 }
 
-export async function startDaemonInDebugMode(finalDaemonPath: string, cwd: string, env: object, args: string[]) {
+export async function startDaemonInDebugMode(finalDaemonPath: string, cwd: string, env: object, controlPort: number, args: string[]) {
     const startDaemonPromise = new Promise<void>(async (resolve) => {
         // Start our daemon process in its own process group, but stream our stdio to the user (pipe)
         const daemonProcess = await spawn(finalDaemonPath, args,
@@ -288,8 +303,9 @@ export async function startDaemonInDebugMode(finalDaemonPath: string, cwd: strin
         const processManager = new ProcessManagerService();
 
         process.on('SIGINT', () => {
+            // TODO: test on windows
             // CTL+C sent from the user, kill the daemon process, which will trigger an exit
-            processManager.killProcess(daemonProcess.pid);
+            processManager.tryShutDownProcess(controlPort, daemonProcess.pid);
         });
 
         daemonProcess.on('exit', function () {
@@ -411,17 +427,17 @@ export function logKillDaemonResult(daemonIdentifier: string, result: KillProces
 }
 
 /**
- * Helper function to kill a daemon process and log the results
- * @param {number} daemon The daemon to kill
+ * Helper function to shut down a daemon process and log the results
+ * @param {DaemonConfig} daemon The daemon to shut down
  * @param {Logger} logger Logger
  */
-export async function killDaemonAndLog(daemon: DaemonConfig, logger: ILogger) {
+export async function shutDownDaemonAndLog(daemon: DaemonConfig, logger: ILogger) {
     // Check if we've already started a process
     if (daemon.localPid != null) {
         try {
             const processManager = new ProcessManagerService();
             logger.info(`Waiting for ${daemon.type} daemon to shut down...`);
-            const result = await processManager.tryKillProcess(daemon.localPid);
+            const result = await processManager.tryShutDownProcess(daemon.controlPort, daemon.localPid);
             const id = `${toUpperCase(daemon.type)} daemon (PID: ${daemon.localPid})`;
             logKillDaemonResult(id, result, logger);
         } catch (e: any) {
@@ -431,13 +447,13 @@ export async function killDaemonAndLog(daemon: DaemonConfig, logger: ILogger) {
 }
 
 /**
- * Helper function to check if we have saved a local pid for a daemon and attempts to kill
+ * Attempts to shut down the daemon running on the given port
  * This function will also alert a user if a local port is in use
  * @param {number} localPort Local port we are trying to use
  * @param {Logger} logger Logger
  */
-export async function killLocalPortAndPid(daemon: DaemonConfig, localPort: number, logger: Logger) {
-    await killDaemonAndLog(daemon, logger);
+export async function shutDownLocalPortAndPid(daemon: DaemonConfig, localPort: number, logger: Logger) {
+    await shutDownDaemonAndLog(daemon, logger);
 
     // Also check if anything is using that local port
     await checkIfPortAvailable(localPort);
@@ -486,6 +502,8 @@ async function getPidForPort(port: number): Promise<number[]> {
 
 /**
  * Helper function to get common environment variables to set for the daemon process
+ *
+ * Note that this also assigns a random port that the daemon will use for its control server
  */
 export async function getBaseDaemonEnv(configService: ConfigService, loggerConfigService: LoggerConfigService, agentPubKey: string, connectionId: string, authDetails: ShellConnectionAuthDetails) {
     // Build the refresh command so it works in the case of the pkg'd app which
@@ -494,6 +512,9 @@ export async function getBaseDaemonEnv(configService: ConfigService, loggerConfi
     // https://github.com/vercel/pkg/issues/897#issuecomment-679200552
     const execPath = getAppExecPath();
     const entryPoint = getAppEntrypoint();
+
+    // the daemon listens for control messages (e.g. shutdown) on this port
+    const controlPort = await findPort();
 
     return {
         'SESSION_ID': configService.getSessionId(),
@@ -507,7 +528,8 @@ export async function getBaseDaemonEnv(configService: ConfigService, loggerConfi
         'CONNECTION_ID': connectionId,
         'CONNECTION_SERVICE_URL': authDetails.connectionServiceUrl,
         'CONNECTION_SERVICE_AUTH_TOKEN': authDetails.authToken,
-        'DEBUG': loggerConfigService.debugMode()
+        'DEBUG': loggerConfigService.debugMode(),
+        'CONTROL_PORT': controlPort
     };
 }
 
@@ -544,23 +566,25 @@ export async function getOrDefaultLocalport(passedLocalport: number): Promise<nu
  * user
  * @param logger logger for reporting custom errors
  * @param loggerConfigService used to point the user to the daemon log path
- * @param daemonProcess the daemon child process
+ * @param daemon representation of the locally running daemon
  * @param logoutDetected optionally provide an observable that fires when the user logs out
  * @returns The daemon process' exit code
  */
 export function waitForDaemonProcessExit(
     logger: Logger,
     loggerConfigService: LoggerConfigService,
-    daemonProcess: cp.ChildProcess,
+    daemon: DaemonProcess,
     logoutDetected: Observable<boolean> | null,
 ): Promise<number> {
     return new Promise((resolve) => {
-        logoutDetected?.subscribe(() => {
+        logoutDetected?.subscribe(async () => {
             logger.error(`\nLogged out by another zli instance. Terminating connection...\n`);
-            daemonProcess.kill();
+            // this is necessary to properly close ephemeral connections (shell/ssh)
+            const processManager = new ProcessManagerService();
+            await processManager.tryShutDownProcess(daemon.controlPort, daemon.pid);
         });
 
-        daemonProcess.on('close', (exitCode) => {
+        daemon.process.on('close', (exitCode) => {
             if (exitCode !== 0) {
                 // Note: if using the ZLI_CUSTOM_DAEMON_PATH environment variable
                 // while developing we will instead use `go run` to start the daemon

@@ -50,6 +50,7 @@ import { serviceAccountSuite } from 'system-tests/tests/suites/service-account';
 import { UserSummary } from 'webshell-common-ts/http/v2/user/types/user-summary.types';
 import { ServiceAccountSummary } from 'webshell-common-ts/http/v2/service-account/types/service-account-summary.types';
 import { ServiceAccountHttpService } from 'http-services/service-account/service-account.http-services';
+import { forceRegisterSuite } from './suites/force-register';
 
 // Uses config name from ZLI_CONFIG_NAME environment variable (defaults to prod
 // if unset) This can be run against dev/stage/prod when running system tests
@@ -399,6 +400,7 @@ if (API_ENABLED) {
     } else {
         logger.info('Skipping kube cluster REST API suite because kube cluster creation is disabled.');
     }
+
 }
 
 if (AGENT_RECOVERY_ENABLED && BZERO_ENABLED && KUBE_ENABLED && process.env.TEST_RUNNER_KUBE_CONFIG) {
@@ -410,3 +412,7 @@ if (AGENT_RECOVERY_ENABLED && BZERO_ENABLED && KUBE_ENABLED && process.env.TEST_
 
 // Always run the version suite
 versionSuite();
+
+// Always run the force register suite last because this causes the test targets
+// to be re-registered with a new id
+forceRegisterSuite();

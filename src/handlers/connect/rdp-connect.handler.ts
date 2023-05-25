@@ -72,7 +72,7 @@ export async function rdpConnectHandler(
     try {
         if (!argv.debug) {
             // If we are not debugging, start the go subprocess in the background
-            const daemonProcess = await spawnDaemonInBackground(logger, loggerConfigService, cwd, finalDaemonPath, args, runtimeConfig, null);
+            const daemonProcess = await spawnDaemonInBackground(logger, loggerConfigService, cwd, finalDaemonPath, args, runtimeConfig, runtimeConfig['CONTROL_PORT'], null);
 
             // Add to dictionary of rdp daemons
             const rdpConfig: RDPConfig = {
@@ -80,7 +80,8 @@ export async function rdpConnectHandler(
                 name: bzTarget.name,
                 localHost: localHost,
                 localPort: localPort,
-                localPid: daemonProcess.pid
+                localPid: daemonProcess.pid,
+                controlPort: runtimeConfig['CONTROL_PORT'],
             };
 
             // Wait for daemon HTTP server to be bound and running
@@ -88,7 +89,7 @@ export async function rdpConnectHandler(
                 await handleServerStart(loggerConfigService.daemonLogPath(), rdpConfig.localPort, rdpConfig.localHost);
             } catch (error) {
                 const processManager = new ProcessManagerService();
-                await processManager.tryKillProcess(daemonProcess.pid);
+                await processManager.tryShutDownProcess(rdpConfig.controlPort, rdpConfig.localPid);
                 throw error;
             }
 
@@ -100,7 +101,7 @@ export async function rdpConnectHandler(
             return 0;
         } else {
             logger.warn(`Started rdp daemon in debug mode at ${localHost}:${localPort} for ${bzTarget.name}`);
-            await startDaemonInDebugMode(finalDaemonPath, cwd, runtimeConfig, args);
+            await startDaemonInDebugMode(finalDaemonPath, cwd, runtimeConfig, runtimeConfig['CONTROL_PORT'], args);
             await cleanExit(0, logger);
         }
     } catch (error) {

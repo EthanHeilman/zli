@@ -507,8 +507,7 @@ export class CliDriver
                         )
                         .command(
                             'certificate',
-                            // TODO: CWC-2320: unhide this
-                            false, //'Generate a root certificate and configure targets for SplitCert access',
+                            'Generate a root certificate and configure targets for SplitCert access',
                             (yargs) => generateCertificateCommandBuilder(yargs),
                             async (argv) => await certificateHandler(argv, this.configService, this.logger)
                         )

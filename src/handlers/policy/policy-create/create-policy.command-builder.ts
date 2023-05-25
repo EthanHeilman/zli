@@ -218,13 +218,12 @@ export function createProxyPolicyCmdBuilder(yargs: yargs.Argv<{}>, checkerFunc: 
             {
                 type: 'string',
                 array: true,
-                hidden: true, // TODO: CWC-2320: unhide this
                 demandOption: false,
                 requiresArg: true,
                 description: 'Allowed target users for the policy -- only used by SplitCert connections; otherwise will be ignored'
             }
         )
         .conflicts('targets', 'environments')
-        .example('$0 policy create-proxy -n policy_name -u user@random.com -g Engineering Legal -t target1 target2', 'Create a new proxy policy with the specified args');
-    //.example('$0 policy create-proxy -n policy_name -u user@random.com -e Default --targetUsers admin', 'Create a new proxy policy for targets in the Default environment. SplitCert targets can be accessed as the admin user'); // TODO: CWC-2320: add this back in
+        .example('$0 policy create-proxy -n policy_name -u user@random.com -g Engineering Legal -t target1 target2', 'Create a new proxy policy with the specified args')
+        .example('$0 policy create-proxy -n policy_name -u user@random.com -e Default --targetUsers admin', 'Create a new proxy policy for targets in the Default environment. SplitCert targets can be accessed as the admin user');
 }

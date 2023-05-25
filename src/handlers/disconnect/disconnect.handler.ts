@@ -8,7 +8,7 @@ import { DisconnectResult } from 'services/daemon-management/types/disconnect-re
 import { ILogger } from 'webshell-common-ts/logging/logging.types';
 import { DaemonConfig, DaemonConfigType } from 'services/config/config.service.types';
 import { filterAndOverwriteUserKubeConfig } from 'services/kube-management/kube-management.service';
-import { killDaemonAndLog, logKillDaemonResult } from 'utils/daemon-utils';
+import { shutDownDaemonAndLog, logKillDaemonResult } from 'utils/daemon-utils';
 import { toUpperCase } from 'utils/utils';
 
 export async function disconnectHandler(
@@ -31,7 +31,7 @@ export async function disconnectHandler(
         const webConfig = configService.getWebConfig();
 
         if (webConfig['localPid'] != null) {
-            await killDaemonAndLog(webConfig, logger);
+            await shutDownDaemonAndLog(webConfig, logger);
 
             // Update the localPid
             webConfig['localPid'] = null;

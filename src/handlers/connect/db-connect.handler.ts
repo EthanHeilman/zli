@@ -72,7 +72,7 @@ export async function dbConnectHandler(
     try {
         if (!argv.debug) {
             // If we are not debugging, start the go subprocess in the background
-            const daemonProcess = await spawnDaemonInBackground(logger, loggerConfigService, cwd, finalDaemonPath, args, runtimeConfig, null);
+            const daemonProcess = await spawnDaemonInBackground(logger, loggerConfigService, cwd, finalDaemonPath, args, runtimeConfig, baseEnv['CONTROL_PORT'], null);
 
             // Add to dictionary of db daemons
             const dbConfig: DbConfig = {
@@ -80,7 +80,8 @@ export async function dbConnectHandler(
                 name: dbTarget.name,
                 localHost: localHost,
                 localPort: localPort,
-                localPid: daemonProcess.pid
+                localPid: daemonProcess.pid,
+                controlPort: runtimeConfig['CONTROL_PORT'],
             };
 
             // Wait for daemon HTTP server to be bound and running
@@ -88,7 +89,7 @@ export async function dbConnectHandler(
                 await handleServerStart(loggerConfigService.daemonLogPath(), dbConfig.localPort, dbConfig.localHost);
             } catch (error) {
                 const processManager = new ProcessManagerService();
-                await processManager.tryKillProcess(daemonProcess.pid);
+                await processManager.tryShutDownProcess(dbConfig.controlPort, dbConfig.localPid);
                 throw error;
             }
 
@@ -100,7 +101,7 @@ export async function dbConnectHandler(
             return 0;
         } else {
             logger.warn(`Started db daemon in debug mode at ${localHost}:${localPort} for ${dbTarget.name}`);
-            await startDaemonInDebugMode(finalDaemonPath, cwd, runtimeConfig, args);
+            await startDaemonInDebugMode(finalDaemonPath, cwd, runtimeConfig, runtimeConfig['CONTROL_PORT'], args);
             await cleanExit(0, logger);
         }
     } catch (error) {

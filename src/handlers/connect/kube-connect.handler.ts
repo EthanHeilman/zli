@@ -106,7 +106,7 @@ export async function startKubeDaemonHandler(
     try {
         if (!argv.debug) {
             // If we are not debugging, start the go subprocess in the background
-            const daemonProcess = await spawnDaemonInBackground(logger, loggerConfigService, cwd, finalDaemonPath, args, runtimeConfig, null);
+            const daemonProcess = await spawnDaemonInBackground(logger, loggerConfigService, cwd, finalDaemonPath, args, runtimeConfig, baseEnv['CONTROL_PORT'], null);
 
             // Generate kube config for this daemon
             const generatedKubeConfig = generateKubeConfig(
@@ -128,6 +128,7 @@ export async function startKubeDaemonHandler(
                 localHost: 'localhost',
                 localPort: daemonPort,
                 localPid: daemonProcess.pid,
+                controlPort: runtimeConfig['CONTROL_PORT'],
                 targetUser: targetUser,
                 targetGroups: targetGroups,
                 defaultNamespace: argv.namespace
@@ -147,7 +148,7 @@ export async function startKubeDaemonHandler(
             return 0;
         } else {
             logger.warn(`Started kube daemon in debug mode at localhost:${daemonPort} for ${targetUser}@${clusterTarget.name}`);
-            await startDaemonInDebugMode(finalDaemonPath, cwd, runtimeConfig, args);
+            await startDaemonInDebugMode(finalDaemonPath, cwd, runtimeConfig, runtimeConfig['CONTROL_PORT'], args);
             await cleanExit(0, logger);
         }
     } catch (error) {

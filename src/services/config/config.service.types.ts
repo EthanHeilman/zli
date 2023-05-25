@@ -19,6 +19,7 @@ interface BaseDaemonConfig {
     localHost: string,
     localPort: number,
     localPid: number,
+    controlPort: number,
 }
 
 export interface WebConfig extends BaseDaemonConfig {
@@ -66,6 +67,7 @@ export function getDefaultKubeConfig(): KubeConfig {
         localHost: null,
         localPort: null,
         localPid: null,
+        controlPort: null,
         targetUser: null,
         targetGroups: null,
         targetCluster: null
@@ -78,7 +80,8 @@ export function getDefaultDbConfig(): DbConfig {
         name: null,
         localHost: null,
         localPort: null,
-        localPid: null
+        localPid: null,
+        controlPort: null,
     };
 }
 
@@ -88,7 +91,8 @@ export function getDefaultRDPConfig(): RDPConfig {
         name: null,
         localHost: null,
         localPort: null,
-        localPid: null
+        localPid: null,
+        controlPort: null,
     };
 }
 
@@ -99,6 +103,7 @@ export function getDefaultWebConfig(): WebConfig {
         localPort: null,
         localPid: null,
         name: null,
+        controlPort: null,
     };
 }
 
