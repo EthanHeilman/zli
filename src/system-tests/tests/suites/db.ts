@@ -548,7 +548,8 @@ export const dbSuite = () => {
                                 name: createdDbTargetDetails.targetName,
                                 localPort: expectedPorts[i],
                                 localHost: 'localhost',
-                                localPid: expect.anything()
+                                localPid: expect.anything(),
+                                controlPort: expect.anything(),
                             },
                             status: {
                                 type: 'db',
