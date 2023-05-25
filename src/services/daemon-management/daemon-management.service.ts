@@ -11,7 +11,7 @@ export interface DaemonStore<T extends DaemonConfig> {
 
 export interface ProcessManager {
     isProcessRunning(pid: number): boolean;
-    tryKillProcess(localPid: number): Promise<KillProcessResultType>;
+    tryShutDownProcess(controlPort: number, localPid: number): Promise<KillProcessResultType>;
 }
 
 export const LEGACY_KEY_STRING: string = 'n/a';
@@ -24,7 +24,7 @@ export const LEGACY_KEY_STRING: string = 'n/a';
  *
  * (1) Manage the addition/removal of daemon configs from an arbitrary KV store.
  *
- * (2) Forcibly kill the daemon.
+ * (2) Shut down or force-kill a daemon
 
  * (3) Provide daemon's status (e.g. daemon quit unexpectedly).
  *
@@ -197,24 +197,24 @@ export class DaemonManagementService<T extends DaemonConfig> {
         const resultMap: Map<string, DisconnectResult<T>> = new Map();
         const daemonConfigs = this.getDaemonConfigs();
 
-        const killButAlwaysResolve = async (connectionId: string, daemonConfig: T): Promise<[string, DisconnectResult<T>]> => {
+        const shutDownButAlwaysResolve = async (connectionId: string, daemonConfig: T): Promise<[string, DisconnectResult<T>]> => {
             if (daemonConfig.localPid == null) {
                 return [connectionId, { type: 'daemon_pid_not_set', daemon: daemonConfig }];
             }
 
             try {
-                const killResult = await this.processManager.tryKillProcess(daemonConfig.localPid);
+                const killResult = await this.processManager.tryShutDownProcess(daemonConfig.controlPort, daemonConfig.localPid);
                 return [connectionId, { type: 'daemon_success_killed', daemon: daemonConfig, killResult: killResult }];
             } catch (err: any) {
                 return [connectionId, { type: 'daemon_fail_killed', daemon: daemonConfig, error: err }];
             }
         };
 
-        // Attempt to kill all daemons concurrently
+        // Attempt to shut down all daemons concurrently
         const results = await Promise.all(
             Array
                 .from(daemonConfigs.entries())
-                .map(([connectionId, daemonConfig]) => killButAlwaysResolve(connectionId, daemonConfig)
+                .map(([connectionId, daemonConfig]) => shutDownButAlwaysResolve(connectionId, daemonConfig)
                 ));
 
         // Process results

@@ -16,6 +16,7 @@ import { copyExecutableToLocalDir, getBaseDaemonEnv, getOrDefaultLocalport, hand
 import { parseTargetString } from 'utils/utils';
 import { cleanExit } from 'handlers/clean-exit.handler';
 import { sshProxyArg } from 'handlers/ssh-proxy/ssh-proxy.command-builder';
+import { DaemonProcess } from 'utils/types/daemon-process';
 
 const minimumAgentVersion = '6.1.0';
 const readyMsg = 'BZERO-DAEMON READY-TO-CONNECT';
@@ -171,6 +172,11 @@ async function bzeroOpaqueSshProxyHandler(configService: ConfigService, logger: 
         };
 
         const daemonProcess = spawn(daemonName, args, options);
+        const daemon: DaemonProcess = {
+            process: daemonProcess,
+            pid: process.pid,
+            controlPort: runtimeConfig['CONTROL_PORT'],
+        };
 
         configService.logoutDetected.subscribe(() => {
             logger.error(`\nLogged out by another zli instance. Terminating ssh tunnel\n`);
@@ -191,7 +197,7 @@ async function bzeroOpaqueSshProxyHandler(configService: ConfigService, logger: 
             daemonProcess.stdin.end();
         });
 
-        return await waitForDaemonProcessExit(logger, loggerConfigService, daemonProcess, null);
+        return await waitForDaemonProcessExit(logger, loggerConfigService, daemon, null);
     } catch (err) {
         throw new Error(`Error starting ssh daemon: ${err}`);
     }
@@ -242,6 +248,11 @@ async function bzeroTransparentSshProxyHandler(configService: ConfigService, log
         };
 
         const daemonProcess = spawn(finalDaemonPath, args, options);
+        const daemon: DaemonProcess = {
+            process: daemonProcess,
+            pid: process.pid,
+            controlPort: runtimeConfig['CONTROL_PORT'],
+        };
 
         configService.logoutDetected.subscribe(() => {
             logger.error(`\nLogged out by another zli instance. Terminating ssh tunnel\n`);
@@ -280,7 +291,7 @@ async function bzeroTransparentSshProxyHandler(configService: ConfigService, log
             process.stdout.end();
         });
 
-        return await waitForDaemonProcessExit(logger, loggerConfigService, daemonProcess, null);
+        return await waitForDaemonProcessExit(logger, loggerConfigService, daemon, null);
     } catch (err) {
         throw new Error(`Error starting ssh daemon: ${err}`);
     }

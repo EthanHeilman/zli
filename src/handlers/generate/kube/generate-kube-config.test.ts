@@ -21,6 +21,7 @@ function arbZliKubeConfig(): fc.Arbitrary<ZliKubeConfig> {
         localPort: fc.integer({ min: 1, max: 65535 }),
         localPid: fc.integer(),
         localHost: fc.constant('localhost'),
+        controlPort: fc.integer(),
         defaultNamespace: fc.string()
     }, {
         requiredKeys: [
@@ -30,7 +31,8 @@ function arbZliKubeConfig(): fc.Arbitrary<ZliKubeConfig> {
             'targetCluster',
             'localPort',
             'localPid',
-            'localHost']
+            'localHost',
+            'controlPort']
     }
     );
 }
@@ -67,7 +69,8 @@ describe('Generate kube config suite', () => {
     // Constants
     const fakeUserEmail = 'foo@gmail.com';
     // Used by non-PBT tests
-    const fakeDaemonConfig: ZliKubeConfig = { type: 'kube', targetUser: 'foo', targetGroups: [], targetCluster: 'my-cluster', localPort: 5002, localPid: 60433, localHost: 'localhost' };
+
+    const fakeDaemonConfig: ZliKubeConfig = { type: 'kube', targetUser: 'foo', targetGroups: [], targetCluster: 'my-cluster', localPort: 5002, localPid: 60433, localHost: 'localhost', controlPort: 54720 };
     const fakeDaemonMap = new Map<string, ZliKubeConfig>([
         ['fake-connection-id', fakeDaemonConfig]
     ]);
