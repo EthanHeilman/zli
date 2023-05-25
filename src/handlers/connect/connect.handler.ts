@@ -1,18 +1,18 @@
-import { ConfigService } from '../../services/config/config.service';
-import { Logger } from '../../services/logger/logger.service';
-import { LoggerConfigService } from '../../services/logger/logger-config.service';
-import { connectArgs } from './connect.command-builder';
-import { ConnectionHttpService } from '../../http-services/connection/connection.http-services';
-import { parseTargetString, parseTargetType } from '../../utils/utils';
+import { ConfigService } from 'services/config/config.service';
+import { Logger } from 'services/logger/logger.service';
+import { LoggerConfigService } from 'services/logger/logger-config.service';
+import { connectArgs } from 'handlers/connect/connect.command-builder';
+import { ConnectionHttpService } from 'http-services/connection/connection.http-services';
+import { parseTargetString, parseTargetType } from 'utils/utils';
 import yargs from 'yargs';
-import { TargetType } from '../../../webshell-common-ts/http/v2/target/types/target.types';
-import { shellConnectHandler } from './shell-connect.handler';
-import { dbConnectHandler } from './db-connect.handler';
-import { webConnectHandler } from './web-connect.handler';
-import { startKubeDaemonHandler } from './kube-connect.handler';
-import { MixpanelService } from '../../services/Tracking/mixpanel.service';
-import { CreateUniversalConnectionResponse } from '../../../webshell-common-ts/http/v2/connection/responses/create-universal-connection.response';
-import { handleExitCode } from '../../utils/daemon-utils';
+import { TargetType } from 'webshell-common-ts/http/v2/target/types/target.types';
+import { shellConnectHandler } from 'handlers/connect/shell-connect.handler';
+import { dbConnectHandler } from 'handlers/connect/db-connect.handler';
+import { webConnectHandler } from 'handlers/connect/web-connect.handler';
+import { startKubeDaemonHandler } from 'handlers/connect/kube-connect.handler';
+import { MixpanelService } from 'services/Tracking/mixpanel.service';
+import { CreateUniversalConnectionResponse } from 'webshell-common-ts/http/v2/connection/responses/create-universal-connection.response';
+import { handleExitCode } from 'utils/daemon-utils';
 
 export async function connectHandler(
     argv: yargs.Arguments<connectArgs>,

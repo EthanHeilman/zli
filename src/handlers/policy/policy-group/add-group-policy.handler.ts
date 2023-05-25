@@ -1,10 +1,10 @@
-import { ConfigService } from '../../../services/config/config.service';
-import { Logger } from '../../../services/logger/logger.service';
-import { OrganizationHttpService } from '../../../http-services/organization/organization.http-services';
-import { PolicyHttpService } from '../../../http-services/policy/policy.http-services';
-import { GroupSummary } from '../../../../webshell-common-ts/http/v2/organization/types/group-summary.types';
-import { Group } from '../../../../webshell-common-ts/http/v2/policy/types/group.types';
-import { editPolicy, getPolicyFromName } from '../../../services/policy/policy.services';
+import { ConfigService } from 'services/config/config.service';
+import { Logger } from 'services/logger/logger.service';
+import { OrganizationHttpService } from 'http-services/organization/organization.http-services';
+import { PolicyHttpService } from 'http-services/policy/policy.http-services';
+import { GroupSummary } from 'webshell-common-ts/http/v2/organization/types/group-summary.types';
+import { Group } from 'webshell-common-ts/http/v2/policy/types/group.types';
+import { editPolicy, getPolicyFromName } from 'services/policy/policy.services';
 
 export async function addGroupToPolicyHandler(groupName: string, policyName: string, configService: ConfigService, logger: Logger) {
     // First ensure we can lookup the group

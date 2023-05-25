@@ -1,8 +1,8 @@
-import { Logger } from '../../services/logger/logger.service';
-import { ConfigService } from '../../services/config/config.service';
+import { Logger } from 'services/logger/logger.service';
+import { ConfigService } from 'services/config/config.service';
 import yargs from 'yargs';
-import { AuthorizedGithubActionHttpService } from '../../http-services/authorized-github-action/authorized-github-action.http-services';
-import { deleteAuthorizedGithubActionArgs } from './delete-authorized-github-action.command-builder';
+import { AuthorizedGithubActionHttpService } from 'http-services/authorized-github-action/authorized-github-action.http-services';
+import { deleteAuthorizedGithubActionArgs } from 'handlers/authorized-github-action/delete-authorized-github-action.command-builder';
 
 export async function deleteAuthorizedGithubActionHandler(configService: ConfigService, logger: Logger, argv : yargs.Arguments<deleteAuthorizedGithubActionArgs>) {
     const authorizedGithubActionHttpService = new AuthorizedGithubActionHttpService(configService, logger);

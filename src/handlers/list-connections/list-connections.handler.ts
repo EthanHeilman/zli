@@ -1,10 +1,10 @@
-import { ConfigService } from '../../services/config/config.service';
-import { Logger } from '../../services/logger/logger.service';
-import { createTableWithWordWrap, toUpperCase } from '../../utils/utils';
-import { listConnectionsArgs } from './list-connections.command-builder';
+import { ConfigService } from 'services/config/config.service';
+import { Logger } from 'services/logger/logger.service';
+import { createTableWithWordWrap, toUpperCase } from 'utils/utils';
+import { listConnectionsArgs } from 'handlers/list-connections/list-connections.command-builder';
 import yargs from 'yargs';
-import { ConnectionInfo } from '../../services/list-connections/list-connections.service.types';
-import { listOpenDbConnections, listOpenKubeConnections, listOpenShellConnections } from '../../services/list-connections/list-connections.service';
+import { ConnectionInfo } from 'services/list-connections/list-connections.service.types';
+import { listOpenDbConnections, listOpenKubeConnections, listOpenShellConnections } from 'services/list-connections/list-connections.service';
 
 export async function listConnectionsHandler(
     argv: yargs.Arguments<listConnectionsArgs>,

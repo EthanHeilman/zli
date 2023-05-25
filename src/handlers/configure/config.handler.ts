@@ -1,6 +1,6 @@
-import { ConfigService } from '../../services/config/config.service';
-import { Logger } from '../../services/logger/logger.service';
-import { LoggerConfigService } from '../../services/logger/logger-config.service';
+import { ConfigService } from 'services/config/config.service';
+import { Logger } from 'services/logger/logger.service';
+import { LoggerConfigService } from 'services/logger/logger-config.service';
 
 export async function configHandler(logger: Logger, configService: ConfigService, loggerConfigService: LoggerConfigService) {
     logger.info(`You can edit your config here: ${configService.getConfigPath()}`);

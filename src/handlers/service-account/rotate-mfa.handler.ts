@@ -1,13 +1,13 @@
-import { ConfigService } from '../../services/config/config.service';
+import { ConfigService } from 'services/config/config.service';
 import yargs from 'yargs';
-import { ServiceAccountHttpService } from '../../../src/http-services/service-account/service-account.http-services';
-import { Logger } from '../../../src/services/logger/logger.service';
-import { rotateMfaArgs } from './rotate-mfa.command-builder';
-import { SubjectHttpService } from '../../../src/http-services/subject/subject.http-services';
-import { SubjectType } from '../../../webshell-common-ts/http/v2/common.types/subject.types';
-import { MfaHttpService } from '../../../src/http-services/mfa/mfa.http-services';
-import { checkWritableFilePath, createBzeroCredsFile } from '../../../src/utils/utils';
-import { SubjectSummary } from '../../../webshell-common-ts/http/v2/subject/types/subject-summary.types';
+import { ServiceAccountHttpService } from 'http-services/service-account/service-account.http-services';
+import { Logger } from 'services/logger/logger.service';
+import { rotateMfaArgs } from 'handlers/service-account/rotate-mfa.command-builder';
+import { SubjectHttpService } from 'http-services/subject/subject.http-services';
+import { SubjectType } from 'webshell-common-ts/http/v2/common.types/subject.types';
+import { MfaHttpService } from 'http-services/mfa/mfa.http-services';
+import { checkWritableFilePath, createBzeroCredsFile } from 'utils/utils';
+import { SubjectSummary } from 'webshell-common-ts/http/v2/subject/types/subject-summary.types';
 
 export async function rotateMfaHandler(configService: ConfigService, logger: Logger, argv : yargs.Arguments<rotateMfaArgs>) {
     const serviceAccountHttpService = new ServiceAccountHttpService(configService, logger);

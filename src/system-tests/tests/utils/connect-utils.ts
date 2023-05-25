@@ -1,21 +1,21 @@
 import * as cp from 'child_process';
 import * as pty from 'node-pty';
 import path from 'path';
-import { ConnectionEventType } from '../../../../webshell-common-ts/http/v2/event/types/connection-event.types';
-import { TargetUser } from '../../../../webshell-common-ts/http/v2/policy/types/target-user.types';
-import * as CleanExitHandler from '../../../handlers/clean-exit.handler';
-import { DynamicAccessConnectionUtils } from '../../../handlers/connect/dynamic-access-connect-utils';
-import { ConnectionHttpService } from '../../../http-services/connection/connection.http-services';
-import * as DaemonUtils from '../../../utils/daemon-utils';
-import { DigitalOceanBZeroTarget } from '../../digital-ocean/digital-ocean-target.service.types';
-import { ContainerBzeroTarget } from '../suites/agent-container';
-import { DATBzeroTarget } from '../suites/dynamic-access';
-import { configService, RUN_AS_SERVICE_ACCOUNT, testTargets } from '../system-test';
-import { bzeroTargetCustomUser, idpUsernameTargetCustomSA, idpUsernameTargetCustomUser } from '../system-test-setup';
-import { TestTarget } from '../system-test.types';
-import { getMockResultValue } from './jest-utils';
-import { sleepTimeout, TestUtils } from './test-utils';
-import { callZli } from './zli-utils';
+import { ConnectionEventType } from 'webshell-common-ts/http/v2/event/types/connection-event.types';
+import { TargetUser } from 'webshell-common-ts/http/v2/policy/types/target-user.types';
+import * as CleanExitHandler from 'handlers/clean-exit.handler';
+import { DynamicAccessConnectionUtils } from 'handlers/connect/dynamic-access-connect-utils';
+import { ConnectionHttpService } from 'http-services/connection/connection.http-services';
+import * as DaemonUtils from 'utils/daemon-utils';
+import { DigitalOceanBZeroTarget } from 'system-tests/digital-ocean/digital-ocean-target.service.types';
+import { ContainerBzeroTarget } from 'system-tests/tests/suites/agent-container';
+import { DATBzeroTarget } from 'system-tests/tests/suites/dynamic-access';
+import { configService, RUN_AS_SERVICE_ACCOUNT, testTargets } from 'system-tests/tests/system-test';
+import { bzeroTargetCustomUser, idpUsernameTargetCustomSA, idpUsernameTargetCustomUser } from 'system-tests/tests/system-test-setup';
+import { TestTarget } from 'system-tests/tests/system-test.types';
+import { getMockResultValue } from 'system-tests/tests/utils/jest-utils';
+import { sleepTimeout, TestUtils } from 'system-tests/tests/utils/test-utils';
+import { callZli } from 'system-tests/tests/utils/zli-utils';
 
 
 
@@ -38,7 +38,7 @@ interface ConnectTarget {
     eventTargetType: string;
     targetUser: string;
 
-    writeToStdIn: (data: string) => Promise<void>;
+    writeToStdIn: (data: string, inputCharDelay: number) => Promise<void>;
     getCapturedOutput: () => string[];
     cleanup: () => void | Promise<void>;
 };
@@ -91,7 +91,7 @@ export class ConnectTestUtils {
         return await this.runShellConnectTestHelper(connectTarget, stringToEcho, exit);
     }
 
-    private async runShellConnectTestHelper(connectTarget: ConnectTarget, stringToEcho: string, exit: boolean, appName: string = null): Promise<ConnectTestResult> {
+    public async runShellConnectTestHelper(connectTarget: ConnectTarget, stringToEcho: string, exit: boolean, appName: string = null): Promise<ConnectTestResult> {
         const startTime = new Date();
 
         // Spy on result of the ConnectionHttpService.CreateUniversalConnection
@@ -186,7 +186,7 @@ export class ConnectTestUtils {
         // to distinguish between a normal closure (user types exit) and an
         // abnormal websocket closure
         jest.spyOn(CleanExitHandler, 'cleanExit').mockImplementationOnce(() => Promise.resolve());
-        await connectTarget.writeToStdIn('exit');
+        await connectTarget.writeToStdIn('exit', 0);
     }
 
     public async testEchoCommand(connectTarget: ConnectTarget, stringToEcho: string, startTime: Date) {
@@ -202,7 +202,7 @@ export class ConnectTestUtils {
                 // we sent (possibly sends command more than once).
 
                 const commandToSend = `echo ${stringToEcho}`;
-                await connectTarget.writeToStdIn(commandToSend);
+                await connectTarget.writeToStdIn(commandToSend, 25);
 
                 // Check that the full "hello world" string exists as
                 // one of the strings in the captured output. This
@@ -314,12 +314,12 @@ export class ConnectTestUtils {
             eventTargetType: 'SHELL',
             targetUser: targetUser,
             type: target.type,
-            writeToStdIn: async (data) => {
+            writeToStdIn: async (data, delay) => {
                 if(! daemonPty) {
                     throw new Error('daemonPty is undefined');
                 }
 
-                await this.sendMockInput(data, (data) => daemonPty.write(data));
+                await this.sendMockInput(data, (data) => daemonPty.write(data), delay);
             },
             getCapturedOutput: () => {
                 return capturedOutput;
@@ -340,7 +340,7 @@ export class ConnectTestUtils {
         return [
             {userName: bzeroTargetCustomUser }, // bzero targets
             {userName: '{username}' }, // allow idp username
-            {userName: 'root'} // dat targets
+            {userName: 'root'} // dat targets and force register
         ];
     }
 
@@ -351,8 +351,9 @@ export class ConnectTestUtils {
      * in order to allow the command to be logged at the bastion level
      * @param {string} commandToSend Command we want to send
      * @param {writeFunc} writeFunc Function used to write the input data
+     * @param {delay} delay Time (in ms) to wait between sending input characters
      */
-    private async sendMockInput(commandToSend: string, writeFunc: (data: string) => void) {
+    private async sendMockInput(commandToSend: string, writeFunc: (data: string) => void, delay: number) {
         const commandSplit = commandToSend.split('');
         for (let i : number = 0; i < commandSplit.length; i++ ){
             const char = commandSplit[i];
@@ -361,7 +362,7 @@ export class ConnectTestUtils {
             writeFunc(char);
 
             // Wait in between each letter being sent
-            await sleepTimeout(25);
+            if(delay > 0) await sleepTimeout(delay);
         }
 
         // Wait before sending final carriage return to avoid race condition

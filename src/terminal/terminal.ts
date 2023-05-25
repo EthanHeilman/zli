@@ -1,17 +1,17 @@
 import { Observable, Subject, Subscription } from 'rxjs';
-import { isAgentMrtapReady, SsmShellWebsocketService } from '../../webshell-common-ts/ssm-shell-websocket.service/ssm-shell-websocket.service';
-import { IDisposable } from '../../webshell-common-ts/utility/disposable';
-import { MrtapService } from '../../webshell-common-ts/mrtap.service/mrtap.service';
+import { isAgentMrtapReady, SsmShellWebsocketService } from 'webshell-common-ts/ssm-shell-websocket.service/ssm-shell-websocket.service';
+import { IDisposable } from 'webshell-common-ts/utility/disposable';
+import { MrtapService } from 'webshell-common-ts/mrtap.service/mrtap.service';
 
-import { ConfigService } from '../services/config/config.service';
-import { ISsmShellWebsocketService, ShellEvent, ShellEventType, TerminalSize } from '../../webshell-common-ts/ssm-shell-websocket.service/ssm-shell-websocket.service.types';
-import { ZliAuthConfigService } from '../services/config/zli-auth-config.service';
-import { Logger } from '../services/logger/logger.service';
-import { ShellConnectionSummary } from '../../webshell-common-ts/http/v2/connection/types/shell-connection-summary.types';
-import { ConnectionHttpService } from '../http-services/connection/connection.http-services';
-import { SsmTargetHttpService } from '../http-services/targets/ssm/ssm-target.http-services';
-import { TargetType } from '../../webshell-common-ts/http/v2/target/types/target.types';
-import { SsmTargetSummary } from '../../webshell-common-ts/http/v2/target/ssm/types/ssm-target-summary.types';
+import { ConfigService } from 'services/config/config.service';
+import { ISsmShellWebsocketService, ShellEvent, ShellEventType, TerminalSize } from 'webshell-common-ts/ssm-shell-websocket.service/ssm-shell-websocket.service.types';
+import { ZliAuthConfigService } from 'services/config/zli-auth-config.service';
+import { Logger } from 'services/logger/logger.service';
+import { ShellConnectionSummary } from 'webshell-common-ts/http/v2/connection/types/shell-connection-summary.types';
+import { ConnectionHttpService } from 'http-services/connection/connection.http-services';
+import { SsmTargetHttpService } from 'http-services/targets/ssm/ssm-target.http-services';
+import { TargetType } from 'webshell-common-ts/http/v2/target/types/target.types';
+import { SsmTargetSummary } from 'webshell-common-ts/http/v2/target/ssm/types/ssm-target-summary.types';
 
 export class SsmShellTerminal implements IDisposable
 {

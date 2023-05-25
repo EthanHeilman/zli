@@ -1,9 +1,9 @@
-import { Logger } from '../../../services/logger/logger.service';
-import { ConfigService } from '../../../services/config/config.service';
-import { getTableOfTargetUsers } from '../../../utils/utils';
+import { Logger } from 'services/logger/logger.service';
+import { ConfigService } from 'services/config/config.service';
+import { getTableOfTargetUsers } from 'utils/utils';
 import yargs from 'yargs';
-import { listTargetUserArgs } from './list-targetusers.command-builder';
-import { PolicyHttpService } from '../../../http-services/policy/policy.http-services';
+import { listTargetUserArgs } from 'handlers/policy/policy-targetuser/list-targetusers.command-builder';
+import { PolicyHttpService } from 'http-services/policy/policy.http-services';
 
 export async function listTargetUsersHandler(configService: ConfigService, logger: Logger, argv : yargs.Arguments<listTargetUserArgs>, policyName: string) {
 

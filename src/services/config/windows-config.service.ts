@@ -2,9 +2,9 @@ import { TokenSet } from 'openid-client';
 import path from 'path';
 import { Subject } from 'rxjs';
 import Registry from 'winreg';
-import { getDefaultMrtapConfig, MrtapConfigSchema } from '../../../webshell-common-ts/mrtap.service/mrtap.service.types';
-import { Config } from './conf';
-import { IConfig } from './config.service';
+import { getDefaultMrtapConfig, MrtapConfigSchema } from 'webshell-common-ts/mrtap.service/mrtap.service.types';
+import { Config } from 'services/config/conf';
+import { IConfig } from 'services/config/config.service';
 
 const WINDOWS_REGISTRY_KEY = '\\Software\\BastionZero';
 

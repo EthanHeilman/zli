@@ -1,7 +1,7 @@
-import { Logger } from '../../services/logger/logger.service';
-import { ConfigService } from '../../services/config/config.service';
+import { Logger } from 'services/logger/logger.service';
+import { ConfigService } from 'services/config/config.service';
 import yargs from 'yargs';
-import { defaultTargetGroupArgs } from './default-target-group.command-builder';
+import { defaultTargetGroupArgs } from 'handlers/default-target-group/default-target-group.command-builder';
 
 export async function defaultTargetGroupHandler(configService: ConfigService, logger: Logger, argv: yargs.Arguments<defaultTargetGroupArgs>) {
     // Open up our global kube config

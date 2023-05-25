@@ -1,11 +1,11 @@
-import { AuthorizedGithubActionHttpService } from '../../../src/http-services/authorized-github-action/authorized-github-action.http-services';
-import { UserHttpService } from '../../../src/http-services/user/user.http-services';
-import { getTableOfAuthorizedGithubActions } from '../../../src/utils/utils';
+import { AuthorizedGithubActionHttpService } from 'http-services/authorized-github-action/authorized-github-action.http-services';
+import { UserHttpService } from 'http-services/user/user.http-services';
+import { getTableOfAuthorizedGithubActions } from 'utils/utils';
 import yargs from 'yargs';
-import { listAuthorizedGithubActionsArgs } from './list-authorized-github-actions.command-builder';
-import { ConfigService } from '../../../src/services/config/config.service';
-import { Logger } from '../../../src/services/logger/logger.service';
-import { UserSummary } from '../../../webshell-common-ts/http/v2/user/types/user-summary.types';
+import { listAuthorizedGithubActionsArgs } from 'handlers/authorized-github-action/list-authorized-github-actions.command-builder';
+import { ConfigService } from 'services/config/config.service';
+import { Logger } from 'services/logger/logger.service';
+import { UserSummary } from 'webshell-common-ts/http/v2/user/types/user-summary.types';
 
 export async function listAuthorizedGithubActionsHandler(
     argv: yargs.Arguments<listAuthorizedGithubActionsArgs>,

@@ -1,9 +1,9 @@
-import { ConfigService } from '../../services/config/config.service';
-import { Logger } from '../../services/logger/logger.service';
-import { parseTargetString } from '../../utils/utils';
-import { restartArgs } from './target-restart.command-builder';
+import { ConfigService } from 'services/config/config.service';
+import { Logger } from 'services/logger/logger.service';
+import { parseTargetString } from 'utils/utils';
+import { restartArgs } from 'handlers/target/target-restart.command-builder';
 import yargs from 'yargs';
-import { BzeroTargetHttpService } from '../../http-services/targets/bzero/bzero.http-services';
+import { BzeroTargetHttpService } from 'http-services/targets/bzero/bzero.http-services';
 
 export async function targetRestartHandler(
     argv: yargs.Arguments<restartArgs>,

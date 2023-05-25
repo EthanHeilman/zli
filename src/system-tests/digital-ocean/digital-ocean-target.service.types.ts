@@ -1,5 +1,5 @@
-import { BzeroAgentSummary } from '../../../webshell-common-ts/http/v2/target/bzero/types/bzero-agent-summary.types';
-import { DigitalOceanDropletSize, DigitalOceanRegion } from './digital-ocean.types';
+import { BzeroAgentSummary } from 'webshell-common-ts/http/v2/target/bzero/types/bzero-agent-summary.types';
+import { DigitalOceanDropletSize, DigitalOceanRegion } from 'system-tests/digital-ocean/digital-ocean.types';
 import { IDroplet } from 'dots-wrapper/dist/droplet/types/droplet';
 
 /**

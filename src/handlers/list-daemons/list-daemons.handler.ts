@@ -1,16 +1,16 @@
-import { Logger } from '../../services/logger/logger.service';
-import { ConfigService } from '../../services/config/config.service';
-import { createTableWithWordWrap, getTableOfWebStatus, toUpperCase } from '../../utils/utils';
-import { listDaemonsArgs } from './list-daemons.command-builder';
+import { Logger } from 'services/logger/logger.service';
+import { ConfigService } from 'services/config/config.service';
+import { createTableWithWordWrap, getTableOfWebStatus, toUpperCase } from 'utils/utils';
+import { listDaemonsArgs } from 'handlers/list-daemons/list-daemons.command-builder';
 import yargs from 'yargs';
-import { killPortProcess } from '../../utils/daemon-utils';
+import { killPortProcess } from 'utils/daemon-utils';
 import chalk from 'chalk';
-import { newDbDaemonManagementService, newKubeDaemonManagementService } from '../../services/daemon-management/daemon-management.service';
-import { ProcessManagerService } from '../../services/process-manager/process-manager.service';
-import { DaemonIsRunningStatus, DaemonQuitUnexpectedlyStatus, DaemonStatus } from '../../services/daemon-management/types/daemon-status.types';
-import { ILogger } from '../../../webshell-common-ts/logging/logging.types';
-import { DaemonConfig, DaemonConfigType } from '../../services/config/config.service.types';
-import { buildMapOfNamedKubeEntries, filterAndOverwriteUserKubeConfig, findMatchingKubeContext, loadUserKubeConfig } from '../../services/kube-management/kube-management.service';
+import { newDbDaemonManagementService, newKubeDaemonManagementService } from 'services/daemon-management/daemon-management.service';
+import { ProcessManagerService } from 'services/process-manager/process-manager.service';
+import { DaemonIsRunningStatus, DaemonQuitUnexpectedlyStatus, DaemonStatus } from 'services/daemon-management/types/daemon-status.types';
+import { ILogger } from 'webshell-common-ts/logging/logging.types';
+import { DaemonConfig, DaemonConfigType } from 'services/config/config.service.types';
+import { buildMapOfNamedKubeEntries, filterAndOverwriteUserKubeConfig, findMatchingKubeContext, loadUserKubeConfig } from 'services/kube-management/kube-management.service';
 
 export async function listDaemonsHandler(
     argv: yargs.Arguments<listDaemonsArgs>,

@@ -1,12 +1,12 @@
-import { Logger } from '../../services/logger/logger.service';
-import { ConfigService } from '../../services/config/config.service';
+import { Logger } from 'services/logger/logger.service';
+import { ConfigService } from 'services/config/config.service';
 import yargs from 'yargs';
-import { ServiceAccountHttpService } from '../../http-services/service-account/service-account.http-services';
-import { createServiceAccountArgs } from '../../handlers/service-account/create-service-account.command-builder';
+import { ServiceAccountHttpService } from 'http-services/service-account/service-account.http-services';
+import { createServiceAccountArgs } from 'handlers/service-account/create-service-account.command-builder';
 import fs from 'fs';
-import { ServiceAccountProviderCredentials } from '../login/types/service-account-provider-credentials.types';
-import { CreateServiceAccountRequest } from '../../../webshell-common-ts/http/v2/service-account/requests/create-service-account.requests';
-import { checkWritableFilePath, createBzeroCredsFile } from '../../../src/utils/utils';
+import { ServiceAccountProviderCredentials } from 'handlers/login/types/service-account-provider-credentials.types';
+import { CreateServiceAccountRequest } from 'webshell-common-ts/http/v2/service-account/requests/create-service-account.requests';
+import { checkWritableFilePath, createBzeroCredsFile } from 'utils/utils';
 
 export const GCPJwksURLPrefix = 'https://www.googleapis.com/service_accounts/v1/jwk/';
 export const GCPTokenUri = 'https://oauth2.googleapis.com/token';

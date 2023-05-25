@@ -1,12 +1,12 @@
-import { SubjectHttpService } from '../../../src/http-services/subject/subject.http-services';
-import { ConfigService } from '../../../src/services/config/config.service';
-import { SubjectType } from '../../../webshell-common-ts/http/v2/common.types/subject.types';
+import { SubjectHttpService } from 'http-services/subject/subject.http-services';
+import { ConfigService } from 'services/config/config.service';
+import { SubjectType } from 'webshell-common-ts/http/v2/common.types/subject.types';
 import yargs from 'yargs';
-import { Logger } from '../../../src/services/logger/logger.service';
-import { serviceAccountSetRoleArgs } from './set-role-service-account.command-builder';
-import { parseSubjectRole } from '../../../src/utils/utils';
-import { SubjectRole } from '../../../webshell-common-ts/http/v2/subject/types/subject-role.types';
-import { SubjectSummary } from '../../../webshell-common-ts/http/v2/subject/types/subject-summary.types';
+import { Logger } from 'services/logger/logger.service';
+import { serviceAccountSetRoleArgs } from 'handlers/service-account/set-role-service-account.command-builder';
+import { parseSubjectRole } from 'utils/utils';
+import { SubjectRole } from 'webshell-common-ts/http/v2/subject/types/subject-role.types';
+import { SubjectSummary } from 'webshell-common-ts/http/v2/subject/types/subject-summary.types';
 
 export async function serviceAccountSetRoleCmdHandler(configService: ConfigService, logger: Logger, argv : yargs.Arguments<serviceAccountSetRoleArgs>) {
     const subjectHttpService = new SubjectHttpService(configService, logger);

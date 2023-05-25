@@ -1,15 +1,15 @@
-import { configService, datEndpoint, datSecret, logger, resourceNamePrefix, systemTestEnvId, systemTestPolicyTemplate, systemTestUniqueId } from '../system-test';
-import { ConnectionHttpService } from '../../../http-services/connection/connection.http-services';
-import { TestUtils } from '../utils/test-utils';
-import { Environment } from '../../../../webshell-common-ts/http/v2/policy/types/environment.types';
-import { cleanupTargetConnectPolicies } from '../system-test-cleanup';
-import { PolicyHttpService } from '../../../http-services/policy/policy.http-services';
-import { Subject } from '../../../../webshell-common-ts/http/v2/policy/types/subject.types';
-import { VerbType } from '../../../../webshell-common-ts/http/v2/policy/types/verb-type.types';
-import { ConnectTestUtils } from '../utils/connect-utils';
-import { DynamicAccessConfigSummary } from '../../../../webshell-common-ts/http/v2/target/dynamic/types/dynamic-access-config-summary.types';
-import { DynamicAccessConfigHttpService } from '../../../http-services/targets/dynamic-access/dynamic-access-config.http-services';
-import { DynamicAccessTargetState } from '../../../../webshell-common-ts/http/v2/connection/types/dynamic-access-target-state';
+import { configService, datEndpoint, datSecret, logger, resourceNamePrefix, systemTestEnvId, systemTestPolicyTemplate, systemTestUniqueId } from 'system-tests/tests/system-test';
+import { ConnectionHttpService } from 'http-services/connection/connection.http-services';
+import { TestUtils } from 'system-tests/tests/utils/test-utils';
+import { Environment } from 'webshell-common-ts/http/v2/policy/types/environment.types';
+import { cleanupTargetConnectPolicies } from 'system-tests/tests/system-test-cleanup';
+import { PolicyHttpService } from 'http-services/policy/policy.http-services';
+import { Subject } from 'webshell-common-ts/http/v2/policy/types/subject.types';
+import { VerbType } from 'webshell-common-ts/http/v2/policy/types/verb-type.types';
+import { ConnectTestUtils } from 'system-tests/tests/utils/connect-utils';
+import { DynamicAccessConfigSummary } from 'webshell-common-ts/http/v2/target/dynamic/types/dynamic-access-config-summary.types';
+import { DynamicAccessConfigHttpService } from 'http-services/targets/dynamic-access/dynamic-access-config.http-services';
+import { DynamicAccessTargetState } from 'webshell-common-ts/http/v2/connection/types/dynamic-access-target-state';
 
 export type DATBzeroTarget = {
     type: 'dat-bzero',

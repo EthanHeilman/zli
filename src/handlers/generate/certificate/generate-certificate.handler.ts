@@ -6,14 +6,14 @@ import util from 'util';
 import yargs from 'yargs';
 import { SemVer, lt, parse } from 'semver';
 
-import { DbTargetHttpService } from '../../../http-services/db-target/db-target.http-service';
-import { CertificateHttpService } from '../../../http-services/certificate/certificate.http-service';
-import { ConfigService } from '../../../services/config/config.service';
-import { Logger } from '../../../services/logger/logger.service';
-import { generateCertificateArgs } from './generate-certificate.command-builder';
-import { isGuid } from '../../../utils/utils';
-import { DbTargetSummary } from '../../../../webshell-common-ts/http/v2/target/db/types/db-target-summary.types';
-import { TargetStatus } from '../../../../webshell-common-ts/http/v2/target/types/targetStatus.types';
+import { DbTargetHttpService } from 'http-services/db-target/db-target.http-service';
+import { CertificateHttpService } from 'http-services/certificate/certificate.http-service';
+import { ConfigService } from 'services/config/config.service';
+import { Logger } from 'services/logger/logger.service';
+import { generateCertificateArgs } from 'handlers/generate/certificate/generate-certificate.command-builder';
+import { isGuid } from 'utils/utils';
+import { DbTargetSummary } from 'webshell-common-ts/http/v2/target/db/types/db-target-summary.types';
+import { TargetStatus } from 'webshell-common-ts/http/v2/target/types/targetStatus.types';
 
 const minimumAgentVersion = '7.4.0';
 

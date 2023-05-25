@@ -1,8 +1,8 @@
-import { Logger } from '../../services/logger/logger.service';
-import { ConfigService } from '../../services/config/config.service';
+import { Logger } from 'services/logger/logger.service';
+import { ConfigService } from 'services/config/config.service';
 import yargs from 'yargs';
-import { createApiKeyArgs } from './create-api-key.command-builder';
-import { ApiKeyHttpService } from '../../http-services/api-key/api-key.http-services';
+import { createApiKeyArgs } from 'handlers/api-key/create-api-key.command-builder';
+import { ApiKeyHttpService } from 'http-services/api-key/api-key.http-services';
 
 export async function createApiKeyHandler(
     argv: yargs.Arguments<createApiKeyArgs>,

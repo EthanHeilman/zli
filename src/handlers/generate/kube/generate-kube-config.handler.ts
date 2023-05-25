@@ -1,14 +1,14 @@
 import yargs from 'yargs';
 import k8s, { KubeConfig } from '@kubernetes/client-node';
 
-import { ConfigService } from '../../../services/config/config.service';
-import { Logger } from '../../../services/logger/logger.service';
-import { generateKubeConfigArgs } from './generate-kube.command-builder';
-import { exportKubeConfigToYaml, updateKubeConfigWith, generateKubeConfig, getKubeDaemonSecuritySettings, mergeKubeConfig, updateUserKubeConfigWith, filterAndOverwriteUserKubeConfig, IFilterKubeConfigService } from '../../../services/kube-management/kube-management.service';
-import { getAllRunningDaemons, IDaemonStatusRetriever, newKubeDaemonManagementService } from '../../../services/daemon-management/daemon-management.service';
-import { KubeConfig as ZliKubeConfig, KubeDaemonSecurityConfig } from '../../../services/config/config.service.types';
-import { ILogger } from '../../../../webshell-common-ts/logging/logging.types';
-import { handleDisconnect, IDaemonDisconnector } from '../../disconnect/disconnect.handler';
+import { ConfigService } from 'services/config/config.service';
+import { Logger } from 'services/logger/logger.service';
+import { generateKubeConfigArgs } from 'handlers/generate/kube/generate-kube.command-builder';
+import { exportKubeConfigToYaml, updateKubeConfigWith, generateKubeConfig, getKubeDaemonSecuritySettings, mergeKubeConfig, updateUserKubeConfigWith, filterAndOverwriteUserKubeConfig, IFilterKubeConfigService } from 'services/kube-management/kube-management.service';
+import { getAllRunningDaemons, IDaemonStatusRetriever, newKubeDaemonManagementService } from 'services/daemon-management/daemon-management.service';
+import { KubeConfig as ZliKubeConfig, KubeDaemonSecurityConfig } from 'services/config/config.service.types';
+import { ILogger } from 'webshell-common-ts/logging/logging.types';
+import { handleDisconnect, IDaemonDisconnector } from 'handlers/disconnect/disconnect.handler';
 
 export async function generateKubeConfigHandler(
     argv: yargs.Arguments<generateKubeConfigArgs>,

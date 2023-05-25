@@ -1,9 +1,9 @@
-import { ConfigService } from '../services/config/config.service';
-import { Logger } from '../services/logger/logger.service';
+import { ConfigService } from 'services/config/config.service';
+import { Logger } from 'services/logger/logger.service';
 import util from 'util';
 import { spawn, exec } from 'child_process';
-import { getKubeDaemonSecuritySettings, getPortFromClusterServer, isKubeContextBastionZero, loadUserKubeConfig } from '../services/kube-management/kube-management.service';
-import { findRunningDaemonWithPredicate, newKubeDaemonManagementService } from '../services/daemon-management/daemon-management.service';
+import { getKubeDaemonSecuritySettings, getPortFromClusterServer, isKubeContextBastionZero, loadUserKubeConfig } from 'services/kube-management/kube-management.service';
+import { findRunningDaemonWithPredicate, newKubeDaemonManagementService } from 'services/daemon-management/daemon-management.service';
 
 const { v4: uuidv4 } = require('uuid');
 const execPromise = util.promisify(exec);

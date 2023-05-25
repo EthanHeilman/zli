@@ -1,21 +1,21 @@
-import { Logger } from '../services/logger/logger.service';
-import { cleanExit } from '../../src/handlers/clean-exit.handler';
-import { UserHttpService } from '../../src/http-services/user/user.http-services';
-import { OrganizationHttpService } from '../../src/http-services/organization/organization.http-services';
-import { EnvironmentHttpService } from '../../src/http-services/environment/environment.http-services';
-import { Target } from '../../webshell-common-ts/http/v2/policy/types/target.types';
-import { SubjectType } from '../../webshell-common-ts/http/v2/common.types/subject.types';
-import { TargetType } from '../../webshell-common-ts/http/v2/target/types/target.types';
-import { EnvironmentSummary } from '../../webshell-common-ts/http/v2/environment/types/environment-summary.responses';
-import { GroupSummary } from '../../webshell-common-ts/http/v2/organization/types/group-summary.types';
-import { UserSummary } from '../../webshell-common-ts/http/v2/user/types/user-summary.types';
-import { SubjectHttpService } from '../../src/http-services/subject/subject.http-services';
-import { SubjectSummary } from '../../webshell-common-ts/http/v2/subject/types/subject-summary.types';
+import { Logger } from 'services/logger/logger.service';
+import { cleanExit } from 'handlers/clean-exit.handler';
+import { UserHttpService } from 'http-services/user/user.http-services';
+import { OrganizationHttpService } from 'http-services/organization/organization.http-services';
+import { EnvironmentHttpService } from 'http-services/environment/environment.http-services';
+import { Target } from 'webshell-common-ts/http/v2/policy/types/target.types';
+import { SubjectType } from 'webshell-common-ts/http/v2/common.types/subject.types';
+import { TargetType } from 'webshell-common-ts/http/v2/target/types/target.types';
+import { EnvironmentSummary } from 'webshell-common-ts/http/v2/environment/types/environment-summary.responses';
+import { GroupSummary } from 'webshell-common-ts/http/v2/organization/types/group-summary.types';
+import { UserSummary } from 'webshell-common-ts/http/v2/user/types/user-summary.types';
+import { SubjectHttpService } from 'http-services/subject/subject.http-services';
+import { SubjectSummary } from 'webshell-common-ts/http/v2/subject/types/subject-summary.types';
 import { SemVer } from 'semver';
-import { ConfigService } from '../../src/services/config/config.service';
+import { ConfigService } from 'services/config/config.service';
 import { Dictionary } from 'lodash';
-import { TargetSummary } from '../../webshell-common-ts/http/v2/target/targetSummary.types';
-import { filterTargetsOnVersion, listTargetsPerType } from '../../src/services/list-targets/list-targets.service';
+import { TargetSummary } from 'webshell-common-ts/http/v2/target/targetSummary.types';
+import { filterTargetsOnVersion, listTargetsPerType } from 'services/list-targets/list-targets.service';
 
 export async function getUsersByEmail(emails: string[], userHttpService: UserHttpService, logger: Logger) {
     // For each user, if they exist, grab the UserSummary and create a new Subject object

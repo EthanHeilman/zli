@@ -1,9 +1,9 @@
-import { ConfigService } from '../../../services/config/config.service';
-import { Logger } from '../../../services/logger/logger.service';
-import { getTableOfServiceAccounts } from '../../../utils/utils';
+import { ConfigService } from 'services/config/config.service';
+import { Logger } from 'services/logger/logger.service';
+import { getTableOfServiceAccounts } from 'utils/utils';
 import yargs from 'yargs';
-import { listServiceAccountsArgs } from './list-service-accounts.command-builder';
-import { ServiceAccountHttpService } from '../../../../src/http-services/service-account/service-account.http-services';
+import { listServiceAccountsArgs } from 'handlers/policy/policy-service-account/list-service-accounts.command-builder';
+import { ServiceAccountHttpService } from 'http-services/service-account/service-account.http-services';
 
 export async function listServiceAccountsHandler(
     argv: yargs.Arguments<listServiceAccountsArgs>,

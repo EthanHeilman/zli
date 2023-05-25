@@ -1,12 +1,12 @@
-import { ConfigService } from '../../services/config/config.service';
+import { ConfigService } from 'services/config/config.service';
 import yargs from 'yargs';
-import { ServiceAccountHttpService } from '../../../src/http-services/service-account/service-account.http-services';
-import { Logger } from '../../../src/services/logger/logger.service';
-import { SubjectHttpService } from '../../../src/http-services/subject/subject.http-services';
-import { SubjectType } from '../../../webshell-common-ts/http/v2/common.types/subject.types';
-import { enableServiceAccountArgs } from './enable-service-account.command-builder';
-import { UpdateServiceAccountRequest } from '../../../webshell-common-ts/http/v2/service-account/requests/update-service-account.requests';
-import { SubjectSummary } from '../../../webshell-common-ts/http/v2/subject/types/subject-summary.types';
+import { ServiceAccountHttpService } from 'http-services/service-account/service-account.http-services';
+import { Logger } from 'services/logger/logger.service';
+import { SubjectHttpService } from 'http-services/subject/subject.http-services';
+import { SubjectType } from 'webshell-common-ts/http/v2/common.types/subject.types';
+import { enableServiceAccountArgs } from 'handlers/service-account/enable-service-account.command-builder';
+import { UpdateServiceAccountRequest } from 'webshell-common-ts/http/v2/service-account/requests/update-service-account.requests';
+import { SubjectSummary } from 'webshell-common-ts/http/v2/subject/types/subject-summary.types';
 
 export async function enableServiceAccountHandler(configService: ConfigService, logger: Logger, argv : yargs.Arguments<enableServiceAccountArgs>) {
     const serviceAccountHttpService = new ServiceAccountHttpService(configService, logger);
