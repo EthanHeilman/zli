@@ -10,6 +10,11 @@ export interface DbConnectionInfo extends BaseConnectionInfo {
     targetUser?: string;
 }
 
+export interface RDPConnectionInfo extends BaseConnectionInfo {
+    type: 'rdp'
+    remoteHost: string;
+}
+
 export interface ShellConnectionInfo extends BaseConnectionInfo {
     type: 'shell'
     targetUser: string;
@@ -23,5 +28,6 @@ export interface KubeConnectionInfo extends BaseConnectionInfo {
 
 export type ConnectionInfo =
 | DbConnectionInfo
+| RDPConnectionInfo
 | ShellConnectionInfo
 | KubeConnectionInfo;
