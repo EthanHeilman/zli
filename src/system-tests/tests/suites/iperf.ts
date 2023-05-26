@@ -1,9 +1,9 @@
-import { systemTestEnvId, systemTestEnvName, systemTestPolicyTemplate, systemTestUniqueId, testTargets } from 'system-tests/tests/system-test';
-import { callZli } from 'system-tests/tests/utils/zli-utils';
-import { DbTargetHttpService } from 'http-services/db-target/db-target.http-service';
 import { promisify } from 'util';
 import { exec } from 'child_process';
 
+import { OPA_SYNC_TIME, systemTestEnvId, systemTestEnvName, systemTestPolicyTemplate, systemTestUniqueId, testTargets } from 'system-tests/tests/system-test';
+import { callZli } from 'system-tests/tests/utils/zli-utils';
+import { DbTargetHttpService } from 'http-services/db-target/db-target.http-service';
 import { configService, logger } from 'system-tests/tests/system-test';
 import { DigitalOceanBZeroTarget, getDOImageName } from 'system-tests/digital-ocean/digital-ocean-target.service.types';
 import { Environment } from 'webshell-common-ts/http/v2/policy/types/environment.types';
@@ -12,6 +12,9 @@ import { TestTarget } from 'system-tests/tests/system-test.types';
 import { PolicyHttpService } from 'http-services/policy/policy.http-services';
 import { Subject } from 'webshell-common-ts/http/v2/policy/types/subject.types';
 import { setupBackgroundDaemonMocks } from 'system-tests/tests/utils/connect-utils';
+import { sleepTimeout } from '../utils/test-utils';
+import { AddNewDbTargetRequest } from 'webshell-common-ts/http/v2/target/db/requests/add-new-db-target.requests';
+import { AddNewDbTargetResponse } from 'webshell-common-ts/http/v2/target/db/responses/add-new-db-target.responses';
 
 const findPort = require('find-open-port');
 
@@ -76,6 +79,8 @@ export const iperfSuite = () => {
                 environments: [environment],
                 targets: []
             });
+
+            await sleepTimeout(OPA_SYNC_TIME);
         }, 60 * 1000);
 
         beforeEach(() => {
@@ -98,6 +103,19 @@ export const iperfSuite = () => {
             await callZli(['disconnect', 'db', '--silent']);
         });
 
+        const createDbTarget = async(dbTargetService: DbTargetHttpService, req: AddNewDbTargetRequest): Promise<AddNewDbTargetResponse> => {
+            const response = await dbTargetService.CreateDbTarget(req);
+
+            // Wait for OPA to sync environment resource changes. When a new
+            // virtual target is created it will automatically create a new
+            // environment_resource that maps that virtual target to an
+            // environment and this must also be propagated to OPA before
+            // attempting to connect to this virtual target
+            await sleepTimeout(OPA_SYNC_TIME);
+
+            return response;
+        };
+
         bzeroTestTargetsToRun.forEach(async (testTarget: TestTarget) => {
             it(`${testTarget.iperfUpload}: iperf upload test - ${testTarget.awsRegion} - ${getDOImageName(testTarget.dropletImage)}`, async () => {
                 const doTarget = testTargets.get(testTarget) as DigitalOceanBZeroTarget;
@@ -107,7 +125,7 @@ export const iperfSuite = () => {
                 const dbIperfVtName = `${doTarget.bzeroTarget.name}-db-iperf-upload-vt`;
 
                 const daemonLocalPort = await findPort();
-                await dbTargetService.CreateDbTarget({
+                await createDbTarget(dbTargetService, {
                     targetName: dbIperfVtName,
                     proxyTargetId: doTarget.bzeroTarget.id,
                     remoteHost: 'localhost',
@@ -146,7 +164,7 @@ export const iperfSuite = () => {
                 const dbIperfVtName = `${doTarget.bzeroTarget.name}-db-iperf-download-vt`;
 
                 const daemonLocalPort = await findPort();
-                await dbTargetService.CreateDbTarget({
+                await createDbTarget(dbTargetService, {
                     targetName: dbIperfVtName,
                     proxyTargetId: doTarget.bzeroTarget.id,
                     remoteHost: 'localhost',

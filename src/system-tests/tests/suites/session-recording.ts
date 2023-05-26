@@ -7,13 +7,14 @@ import { PolicyHttpService } from 'http-services/policy/policy.http-services';
 import { SessionRecordingHttpService } from 'http-services/session-recording/session-recording.http-services';
 import { getDOImageName } from 'system-tests/digital-ocean/digital-ocean-target.service.types';
 import {
+    OPA_SYNC_TIME,
     configService,
     logger,
     systemTestEnvId,
     systemTestPolicyTemplate,
     systemTestUniqueId
 } from 'system-tests/tests/system-test';
-import { TestUtils } from 'system-tests/tests/utils/test-utils';
+import { TestUtils, sleepTimeout } from 'system-tests/tests/utils/test-utils';
 import { ConnectionHttpService } from 'http-services/connection/connection.http-services';
 import { TestTarget } from 'system-tests/tests/system-test.types';
 import { ConnectTestResult, ConnectTestUtils } from 'system-tests/tests/utils/connect-utils';
@@ -76,6 +77,8 @@ export const sessionRecordingSuite = () => {
                 description: `Target connect policy created for system test: ${systemTestUniqueId}`,
                 recordInput: false
             });
+
+            await sleepTimeout(OPA_SYNC_TIME);
         }, 60 * 1000);
 
         afterAll(async () => {
