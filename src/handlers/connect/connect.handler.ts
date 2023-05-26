@@ -59,7 +59,7 @@ export async function connectHandler(
             if(createUniversalConnectionResponse.agentType == AgentType.Windows)
                 return await rdpConnectHandler(argv, createUniversalConnectionResponse.targetId, createUniversalConnectionResponse, configService, logger, loggerConfigService);
             else {
-                const exitCode = await shellConnectHandler(createUniversalConnectionResponse.targetType, createUniversalConnectionResponse.targetUser, createUniversalConnectionResponse, configService, logger, loggerConfigService);
+                const exitCode = await shellConnectHandler(TargetType.Linux, createUniversalConnectionResponse.targetUser, createUniversalConnectionResponse, configService, logger, loggerConfigService);
 
                 if (exitCode !== 0) {
                     const errMsg = handleExitCode(exitCode, createUniversalConnectionResponse);
