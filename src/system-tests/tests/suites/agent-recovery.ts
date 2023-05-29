@@ -1,6 +1,6 @@
 import * as k8s from '@kubernetes/client-node';
 
-import { configService, logger, systemTestEnvId, systemTestPolicyTemplate, systemTestUniqueId, testCluster, testTargets, systemTestEnvName } from 'system-tests/tests/system-test';
+import { configService, logger, systemTestEnvId, systemTestPolicyTemplate, systemTestUniqueId, testCluster, testTargets, systemTestEnvName, OPA_SYNC_TIME } from 'system-tests/tests/system-test';
 import { ConnectionHttpService } from 'http-services/connection/connection.http-services';
 import { DigitalOceanDistroImage, getDOImageName } from 'system-tests/digital-ocean/digital-ocean-target.service.types';
 import { sleepTimeout, TestUtils } from 'system-tests/tests/utils/test-utils';
@@ -116,6 +116,8 @@ export const agentRecoverySuite = (testRunnerKubeConfigFile: string, testRunnerU
                 targetUsers: ConnectTestUtils.getPolicyTargetUsers(),
                 verbs: [{type: VerbType.Shell},]
             });
+
+            await sleepTimeout(OPA_SYNC_TIME);
 
             // Set unsafeCleanup because temp dir will contain files
             tempDir = await dir({ unsafeCleanup: true });

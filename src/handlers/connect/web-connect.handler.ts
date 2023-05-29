@@ -4,7 +4,7 @@ import { cleanExit } from 'handlers/clean-exit.handler';
 import { LoggerConfigService } from 'services/logger/logger-config.service';
 import yargs from 'yargs';
 import open from 'open';
-import { handleServerStart, startDaemonInDebugMode, copyExecutableToLocalDir, getBaseDaemonEnv, getOrDefaultLocalhost, getOrDefaultLocalport, killLocalPortAndPid, spawnDaemonInBackground } from 'utils/daemon-utils';
+import { handleServerStart, startDaemonInDebugMode, copyExecutableToLocalDir, getBaseDaemonEnv, getOrDefaultLocalhost, getOrDefaultLocalport, shutDownLocalPortAndPid, spawnDaemonInBackground } from 'utils/daemon-utils';
 import { connectArgs } from 'handlers/connect/connect.command-builder';
 import { WebTargetHttpService } from 'http-services/web-target/web-target.http-service';
 import { CreateUniversalConnectionResponse } from 'webshell-common-ts/http/v2/connection/responses/create-universal-connection.response';
@@ -38,7 +38,7 @@ export async function webConnectHandler(
     webConfig.localHost = localHost;
     webConfig.name = webTarget.name;
 
-    await killLocalPortAndPid(webConfig, webConfig.localPort, logger);
+    await shutDownLocalPortAndPid(webConfig, webConfig.localPort, logger);
 
     // Build our runtime config and cwd
     const baseEnv = await getBaseDaemonEnv(configService, loggerConfigService, webTarget.agentPublicKey, createUniversalConnectionResponse.connectionId, createUniversalConnectionResponse.connectionAuthDetails);
@@ -69,12 +69,13 @@ export async function webConnectHandler(
     try {
         if (!argv.debug) {
             // If we are not debugging, start the go subprocess in the background
-            const daemonProcess = await spawnDaemonInBackground(logger, loggerConfigService, cwd, finalDaemonPath, args, runtimeConfig, null);
+            const daemonProcess = await spawnDaemonInBackground(logger, loggerConfigService, cwd, finalDaemonPath, args, runtimeConfig, runtimeConfig['CONTROL_PORT'], null);
 
             // Now save the Pid so we can kill the process next time we start it
             webConfig.localPid = daemonProcess.pid;
             webConfig.localPort = localPort;
             webConfig.localHost = localHost;
+            webConfig.controlPort = runtimeConfig['CONTROL_PORT'];
 
             // Also save the name of the target to display
             webConfig.name = webTarget.name;
@@ -93,7 +94,7 @@ export async function webConnectHandler(
             return 0;
         } else {
             logger.warn(`Started web daemon in debug mode at ${localHost}:${localPort} for ${webTarget.name}`);
-            await startDaemonInDebugMode(finalDaemonPath, cwd, runtimeConfig, args);
+            await startDaemonInDebugMode(finalDaemonPath, cwd, runtimeConfig, runtimeConfig['CONTROL_PORT'], args);
             await cleanExit(0, logger);
         }
     } catch (error) {

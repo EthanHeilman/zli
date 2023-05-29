@@ -1,12 +1,12 @@
 import { callZli } from 'system-tests/tests/utils/zli-utils';
 import fs from 'fs';
 import { ServiceAccountBzeroCredentials } from 'handlers/login/types/service-account-bzero-credentials.types';
-import { bzeroCredsPath, configService, IN_PIPELINE, logger, providerCredsPath, setSystemTestServiceAccount, systemTestEnvId, systemTestPolicyTemplate, systemTestUniqueId } from 'system-tests/tests/system-test';
+import { bzeroCredsPath, configService, IN_PIPELINE, logger, OPA_SYNC_TIME, providerCredsPath, setSystemTestServiceAccount, systemTestEnvId, systemTestPolicyTemplate, systemTestUniqueId } from 'system-tests/tests/system-test';
 import { ServiceAccountProviderCredentials } from 'handlers/login/types/service-account-provider-credentials.types';
 import { Logger } from 'services/logger/logger.service';
 import { ServiceAccountHttpService } from 'http-services/service-account/service-account.http-services';
 import { ConnectionHttpService } from 'http-services/connection/connection.http-services';
-import { TestUtils } from 'system-tests/tests/utils/test-utils';
+import { sleepTimeout, TestUtils } from 'system-tests/tests/utils/test-utils';
 import { ConnectTestUtils } from 'system-tests/tests/utils/connect-utils';
 import { bzeroTestTargetsToRun } from 'system-tests/tests/targets-to-run';
 import { getMockResultValue } from 'system-tests/tests/utils/jest-utils';
@@ -127,6 +127,8 @@ export const serviceAccountSuite = () => {
                     targetUsers: ConnectTestUtils.getPolicyTargetUsers(),
                     verbs: [{type: VerbType.Shell},]
                 });
+
+                await sleepTimeout(OPA_SYNC_TIME);
 
                 const testTarget = bzeroTestTargetsToRun[0];
                 await connectTestUtils.runShellConnectTest(testTarget, `configure service account connect test - ${systemTestUniqueId}`, true, false, appName);
