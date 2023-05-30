@@ -58,16 +58,8 @@ export async function rdpConnectHandler(
     let cwd = process.cwd();
 
     // Copy over our executable to a temp file
-    let finalDaemonPath = '';
-    let args: string[] = [];
-    if (process.env.ZLI_CUSTOM_DAEMON_PATH) {
-        // If we set a custom path, we will try to start the daemon from the source code
-        cwd = process.env.ZLI_CUSTOM_DAEMON_PATH;
-        finalDaemonPath = 'go';
-        args = ['run', 'daemon.go', 'config.go'];
-    } else {
-        finalDaemonPath = await copyExecutableToLocalDir(logger, configService.getConfigPath());
-    }
+    const args: string[] = [];
+    const finalDaemonPath = await copyExecutableToLocalDir(logger, configService.getConfigPath());
 
     try {
         if (!argv.debug) {
