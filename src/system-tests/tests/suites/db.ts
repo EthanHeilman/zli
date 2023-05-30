@@ -4,13 +4,13 @@ import fs from 'fs';
 import { Client, Pool } from 'pg';
 const findPort = require('find-open-port');
 
-import { systemTestEnvId, systemTestEnvName, systemTestPolicyTemplate, systemTestUniqueId, testTargets } from 'system-tests/tests/system-test';
+import { OPA_SYNC_TIME, systemTestEnvId, systemTestEnvName, systemTestPolicyTemplate, systemTestUniqueId, testTargets } from 'system-tests/tests/system-test';
 import { callZli } from 'system-tests/tests/utils/zli-utils';
 import { DbTargetHttpService } from 'http-services/db-target/db-target.http-service';
 import * as ListConnectionsService from 'services/list-connections/list-connections.service';
 import { configService, logger } from 'system-tests/tests/system-test';
 import { DigitalOceanBZeroTarget, DigitalOceanDistroImage, getDOImageName } from 'system-tests/digital-ocean/digital-ocean-target.service.types';
-import { TestUtils } from 'system-tests/tests/utils/test-utils';
+import { TestUtils, sleepTimeout } from 'system-tests/tests/utils/test-utils';
 import { Environment } from 'webshell-common-ts/http/v2/policy/types/environment.types';
 import { ConnectionEventType } from 'webshell-common-ts/http/v2/event/types/connection-event.types';
 import { bzeroTestTargetsToRun } from 'system-tests/tests/targets-to-run';
@@ -95,7 +95,8 @@ interface CreatedDbTargetDetails {
 interface ConnectedDbDaemonDetails {
     connectionId: string;
     targetId: string;
-    dbDaemonDetails: DbConfig
+    dbDaemonDetails: DbConfig;
+    targetUser?: string;
 };
 
 export const dbSuite = () => {
@@ -159,6 +160,8 @@ export const dbSuite = () => {
                 targetUsers: [{ userName: 'root' }],
                 verbs: [{ type: VerbType.Tunnel }]
             })).id;
+
+            await sleepTimeout(OPA_SYNC_TIME);
         }, 60 * 1000);
 
         afterAll(async () => {
@@ -190,6 +193,14 @@ export const dbSuite = () => {
         const createDbTargetWithReq = async (addDbTargetRequest: AddNewDbTargetRequest): Promise<CreatedDbTargetDetails> => {
             // Create DB (virtual) target
             const createDbTargetResponse = await dbTargetService.CreateDbTarget(addDbTargetRequest);
+
+            // Wait for OPA to sync environment resource changes. When a new
+            // virtual target is created it will automatically create a new
+            // environment_resource that maps that virtual target to an
+            // environment and this must also be propagated to OPA before
+            // attempting to connect to this virtual target
+            await sleepTimeout(OPA_SYNC_TIME);
+
             const createdDbTarget: CreatedDbTargetDetails = {
                 targetId: createDbTargetResponse.targetId,
                 targetName: addDbTargetRequest.targetName,
@@ -253,7 +264,8 @@ export const dbSuite = () => {
                 environmentId: systemTestEnvId,
                 environmentName: systemTestEnvName,
                 connectionEventType: eventType,
-                connectionId: daemon.connectionId
+                connectionId: daemon.connectionId,
+                targetUser: daemon.targetUser ?? expect.anything()
             }, testStartTime);
         };
 
@@ -407,7 +419,8 @@ export const dbSuite = () => {
             return {
                 connectionId: connectionId,
                 targetId: createdDbTargetDetails.targetId,
-                dbDaemonDetails: dbConfig
+                dbDaemonDetails: dbConfig,
+                targetUser: targetUser
             };
         };
         /**

@@ -1,6 +1,6 @@
-import { allTargets, configService, doApiKey, logger, systemTestEnvId, systemTestPolicyTemplate, systemTestRegistrationApiKey, systemTestUniqueId, testTargets } from 'system-tests/tests/system-test';
+import { OPA_SYNC_TIME, allTargets, configService, doApiKey, logger, systemTestEnvId, systemTestPolicyTemplate, systemTestRegistrationApiKey, systemTestUniqueId, testTargets } from 'system-tests/tests/system-test';
 import { ConnectionHttpService } from 'http-services/connection/connection.http-services';
-import { TestUtils } from 'system-tests/tests/utils/test-utils';
+import { TestUtils, sleepTimeout } from 'system-tests/tests/utils/test-utils';
 import { Environment } from 'webshell-common-ts/http/v2/policy/types/environment.types';
 import { cleanupTargetConnectPolicies } from 'system-tests/tests/system-test-cleanup';
 import { PolicyHttpService } from 'http-services/policy/policy.http-services';
@@ -56,6 +56,8 @@ export const forceRegisterSuite = () => {
                 targetUsers: ConnectTestUtils.getPolicyTargetUsers(),
                 verbs: [{type: VerbType.Shell},]
             });
+
+            await sleepTimeout(OPA_SYNC_TIME);
         }, 60 * 1000);
 
         afterAll(async () => {

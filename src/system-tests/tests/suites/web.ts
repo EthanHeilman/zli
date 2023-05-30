@@ -1,20 +1,21 @@
-import { systemTestEnvId, systemTestEnvName, systemTestPolicyTemplate, systemTestUniqueId, testTargets } from 'system-tests/tests/system-test';
-import { callZli } from 'system-tests/tests/utils/zli-utils';
+import fs from 'fs';
 import got from 'got/dist/source';
 import FormData from 'form-data';
 
+import { OPA_SYNC_TIME, systemTestEnvId, systemTestEnvName, systemTestPolicyTemplate, systemTestUniqueId, testTargets } from 'system-tests/tests/system-test';
+import { callZli } from 'system-tests/tests/utils/zli-utils';
 import { configService, logger } from 'system-tests/tests/system-test';
 import { DigitalOceanBZeroTarget, getDOImageName } from 'system-tests/digital-ocean/digital-ocean-target.service.types';
 import { WebTargetHttpService } from 'http-services/web-target/web-target.http-service';
-import { TestUtils } from 'system-tests/tests/utils/test-utils';
+import { TestUtils, sleepTimeout } from 'system-tests/tests/utils/test-utils';
 import { Environment } from 'webshell-common-ts/http/v2/policy/types/environment.types';
 import { ConnectionEventType } from 'webshell-common-ts/http/v2/event/types/connection-event.types';
 import { bzeroTestTargetsToRun } from 'system-tests/tests/targets-to-run';
 import { PolicyHttpService } from 'http-services/policy/policy.http-services';
 import { Subject } from 'webshell-common-ts/http/v2/policy/types/subject.types';
 import { setupBackgroundDaemonMocks } from 'system-tests/tests/utils/connect-utils';
-
-import fs from 'fs';
+import { AddNewWebTargetRequest } from 'webshell-common-ts/http/v2/target/web/requests/add-new-web-target.requests';
+import { AddNewWebTargetResponse } from 'webshell-common-ts/http/v2/target/web/responses/add-new-web-target.responses';
 
 const findPort = require('find-open-port');
 
@@ -57,6 +58,8 @@ export const webSuite = () => {
                 environments: [environment],
                 targets: []
             })).id;
+
+            await sleepTimeout(OPA_SYNC_TIME);
         }, 60 * 1000);
 
         beforeEach(() => {
@@ -78,6 +81,19 @@ export const webSuite = () => {
             await callZli(['disconnect', 'web', '--silent']);
         });
 
+        const createWebTarget = async(webTargetService: WebTargetHttpService, req: AddNewWebTargetRequest): Promise<AddNewWebTargetResponse> => {
+            const response = await webTargetService.CreateWebTarget(req);
+
+            // Wait for OPA to sync environment resource changes. When a new
+            // virtual target is created it will automatically create a new
+            // environment_resource that maps that virtual target to an
+            // environment and this must also be propagated to OPA before
+            // attempting to connect to this virtual target
+            await sleepTimeout(OPA_SYNC_TIME);
+
+            return response;
+        };
+
         bzeroTestTargetsToRun.forEach(async (testTarget) => {
             it(`${testTarget.webCaseId}: web virtual target connect - ${testTarget.awsRegion} - ${getDOImageName(testTarget.dropletImage)}`, async () => {
                 const doTarget = testTargets.get(testTarget) as DigitalOceanBZeroTarget;
@@ -86,7 +102,7 @@ export const webSuite = () => {
                 const localWebPort = await findPort();
                 const webVtName = `${doTarget.bzeroTarget.name}-web-vt`;
 
-                const createWebTargetResponse = await webTargetService.CreateWebTarget({
+                const createWebTargetResponse = await createWebTarget(webTargetService, {
                     targetName: webVtName,
                     proxyTargetId: doTarget.bzeroTarget.id,
                     remoteHost: 'http://localhost',
@@ -139,7 +155,7 @@ export const webSuite = () => {
                 const localWebPort = await findPort();
                 const webVtName = `${doTarget.bzeroTarget.name}-web-vt-upload`;
 
-                await webTargetService.CreateWebTarget({
+                await createWebTarget(webTargetService, {
                     targetName: webVtName,
                     proxyTargetId: doTarget.bzeroTarget.id,
                     remoteHost: 'http://localhost',
@@ -194,7 +210,7 @@ export const webSuite = () => {
                 const webTargetService: WebTargetHttpService = new WebTargetHttpService(configService, logger);
                 const webVtName = `${doTarget.bzeroTarget.name}-web-vt-no-policy`;
 
-                await webTargetService.CreateWebTarget({
+                await createWebTarget(webTargetService, {
                     targetName: webVtName,
                     proxyTargetId: doTarget.bzeroTarget.id,
                     remoteHost: 'http://localhost',

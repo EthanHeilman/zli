@@ -1,10 +1,11 @@
 import { MfaSummary } from 'webshell-common-ts/http/v2/mfa/types/mfa-summary.types';
 import { MfaHttpService } from 'http-services/mfa/mfa.http-services';
-import { configService, logger, RUN_AS_SERVICE_ACCOUNT } from 'system-tests/tests/system-test';
+import { configService, logger, OPA_SYNC_TIME, RUN_AS_SERVICE_ACCOUNT } from 'system-tests/tests/system-test';
 import { ensureMfaEnabled } from 'system-tests/tests/system-test-setup';
 import { extractMfaSecretFromUrl } from 'utils/utils';
 import { testIf } from 'system-tests/tests/utils/utils';
 import totp from 'totp-generator';
+import { sleepTimeout } from 'system-tests/tests/utils/test-utils';
 
 export const mfaSuite = () => {
     describe('MFA Suite', () => {
@@ -43,12 +44,14 @@ export const mfaSuite = () => {
 
         testIf(!RUN_AS_SERVICE_ACCOUNT, '5606: Disable MFA and expect it to be disabled', async () => {
             await mfaService.DisableMfa(subjectId);
+            await sleepTimeout(OPA_SYNC_TIME);
             const mfaSummary = await mfaService.GetCurrentUserMfaSummary();
             expect(mfaSummary.enabled).toBe(false);
         }, 15 * 1000);
 
         testIf(!RUN_AS_SERVICE_ACCOUNT, '5604: Enable MFA and expect it to be enabled as a user', async () => {
             await mfaService.EnableMfa(subjectId);
+            await sleepTimeout(OPA_SYNC_TIME);
             const mfaSummary = await mfaService.GetCurrentUserMfaSummary();
             expect(mfaSummary.enabled).toBe(true);
             expect(mfaSummary.verified).toBe(false);

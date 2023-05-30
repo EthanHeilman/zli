@@ -1,6 +1,6 @@
 {
   "name": "@bastionzero/zli",
-  "version": "6.20.8",
+  "version": "6.20.11",
   "description": "BastionZero cli",
   "repository": {
     "type": "git",
@@ -32,10 +32,11 @@
     "release-prod": "npm run update-daemon-version && npm run release-all",
     "copy-files": "copyfiles src/**/*.html src/**/*.css bzero/bctl/daemon/* dist/",
     "package": "npm run copy-files && pkg .",
-    "clean": "rimraf dist/ && rimraf bin/",
+    "clean": "rimraf dist/ && rimraf bin/ && npm run clean-daemon",
     "test": "jest --config src/jest-config-unit-tests.js --verbose",
     "system-test": "jest --config src/system-tests/jest-config-system-tests.js --detectOpenHandles",
-    "lint": "eslint \"src/**/*.ts\" \"webshell-common-ts/**/*.ts\" -c webshell-common-ts/.eslintrc.json"
+    "lint": "eslint \"src/**/*.ts\" \"webshell-common-ts/**/*.ts\" -c webshell-common-ts/.eslintrc.json",
+    "clean-daemon": "ts-node src/scripts/clean-daemon.ts"
   },
   "author": "BastionZero",
   "license": "Apache-2.0",
