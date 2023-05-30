@@ -28,7 +28,7 @@ export async function listDaemonsHandler(
     if (targetType == 'all' || targetType == 'db') {
         await dbStatusHandler(configService, logger);
     }
-    if (targetType == 'all' || targetType == 'all') {
+    if (targetType == 'all' || targetType == 'rdp') {
         await rdpStatusHandler(configService, logger);
     }
 
