@@ -47,7 +47,7 @@ export async function closeConnectionHandler(
             }
         } else {
             // Otherwise close all types of connections
-            logger.info('Closing all shell, db, and kube connections');
+            logger.info('Closing all shell, db, rdp, and kube connections');
 
             const results = await Promise.allSettled([
                 handleShell(),
