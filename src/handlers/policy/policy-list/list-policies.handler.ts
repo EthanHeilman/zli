@@ -10,6 +10,7 @@ import { parsePolicyType } from 'utils/utils';
 
 import yargs from 'yargs';
 import { listJustInTimePoliciesHandler } from 'handlers/policy/policy-list/list-just-in-time-policies.handler';
+import { listOrganizationControlsPoliciesHandler } from 'handlers/policy/policy-list/list-organization-controls-policies.handler';
 
 export async function listPoliciesHandler(
     argv: yargs.Arguments<policyArgs>,
