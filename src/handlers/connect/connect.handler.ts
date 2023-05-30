@@ -58,6 +58,8 @@ export async function connectHandler(
         switch(createUniversalConnectionResponse.targetType)
         {
         case TargetType.Bzero:
+            // At the moment, the only available connection for a Windows agent and a Bzero target type is RDP
+            // In the future we will have to disambiguate
             if(createUniversalConnectionResponse.agentType == AgentType.Windows) {
                 if (targetUser){
                     logger.warn(IGNORE_TARGET_USER_MSG);
