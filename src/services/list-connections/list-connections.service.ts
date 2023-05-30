@@ -5,7 +5,7 @@ import { ConnectionState } from 'webshell-common-ts/http/v2/connection/types/con
 import { getCliSpace } from 'utils/shell-utils';
 import { ConfigService } from 'services/config/config.service';
 import { Logger } from 'services/logger/logger.service';
-import { DbConnectionInfo, KubeConnectionInfo, ShellConnectionInfo } from 'services/list-connections/list-connections.service.types';
+import { DbConnectionInfo, KubeConnectionInfo, RDPConnectionInfo, ShellConnectionInfo } from 'services/list-connections/list-connections.service.types';
 import { ConnectionHttpService } from 'http-services/connection/connection.http-services';
 import { SsmTargetSummary } from 'webshell-common-ts/http/v2/target/ssm/types/ssm-target-summary.types';
 import { BzeroAgentSummary } from 'webshell-common-ts/http/v2/target/bzero/types/bzero-agent-summary.types';
@@ -63,6 +63,25 @@ export async function listOpenDbConnections(
         timeCreated: conn.timeCreated,
         remoteHost: `${conn.remoteHost}:${conn.remotePort}`,
         targetUser: conn.targetUser,
+    }));
+}
+
+export async function listOpenRDPConnections(
+    configService: ConfigService,
+    logger: Logger
+): Promise<RDPConnectionInfo[]> {
+    const connectionHttpService = new ConnectionHttpService(configService, logger);
+    const openRDPConnections = await connectionHttpService.ListRDPConnections(ConnectionState.Open);
+    if (openRDPConnections.length === 0) {
+        return [];
+    }
+
+    return openRDPConnections.map<RDPConnectionInfo>((conn) => ({
+        type: 'rdp',
+        connectionId: conn.id,
+        targetName: conn.targetName,
+        timeCreated: conn.timeCreated,
+        remoteHost: `${conn.remoteHost}:${conn.remotePort}`
     }));
 }
 

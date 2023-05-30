@@ -529,7 +529,7 @@ export class CliDriver
             )
             .command(
                 ['list-connections', 'lc'],
-                'List all open shell and db connections',
+                'List all open shell, db and rdp connections',
                 (yargs) => {
                     return listConnectionsCmdBuilder(yargs);
                 },
