@@ -16,6 +16,8 @@ import { handleExitCode } from 'utils/daemon-utils';
 import { rdpConnectHandler } from './rdp-connect.handler';
 import { AgentType } from 'webshell-common-ts/http/v2/target/types/agent.types';
 
+const IGNORE_TARGET_USER_MSG: string = 'Specifying a target user or role for RDP, Web, or Database targets is not supported at this time. Ignoring target name / role and requesting connection per policy.';
+
 export async function connectHandler(
     argv: yargs.Arguments<connectArgs>,
     configService: ConfigService,
@@ -56,9 +58,12 @@ export async function connectHandler(
         switch(createUniversalConnectionResponse.targetType)
         {
         case TargetType.Bzero:
-            if(createUniversalConnectionResponse.agentType == AgentType.Windows)
+            if(createUniversalConnectionResponse.agentType == AgentType.Windows) {
+                if (targetUser){
+                    logger.warn(IGNORE_TARGET_USER_MSG);
+                }
                 return await rdpConnectHandler(argv, createUniversalConnectionResponse.targetId, createUniversalConnectionResponse, configService, logger, loggerConfigService);
-            else {
+            } else {
                 const exitCode = await shellConnectHandler(TargetType.Linux, createUniversalConnectionResponse.targetUser, createUniversalConnectionResponse, configService, logger, loggerConfigService);
 
                 if (exitCode !== 0) {
@@ -81,8 +86,14 @@ export async function connectHandler(
             }
             return exitCode;
         case TargetType.Db:
+            if (targetUser && !createUniversalConnectionResponse.splitCert){
+                logger.warn(IGNORE_TARGET_USER_MSG);
+            }
             return await dbConnectHandler(argv, createUniversalConnectionResponse.splitCert, createUniversalConnectionResponse.targetId, createUniversalConnectionResponse.targetUser, createUniversalConnectionResponse, configService, logger, loggerConfigService);
         case TargetType.Web:
+            if (targetUser){
+                logger.warn(IGNORE_TARGET_USER_MSG);
+            }
             return await webConnectHandler(argv, createUniversalConnectionResponse.targetId, createUniversalConnectionResponse, configService, logger, loggerConfigService);
         case TargetType.Kubernetes:
         case TargetType.Cluster:
