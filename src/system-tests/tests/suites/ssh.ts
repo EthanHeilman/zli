@@ -2,7 +2,7 @@ import path from 'path';
 import fs from 'fs';
 import { promisify } from 'util';
 import { exec } from 'child_process';
-import { RUN_AS_SERVICE_ACCOUNT, allTargets, configService, logger, systemTestEnvId, systemTestPolicyTemplate, systemTestUniqueId } from 'system-tests/tests/system-test';
+import { OPA_SYNC_TIME, RUN_AS_SERVICE_ACCOUNT, allTargets, configService, logger, systemTestEnvId, systemTestPolicyTemplate, systemTestUniqueId } from 'system-tests/tests/system-test';
 import { callZli } from 'system-tests/tests/utils/zli-utils';
 import { bzeroTargetCustomUser, idpUsernameTargetCustomSA, idpUsernameTargetCustomUser } from 'system-tests/tests/system-test-setup';
 import { Environment } from 'webshell-common-ts/http/v2/policy/types/environment.types';
@@ -12,6 +12,7 @@ import { PolicyHttpService } from 'http-services/policy/policy.http-services';
 import { Subject } from 'webshell-common-ts/http/v2/policy/types/subject.types';
 import { VerbType } from 'webshell-common-ts/http/v2/policy/types/verb-type.types';
 import { getTargetInfo } from 'system-tests/tests/utils/ssh-utils';
+import { sleepTimeout } from '../utils/test-utils';
 
 export const sshSuite = () => {
     describe('ssh suite', () => {
@@ -81,6 +82,7 @@ export const sshSuite = () => {
                     targetUsers: [{ userName: bzeroTargetCustomUser }],
                     verbs: [{ type: VerbType.Tunnel }]
                 });
+                await sleepTimeout(OPA_SYNC_TIME);
 
                 const { userName, targetName } = await getTargetInfo(testTarget);
                 await callZli(['generate', 'sshConfig', '--mySshPath', userConfigFile, '--bzSshPath', bzConfigFile]);
@@ -115,6 +117,7 @@ export const sshSuite = () => {
                     targetUsers: [{ userName: bzeroTargetCustomUser }],
                     verbs: [{ type: VerbType.Tunnel }]
                 });
+                await sleepTimeout(OPA_SYNC_TIME);
 
                 const { userName, targetName, environmentName } = await getTargetInfo(testTarget);
                 await callZli(['generate', 'sshConfig', '--mySshPath', userConfigFile, '--bzSshPath', bzConfigFile]);
@@ -149,6 +152,7 @@ export const sshSuite = () => {
                     targetUsers: [{ userName: '{username}' }],
                     verbs: [{ type: VerbType.Tunnel }]
                 });
+                await sleepTimeout(OPA_SYNC_TIME);
 
                 let targetUser = ``;
                 if(RUN_AS_SERVICE_ACCOUNT) {
@@ -190,6 +194,7 @@ export const sshSuite = () => {
                     targetUsers: [{ userName: bzeroTargetCustomUser }],
                     verbs: [{ type: VerbType.Tunnel }]
                 });
+                await sleepTimeout(OPA_SYNC_TIME);
 
                 const { targetName, userName } = await getTargetInfo(testTarget);
 
@@ -222,6 +227,7 @@ export const sshSuite = () => {
                     targetUsers: [{ userName: bzeroTargetCustomUser }],
                     verbs: [{ type: VerbType.Tunnel }]
                 });
+                await sleepTimeout(OPA_SYNC_TIME);
 
                 // Try to ssh connect with a bad user
                 const { targetName } = await getTargetInfo(testTarget);
@@ -264,6 +270,7 @@ export const sshSuite = () => {
                     targetUsers: [{ userName: bzeroTargetCustomUser }],
                     verbs: [{ type: VerbType.FileTransfer }]
                 });
+                await sleepTimeout(OPA_SYNC_TIME);
 
                 const { targetName } = await getTargetInfo(testTarget);
                 await callZli(['generate', 'sshConfig', '--mySshPath', userConfigFile, '--bzSshPath', bzConfigFile]);
@@ -308,6 +315,7 @@ export const sshSuite = () => {
                     targetUsers: [{ userName: bzeroTargetCustomUser }],
                     verbs: [{ type: VerbType.FileTransfer }]
                 });
+                await sleepTimeout(OPA_SYNC_TIME);
 
                 const { targetName } = await getTargetInfo(testTarget);
                 await callZli(['generate', 'sshConfig', '--mySshPath', userConfigFile, '--bzSshPath', bzConfigFile]);
@@ -358,6 +366,7 @@ export const sshSuite = () => {
                     targetUsers: [{ userName: bzeroTargetCustomUser }],
                     verbs: [{ type: VerbType.FileTransfer }]
                 });
+                await sleepTimeout(OPA_SYNC_TIME);
 
                 const { targetName } = await getTargetInfo(testTarget);
                 await callZli(['generate', 'sshConfig', '--mySshPath', userConfigFile, '--bzSshPath', bzConfigFile]);
@@ -396,6 +405,7 @@ export const sshSuite = () => {
                     targetUsers: [{ userName: bzeroTargetCustomUser }],
                     verbs: [{ type: VerbType.Tunnel }]
                 });
+                await sleepTimeout(OPA_SYNC_TIME);
 
                 await callZli(['generate', 'sshConfig', '--mySshPath', userConfigFile, '--bzSshPath', bzConfigFile]);
 
@@ -434,6 +444,7 @@ export const sshSuite = () => {
                     targetUsers: [{ userName: bzeroTargetCustomUser }],
                     verbs: [{ type: VerbType.FileTransfer }]
                 });
+                await sleepTimeout(OPA_SYNC_TIME);
 
                 await callZli(['generate', 'sshConfig', '--mySshPath', userConfigFile, '--bzSshPath', bzConfigFile]);
 

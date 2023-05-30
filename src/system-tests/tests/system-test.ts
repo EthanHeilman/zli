@@ -52,6 +52,15 @@ import { ServiceAccountSummary } from 'webshell-common-ts/http/v2/service-accoun
 import { ServiceAccountHttpService } from 'http-services/service-account/service-account.http-services';
 import { forceRegisterSuite } from './suites/force-register';
 
+
+// This is the maximum time it should take for the opa microservice to sync
+// policies changes after policies are added/updated through the API. During
+// system tests because we create policies and then attempt to connect to
+// targets with these policies right away we will run into race condition where
+// OPA has not been synced yet. Therefore we should instead wait for
+// OPA_SYNC_TIME after creating/editing policies before trying to connect.
+export const OPA_SYNC_TIME = 3 * 1000;
+
 // Uses config name from ZLI_CONFIG_NAME environment variable (defaults to prod
 // if unset) This can be run against dev/stage/prod when running system tests
 // locally using your own configuration file. When running as part of the CI/CD

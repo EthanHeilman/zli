@@ -1,7 +1,7 @@
-import { allTargets, configService, GROUP_ID, GROUP_NAME, logger, systemTestEnvId, systemTestPolicyTemplate, systemTestUniqueId } from 'system-tests/tests/system-test';
+import { allTargets, configService, GROUP_ID, GROUP_NAME, logger, OPA_SYNC_TIME, systemTestEnvId, systemTestPolicyTemplate, systemTestUniqueId } from 'system-tests/tests/system-test';
 import { ConnectionHttpService } from 'http-services/connection/connection.http-services';
 import { getDOImageName } from 'system-tests/digital-ocean/digital-ocean-target.service.types';
-import { TestUtils } from 'system-tests/tests/utils/test-utils';
+import { sleepTimeout, TestUtils } from 'system-tests/tests/utils/test-utils';
 import { Environment } from 'webshell-common-ts/http/v2/policy/types/environment.types';
 import { TestTarget } from 'system-tests/tests/system-test.types';
 import { cleanupTargetConnectPolicies } from 'system-tests/tests/system-test-cleanup';
@@ -51,6 +51,8 @@ export const groupsSuite = () => {
                 targetUsers: ConnectTestUtils.getPolicyTargetUsers(),
                 verbs: [{type: VerbType.Shell},]
             });
+
+            await sleepTimeout(OPA_SYNC_TIME);
         }, 60 * 1000);
 
         // Cleanup all policy after the tests

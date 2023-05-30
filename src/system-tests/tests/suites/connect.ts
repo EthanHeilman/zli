@@ -1,8 +1,8 @@
-import { configService, logger, systemTestEnvId, systemTestPolicyTemplate, systemTestUniqueId, testTargets, allTargets } from 'system-tests/tests/system-test';
+import { configService, logger, systemTestEnvId, systemTestPolicyTemplate, systemTestUniqueId, testTargets, allTargets, OPA_SYNC_TIME } from 'system-tests/tests/system-test';
 import { callZli } from 'system-tests/tests/utils/zli-utils';
 import { ConnectionHttpService } from 'http-services/connection/connection.http-services';
 import { getDOImageName } from 'system-tests/digital-ocean/digital-ocean-target.service.types';
-import { TestUtils } from 'system-tests/tests/utils/test-utils';
+import { TestUtils, sleepTimeout } from 'system-tests/tests/utils/test-utils';
 import { Environment } from 'webshell-common-ts/http/v2/policy/types/environment.types';
 import { TestTarget, isBzeroTarget } from 'system-tests/tests/system-test.types';
 import { cleanupTargetConnectPolicies } from 'system-tests/tests/system-test-cleanup';
@@ -55,6 +55,8 @@ export const connectSuite = () => {
                 targetUsers: ConnectTestUtils.getPolicyTargetUsers(),
                 verbs: [{type: VerbType.Shell},]
             });
+
+            await sleepTimeout(OPA_SYNC_TIME);
 
             const mostRecentUserEvent = await eventsService.GetSubjectEvents(null, [configService.me().id], 1);
             userLogFilterStartTime = mostRecentUserEvent[0]?.timestamp;

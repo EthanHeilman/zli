@@ -1,9 +1,9 @@
 import * as k8s from '@kubernetes/client-node';
 import { callZli } from 'system-tests/tests/utils/zli-utils';
 import { HttpError, V1Pod } from '@kubernetes/client-node';
-import { systemTestEnvName, systemTestPolicyTemplate, systemTestUniqueId, testCluster } from 'system-tests/tests/system-test';
+import { OPA_SYNC_TIME, systemTestEnvName, systemTestPolicyTemplate, systemTestUniqueId, testCluster } from 'system-tests/tests/system-test';
 import { configService, logger } from 'system-tests/tests/system-test';
-import { TestUtils } from 'system-tests/tests/utils/test-utils';
+import { TestUtils, sleepTimeout } from 'system-tests/tests/utils/test-utils';
 import { ConnectionEventType } from 'webshell-common-ts/http/v2/event/types/connection-event.types';
 import { PolicyHttpService } from 'http-services/policy/policy.http-services';
 import { setupBackgroundDaemonMocks } from 'system-tests/tests/utils/connect-utils';
@@ -96,6 +96,8 @@ export const kubeSuite = () => {
                 clusterUsers: usersToConnectAsMultiKube.map<ClusterUser>(u => ({ name: u })),
                 clusterGroups: [{ name: 'system:masters' }]
             })).id;
+
+            await sleepTimeout(OPA_SYNC_TIME);
         });
 
         afterAll(async () => {
