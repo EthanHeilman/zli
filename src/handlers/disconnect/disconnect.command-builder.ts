@@ -5,12 +5,12 @@ export type disconnectArgs = {targetType: string};
 export function disconnectCmdBuilder(yargs : yargs.Argv<{}>) : yargs.Argv<disconnectArgs> {
     return yargs
         .positional('targetType', {
-            choices: ['kube', 'db', 'web', 'all'],
+            choices: ['kube', 'db', 'web', 'rdp', 'all'],
             nargs: 1,
             type: 'string',
             default: 'all',
             requiresArg: false,
         })
-        .example('$0 disconnect', 'Disconnect all local Zli Daemon')
-        .example('$0 disconnect kube', 'Disconnect Kube local Zli Daemon');
+        .example('$0 disconnect', 'Disconnect all open connections')
+        .example('$0 disconnect kube', 'Disconnect all Kubeneretes connections');
 }

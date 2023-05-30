@@ -28,10 +28,7 @@ export async function listDaemonsHandler(
     if (targetType == 'all' || targetType == 'db') {
         await dbStatusHandler(configService, logger);
     }
-
-    // As we are transitioning to our new Targets notion, RDP targets do not exist yet, thus the only way
-    // to close such connection is by closing all
-    if (targetType == 'all') {
+    if (targetType == 'all' || targetType == 'all') {
         await rdpStatusHandler(configService, logger);
     }
 

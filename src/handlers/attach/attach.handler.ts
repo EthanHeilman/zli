@@ -40,9 +40,11 @@ export async function attachHandler(
         return 1;
     }
 
+    console.error(`targetType: ${connectionSummary.targetType}`);
+
     if(connectionSummary.targetType == TargetType.SsmTarget || connectionSummary.targetType == TargetType.DynamicAccessConfig) {
         return createAndRunShell(configService, logger, connectionSummary);
-    } else if(connectionSummary.targetType == TargetType.Linux) {
+    } else if(connectionSummary.targetType == TargetType.Bzero) {
         // Get Attach Info for Bzero target. This currently just includes the datachannel id of the connection
         const attachInfoRequest = await connectionHttpService.GetShellConnectionAttachDetails(connectionId);
 

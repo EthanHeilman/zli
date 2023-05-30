@@ -46,9 +46,7 @@ export async function disconnectHandler(
         await handleDisconnect(dbDaemonManagementService, logger);
     }
 
-    // As we are transitioning to our new Targets notion, RDP targets do not exist yet, thus the only way
-    // to close such connection is by closing all
-    if (targetType == 'all') {
+    if (targetType == 'all' || targetType == 'rdp') {
         const rdpDaemonManagementService = newRDPDaemonManagementService(configService);
         await handleDisconnect(rdpDaemonManagementService, logger);
     }
