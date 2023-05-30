@@ -94,7 +94,7 @@ export async function listTargetsPerType(
         const bzeroTargetService = new BzeroTargetHttpService(configService, logger);
         const getBzeroAgentTargetSummaries = async () => {
             let bzeroAgents = await bzeroTargetService.ListBzeroTargets();
-            
+
             if (!targetTypes.includes(TargetType.Windows)) {
                 bzeroAgents = bzeroAgents.filter(t => t.agentType === AgentType.Linux);
             } else if (!targetTypes.includes(TargetType.Linux)) {
