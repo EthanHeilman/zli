@@ -36,7 +36,7 @@ export async function closeShellConnections(
 export async function closeConnections(
     configService: ConfigService,
     logger: Logger,
-    type: 'db' | 'kube'
+    type: 'db' | 'rdp' | 'kube'
 ): Promise<void> {
     const connectionHttpService = new ConnectionHttpService(configService, logger);
 
@@ -44,6 +44,9 @@ export async function closeConnections(
     switch (type) {
     case 'db':
         connections = await connectionHttpService.ListDbConnections(ConnectionState.Open);
+        break;
+    case 'rdp':
+        connections = await connectionHttpService.ListRDPConnections(ConnectionState.Open);
         break;
     case 'kube':
         connections = await connectionHttpService.ListKubeConnections(ConnectionState.Open);

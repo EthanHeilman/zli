@@ -1,6 +1,6 @@
 import yargs from 'yargs';
 
-const connectionTypes = ['shell', 'db', 'kube'] as const;
+const connectionTypes = ['shell', 'db', 'rdp', 'kube'] as const;
 export type ConnectionTypeOption = typeof connectionTypes[number];
 
 export type closeConnectionArgs = {connectionId : string;} &
