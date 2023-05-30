@@ -320,28 +320,8 @@ export async function startDaemonInDebugMode(finalDaemonPath: string, cwd: strin
 // Helper function to copy the Daemon executable to a local dir on the file system
 // Ref: https://github.com/vercel/pkg/issues/342
 export async function copyExecutableToLocalDir(logger: Logger, configPath: string): Promise<string> {
-    let prefix = '';
-    if (isPkgProcess()) {
-        // /snapshot/zli/dist/src/handlers/tunnel
-        prefix = path.join(__dirname, '../../../');
-    } else {
-        // /zli/src/handlers/tunnel
-        prefix = path.join(__dirname, '../../');
-    }
-
-    const daemonName = 'daemon-' + version;
     const configDir = path.dirname(configPath);
-
-    let daemonExecPath: string;
-    let finalDaemonPath: string;
-
-    if (process.platform === 'win32') {
-        daemonExecPath = path.join(prefix, DAEMON_PATH + '.exe');
-        finalDaemonPath = path.join(configDir, daemonName + '.exe');
-    } else { // platform is unix
-        daemonExecPath = path.join(prefix, DAEMON_PATH);
-        finalDaemonPath = path.join(configDir, daemonName);
-    }
+    const [daemonExecPath, finalDaemonPath] = getDaemonExecutablePaths(configDir);
 
     if (fs.existsSync(finalDaemonPath)) {
         return finalDaemonPath;
@@ -406,6 +386,42 @@ export async function copyExecutableToLocalDir(logger: Logger, configPath: strin
         });
 
     return finalDaemonPath;
+}
+
+/**
+ * Returns the daemon executable paths used by the zli
+ * @param configDir The zli config directory
+ * @returns Tuple containing [daemonExecPath, finalDaemonPath]
+ * @param daemonExecPath The path of the daemon executable built from the bzero
+ * source code. When the zli is packaged into an executable with pkg this will
+ * be in the virtual filesystem snapshot directory created by pkg. Otherwise
+ * it will be within the bzero submodule directory
+ * @param finalDaemonPath The final path to copy the daemon executable to on the
+ * host's file system that the zli uses when spawning a new daemon process.
+ */
+export function getDaemonExecutablePaths(configDir: string): [string, string] {
+    let prefix = '';
+    const daemonName = 'daemon-' + version;
+    let daemonExecPath: string;
+    let finalDaemonPath: string;
+
+    if (isPkgProcess()) {
+        // /snapshot/zli/dist/src/handlers/tunnel
+        prefix = path.join(__dirname, '../../../');
+    } else {
+        // /zli/src/handlers/tunnel
+        prefix = path.join(__dirname, '../../');
+    }
+
+    if (process.platform === 'win32') {
+        daemonExecPath = path.join(prefix, DAEMON_PATH + '.exe');
+        finalDaemonPath = path.join(configDir, daemonName + '.exe');
+    } else { // platform is unix
+        daemonExecPath = path.join(prefix, DAEMON_PATH);
+        finalDaemonPath = path.join(configDir, daemonName);
+    }
+
+    return [daemonExecPath, finalDaemonPath];
 }
 
 export function logKillDaemonResult(daemonIdentifier: string, result: KillProcessResultType, logger: ILogger) {
