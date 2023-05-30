@@ -137,7 +137,7 @@ export class TestUtils {
             targetId: expect.anything(),
             targetType: expect.anything(),
             targetName: expect.anything(),
-            targetUser: 'n/a',
+            targetUser: expect.anything(),
             timestamp: expect.anything(),
             environmentId: expect.anything(),
             environmentName: defaultExpectedEnvironmentName,

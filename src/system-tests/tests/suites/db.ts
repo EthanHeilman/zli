@@ -95,7 +95,8 @@ interface CreatedDbTargetDetails {
 interface ConnectedDbDaemonDetails {
     connectionId: string;
     targetId: string;
-    dbDaemonDetails: DbConfig
+    dbDaemonDetails: DbConfig;
+    targetUser?: string;
 };
 
 export const dbSuite = () => {
@@ -263,7 +264,8 @@ export const dbSuite = () => {
                 environmentId: systemTestEnvId,
                 environmentName: systemTestEnvName,
                 connectionEventType: eventType,
-                connectionId: daemon.connectionId
+                connectionId: daemon.connectionId,
+                targetUser: daemon.targetUser ?? expect.anything()
             }, testStartTime);
         };
 
@@ -417,7 +419,8 @@ export const dbSuite = () => {
             return {
                 connectionId: connectionId,
                 targetId: createdDbTargetDetails.targetId,
-                dbDaemonDetails: dbConfig
+                dbDaemonDetails: dbConfig,
+                targetUser: targetUser
             };
         };
         /**
