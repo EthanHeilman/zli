@@ -71,9 +71,6 @@ export async function connectHandler(
         case TargetType.DynamicAccessConfig:
             return await callShellConnectHandler(createUniversalConnectionResponse, configService, logger, loggerConfigService);
         case TargetType.Db:
-            if (targetUser && !createUniversalConnectionResponse.splitCert){
-                logger.warn(IGNORE_TARGET_USER_MSG);
-            }
             return await dbConnectHandler(argv, createUniversalConnectionResponse.splitCert, createUniversalConnectionResponse.targetId, createUniversalConnectionResponse.targetUser, createUniversalConnectionResponse, configService, logger, loggerConfigService);
         case TargetType.Web:
             if (targetUser){
