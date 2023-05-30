@@ -65,28 +65,11 @@ export async function connectHandler(
                     logger.warn(IGNORE_TARGET_USER_MSG);
                 }
                 return await rdpConnectHandler(argv, createUniversalConnectionResponse.targetId, createUniversalConnectionResponse, configService, logger, loggerConfigService);
-            } else {
-                const exitCode = await shellConnectHandler(TargetType.Linux, createUniversalConnectionResponse.targetUser, createUniversalConnectionResponse, configService, logger, loggerConfigService);
-
-                if (exitCode !== 0) {
-                    const errMsg = handleExitCode(exitCode, createUniversalConnectionResponse);
-                    if (errMsg.length > 0) {
-                        logger.error(errMsg);
-                    }
-                }
-                return exitCode;
-            }
+            } else
+                return await callShellConnectHandler(createUniversalConnectionResponse, configService, logger, loggerConfigService);
         case TargetType.SsmTarget:
         case TargetType.DynamicAccessConfig:
-            const exitCode = await shellConnectHandler(createUniversalConnectionResponse.targetType, createUniversalConnectionResponse.targetUser, createUniversalConnectionResponse, configService, logger, loggerConfigService);
-
-            if (exitCode !== 0) {
-                const errMsg = handleExitCode(exitCode, createUniversalConnectionResponse);
-                if (errMsg.length > 0) {
-                    logger.error(errMsg);
-                }
-            }
-            return exitCode;
+            return await callShellConnectHandler(createUniversalConnectionResponse, configService, logger, loggerConfigService);
         case TargetType.Db:
             if (targetUser && !createUniversalConnectionResponse.splitCert){
                 logger.warn(IGNORE_TARGET_USER_MSG);
@@ -114,4 +97,16 @@ export async function connectHandler(
 
         throw err;
     }
+}
+
+async function callShellConnectHandler(createUniversalConnectionResponse: CreateUniversalConnectionResponse, configService: ConfigService, logger: Logger, loggerConfigService: LoggerConfigService) {
+    const exitCode = await shellConnectHandler(createUniversalConnectionResponse.targetType, createUniversalConnectionResponse.targetUser, createUniversalConnectionResponse, configService, logger, loggerConfigService);
+
+    if (exitCode !== 0) {
+        const errMsg = handleExitCode(exitCode, createUniversalConnectionResponse);
+        if (errMsg.length > 0) {
+            logger.error(errMsg);
+        }
+    }
+    return exitCode;
 }
