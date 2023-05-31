@@ -104,7 +104,7 @@ export class WindowsConfig extends Config implements IConfig {
         await this.setWindowsRegistryValue('mrtap', data);
     }
 
-    clearTokenSet(): void {
+    async clearTokenSet(): Promise<void> {
         this.regKey.remove('tokenSet', (err: Error) => {
             if (err && !this.isKeyNotFoundError(err)) {
                 throw new Error(`Failed to clear token set: ${err}`);
@@ -112,7 +112,7 @@ export class WindowsConfig extends Config implements IConfig {
         });
     }
 
-    clearMrtap(): void {
+    async clearMrtap(): Promise<void> {
         this.regKey.remove('mrtap', (err: Error) => {
             if (err && !this.isKeyNotFoundError(err)) {
                 throw new Error(`Failed to clear MrTAP config: ${err}`);

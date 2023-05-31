@@ -84,27 +84,27 @@ export class Config {
         this.path = this.config.path;
     }
 
-    getWhoami(): SubjectSummary {
+    async getWhoami(): Promise<SubjectSummary> {
         return this.config.get('whoami');
     }
 
-    getGaToken(): string {
+    async getGaToken(): Promise<string> {
         return this.config.get('GAToken');
     }
 
-    getMixpanelToken(): string {
+    async getMixpanelToken(): Promise<string> {
         return this.config.get('mixpanelToken');
     }
 
-    getCallbackListenerPort(): number {
+    async getCallbackListenerPort(): Promise<number> {
         return this.config.get('callbackListenerPort');
     }
 
-    getServiceUrl(): string {
+    async getServiceUrl(): Promise<string> {
         return this.config.get('serviceUrl');
     }
 
-    getAuthUrl(): string {
+    async getAuthUrl(): Promise<string> {
         return this.config.get('authUrl');
     }
 
@@ -113,55 +113,55 @@ export class Config {
         return tokenSet && new TokenSet(tokenSet);
     }
 
-    getIdp(): IdentityProvider{
+    async getIdp(): Promise<IdentityProvider> {
         return this.config.get('idp');
     }
 
-    getClientId(): string{
+    async getClientId(): Promise<string> {
         return this.config.get('clientId');
     }
 
-    getClientSecret(): string {
+    async getClientSecret(): Promise<string> {
         return this.config.get('clientSecret');
     }
 
-    getAuthScopes(): string {
+    async getAuthScopes(): Promise<string> {
         return this.config.get('authScopes');
     }
 
-    getSessionId(): string {
+    async getSessionId(): Promise<string> {
         return this.config.get('sessionId');
     }
 
-    getSessionToken(): string {
+    async getSessionToken(): Promise<string> {
         return this.config.get('sessionToken');
     }
 
-    getSshKeyPath(): string {
+    async getSshKeyPath(): Promise<string> {
         return this.config.get('sshKeyPath');
     }
 
-    getSshKnownHostsPath(): string {
+    async getSshKnownHostsPath(): Promise<string> {
         return this.config.get('sshKnownHostsPath');
     }
 
-    getGlobalKubeConfig(): GlobalKubeConfig {
+    async getGlobalKubeConfig(): Promise<GlobalKubeConfig> {
         return this.config.get('globalKubeConfig');
     }
 
-    getWebConfig(): WebConfig {
+    async getWebConfig(): Promise<WebConfig> {
         return this.config.get('webConfig');
     }
 
-    getConnectConfig(): ConnectConfig {
+    async getConnectConfig(): Promise<ConnectConfig> {
         return this.config.get('connectConfig');
     }
 
-    getDbDaemons(): DaemonConfigs<DbConfig> {
+    async getDbDaemons(): Promise<DaemonConfigs<DbConfig>> {
         return this.config.get('dbDaemons');
     }
 
-    getKubeDaemons(): DaemonConfigs<KubeConfig> {
+    async getKubeDaemons(): Promise<DaemonConfigs<KubeConfig>> {
         return this.config.get('kubeDaemons');
     }
 
@@ -169,23 +169,23 @@ export class Config {
         return this.config.get('mrtap');
     }
 
-    setGaToken(token: string): void {
+    async setGaToken(token: string): Promise<void> {
         this.config.set('GAToken', token);
     }
 
-    setMixpanelToken(token: string): void {
+    async setMixpanelToken(token: string): Promise<void> {
         this.config.set('mixpanelToken', token);
     }
 
-    setSessionId(sessionId: string): void {
+    async setSessionId(sessionId: string): Promise<void> {
         this.config.set('sessionId', sessionId);
     }
 
-    setSessionToken(sessionToken: string): void {
+    async setSessionToken(sessionToken: string): Promise<void> {
         this.config.set('sessionToken', sessionToken);
     }
 
-    setAuthUrl(url: string): void {
+    async setAuthUrl(url: string): Promise<void> {
         this.config.set('authUrl', url);
     }
 
@@ -193,51 +193,51 @@ export class Config {
         this.config.set('tokenSet', tokenSet);
     }
 
-    setIdp(idp: IdentityProvider): void {
+    async setIdp(idp: IdentityProvider): Promise<void> {
         this.config.set('idp', idp);
     }
 
-    setClientId(id: string): void {
+    async setClientId(id: string): Promise<void> {
         this.config.set('clientId', id);
     }
 
-    setClientSecret(secret: string): void {
+    async setClientSecret(secret: string): Promise<void> {
         this.config.set('clientSecret', secret);
     }
 
-    setAuthScopes(scopes: string): void {
+    async setAuthScopes(scopes: string): Promise<void> {
         this.config.set('authScopes', scopes);
     }
 
-    setSshKeyPath(path: string): void {
+    async setSshKeyPath(path: string): Promise<void> {
         this.config.set('sshKeyPath', path);
     }
 
-    setSshKnownHostsPath(path: string): void {
+    async setSshKnownHostsPath(path: string): Promise<void> {
         this.config.set('sshKnownHostsPath', path);
     }
 
-    setWhoami(me: SubjectSummary): void {
+    async setWhoami(me: SubjectSummary): Promise<void> {
         this.config.set('whoami', me);
     }
 
-    setWebConfig(webConfig: WebConfig): void {
+    async setWebConfig(webConfig: WebConfig): Promise<void> {
         this.config.set('webConfig', webConfig);
     }
 
-    setConnectConfig(connectConfig: ConnectConfig): void {
+    async setConnectConfig(connectConfig: ConnectConfig): Promise<void> {
         this.config.set('connectConfig', connectConfig);
     }
 
-    setGlobalKubeConfig(globalKubeConfig: GlobalKubeConfig): void {
+    async setGlobalKubeConfig(globalKubeConfig: GlobalKubeConfig): Promise<void> {
         this.config.set('globalKubeConfig', globalKubeConfig);
     }
 
-    setDbDaemons(dbDaemons: DaemonConfigs<DbConfig>): void {
+    async setDbDaemons(dbDaemons: DaemonConfigs<DbConfig>): Promise<void> {
         this.config.set('dbDaemons', dbDaemons);
     }
 
-    setKubeDaemons(kubeDaemons: DaemonConfigs<KubeConfig>): void {
+    async setKubeDaemons(kubeDaemons: DaemonConfigs<KubeConfig>): Promise<void> {
         this.config.set('kubeDaemons', kubeDaemons);
     }
 
@@ -245,32 +245,32 @@ export class Config {
         this.config.set('mrtap', data);
     }
 
-    clearSshConfigPaths(): void {
+    async clearSshConfigPaths(): Promise<void> {
         this.config.delete('sshKeyPath');
         this.config.delete('sshKnownHostsPath');
     }
 
-    clearSessionId(): void {
+    async clearSessionId(): Promise<void> {
         this.config.delete('sessionId');
     }
 
-    clearSessionToken(): void {
+    async clearSessionToken(): Promise<void> {
         this.config.delete('sessionToken');
     }
 
-    clearClientSecret(): void {
+    async clearClientSecret(): Promise<void> {
         this.config.delete('clientSecret');
     }
 
-    clearTokenSet(): void {
+    async clearTokenSet(): Promise<void> {
         this.config.delete('tokenSet');
     }
 
-    clearWhoami(): void {
+    async clearWhoami(): Promise<void> {
         this.config.delete('whoami');
     }
 
-    clearMrtap(): void {
+    async clearMrtap(): Promise<void> {
         this.config.delete('mrtap');
     }
 }

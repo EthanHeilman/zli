@@ -22,57 +22,57 @@ export interface IConfig {
     logoutOnTokenSetCleared(logoutDetectedSubject: Subject<boolean>): void;
 
     // "Get" functions, for retrieving values from the config
-    getWhoami(): SubjectSummary;
-    getGaToken(): string;
-    getMixpanelToken(): string;
-    getCallbackListenerPort(): number;
-    getServiceUrl(): string;
-    getAuthUrl(): string;
+    getWhoami(): Promise<SubjectSummary>;
+    getGaToken(): Promise<string>;
+    getMixpanelToken(): Promise<string>;
+    getCallbackListenerPort(): Promise<number>;
+    getServiceUrl(): Promise<string>;
+    getAuthUrl(): Promise<string>;
     getTokenSet(): Promise<TokenSet>;
-    getIdp(): IdentityProvider;
-    getClientId(): string;
-    getClientSecret(): string;
-    getAuthScopes(): string;
-    getSessionId(): string;
-    getSessionToken(): string;
-    getSshKeyPath(): string;
-    getSshKnownHostsPath(): string;
-    getGlobalKubeConfig(): GlobalKubeConfig;
-    getWebConfig(): WebConfig;
-    getConnectConfig(): ConnectConfig;
-    getDbDaemons(): DaemonConfigs<DbConfig>;
-    getKubeDaemons(): DaemonConfigs<KubeConfig>;
+    getIdp(): Promise<IdentityProvider>;
+    getClientId(): Promise<string>;
+    getClientSecret(): Promise<string>;
+    getAuthScopes(): Promise<string>;
+    getSessionId(): Promise<string>;
+    getSessionToken(): Promise<string>;
+    getSshKeyPath(): Promise<string>;
+    getSshKnownHostsPath(): Promise<string>;
+    getGlobalKubeConfig(): Promise<GlobalKubeConfig>;
+    getWebConfig(): Promise<WebConfig>;
+    getConnectConfig(): Promise<ConnectConfig>;
+    getDbDaemons(): Promise<DaemonConfigs<DbConfig>>;
+    getKubeDaemons(): Promise<DaemonConfigs<KubeConfig>>;
     getMrtap(): Promise<MrtapConfigSchema>;
 
     // "Set" functions, for setting new values in the config
-    setGaToken(token: string): void;
-    setMixpanelToken(token: string): void;
-    setSessionId(sessionId: string): void;
-    setSessionToken(sessionToken: string): void;
-    setAuthUrl(url: string): void;
+    setGaToken(token: string): Promise<void>;
+    setMixpanelToken(token: string): Promise<void>;
+    setSessionId(sessionId: string): Promise<void>;
+    setSessionToken(sessionToken: string): Promise<void>;
+    setAuthUrl(url: string): Promise<void>;
     setTokenSet(tokenSet: TokenSet): Promise<void>;
-    setIdp(idp: IdentityProvider): void;
-    setClientId(id: string): void;
-    setClientSecret(secret: string): void;
-    setAuthScopes(scopes: string): void;
-    setSshKeyPath(path: string): void;
-    setSshKnownHostsPath(path: string): void;
-    setWhoami(me: SubjectSummary): void;
-    setWebConfig(webConfig: WebConfig): void;
-    setConnectConfig(connectConfig: ConnectConfig): void;
-    setGlobalKubeConfig(globalKubeConfig: GlobalKubeConfig): void;
-    setDbDaemons(dbDaemons: DaemonConfigs<DbConfig>): void;
-    setKubeDaemons(kubeDaemons: DaemonConfigs<KubeConfig>): void;
+    setIdp(idp: IdentityProvider): Promise<void>;
+    setClientId(id: string): Promise<void>;
+    setClientSecret(secret: string): Promise<void>;
+    setAuthScopes(scopes: string): Promise<void>;
+    setSshKeyPath(path: string): Promise<void>;
+    setSshKnownHostsPath(path: string): Promise<void>;
+    setWhoami(me: SubjectSummary): Promise<void>;
+    setWebConfig(webConfig: WebConfig): Promise<void>;
+    setConnectConfig(connectConfig: ConnectConfig): Promise<void>;
+    setGlobalKubeConfig(globalKubeConfig: GlobalKubeConfig): Promise<void>;
+    setDbDaemons(dbDaemons: DaemonConfigs<DbConfig>): Promise<void>;
+    setKubeDaemons(kubeDaemons: DaemonConfigs<KubeConfig>): Promise<void>;
     setMrtap(data: MrtapConfigSchema): Promise<void>;
 
     // "Clear" functions, for clearing values in the config
-    clearSshConfigPaths(): void;
-    clearSessionId(): void;
-    clearSessionToken(): void;
-    clearClientSecret(): void;
-    clearTokenSet(): void;
-    clearWhoami(): void;
-    clearMrtap(): void;
+    clearSshConfigPaths(): Promise<void>;
+    clearSessionId(): Promise<void>;
+    clearSessionToken(): Promise<void>;
+    clearClientSecret(): Promise<void>;
+    clearTokenSet(): Promise<void>;
+    clearWhoami(): Promise<void>;
+    clearMrtap(): Promise<void>;
 }
 
 export class ConfigService implements IKubeDaemonSecurityConfigService, IKubeConfigService, KubeDaemonStore, DbDaemonStore, ILogoutConfigService, MrtapConfigInterface {
