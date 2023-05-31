@@ -51,21 +51,21 @@ describe('List Targets suite', () => {
 
         const output = logSpy.mock.calls[0][0];
         const cleanOutput = cleanConsoleLog(output);
-        expect(cleanOutput).toEqual(String.raw`┌─────────┬───────────────────┬────────────────┬───────────────┬─────────┬─────────────────────────────┬──────────────────┐
-│ Type    │ Name              │ Environment    │ Agent Version │ Status  │ Target Users                │ Region           │
-├─────────┼───────────────────┼────────────────┼───────────────┼─────────┼─────────────────────────────┼──────────────────┤
-│ SSM     │ test-ssm-name     │ test-env-name  │ test-agent-v… │ Online  │ test-user                   │ test-region      │
-├─────────┼───────────────────┼────────────────┼───────────────┼─────────┼─────────────────────────────┼──────────────────┤
-│ Dynamic │ test-ssm-name     │ test-env-name  │ N/A           │ Online  │ test-user                   │ N/A              │
-├─────────┼───────────────────┼────────────────┼───────────────┼─────────┼─────────────────────────────┼──────────────────┤
-│ Bzero   │ test-bzero-name   │ test-env-name  │ test-agent-v… │ Online  │ test-user                   │ test-region      │
-├─────────┼───────────────────┼────────────────┼───────────────┼─────────┼─────────────────────────────┼──────────────────┤
-│ Cluster │ test-cluster-name │ test-env-name  │ test-version  │ Online  │ mock-allowed-user           │ test-region      │
-├─────────┼───────────────────┼────────────────┼───────────────┼─────────┼─────────────────────────────┼──────────────────┤
-│ Db      │ test-db-name      │ test-env-name  │ test-agent-v… │ Online  │ N/A                         │ test-region      │
-├─────────┼───────────────────┼────────────────┼───────────────┼─────────┼─────────────────────────────┼──────────────────┤
-│ Web     │ test-web-name     │ test-env-name  │ test-agent-v… │ Online  │ N/A                         │ test-region      │
-└─────────┴───────────────────┴────────────────┴───────────────┴─────────┴─────────────────────────────┴──────────────────┘`);
+        expect(cleanOutput).toEqual(String.raw`┌────────────┬───────────────────┬────────────────┬───────────────┬─────────┬─────────────────────────────┬──────────────────┐
+│ Type       │ Name              │ Environment    │ Agent Version │ Status  │ Target Users                │ Region           │
+├────────────┼───────────────────┼────────────────┼───────────────┼─────────┼─────────────────────────────┼──────────────────┤
+│ SSM        │ test-ssm-name     │ test-env-name  │ test-agent-v… │ Online  │ test-user                   │ test-region      │
+├────────────┼───────────────────┼────────────────┼───────────────┼─────────┼─────────────────────────────┼──────────────────┤
+│ Dynamic    │ test-ssm-name     │ test-env-name  │ N/A           │ Online  │ test-user                   │ N/A              │
+├────────────┼───────────────────┼────────────────┼───────────────┼─────────┼─────────────────────────────┼──────────────────┤
+│ Linux      │ test-bzero-name   │ test-env-name  │ test-agent-v… │ Online  │ test-user                   │ test-region      │
+├────────────┼───────────────────┼────────────────┼───────────────┼─────────┼─────────────────────────────┼──────────────────┤
+│ Kubernetes │ test-cluster-name │ test-env-name  │ test-version  │ Online  │ mock-allowed-user           │ test-region      │
+├────────────┼───────────────────┼────────────────┼───────────────┼─────────┼─────────────────────────────┼──────────────────┤
+│ Db         │ test-db-name      │ test-env-name  │ test-agent-v… │ Online  │ N/A                         │ test-region      │
+├────────────┼───────────────────┼────────────────┼───────────────┼─────────┼─────────────────────────────┼──────────────────┤
+│ Web        │ test-web-name     │ test-env-name  │ test-agent-v… │ Online  │ N/A                         │ test-region      │
+└────────────┴───────────────────┴────────────────┴───────────────┴─────────┴─────────────────────────────┴──────────────────┘`);
     });
 
     test('2494: Filter Kubernetes Targets', async () => {
@@ -76,18 +76,18 @@ describe('List Targets suite', () => {
         const logSpy = jest.spyOn(console, 'log');
 
         // Call the function
-        await mockArgv(['list-targets', '--targetType=cluster', '-d'], async () => {
+        await mockArgv(['list-targets', '--targetType=kubernetes', '-d'], async () => {
             const driver = new CliDriver();
             await driver.run(process.argv.slice(2), true);
         });
 
         const output = logSpy.mock.calls[0][0];
         const cleanOutput = cleanConsoleLog(output);
-        expect(cleanOutput).toEqual(String.raw`┌─────────┬───────────────────┬────────────────┬───────────────┬─────────┬─────────────────────────────┬──────────────────┐
-│ Type    │ Name              │ Environment    │ Agent Version │ Status  │ Target Users                │ Region           │
-├─────────┼───────────────────┼────────────────┼───────────────┼─────────┼─────────────────────────────┼──────────────────┤
-│ Cluster │ test-cluster-name │ test-env-name  │ test-version  │ Online  │ mock-allowed-user           │ test-region      │
-└─────────┴───────────────────┴────────────────┴───────────────┴─────────┴─────────────────────────────┴──────────────────┘`);
+        expect(cleanOutput).toEqual(String.raw`┌────────────┬───────────────────┬────────────────┬───────────────┬─────────┬─────────────────────────────┬──────────────────┐
+│ Type       │ Name              │ Environment    │ Agent Version │ Status  │ Target Users                │ Region           │
+├────────────┼───────────────────┼────────────────┼───────────────┼─────────┼─────────────────────────────┼──────────────────┤
+│ Kubernetes │ test-cluster-name │ test-env-name  │ test-version  │ Online  │ mock-allowed-user           │ test-region      │
+└────────────┴───────────────────┴────────────────┴───────────────┴─────────┴─────────────────────────────┴──────────────────┘`);
     });
 
     test('2495: Filter Ssm Targets', async () => {
@@ -137,7 +137,7 @@ describe('List Targets suite', () => {
 └─────────┴───────────────┴────────────────┴───────────────┴─────────┴─────────────────────────────┴──────────────────┘`);
     });
 
-    test('2497: Filter Bzero Targets', async () => {
+    test('2497: Filter Linux Targets', async () => {
         // Mock our bzero http service
         jest.spyOn(BzeroTargetHttpService.prototype, 'ListBzeroTargets').mockImplementation(async () => mockBzeroSummaryList);
 
@@ -145,7 +145,7 @@ describe('List Targets suite', () => {
         const logSpy = jest.spyOn(console, 'log');
 
         // Call the function
-        await mockArgv(['list-targets', '--targetType=bzero', '-d'], async () => {
+        await mockArgv(['list-targets', '--targetType=linux', '-d'], async () => {
             const driver = new CliDriver();
             await driver.run(process.argv.slice(2), true);
         });
@@ -156,7 +156,7 @@ describe('List Targets suite', () => {
         expect(cleanOutput).toEqual(String.raw`┌───────┬─────────────────┬────────────────┬───────────────┬─────────┬─────────────────────────────┬──────────────────┐
 │ Type  │ Name            │ Environment    │ Agent Version │ Status  │ Target Users                │ Region           │
 ├───────┼─────────────────┼────────────────┼───────────────┼─────────┼─────────────────────────────┼──────────────────┤
-│ Bzero │ test-bzero-name │ test-env-name  │ test-agent-v… │ Online  │ test-user                   │ test-region      │
+│ Linux │ test-bzero-name │ test-env-name  │ test-agent-v… │ Online  │ test-user                   │ test-region      │
 └───────┴─────────────────┴────────────────┴───────────────┴─────────┴─────────────────────────────┴──────────────────┘`);
     });
 

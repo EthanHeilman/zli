@@ -69,6 +69,11 @@ export class ConnectionHttpService extends HttpService
 
     public CreateUniversalConnection(req: CreateUniversalConnectionRequest) : Promise<CreateUniversalConnectionResponse>
     {
+        // NOTE: this is a temporary measure, approved by product, until we have a correct delineation
+        // between targets and agents in the backend
+        if (req.targetType == TargetType.Linux || TargetType.Windows) {
+            req.targetType = TargetType.Bzero;
+        }
         return this.Post('universal', req);
     }
 

@@ -43,6 +43,7 @@ import { KubeConnectionSummary } from 'webshell-common-ts/http/v2/connection/typ
 import { SubjectSummary } from 'webshell-common-ts/http/v2/subject/types/subject-summary.types';
 import { ServiceAccountSummary } from 'webshell-common-ts/http/v2/service-account/types/service-account-summary.types';
 import { AgentType } from 'webshell-common-ts/http/v2/target/types/agent.types';
+import { RDPConnectionSummary } from 'webshell-common-ts/http/v2/connection/types/rdp-connection-summary.types';
 
 export function unitTestMockSetup(withCleanExit: boolean): void {
     // Always mock out the following services
@@ -372,6 +373,18 @@ export const mockDbConnectionSummary: DbConnectionSummary = {
     subjectId: 'some-subject-id',
     remoteHost: 'localhost',
     remotePort: 5432
+};
+
+export const mockRDPConnectionSummary: RDPConnectionSummary = {
+    id: randomUUID(),
+    timeCreated: new Date(1998, 3, 5, 0, 0, 0, 0),
+    state: ConnectionState.Open,
+    targetId: 'some-target-id',
+    targetName: 'some-target-name',
+    targetType: TargetType.Windows,
+    subjectId: 'some-subject-id',
+    remoteHost: 'localhost',
+    remotePort: 3389
 };
 
 export const mockShellAuthDetails: ShellConnectionAuthDetails = {
