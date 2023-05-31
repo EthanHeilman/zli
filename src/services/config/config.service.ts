@@ -154,13 +154,13 @@ export class ConfigService implements IKubeDaemonSecurityConfigService, IKubeCon
         this.config.clearWhoami();
     }
 
-    logout(): void {
+    async logout(): Promise<void> {
         this.config.clearTokenSet();
         this.config.clearMrtap();
         this.config.clearSessionId();
 
         // clear temporary SSH identity file
-        fs.rmSync(this.getSshKeyPath(), {force:true});
+        fs.rmSync(await this.getSshKeyPath(), {force:true});
         fs.rmSync(this.getSshKnownHostsPath(), {force:true});
     }
 
@@ -241,8 +241,8 @@ export class ConfigService implements IKubeDaemonSecurityConfigService, IKubeCon
         }
     }
 
-    getSshKeyPath(): string {
-        let keyPath = this.config.getSshKeyPath();
+    async getSshKeyPath(): Promise<string> {
+        let keyPath = await this.config.getSshKeyPath();
         if (!keyPath) {
             keyPath = path.join(path.dirname(this.config.path), 'bzero-temp-key');
             this.config.setSshKeyPath(keyPath);

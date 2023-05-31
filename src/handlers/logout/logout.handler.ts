@@ -30,9 +30,9 @@ export async function logoutHandler(
 }
 
 export interface ILogoutConfigService {
-    logout(): void;
+    logout(): Promise<void>;
     clearSessionId(): void;
-    getSshKeyPath(): string;
+    getSshKeyPath(): Promise<string>;
     getSshKnownHostsPath(): string;
 
     // TODO: CWC-2030 These functions can be removed from the interface once web
@@ -55,10 +55,10 @@ export async function handleLogout(
     // Deletes the auth tokens from the config which will force the
     // user to login again before running another command
     logger.info('Closing any existing SSH tunnels and shell connections');
-    configService.logout();
+    await configService.logout();
     configService.clearSessionId();
     logger.info('Clearing temporary SSH files');
-    fileRemover.removeFileIfExists(configService.getSshKeyPath());
+    fileRemover.removeFileIfExists(await configService.getSshKeyPath());
     fileRemover.removeFileIfExists(configService.getSshKnownHostsPath());
 
     // Close any daemon connections, start with kube
