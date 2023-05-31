@@ -31,13 +31,13 @@ const JIT: string = 'just-in-time';
 export class PolicyHttpService extends HttpService
 {
     protected constructor() {
-        super()
+        super();
     }
 
     static async init(configService: ConfigService, logger: Logger) {
         const service = new PolicyHttpService();
         service.make(configService, 'api/v2/policies', logger);
-        return service
+        return service;
     }
 
     public ListKubernetesPolicies(subjects?: string, groups?: string): Promise<KubernetesPolicySummary[]>

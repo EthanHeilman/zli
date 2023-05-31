@@ -8,13 +8,13 @@ import { Logger } from 'services/logger/logger.service';
 
 export class EnvironmentHttpService extends HttpService {
     protected constructor() {
-        super()
+        super();
     }
 
     static async init(configService: ConfigService, logger: Logger) {
         const service = new EnvironmentHttpService();
         service.make(configService, 'api/v2/environments/', logger);
-        return service
+        return service;
     }
 
     public ListEnvironments(): Promise<EnvironmentSummary[]> {

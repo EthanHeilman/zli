@@ -8,13 +8,13 @@ import { Logger } from 'services/logger/logger.service';
 
 export class BzeroTargetHttpService extends HttpService {
     protected constructor() {
-        super()
+        super();
     }
 
     static async init(configService: ConfigService, logger: Logger) {
         const service = new BzeroTargetHttpService();
         service.make(configService, 'api/v2/targets/bzero/', logger);
-        return service
+        return service;
     }
 
     public GetBzeroTarget(targetId: string): Promise<BzeroAgentSummary> {

@@ -10,13 +10,13 @@ import { Logger } from 'services/logger/logger.service';
 export class ApiKeyHttpService extends HttpService
 {
     protected constructor() {
-        super()
+        super();
     }
 
     static async init(configService: ConfigService, logger: Logger) {
         const service = new ApiKeyHttpService();
         service.make(configService, 'api/v2/api-keys', logger);
-        return service
+        return service;
     }
 
     public GetApiKey(id: string): Promise<ApiKeySummary> {

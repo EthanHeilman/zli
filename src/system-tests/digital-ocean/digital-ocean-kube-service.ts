@@ -3,7 +3,6 @@ import { ConfigService } from 'services/config/config.service';
 import { Logger } from 'services/logger/logger.service';
 import { ClusterTargetStatusPollError, CreateNewKubeClusterParameters, DigitalOceanRegistryCredentials, RegisteredDigitalOceanKubernetesCluster } from 'system-tests/digital-ocean/digital-ocean-kube.service.types';
 import { checkAllSettledPromise } from 'system-tests/tests/utils/utils';
-import { EnvironmentHttpService } from 'http-services/environment/environment.http-services';
 import { KubeHttpService } from 'http-services/targets/kube/kube.http-services';
 import { KubeClusterSummary } from 'webshell-common-ts/http/v2/target/kube/types/kube-cluster-summary.types';
 import { PolicyHttpService } from 'http-services/policy/policy.http-services';
@@ -20,7 +19,6 @@ export class DigitalOceanKubeService {
 
     protected constructor(
         apiToken: string,
-        private configService: ConfigService,
         private logger: Logger,
         private policyHttpService: PolicyHttpService,
         private kubeHttpService: KubeHttpService
@@ -31,7 +29,7 @@ export class DigitalOceanKubeService {
     static async init(apiToken: string, configService: ConfigService, logger: Logger) {
         const policyHttpService = await PolicyHttpService.init(configService, logger);
         const kubeHttpService = await KubeHttpService.init(configService, logger);
-        return new DigitalOceanKubeService(apiToken, configService, logger, policyHttpService, kubeHttpService);
+        return new DigitalOceanKubeService(apiToken, logger, policyHttpService, kubeHttpService);
     }
 
     /**

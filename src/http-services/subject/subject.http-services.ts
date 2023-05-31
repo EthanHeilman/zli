@@ -7,13 +7,13 @@ import { Logger } from 'services/logger/logger.service';
 export class SubjectHttpService extends HttpService
 {
     protected constructor() {
-        super()
+        super();
     }
 
     static async init(configService: ConfigService, logger: Logger) {
         const service = new SubjectHttpService();
         service.make(configService, 'api/v2/subjects/', logger);
-        return service
+        return service;
     }
 
     public Me(): Promise<SubjectSummary>

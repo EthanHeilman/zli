@@ -11,13 +11,13 @@ import { Logger } from 'services/logger/logger.service';
 export class MfaHttpService extends HttpService
 {
     protected constructor() {
-        super()
+        super();
     }
 
     static async init(configService: ConfigService, logger: Logger) {
         const service = new MfaHttpService();
         service.make(configService, 'api/v2/mfa/', logger);
-        return service
+        return service;
     }
 
     public VerifyMfaTotp(token: string): Promise<void>

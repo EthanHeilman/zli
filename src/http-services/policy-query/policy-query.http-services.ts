@@ -11,13 +11,13 @@ import { URLSearchParams } from 'url';
 export class PolicyQueryHttpService extends HttpService
 {
     protected constructor() {
-        super()
+        super();
     }
 
     static async init(configService: ConfigService, logger: Logger) {
         const service = new PolicyQueryHttpService();
         service.make(configService, 'api/v2/policy-query/', logger);
-        return service
+        return service;
     }
 
     public TargetConnectPolicyQuery(targets: string[], targetType: TargetType, userEmail?: string): Promise<{[key: string]: TargetConnectPolicyQueryResponse}>

@@ -6,13 +6,13 @@ import { Logger } from 'services/logger/logger.service';
 
 export class SsmTargetHttpService extends HttpService {
     protected constructor() {
-        super()
+        super();
     }
 
     static async init(configService: ConfigService, logger: Logger) {
         const service = new SsmTargetHttpService();
         service.make(configService, 'api/v2/targets/ssm/', logger);
-        return service
+        return service;
     }
 
     public GetSsmTarget(targetId: string): Promise<SsmTargetSummary> {

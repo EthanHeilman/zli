@@ -11,13 +11,13 @@ import { Logger } from 'services/logger/logger.service';
 export class OrganizationHttpService extends HttpService
 {
     protected constructor() {
-        super()
+        super();
     }
 
     static async init(configService: ConfigService, logger: Logger) {
         const service = new OrganizationHttpService();
         service.make(configService, 'api/v2/organization/', logger);
-        return service
+        return service;
     }
 
     public ListGroups(): Promise<GroupSummary[]>

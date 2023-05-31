@@ -18,13 +18,13 @@ import { ConnectionState } from 'webshell-common-ts/http/v2/connection/types/con
 export class ConnectionHttpService extends HttpService
 {
     protected constructor() {
-        super()
+        super();
     }
 
     static async init(configService: ConfigService, logger: Logger) {
         const service = new ConnectionHttpService();
         service.make(configService, 'api/v2/connections/', logger);
-        return service
+        return service;
     }
 
     public GetShellConnection(connectionId: string) : Promise<ShellConnectionSummary>

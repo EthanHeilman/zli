@@ -6,13 +6,13 @@ import { Logger } from 'services/logger/logger.service';
 
 export class CertificateHttpService extends HttpService {
     protected constructor() {
-        super()
+        super();
     }
 
     static async init(configService: ConfigService, logger: Logger) {
         const service = new CertificateHttpService();
         service.make(configService, 'api/v2/certificate', logger);
-        return service
+        return service;
     }
 
     public GenerateCertificate(req: GenerateCertificateRequest): Promise<GenerateCertificateResponse> {

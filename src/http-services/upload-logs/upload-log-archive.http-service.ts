@@ -6,13 +6,13 @@ import { UploadLogArchiveRequest } from 'webshell-common-ts/http/v2/upload-logs/
 export class UploadLogArchiveHttpService extends HttpService
 {
     protected constructor() {
-        super()
+        super();
     }
 
     static async init(configService: ConfigService, logger: Logger) {
         const service = new UploadLogArchiveHttpService();
         service.make(configService, 'api/v2/upload-logs/', logger);
-        return service
+        return service;
     }
 
     public UploadLogArchive(req: UploadLogArchiveRequest) : Promise<void>

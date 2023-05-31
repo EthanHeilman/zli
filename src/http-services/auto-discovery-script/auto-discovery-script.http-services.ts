@@ -57,13 +57,13 @@ export async function getBzeroAnsibleAutodiscoveryScript(
 
 export class AutoDiscoveryScriptHttpService extends HttpService {
     protected constructor() {
-        super()
+        super();
     }
 
     static async init(configService: ConfigService, logger: Logger) {
         const service = new AutoDiscoveryScriptHttpService();
         service.make(configService, 'api/v2/autodiscovery-scripts', logger);
-        return service
+        return service;
     }
 
     public GetAutodiscoveryScript(

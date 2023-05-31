@@ -10,13 +10,13 @@ import { Logger } from 'services/logger/logger.service';
 export class UserHttpService extends HttpService
 {
     protected constructor() {
-        super()
+        super();
     }
 
     static async init(configService: ConfigService, logger: Logger) {
         const service = new UserHttpService();
         service.make(configService, 'api/v2/users/', logger);
-        return service
+        return service;
     }
 
     public async Register(): Promise<UserRegisterResponse>

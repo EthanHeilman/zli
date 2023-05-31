@@ -25,11 +25,11 @@ export class TestUtils {
     configService: ConfigService;
 
     protected constructor(
-        configService: ConfigService, 
-        logger: Logger, 
+        configService: ConfigService,
+        logger: Logger,
         public environmentService: EnvironmentHttpService,
         public eventsService: EventsHttpService) {
-            
+
         this.logger = logger;
         this.configService = configService;
     };

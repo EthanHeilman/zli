@@ -8,13 +8,13 @@ import { Logger } from 'services/logger/logger.service';
 export class SpaceHttpService extends HttpService
 {
     protected constructor() {
-        super()
+        super();
     }
 
     static async init(configService: ConfigService, logger: Logger) {
         const service = new SpaceHttpService();
         service.make(configService, 'api/v2/spaces/', logger);
-        return service
+        return service;
     }
 
     public GetSpace(spaceId: string) : Promise<SpaceSummary>

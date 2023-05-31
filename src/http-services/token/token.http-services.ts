@@ -9,13 +9,13 @@ import { Logger } from 'services/logger/logger.service';
 export class TokenHttpService extends HttpService
 {
     protected constructor() {
-        super()
+        super();
     }
 
     static async init(configService: ConfigService, logger: Logger) {
         const service = new TokenHttpService();
         service.make(configService, 'api/v2/token/', logger);
-        return service
+        return service;
     }
 
     public getGAToken(): Promise<TrackingTokenResponse>

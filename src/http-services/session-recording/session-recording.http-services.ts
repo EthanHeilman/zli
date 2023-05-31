@@ -5,13 +5,13 @@ import { SessionRecordingSummary } from 'webshell-common-ts/http/v2/session-reco
 
 export class SessionRecordingHttpService extends HttpService {
     protected constructor() {
-        super()
+        super();
     }
 
     static async init(configService: ConfigService, logger: Logger) {
         const service = new SessionRecordingHttpService();
         service.make(configService, 'api/v2/session-recordings', logger);
-        return service
+        return service;
     }
 
     public GetSessionRecording(connectionId: string): Promise<string> {
