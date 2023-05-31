@@ -497,7 +497,7 @@ export class QuickstartService {
         ];
 
         const userAsSubject: Subject = {
-            id: this.configService.me().id,
+            id: (await this.configService.me()).id,
             type: SubjectType.User
         };
 

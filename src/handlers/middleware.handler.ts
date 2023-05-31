@@ -14,7 +14,7 @@ import { OrganizationHttpService } from 'http-services/organization/organization
 */
 export async function GATrackingMiddleware(configService: ConfigService, baseCommand: string, logger: Logger, version: string, argvPassed: any,) {
     // GA tracking
-    const gaService: GAService = new GAService(configService, logger, baseCommand, argvPassed, version);
+    const gaService: GAService = await GAService.init(configService, logger, baseCommand, argvPassed, version);
 
     // Capturing configName flag does not matter as that is handled by which GA token is used
     // We slice(1) in order to not capture the baseCommand
@@ -22,9 +22,9 @@ export async function GATrackingMiddleware(configService: ConfigService, baseCom
     return gaService;
 }
 
-export function mixpanelTrackingMiddleware(configService: ConfigService, argv: any) {
+export async function mixpanelTrackingMiddleware(configService: ConfigService, argv: any) {
     // Mixpanel tracking
-    const mixpanelService = new MixpanelService(configService);
+    const mixpanelService = await MixpanelService.init(configService);
 
     // Only captures args, not options at the moment. Capturing configName flag
     // does not matter as that is handled by which mixpanel token is used
@@ -37,7 +37,7 @@ export function mixpanelTrackingMiddleware(configService: ConfigService, argv: a
 export async function oAuthMiddleware(configService: ConfigService, logger: Logger) {
     // OAuth
     await oauthMiddleware(configService, logger);
-    const me = configService.me(); // if you have logged in, this should be set
+    const me = await configService.me(); // if you have logged in, this should be set
     const sessionId = configService.getSessionId();
     logger.info(`Logged in as: ${me.email}, bzero-id:${me.id}, session-id:${sessionId}`);
 }

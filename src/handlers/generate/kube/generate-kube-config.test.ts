@@ -81,7 +81,7 @@ describe('Generate kube config suite', () => {
         kubeConfigServiceMock = mock<IFilterKubeConfigService>();
         managementServiceMock = mock<IGenerateKubeConfigManagementService>();
         // Sane defaults (can be overridden)
-        kubeConfigServiceMock.me.mockReturnValue({ email: fakeUserEmail, type: SubjectType.User } as SubjectSummary);
+        kubeConfigServiceMock.me.mockReturnValue(Promise.resolve({ email: fakeUserEmail, type: SubjectType.User } as SubjectSummary));
         kubeConfigServiceMock.getKubeDaemons.mockReturnValue({});
         managementServiceMock.getDaemonConfigs.mockReturnValue(fakeDaemonMap);
         managementServiceMock.disconnectAllDaemons.mockResolvedValue(new Map());

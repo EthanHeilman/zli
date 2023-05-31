@@ -128,7 +128,7 @@ export class ConnectTestUtils {
             connectTarget.id = finalConnectionSummary.targetId;
 
             // DATs add suffix of user's email to target name
-            connectTarget.name += `-${configService.me().email}`;
+            connectTarget.name += `-${(await configService.me()).email}`;
         }
 
         // Ensure that the created and connect event exists

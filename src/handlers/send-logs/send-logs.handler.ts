@@ -147,7 +147,7 @@ export async function sendLogsHandler(argv: yargs.Arguments<sendLogsArgs>, confi
         // post zli and daemon logs directly to UploadLogArchiveController
         try {
             await uploadLogsHttpService.UploadLogArchive({
-                userEmail: configService.me().email,
+                userEmail: (await configService.me()).email,
                 uploadLogsRequestId: uploadLogsRequestId,
                 logArchiveZip: readStream,
             });

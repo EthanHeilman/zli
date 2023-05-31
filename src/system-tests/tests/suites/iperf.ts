@@ -62,7 +62,7 @@ export const iperfSuite = () => {
             // Construct all http services needed to run tests
             policyService = new PolicyHttpService(configService, logger);
 
-            const me = configService.me();
+            const me = await configService.me();
             const currentSubject: Subject = {
                 id: me.id,
                 type: me.type

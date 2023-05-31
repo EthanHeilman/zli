@@ -64,7 +64,7 @@ export const organizationSuite = () => {
 
         test('2263: Get user\'s organization', async () => {
             const subjectOrg = await organizationService.GetUserOrganization();
-            const subjectInfo = configService.me();
+            const subjectInfo = await configService.me();
 
             // Ensure that the orgId matches
             const toMatch: OrganizationSummary = {

@@ -22,7 +22,7 @@ export async function bctlHandler(configService: ConfigService, logger: Logger, 
         throw new Error(`Could not find context entry with name: ${userCurrentContextName}`);
     }
 
-    if (!isKubeContextBastionZero(configService, userCurrentContext) &&
+    if (!(await isKubeContextBastionZero(configService, userCurrentContext)) &&
         // TODO-Yuval: Tag this with JIRA ticket to remove this additional check
         // once there are no more legacy kube configs.
         //
@@ -31,7 +31,7 @@ export async function bctlHandler(configService: ConfigService, logger: Logger, 
         // shared with filtering for stale context+cluster entries. I would
         // rather not have that logic apply to legacy kube config because the
         // old user prefix was not explicit enough to BastionZero.
-        !userCurrentContext.user.startsWith(configService.me().email)) {
+        !userCurrentContext.user.startsWith((await configService.me()).email)) {
         throw new Error(`Current context ${userCurrentContextName} is not a BastionZero context`);
     }
     const userCurrentCluster = userKubeConfig.kubeConfig.getCluster(userCurrentContext.cluster);

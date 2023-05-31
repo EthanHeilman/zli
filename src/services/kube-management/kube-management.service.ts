@@ -34,7 +34,7 @@ export function exportKubeConfigToYaml(kubeConfig: k8s.KubeConfig): string {
 
 export interface IKubeConfigService {
     getConfigName(): string;
-    me(): SubjectSummary;
+    me(): Promise<SubjectSummary>;
 }
 
 /**
@@ -57,8 +57,9 @@ function getKubeConfigNamePrefix(configService: IKubeConfigService): string {
 /**
  * Get username for BastionZero-managed user entry in a kubeconfig file
  */
-function getKubeConfigUsername(configService: IKubeConfigService): string {
-    return getKubeConfigNamePrefix(configService) + configService.me().email;
+async function getKubeConfigUsername(configService: IKubeConfigService): Promise<string> {
+    const me = await configService.me();
+    return getKubeConfigNamePrefix(configService) + me.email;
 }
 
 /**
@@ -77,14 +78,14 @@ function getKubeConfigUsername(configService: IKubeConfigService): string {
  * @returns A kube config with a cluster and context entry for this Kubernetes
  * target, and a user entry to authenticate to this target's daemon
  */
-export function generateKubeConfig(
+export async function generateKubeConfig(
     configService: IKubeConfigService,
     targetName: string,
     targetUser: string,
     daemonPort: number,
     daemonToken: string,
     defaultNamespace?: string
-): KubeConfig {
+): Promise<KubeConfig> {
     // Get prefix
     const prefix = getKubeConfigNamePrefix(configService);
 
@@ -92,7 +93,7 @@ export function generateKubeConfig(
     const identifyingName = prefix + targetUser + '@' + targetName;
     const clusterName = identifyingName;
     const contextName = identifyingName;
-    const userName = getKubeConfigUsername(configService);
+    const userName = await getKubeConfigUsername(configService);
 
     // Now generate a kubeConfig
     const clientKubeConfig = new KubeConfig();
@@ -445,11 +446,11 @@ export function buildMapOfNamedKubeEntries<T extends NamedKubeEntry>(arr: T[]): 
  * @returns True if the context is managed by BastionZero. Otherwise, returns
  * false.
  */
-export function isKubeContextBastionZero(
+export async function isKubeContextBastionZero(
     configService: IKubeConfigService,
     context: k8s.Context
-): boolean {
-    const bzeroUsername = getKubeConfigUsername(configService);
+): Promise<boolean> {
+    const bzeroUsername = await getKubeConfigUsername(configService);
     return context.user === bzeroUsername;
 }
 
@@ -508,7 +509,7 @@ export async function filterKubeConfig(
     // Iterate through all user's contexts, and remove entries from cluster and
     // context maps if the entry is a stale BastionZero entry
     for (const [contextName, context] of kubeConfigContexts) {
-        if (isKubeContextBastionZero(configService, context)) {
+        if (await isKubeContextBastionZero(configService, context)) {
             const refCluster = kubeConfigClusters.get(context.cluster);
             if (refCluster) {
                 if (!expectedDaemonPorts.has(getPortFromClusterServer(refCluster))) {
@@ -544,7 +545,7 @@ export async function filterKubeConfig(
     // BastionZero-managed user entry
     let removedBastionZeroManagedUser = false;
     if (!(await findRunningDaemonWithPredicate(kubeDaemonManagementService, (_ => true)))) {
-        const managedUsername = getKubeConfigUsername(configService);
+        const managedUsername = await getKubeConfigUsername(configService);
         removedBastionZeroManagedUser = kubeConfigUsers.delete(managedUsername);
         clonedKubeConfig.users = Array.from(kubeConfigUsers.values());
     }
@@ -570,14 +571,14 @@ export async function filterKubeConfig(
  * @param kubeDaemonConfig The kube daemon config to match
  * @returns First matching kube context. Otherwise, returns undefined.
  */
-export function findMatchingKubeContext(
+export async function findMatchingKubeContext(
     configService: ConfigService,
     kubeContexts: k8s.Context[],
     kubeConfigClusters: Map<string, k8s.Cluster>,
     kubeDaemonConfig: ZliKubeConfig
-): k8s.Context {
-    return kubeContexts.find(context => {
-        if (isKubeContextBastionZero(configService, context)) {
+): Promise<k8s.Context> {
+    return await kubeContexts.find(async (context) => {
+        if (await isKubeContextBastionZero(configService, context)) {
             const refCluster = kubeConfigClusters.get(context.cluster);
             if (refCluster) {
                 return getPortFromClusterServer(refCluster) === kubeDaemonConfig.localPort.toString();

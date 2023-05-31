@@ -35,7 +35,7 @@ export const groupsSuite = () => {
             // Call fetch endpoint to get the latest group information for the current user
             // We are fetching here as the python wrapper creates a dynamic group beforehand, but
             // our backend requires a new login (or this endpoint) to update group IDP membership
-            await organizationService.FetchGroupsMembership(configService.me().id);
+            await organizationService.FetchGroupsMembership((await configService.me()).id);
 
             // Then create our group based targetConnect policy
             await policyService.AddTargetConnectPolicy({

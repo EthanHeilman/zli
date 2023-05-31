@@ -97,7 +97,7 @@ export const agentRecoverySuite = (testRunnerKubeConfigFile: string, testRunnerU
             k8sExec = new k8s.Exec(kc);
 
             // Then create our targetConnect policy
-            const me = configService.me();
+            const me = await configService.me();
             const currentSubject: Subject = {
                 id: me.id,
                 type: me.type
@@ -314,7 +314,7 @@ export const agentRecoverySuite = (testRunnerKubeConfigFile: string, testRunnerU
                 const latestEvents = await eventsService.GetAgentStatusChangeEvents(targetId, restartTime);
                 const restart = latestEvents.filter(e => e.statusChange === 'OfflineToRestarting');
                 expect(restart.length).toEqual(1);
-                expect(restart[0].reason).toContain(`received manual restart from subject: {RestartedBy:${configService.me().email}`);
+                expect(restart[0].reason).toContain(`received manual restart from subject: {RestartedBy:${(await configService.me()).email}`);
 
             }, 5 * 60 * 1000);
         });

@@ -346,7 +346,7 @@ export class OAuthService implements IDisposable {
         }
 
         // Service accounts do not have the ability to automatically refresh
-        if(this.configService.me().type === SubjectType.ServiceAccount){
+        if((await this.configService.me()).type === SubjectType.ServiceAccount){
             throw new Error('Service account session has expired, please log in again.');
         }
 

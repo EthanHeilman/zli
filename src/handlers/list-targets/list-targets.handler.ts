@@ -20,7 +20,7 @@ export async function listTargetsHandler(
     logger: Logger,
     argv: yargs.Arguments<listTargetsArgs>
 ) {
-    const me = configService.me();
+    const me = await configService.me();
     const isAdmin = me.isAdmin;
 
     let userEmail;

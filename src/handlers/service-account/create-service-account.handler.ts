@@ -50,7 +50,7 @@ export async function createServiceAccountHandler(configService: ConfigService, 
     };
     const resp = await serviceAccountHttpService.CreateServiceAccount(req);
     logger.info(`Successfully created service account ${resp.serviceAccountSummary.email} with JWKS URL ${resp.serviceAccountSummary.jwksUrl}`);
-    await createBzeroCredsFile(resp.mfaSecret, configService.me().organizationId, configService.getIdp(), argv.bzeroCreds);
+    await createBzeroCredsFile(resp.mfaSecret, (await configService.me()).organizationId, configService.getIdp(), argv.bzeroCreds);
     logger.info('Successfully created the BastionZero credentials of this service account');
 
     await cleanExit(0, logger);

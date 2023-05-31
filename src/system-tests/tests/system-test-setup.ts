@@ -138,7 +138,7 @@ export async function setupDOTestCluster(): Promise<RegisteredDigitalOceanKubern
     helmVariables['apiKey'] = { value: systemTestRegistrationApiKey.secret, type: 'single' };
     helmVariables['clusterName'] = { value: clusterTargetName, type: 'single' };
     helmVariables['environmentId'] = { value: systemTestEnvId, type: 'single'};
-    helmVariables['users'] = { value: [configService.me().email], type: 'multi' };
+    helmVariables['users'] = { value: [(await configService.me()).email], type: 'multi' };
     helmVariables['targetUsers'] = { value: [KubeTestUserName], type: 'multi' };
     helmVariables['targetGroups'] = { value: KubeTestTargetGroups, type: 'multi' };
     helmVariables['agentResources.limits.cpu'] = { value: '500m', type: 'single' };
@@ -344,7 +344,7 @@ export async function ensureServiceAccountRole(subjectHttpService: SubjectHttpSe
 export async function ensureMfaEnabled(mfaService: MfaHttpService) {
     const mfaSummary = await mfaService.GetCurrentUserMfaSummary();
     if(!mfaSummary.enabled) {
-        await mfaService.EnableMfa(configService.me().id);
+        await mfaService.EnableMfa((await configService.me()).id);
     }
 }
 

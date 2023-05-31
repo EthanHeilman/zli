@@ -12,13 +12,13 @@ export const sessionRecordingPolicySuite = () => {
         let sessionRecordingPolicy: SessionRecordingPolicySummary;
         let expectedPolicySummary: SessionRecordingPolicySummary;
 
-        beforeAll(() => {
+        beforeAll(async () => {
             policyService = new PolicyHttpService(configService, logger);
 
             const originalPolicyName = systemTestPolicyTemplate.replace('$POLICY_TYPE', 'session-recording');
             const currentSubject: Subject = {
-                id: configService.me().id,
-                type: configService.me().type
+                id: (await configService.me()).id,
+                type: (await configService.me()).type
             };
             expectedPolicySummary = {
                 id: expect.any(String),
@@ -44,7 +44,7 @@ export const sessionRecordingPolicySuite = () => {
             const zliArgs = [
                 'policy', 'create-recording',
                 '-n', expectedPolicySummary.name,
-                '-a', configService.me().email,
+                '-a', (await configService.me()).email,
                 '-r', 'false',
                 '-d', expectedPolicySummary.description
             ];

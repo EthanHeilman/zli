@@ -12,16 +12,23 @@ export class MixpanelService
     private userId: string;
     private sessionId: string;
 
-    constructor(private configService: ConfigService)
+    constructor(mixpanelToken: string, userId: string, sessionId: string)
     {
-        this.mixpanelClient = mixpanel.init(this.configService.getMixpanelToken(), {
+        this.mixpanelClient = mixpanel.init(mixpanelToken, {
             protocol: 'https',
         });
 
-        this.userId = this.configService.me().id;
-        this.sessionId = this.configService.getSessionId();
+        this.userId = userId;
+        this.sessionId = sessionId;
     }
 
+    static async init(configService: ConfigService) {
+        const mixpanelToken = configService.getMixpanelToken();
+        const userId = (await configService.me()).id;
+        const sessionId = configService.getSessionId();
+
+        return new MixpanelService(mixpanelToken, userId, sessionId);
+    }
 
     // track connect calls
     public TrackNewConnection(targetType: TargetType): void

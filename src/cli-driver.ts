@@ -298,7 +298,7 @@ export class CliDriver
                 if(!this.configService.getMixpanelToken()) {
                     await this.configService.fetchMixpanelToken();
                 }
-                this.mixpanelService = mixpanelTrackingMiddleware(this.configService, argv);
+                this.mixpanelService = await mixpanelTrackingMiddleware(this.configService, argv);
             })
             .middleware(async (_) => {
                 if(!(this.oauthCommands.has(baseCmd)))
@@ -316,7 +316,7 @@ export class CliDriver
                 const isGenerateBash = argv._[0] == 'generate' && argv._[1] == 'bash';
                 const isGenerateKubeYaml = argv._[0] == 'generate' && argv._[1] == 'kubeYaml';
                 if(!isServiceAccountLogin &&
-                    ((this.adminOnlyCommands.has(baseCmd) || isGenerateBash || isGenerateKubeYaml) && !this.configService.me().isAdmin)){
+                    ((this.adminOnlyCommands.has(baseCmd) || isGenerateBash || isGenerateKubeYaml) && !(await this.configService.me()).isAdmin)){
                     this.logger.error(`This is an admin restricted command. Please login as an admin to perform it.`);
                     await cleanExit(1, this.logger);
                 }

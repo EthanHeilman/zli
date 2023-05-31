@@ -42,7 +42,7 @@ export class TestUtils {
      * @param {string} command Command we are looking for
      */
     private async BuildCommandEvent(targetId: string, targetName: string, targetUser: string, targetType: string, targetEnvId: string, targetEnvName: string, command: string): Promise<CommandEventDataMessage> {
-        const me = this.configService.me();
+        const me = await this.configService.me();
         const toReturn: CommandEventDataMessage = {
             id: expect.anything(),
             connectionId: expect.anything(),
@@ -124,7 +124,7 @@ export class TestUtils {
         // otherwise the default expected environment name is 'n/a'
             : 'n/a';
 
-        const me = this.configService.me();
+        const me = await this.configService.me();
         const defaults: ConnectionEventDataMessage = {
             id: expect.anything(),
             connectionId: expect.anything(),
@@ -150,7 +150,7 @@ export class TestUtils {
             async () => {
                 const gotEvents = await this.eventsService.GetConnectionEvents(
                     startTime,
-                    [this.configService.me().id],
+                    [(await this.configService.me()).id],
                     partialEvent.targetId ? [partialEvent.targetId] : []
                 );
 
@@ -174,7 +174,7 @@ export class TestUtils {
      */
     public async EnsureCommandLogExists(targetId: string, targetName: string, targetUser: string, targetType: string, targetEnvId: string, command: string, startTime: Date) {
         // Query for our events
-        const commands = await this.eventsService.GetCommandEvent(startTime, [this.configService.me().id]);
+        const commands = await this.eventsService.GetCommandEvent(startTime, [(await this.configService.me()).id]);
 
         const commandEventMatch = commands.find(event => {
             return event.targetId == targetId &&
@@ -210,7 +210,7 @@ export class TestUtils {
      */
     public async EnsureKubeEvent(targetName: string, role: string, targetGroup: string[], kubeEnglishCommand: string, expectedEndpoints: string[], expectedExecs: string[], startTime: Date) {
         const kubeEvents = await this.eventsService.GetKubeEvents();
-        const me = this.configService.me();
+        const me = await this.configService.me();
 
         const kubeEvent = kubeEvents.find(kubeEvent => {
             // Check the basic values that we expect
@@ -261,7 +261,7 @@ export class TestUtils {
      * @param {Date} startTime The searched events should be on or after this time. null indicates no filtering based on time.
      */
     public async EnsureSubjectEventExists(serviceAction: string, allowed?: boolean, context?: string, startTime?: Date): Promise<boolean> {
-        const userEvents = await this.eventsService.GetSubjectEvents(startTime, [this.configService.me().id]);
+        const userEvents = await this.eventsService.GetSubjectEvents(startTime, [(await this.configService.me()).id]);
 
         for (let index = 0; index < userEvents.length; index++) {
             const event = userEvents[index];

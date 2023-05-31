@@ -26,7 +26,7 @@ export const userRestApiSuite = () => {
                 lastLogin: me.lastLogin,
                 type: SubjectType.User,
             };
-            expect(configService.me()).toEqual(currentSubject);
+            expect(await configService.me()).toEqual(currentSubject);
         }, 15 * 1000);
 
         test(`23989: Get a user's data by ID`, async () => {

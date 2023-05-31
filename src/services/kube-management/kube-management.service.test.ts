@@ -321,7 +321,7 @@ describe('filterKubeConfig suite', () => {
         mockKubeDaemonManagementService.getDaemonConfigs.mockReturnValue(new Map());
         mockKubeDaemonManagementService.getAllDaemonStatuses.mockResolvedValue(new Map());
 
-        mockConfig.me.mockReturnValue({ email: bzeroEmail } as SubjectSummary);
+        mockConfig.me.mockReturnValue(Promise.resolve({ email: bzeroEmail } as SubjectSummary));
     });
 
     const makeBzeroContextsAndClusters = (ports: number[]): [Context[], Cluster[]] => {

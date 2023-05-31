@@ -41,7 +41,7 @@ export const sessionRecordingSuite = () => {
             connectionService = new ConnectionHttpService(configService, logger);
             connectTestUtils = new ConnectTestUtils(connectionService, testUtils);
 
-            const me = configService.me();
+            const me = await configService.me();
             const subjectEmail: Subject = {
                 id: me.id,
                 type: me.type

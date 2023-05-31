@@ -15,7 +15,7 @@ export const mfaSuite = () => {
 
         beforeAll(async () => {
             mfaService = new MfaHttpService(configService, logger);
-            subjectId = configService.me().id;
+            subjectId = (await configService.me()).id;
 
             // ensure mfa is enabled before tests have run
             await ensureMfaEnabled(mfaService);

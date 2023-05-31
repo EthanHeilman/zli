@@ -36,7 +36,7 @@ export const forceRegisterSuite = () => {
             bzeroTargetHttpService = new BzeroTargetHttpService(configService, logger);
             testUtils = new TestUtils(configService, logger);
 
-            const me = configService.me();
+            const me = await configService.me();
             const currentSubject: Subject = {
                 id: me.id,
                 type: me.type

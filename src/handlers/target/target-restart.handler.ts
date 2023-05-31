@@ -11,7 +11,7 @@ export async function targetRestartHandler(
     configService: ConfigService,
     logger: Logger
 ) {
-    if (!configService.me().isAdmin) {
+    if (!(await configService.me()).isAdmin) {
         throw Error('Must be an admin to restart a bzero target');
     }
 

@@ -71,7 +71,7 @@ export async function handleGenerateKubeConfig(
     // Add to rolling config a context and cluster entry for every daemon config
     // stored in our config.
     for (const [_, kubeDaemonConfig] of kubeDaemonConfigs) {
-        const generatedKubeConfig = generateKubeConfig(
+        const generatedKubeConfig = await generateKubeConfig(
             configService,
             kubeDaemonConfig.targetCluster,
             kubeDaemonConfig.targetUser,

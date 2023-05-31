@@ -23,8 +23,9 @@ import { TargetStatus } from 'webshell-common-ts/http/v2/target/types/targetStat
 const CONFIGURE_MIN_AGENT_VERSION: SemVer = new SemVer('7.3.0');
 
 export async function configureServiceAccountHandler(configService: ConfigService, logger: Logger, mrtapService: MrtapService, argv : yargs.Arguments<configureServiceAccountArgs>) {
-    if(configService.me().type != SubjectType.User) {
-        logger.error(`You cannot configure targets when logged in as ${configService.me().type}`);
+    const me = await configService.me();
+    if(me.type != SubjectType.User) {
+        logger.error(`You cannot configure targets when logged in as ${me.type}`);
         await cleanExit(1, logger);
     }
 

@@ -9,8 +9,9 @@ import { SubjectType } from 'webshell-common-ts/http/v2/common.types/subject.typ
 
 export async function createAuthorizedGithubActionHandler(configService: ConfigService, logger: Logger, argv : yargs.Arguments<createAuthorizedGithubActionArgs>) {
 
-    if(configService.me().type != SubjectType.User) {
-        logger.error(`You cannot authorize Github Actions when logged in as ${configService.me().type}`);
+    const me = await configService.me();
+    if(me.type != SubjectType.User) {
+        logger.error(`You cannot authorize Github Actions when logged in as ${me.type}`);
         await cleanExit(1, logger);
     }
 

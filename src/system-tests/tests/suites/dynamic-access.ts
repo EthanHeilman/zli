@@ -55,7 +55,7 @@ export const dynamicAccessSuite = () => {
                 dynamicAccessConfiguration: dynamicAccessConfiguration
             };
 
-            const me = configService.me();
+            const me = await configService.me();
             const currentSubject: Subject = {
                 id: me.id,
                 type: me.type

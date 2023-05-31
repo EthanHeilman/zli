@@ -232,7 +232,7 @@ export class ConfigService implements IKubeDaemonSecurityConfigService, IKubeCon
         this.config.setMixpanelToken(mixpanelToken);
     }
 
-    me(): SubjectSummary {
+    async me(): Promise<SubjectSummary> {
         const whoami = this.config.getWhoami();
         if (whoami) {
             return whoami;

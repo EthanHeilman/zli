@@ -16,14 +16,14 @@ export const targetConnectPolicySuite = () => {
         let targetConnectPolicy: TargetConnectPolicySummary;
         let expectedPolicySummary: TargetConnectPolicySummary;
 
-        beforeAll(() => {
+        beforeAll(async () => {
             policyService = new PolicyHttpService(configService, logger);
             envHttpService = new EnvironmentHttpService(configService, logger);
 
             const originalPolicyName = systemTestPolicyTemplate.replace('$POLICY_TYPE', 'target-connect');
             const currentSubject: Subject = {
-                id: configService.me().id,
-                type: configService.me().type
+                id: (await configService.me()).id,
+                type: (await configService.me()).type
             };
             expectedPolicySummary = {
                 id: expect.any(String),
@@ -69,7 +69,7 @@ export const targetConnectPolicySuite = () => {
             const zliArgs = [
                 'policy', 'create-tconnect',
                 '-n', expectedPolicySummary.name,
-                '-a', configService.me().email,
+                '-a', (await configService.me()).email,
                 '-e', environment.name,
                 '--targetUsers', 'test-user', '{username}',
                 '-v', 'shell',

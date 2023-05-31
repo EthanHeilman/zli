@@ -44,7 +44,7 @@ export async function startKubeDaemonHandler(
         let matchingContextName: string = undefined;
         try {
             const kubeConfigClusters = buildMapOfNamedKubeEntries(userKubeConfig.kubeConfig.clusters);
-            const matchingContextEntry = findMatchingKubeContext(configService, userKubeConfig.kubeConfig.contexts, kubeConfigClusters, alreadyRunningDaemon.config);
+            const matchingContextEntry = await findMatchingKubeContext(configService, userKubeConfig.kubeConfig.contexts, kubeConfigClusters, alreadyRunningDaemon.config);
             if (matchingContextEntry) {
                 matchingContextName = matchingContextEntry.name;
             }
@@ -109,7 +109,7 @@ export async function startKubeDaemonHandler(
             const daemonProcess = await spawnDaemonInBackground(logger, loggerConfigService, cwd, finalDaemonPath, args, runtimeConfig, baseEnv['CONTROL_PORT'], null);
 
             // Generate kube config for this daemon
-            const generatedKubeConfig = generateKubeConfig(
+            const generatedKubeConfig = await generateKubeConfig(
                 configService,
                 clusterTarget.name,
                 targetUser,

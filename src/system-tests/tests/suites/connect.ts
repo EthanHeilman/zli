@@ -35,7 +35,7 @@ export const connectSuite = () => {
             eventsService = new EventsHttpService(configService, logger);
             testUtils = new TestUtils(configService, logger);
 
-            const me = configService.me();
+            const me = await configService.me();
             const currentSubject: Subject = {
                 id: me.id,
                 type: me.type
@@ -58,7 +58,7 @@ export const connectSuite = () => {
 
             await sleepTimeout(OPA_SYNC_TIME);
 
-            const mostRecentUserEvent = await eventsService.GetSubjectEvents(null, [configService.me().id], 1);
+            const mostRecentUserEvent = await eventsService.GetSubjectEvents(null, [(await configService.me()).id], 1);
             userLogFilterStartTime = mostRecentUserEvent[0]?.timestamp;
         }, 60 * 1000);
 

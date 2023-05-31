@@ -178,9 +178,11 @@ export async function quickstartHandler(
         // Run standard oauth middleware logic that checks if user is logged in
         // and refreshes token if its expired.
         await oauthService.getTokenSet();
-        if(configService.me().type !== SubjectType.User)
-            throw new Error(`Cannot continue as subject ${configService.me().type}`);
-        const userSummary = await userHttpService.GetUserById(configService.me().id);
+
+        const me = await configService.me();
+        if(me.type !== SubjectType.User)
+            throw new Error(`Cannot continue as subject ${me.type}`);
+        const userSummary = await userHttpService.GetUserById(me.id);
         await postSuccessLogin(userSummary, (firstName) => {
             if (firstName) {
                 return `\nWelcome back ${firstName}!`;
@@ -197,9 +199,10 @@ export async function quickstartHandler(
 
         const loginResult = await loginUserHandler(configService, logger, mrtapService);
         if (loginResult) {
-            if(configService.me().type !== SubjectType.User)
-                throw new Error(`Cannot continue as subject ${configService.me().type}`);
-            const userSummary = await userHttpService.GetUserById(configService.me().id);
+            const me = await configService.me();
+            if(me.type !== SubjectType.User)
+                throw new Error(`Cannot continue as subject ${me.type}`);
+            const userSummary = await userHttpService.GetUserById(me.id);
             await postSuccessLogin(userSummary, (firstName) => {
                 if (firstName) {
                     return `\nWelcome ${firstName}!`;
@@ -225,7 +228,7 @@ export async function quickstartHandler(
         // Fetch the GA token in case it is not set (first time user)
         await configService.fetchGaToken();
     }
-    const gaService = new GAService(configService, logger, 'quickstart', [], version);
+    const gaService = await GAService.init(configService, logger, 'quickstart', [], version);
     await gaService.TrackCliCommand();
 
     // We cannot create the MixpanelService until the user has logged in
@@ -233,7 +236,7 @@ export async function quickstartHandler(
         // Fetch the mixpanel token in case it is not set (first time user)
         await configService.fetchMixpanelToken();
     }
-    const mixpanelService = new MixpanelService(configService);
+    const mixpanelService = await MixpanelService.init(configService);
     mixpanelService.TrackCliCommand(version, 'quickstart', []);
 
     // Parse SSH config file

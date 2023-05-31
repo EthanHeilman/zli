@@ -60,7 +60,7 @@ export const agentContainerSuite = () => {
             testUtils = new TestUtils(configService, logger);
             sessionRecordingService = new SessionRecordingHttpService(configService, logger);
 
-            const me = configService.me();
+            const me = await configService.me();
             const currentSubject: Subject = {
                 id: me.id,
                 type: me.type

@@ -108,7 +108,7 @@ export const serviceAccountSuite = () => {
                 connectTestUtils = new ConnectTestUtils(connectionService, testUtils);
 
                 // Then create our targetConnect policy
-                const me = systemTestSAConfigService.me();
+                const me = await systemTestSAConfigService.me();
                 const currentSubject: Subject = {
                     id: me.id,
                     type: me.type

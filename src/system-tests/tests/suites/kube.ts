@@ -79,7 +79,7 @@ export const kubeSuite = () => {
             process.env.KUBECONFIG = testFilePath;
 
             // Set up the policy before all the tests
-            const me = configService.me();
+            const me = await configService.me();
             const currentSubject: Subject = {
                 id: me.id,
                 type: me.type

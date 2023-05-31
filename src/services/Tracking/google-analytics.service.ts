@@ -15,12 +15,10 @@ export class GAService
         'zli-args': 'cd5'
     };
 
-    constructor(private configService: ConfigService, private logger: Logger, private baseCommand: string, args: string[], version: string)
+    constructor(private logger: Logger, private baseCommand: string, args: string[], version: string, userId: string, gaToken: string, serviceUrl: string)
     {
         // Set up our user + GA info
-        this.userId = this.configService.me().id;
-        const gaToken = configService.getGaToken();
-
+        this.userId = userId;
         this.visitor = ua(gaToken, this.userId, {uid: this.userId});
 
         // Set our custom dimensions
@@ -34,7 +32,15 @@ export class GAService
         this.visitor.set(this.customDimensionMapper['zli-args'], argsToLog);
         this.visitor.set(this.customDimensionMapper['user-id'], this.userId);
         this.visitor.set(this.customDimensionMapper['zli-version'], version);
-        this.visitor.set(this.customDimensionMapper['service-url'], configService.getServiceUrl());
+        this.visitor.set(this.customDimensionMapper['service-url'], serviceUrl);
+    }
+
+    static async init(configService: ConfigService, logger: Logger, baseCommand: string, args: string[], version: string) {
+        const userId = (await configService.me()).id;
+        const gaToken = configService.getGaToken();
+        const serviceUrl = configService.getServiceUrl();
+
+        return new GAService(logger, baseCommand, args, version, userId, gaToken, serviceUrl);
     }
 
     /**

@@ -27,12 +27,12 @@ export const sendLogsSuite = () => {
     let bucket: string;
 
     describe('Send Logs Suite', () => {
-        beforeAll(() => {
+        beforeAll(async () => {
             // get full current month name for object prefix
             month = new Date().toLocaleString('default', { month: 'long' }) ;
 
             // get subjectEmail for object prefix
-            subjectEmail = configService.me().email;
+            subjectEmail = (await configService.me()).email;
 
             // extract domain name from the email for object prefix
             const startIndex = subjectEmail.indexOf('@');

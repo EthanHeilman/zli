@@ -17,7 +17,7 @@ export const proxyPolicySuite = () => {
         let proxyPolicyTargetUsers: ProxyPolicySummary;
         let expectedPolicyTargetUsersSummary: ProxyPolicySummary;
 
-        beforeAll(() => {
+        beforeAll(async () => {
             policyService = new PolicyHttpService(configService, logger);
             envHttpService = new EnvironmentHttpService(configService, logger);
 
@@ -25,8 +25,8 @@ export const proxyPolicySuite = () => {
             const proxyPolicyTargetUsersName = systemTestPolicyTemplate.replace('$POLICY_TYPE', 'proxy-target-users');
 
             const currentSubject: Subject = {
-                id: configService.me().id,
-                type: configService.me().type
+                id: (await configService.me()).id,
+                type: (await configService.me()).type
             };
             expectedPolicySummary = {
                 id: expect.any(String),
@@ -80,7 +80,7 @@ export const proxyPolicySuite = () => {
             const zliArgs = [
                 'policy', 'create-proxy',
                 '-n', expectedPolicySummary.name,
-                '-a', configService.me().email,
+                '-a', (await configService.me()).email,
                 '-e', environment.name,
                 '-d', expectedPolicySummary.description
             ];
@@ -100,7 +100,7 @@ export const proxyPolicySuite = () => {
             const zliArgs = [
                 'policy', 'create-proxy',
                 '-n', expectedPolicyTargetUsersSummary.name,
-                '-a', configService.me().email,
+                '-a', (await configService.me()).email,
                 '-e', environment.name,
                 '-d', expectedPolicyTargetUsersSummary.description,
                 '--targetUsers', 'testuser1', 'testuser2',

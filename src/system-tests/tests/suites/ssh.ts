@@ -64,8 +64,8 @@ export const sshSuite = () => {
         allTargets.forEach(async (testTarget: TestTarget) => {
             it(`${testTarget.sshCaseId}: ssh tunnel - ${testTarget.awsRegion} - ${testTarget.installType} - ${testTarget.dropletImage}`, async () => {
                 const currentSubject: Subject = {
-                    id: configService.me().id,
-                    type: configService.me().type
+                    id: (await configService.me()).id,
+                    type: (await configService.me()).type
                 };
                 const environment: Environment = {
                     id: systemTestEnvId
@@ -99,8 +99,8 @@ export const sshSuite = () => {
         allTargets.forEach(async (testTarget: TestTarget) => {
             it(`${testTarget.sshWithEnvCaseId}: ssh tunnel with env - ${testTarget.awsRegion} - ${testTarget.installType} - ${testTarget.dropletImage}`, async () => {
                 const currentSubject: Subject = {
-                    id: configService.me().id,
-                    type: configService.me().type
+                    id: (await configService.me()).id,
+                    type: (await configService.me()).type
                 };
                 const environment: Environment = {
                     id: systemTestEnvId
@@ -134,8 +134,8 @@ export const sshSuite = () => {
         allTargets.forEach(async (testTarget: TestTarget) => {
             it(`${testTarget.sshWithIdpUsernameCaseId}: ssh tunnel with idp username - ${testTarget.awsRegion} - ${testTarget.installType} - ${testTarget.dropletImage}`, async () => {
                 const currentSubject: Subject = {
-                    id: configService.me().id,
-                    type: configService.me().type
+                    id: (await configService.me()).id,
+                    type: (await configService.me()).type
                 };
                 const environment: Environment = {
                     id: systemTestEnvId
@@ -176,8 +176,8 @@ export const sshSuite = () => {
             it(`${testTarget.sshConnectFailsCaseId}: connect fails with only tunnel policy - ${testTarget.awsRegion} - ${testTarget.installType} - ${testTarget.dropletImage}`, async () => {
 
                 const currentSubject: Subject = {
-                    id: configService.me().id,
-                    type: configService.me().type
+                    id: (await configService.me()).id,
+                    type: (await configService.me()).type
                 };
                 const environment: Environment = {
                     id: systemTestEnvId
@@ -209,8 +209,8 @@ export const sshSuite = () => {
             it(`${testTarget.sshBadUserCaseId}: ssh tunnel bad user - ${testTarget.awsRegion} - ${testTarget.installType} - ${testTarget.dropletImage}`, async () => {
 
                 const currentUser: Subject = {
-                    id: configService.me().id,
-                    type: configService.me().type
+                    id: (await configService.me()).id,
+                    type: (await configService.me()).type
                 };
                 const environment: Environment = {
                     id: systemTestEnvId
@@ -252,8 +252,8 @@ export const sshSuite = () => {
         allTargets.forEach(async (testTarget: TestTarget) => {
             it(`${testTarget.sshScpCaseId}: scp - ${testTarget.awsRegion} - ${testTarget.installType} - ${testTarget.dropletImage}`, async () => {
                 const currentSubject: Subject = {
-                    id: configService.me().id,
-                    type: configService.me().type
+                    id: (await configService.me()).id,
+                    type: (await configService.me()).type
                 };
                 const environment: Environment = {
                     id: systemTestEnvId
@@ -297,8 +297,8 @@ export const sshSuite = () => {
         allTargets.forEach(async (testTarget: TestTarget) => {
             it(`${testTarget.sshSftpCaseId}: sftp - ${testTarget.awsRegion} - ${testTarget.installType} - ${testTarget.dropletImage}`, async () => {
                 const currentSubject: Subject = {
-                    id: configService.me().id,
-                    type: configService.me().type
+                    id: (await configService.me()).id,
+                    type: (await configService.me()).type
                 };
                 const environment: Environment = {
                     id: systemTestEnvId
@@ -348,8 +348,8 @@ export const sshSuite = () => {
         allTargets.forEach(async (testTarget: TestTarget) => {
             it(`${testTarget.sshTunnelFailsCaseId}: tunnel/exec fails when user only has file transfer access - ${testTarget.awsRegion} - ${testTarget.installType} - ${testTarget.dropletImage}`, async () => {
                 const currentSubject: Subject = {
-                    id: configService.me().id,
-                    type: configService.me().type
+                    id: (await configService.me()).id,
+                    type: (await configService.me()).type
                 };
                 const environment: Environment = {
                     id: systemTestEnvId
@@ -387,8 +387,8 @@ export const sshSuite = () => {
         allTargets.forEach(async (testTarget: TestTarget) => {
             it(`${testTarget.sshByUuidCaseId}: ssh using id instead of name - ${testTarget.awsRegion} - ${testTarget.installType} - ${testTarget.dropletImage}`, async () => {
                 const currentSubject: Subject = {
-                    id: configService.me().id,
-                    type: configService.me().type
+                    id: (await configService.me()).id,
+                    type: (await configService.me()).type
                 };
                 const environment: Environment = {
                     id: systemTestEnvId
@@ -426,8 +426,8 @@ export const sshSuite = () => {
         allTargets.forEach(async (testTarget: TestTarget) => {
             it(`${testTarget.sshScpByUuidCaseId}: scp using id instead of name - ${testTarget.awsRegion} - ${testTarget.installType} - ${testTarget.dropletImage}`, async () => {
                 const currentSubject: Subject = {
-                    id: configService.me().id,
-                    type: configService.me().type
+                    id: (await configService.me()).id,
+                    type: (await configService.me()).type
                 };
                 const environment: Environment = {
                     id: systemTestEnvId

@@ -30,7 +30,7 @@ export const environmentsSuite = () => {
             });
             envToExpect = {
                 id : createEnvResponse.id,
-                organizationId : configService.me().organizationId,
+                organizationId : (await configService.me()).organizationId,
                 isDefault : false,
                 name : environmentName,
                 description : envDescription,
