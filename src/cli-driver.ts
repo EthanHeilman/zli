@@ -1004,7 +1004,9 @@ Command arguments key:
  - [arg] is optional or sometimes required
 
 Need help? https://cloud.bastionzero.com/support`)
-            .fail(false);
+            .fail(() => {
+                throw new Error('');
+            });
     }
 
     public async run(argv: string[], isSystemTest?: boolean, callback?: (err: Error, argv: any, output: string) => void) {
