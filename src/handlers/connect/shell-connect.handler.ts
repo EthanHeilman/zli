@@ -36,7 +36,7 @@ export async function shellConnectHandler(
             // configuration. The dynamically created target should be returned
             // in the connectionSummary.targetId once the DAT has registered and
             // come online
-            const dynamicAccessConnectionUtils = new DynamicAccessConnectionUtils(logger, configService);
+            const dynamicAccessConnectionUtils = await DynamicAccessConnectionUtils.init(logger, configService);
 
             // Wait for the DAT to come online and then get the updated
             // connection summary.

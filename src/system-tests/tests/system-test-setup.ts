@@ -212,7 +212,7 @@ export async function setupDOTestCluster(): Promise<RegisteredDigitalOceanKubern
  * Helper function to create our digital ocean test droplets
  */
 export async function createDOTestTargets() {
-    const doService = new DigitalOceanTargetService(doApiKey, configService, logger);
+    const doService = await DigitalOceanTargetService.init(doApiKey, configService, logger);
 
     // Create a droplet for various types of test targets
     const createDroplet = async (testTarget: TestTarget) => {

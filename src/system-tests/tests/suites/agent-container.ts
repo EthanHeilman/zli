@@ -140,7 +140,7 @@ export const agentContainerSuite = () => {
  */
 export async function setupAgentContainer(targetsToRun: BzeroContainerTestTarget[]): Promise<Map<BzeroContainerTestTarget, ContainerBzeroTarget >> {
     // To poll to ensure the agent is online
-    const doService = new DigitalOceanTargetService(doApiKey, configService, logger);
+    const doService = await DigitalOceanTargetService.init(doApiKey, configService, logger);
 
     const toReturn = new Map<BzeroContainerTestTarget, ContainerBzeroTarget>();
 
@@ -264,7 +264,7 @@ export async function setupAgentContainer(targetsToRun: BzeroContainerTestTarget
  */
 async function cleanupAgentContainer(testContainerAgents: Map<BzeroContainerTestTarget, ContainerBzeroTarget >) {
     // Loop over each test container agent
-    const doService = new DigitalOceanTargetService(doApiKey, configService, logger);
+    const doService = await DigitalOceanTargetService.init(doApiKey, configService, logger);
     testContainerAgents.forEach(async (targetInfo, _) => {
         await doService.deleteBzeroTarget(targetInfo.bzeroTarget.id);
 

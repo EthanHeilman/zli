@@ -7,14 +7,14 @@ import { ConnectionState } from 'webshell-common-ts/http/v2/connection/types/con
 import { Retrier } from '@jsier/retrier';
 
 export class DynamicAccessConnectionUtils {
-
-    private connectionService: ConnectionHttpService;
-
     constructor(
         private logger: Logger,
-        configService: ConfigService
-    ) {
-        this.connectionService = await ConnectionHttpService.init(configService, logger);
+        private connectionService: ConnectionHttpService
+    ) {}
+
+    static async init(logger: Logger, configService: ConfigService) {
+        const connectionService = await ConnectionHttpService.init(configService, logger);
+        return new DynamicAccessConnectionUtils(logger, connectionService);
     }
 
     /**

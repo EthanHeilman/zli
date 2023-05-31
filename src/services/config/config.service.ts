@@ -85,7 +85,7 @@ export class ConfigService implements IKubeDaemonSecurityConfigService, IKubeCon
 
     public logoutDetected: Observable<boolean> = this.logoutDetectedSubject.asObservable();
 
-    protected constructor(
+    constructor(
         configName: string,
         logger: Logger,
         configDir?: string,

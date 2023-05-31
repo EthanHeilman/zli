@@ -52,7 +52,7 @@ export async function cleanupDOTestCluster(cluster: RegisteredDigitalOceanKubern
  * Helper function to clean up our digital ocean test targets
  */
 export async function cleanupDOTestTargets() {
-    const doService = new DigitalOceanTargetService(doApiKey, configService, logger);
+    const doService = await DigitalOceanTargetService.init(doApiKey, configService, logger);
     const allTargetsCleanup = Promise.allSettled(Array.from(testTargets.values()).map((doTarget) => {
         return doService.deleteDigitalOceanTarget(doTarget);
     }));

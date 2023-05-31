@@ -113,7 +113,7 @@ export class SsmShellTerminal implements IDisposable
                 switch(shellEvent.type) {
                 case ShellEventType.Ready:
                     if (this.refreshTargetInfoOnReady) {
-                        const ssmTargetService = new SsmTargetHttpService(this.configService, this.logger);
+                        const ssmTargetService = await SsmTargetHttpService.init(this.configService, this.logger);
                         const ssmTargetInfo = await ssmTargetService.GetSsmTarget(this.connectionSummary.targetId);
                         this.shellWebsocketService.updateTargetInfo(ssmTargetInfo);
                     }

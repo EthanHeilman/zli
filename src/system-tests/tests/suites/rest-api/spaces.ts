@@ -17,7 +17,7 @@ export const spacesRestApiSuite = () => {
         let spacesService: SpaceHttpService;
         let testSpaceId: string;
 
-        beforeAll(() => {
+        beforeAll(async () => {
             spacesService = await SpaceHttpService.init(configService, logger);
         });
 

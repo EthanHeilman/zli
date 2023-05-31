@@ -12,15 +12,19 @@ import { IDroplet } from 'dots-wrapper/dist/droplet/types/droplet';
 
 export class DigitalOceanTargetService {
     private doClient;
-    private bzeroTargetHttpService: BzeroTargetHttpService;
 
     constructor(
         apiToken: string,
         private configService: ConfigService,
-        private logger: Logger
+        private logger: Logger,
+        private bzeroTargetHttpService: BzeroTargetHttpService
     ) {
         this.doClient = createApiClient({ token: apiToken });
-        this.bzeroTargetHttpService = await BzeroTargetHttpService.init(this.configService, this.logger);
+    }
+
+    static async init(apiToken: string, configService: ConfigService, logger: Logger) {
+        const bzeroTargetHttpService = await BzeroTargetHttpService.init(configService, logger);
+        return new DigitalOceanTargetService(apiToken, configService, logger, bzeroTargetHttpService);
     }
 
     /**

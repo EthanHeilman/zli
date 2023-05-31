@@ -123,7 +123,7 @@ export const forceRegisterSuite = () => {
                 // fairly quickly after being restarted. It will just need to
                 // open a new control channel but the droplet will already
                 // exist.
-                const doService = new DigitalOceanTargetService(doApiKey, configService, logger);
+                const doService = await DigitalOceanTargetService.init(doApiKey, configService, logger);
                 const newBzeroTarget = await doService.pollBZeroTargetOnline(newTargetName, 10 * 1000, 6);
                 targetsToDelete.push(newBzeroTarget);
                 const newDigitalOceanBZeroTarget: DigitalOceanBZeroTarget = { type: doTarget.type, droplet: doTarget.droplet, bzeroTarget: newBzeroTarget };

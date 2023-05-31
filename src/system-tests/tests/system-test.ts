@@ -71,7 +71,7 @@ const configName = envMap.configName;
 // Setup services used for running system tests
 export const loggerConfigService = new LoggerConfigService(configName, false, envMap.configDir);
 export const logger = new Logger(loggerConfigService, false, false, true);
-export const configService = await ConfigService.init(configName, logger, envMap.configDir, true);
+export const configService = new ConfigService(configName, logger, envMap.configDir, true);
 
 // This is the UserSummary for the user that is used to run system tests. When
 // RUN_AS_SERVICE account is enabled this will still be the user system tests
