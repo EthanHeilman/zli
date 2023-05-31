@@ -7,7 +7,7 @@ import { editPolicy, getPolicyFromName } from 'services/policy/policy.services';
 
 export async function deleteGroupFromPolicyHandler(groupName: string, policyName: string, configService: ConfigService, logger: Logger) {
     // First ensure we can lookup the group
-    const organizationHttpService = new OrganizationHttpService(configService, logger);
+    const organizationHttpService = await OrganizationHttpService.init(configService, logger);
     const groups = await organizationHttpService.ListGroups();
     const groupSummary = groups.find(g => g.name == groupName);
     if (groupSummary == undefined) {
@@ -15,7 +15,7 @@ export async function deleteGroupFromPolicyHandler(groupName: string, policyName
         await cleanExit(1, logger);
     }
 
-    const policyHttpService = new PolicyHttpService(configService, logger);
+    const policyHttpService = await PolicyHttpService.init(configService, logger);
     const policy = await getPolicyFromName(policyName, policyHttpService);
 
     if (policy === null) {

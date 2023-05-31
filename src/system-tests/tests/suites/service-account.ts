@@ -34,9 +34,9 @@ export const serviceAccountSuite = () => {
         let connectTestUtils: ConnectTestUtils;
 
         beforeAll(async () => {
-            policyService = new PolicyHttpService(configService, logger);
-            subjectHttpService = new SubjectHttpService(configService, logger);
-            serviceAccountHttpService = new ServiceAccountHttpService(configService, logger);
+            policyService = await PolicyHttpService.init(configService, logger);
+            subjectHttpService = await SubjectHttpService.init(configService, logger);
+            serviceAccountHttpService = await ServiceAccountHttpService.init(configService, logger);
 
             if(IN_PIPELINE) {
                 // Make sure the bzeroCreds file exists because it wont be
@@ -102,9 +102,9 @@ export const serviceAccountSuite = () => {
             if(bzeroTestTargetsToRun.length > 0) {
                 // Use a custom configService so that we use the SA as a subject
                 // to filter log events in the connect test
-                const systemTestSAConfigService = new ConfigService(appName, logger, envMap.configDir, true);
-                const testUtils = new TestUtils(systemTestSAConfigService, logger);
-                const connectionService = new ConnectionHttpService(systemTestSAConfigService, logger);
+                const systemTestSAConfigService = await ConfigService.init(appName, logger, envMap.configDir, true);
+                const testUtils = await TestUtils.init(systemTestSAConfigService, logger);
+                const connectionService = await ConnectionHttpService.init(systemTestSAConfigService, logger);
                 connectTestUtils = new ConnectTestUtils(connectionService, testUtils);
 
                 // Then create our targetConnect policy

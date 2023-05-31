@@ -5,7 +5,7 @@ import { PolicyHttpService } from 'http-services/policy/policy.http-services';
 
 export async function deleteTargetUserFromPolicyHandler(targetUserName: string, policyName: string, configService: ConfigService, logger: Logger) {
     // First get the existing policy
-    const policyHttpService = new PolicyHttpService(configService, logger);
+    const policyHttpService = await PolicyHttpService.init(configService, logger);
     const kubePolicies = await policyHttpService.ListKubernetesPolicies();
     const targetPolicies = await policyHttpService.ListTargetConnectPolicies();
     const proxyPolicies = await policyHttpService.ListProxyPolicies();

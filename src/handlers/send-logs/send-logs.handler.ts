@@ -88,7 +88,7 @@ export async function sendLogsHandler(argv: yargs.Arguments<sendLogsArgs>, confi
             parsedTarget = parseTargetString(argv.all);
         }
 
-        const bzeroTargetService = new BzeroTargetHttpService(configService, logger);
+        const bzeroTargetService = await BzeroTargetHttpService.init(configService, logger);
 
         try {
             await bzeroTargetService.RetrieveAgentLogs({
@@ -109,7 +109,7 @@ export async function sendLogsHandler(argv: yargs.Arguments<sendLogsArgs>, confi
     // if the target flag is undefined then we will send zli and daemon logs
     // target flag indicates only agent logs will be sent to S3
     if(argv.target === undefined) {
-        const uploadLogsHttpService = new UploadLogArchiveHttpService(configService, logger);
+        const uploadLogsHttpService = await UploadLogArchiveHttpService.init(configService, logger);
         const bzLoggerFolderPath = loggerConfigService.configDir();
 
         const zliLogPath = loggerConfigService.logPath();

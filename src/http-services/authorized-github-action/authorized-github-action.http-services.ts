@@ -7,8 +7,14 @@ import { Logger } from 'services/logger/logger.service';
 
 export class AuthorizedGithubActionHttpService extends HttpService
 {
-    constructor(configService: ConfigService, logger: Logger) {
-        super(configService, 'api/v2/github-actions', logger);
+    protected constructor() {
+        super()
+    }
+
+    static async init(configService: ConfigService, logger: Logger) {
+        const service = new AuthorizedGithubActionHttpService();
+        service.make(configService, 'api/v2/github-actions', logger);
+        return service
     }
 
     public CreateAuthorizedGithubAction(request: CreateAuthorizedGithubActionRequest): Promise<AuthorizedGithubActionSummary> {

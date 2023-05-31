@@ -14,7 +14,7 @@ export const organizationControlsPolicySuite = () => {
 
         // Adding an org policy should also add all subjects to the policy
         beforeAll(async () => {
-            policyService = new PolicyHttpService(configService, logger);
+            policyService = await PolicyHttpService.init(configService, logger);
             expectedPolicySummary = {
                 id: expect.any(String),
                 type: PolicyType.OrganizationControls,

@@ -7,8 +7,14 @@ import { HttpService } from 'services/http/http.service';
 import { Logger } from 'services/logger/logger.service';
 
 export class BzeroTargetHttpService extends HttpService {
-    constructor(configService: ConfigService, logger: Logger) {
-        super(configService, 'api/v2/targets/bzero/', logger);
+    protected constructor() {
+        super()
+    }
+
+    static async init(configService: ConfigService, logger: Logger) {
+        const service = new BzeroTargetHttpService();
+        service.make(configService, 'api/v2/targets/bzero/', logger);
+        return service
     }
 
     public GetBzeroTarget(targetId: string): Promise<BzeroAgentSummary> {

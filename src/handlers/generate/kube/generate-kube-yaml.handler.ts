@@ -23,8 +23,8 @@ export async function generateKubeYamlHandler(
     const outputFileArg = argv.outputFile;
 
     // Construct KubeHttpService and EnvironmentHttpService
-    const kubeHttpService = new KubeHttpService(configService, logger);
-    const envHttpService = new EnvironmentHttpService(configService, logger);
+    const kubeHttpService = await KubeHttpService.init(configService, logger);
+    const envHttpService = await EnvironmentHttpService.init(configService, logger);
 
     // Retrieve all environments
     const environments = await envHttpService.ListEnvironments();

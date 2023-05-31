@@ -54,7 +54,7 @@ export async function sshProxyHandler(
         await cleanExit(1, logger);
     }
 
-    const connectionHttpService = new ConnectionHttpService(configService, logger);
+    const connectionHttpService = await ConnectionHttpService.init(configService, logger);
     const createUniversalConnectionResponse = await connectionHttpService.CreateUniversalSshConnection({
         targetId: parsedTarget.id,
         targetName: parsedTarget.name,

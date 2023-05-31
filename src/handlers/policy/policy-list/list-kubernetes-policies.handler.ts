@@ -14,9 +14,9 @@ export async function listKubernetesPoliciesHandler(
     configService: ConfigService,
     logger: Logger,
 ){
-    const policyHttpService = new PolicyHttpService(configService, logger);
-    const kubeHttpService = new KubeHttpService(configService, logger);
-    const envHttpService = new EnvironmentHttpService(configService, logger);
+    const policyHttpService = await PolicyHttpService.init(configService, logger);
+    const kubeHttpService = await KubeHttpService.init(configService, logger);
+    const envHttpService = await EnvironmentHttpService.init(configService, logger);
 
     const [clusterTargets, environments, kubernetesPolicies, policySubjectDisplayInfo] = await Promise.all([
         kubeHttpService.ListKubeClusters(),

@@ -8,7 +8,7 @@ import { PolicyHttpService } from 'http-services/policy/policy.http-services';
 
 export async function listTargetUsersHandler(configService: ConfigService, logger: Logger, argv : yargs.Arguments<listTargetUserArgs>, policyName: string) {
 
-    const policyHttpService = new PolicyHttpService(configService, logger);
+    const policyHttpService = await PolicyHttpService.init(configService, logger);
     const kubePolicies = await policyHttpService.ListKubernetesPolicies();
     const targetPolicies = await policyHttpService.ListTargetConnectPolicies();
     const proxyPolicies = await policyHttpService.ListProxyPolicies();

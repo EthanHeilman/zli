@@ -141,7 +141,7 @@ export async function quickstartHandler(
 ) {
     await validateQuickstartArgs(argv);
 
-    const userHttpService = new UserHttpService(configService, logger);
+    const userHttpService = await UserHttpService.init(configService, logger);
     const consoleWithTranscript = new ConsoleWithTranscriptService(chalk.magenta);
 
     // Callback on cancel prompt
@@ -213,8 +213,8 @@ export async function quickstartHandler(
 
     // These HTTP services must be constructed after login so they are initialized with the
     // newest sessionId/sessionToken from the config service.
-    const policyHttpService = new PolicyHttpService(configService, logger);
-    const envHttpService = new EnvironmentHttpService(configService, logger);
+    const policyHttpService = await PolicyHttpService.init(configService, logger);
+    const envHttpService = await EnvironmentHttpService.init(configService, logger);
     const quickstartService = new QuickstartService(logger, consoleWithTranscript, configService, policyHttpService, envHttpService);
 
     // New step so clear screen

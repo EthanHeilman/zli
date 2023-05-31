@@ -14,7 +14,7 @@ export async function describeClusterPolicyHandler(
     logger: Logger,
 ) {
     // Construct KubeHttpService
-    const kubeHttpService = new KubeHttpService(configService, logger);
+    const kubeHttpService = await KubeHttpService.init(configService, logger);
 
     // Retrieve all kube cluster targets
     const clusterTargets = await kubeHttpService.ListKubeClusters();
@@ -34,7 +34,7 @@ export async function describeClusterPolicyHandler(
     }
 
     // Now make a query to see all policies associated with this cluster
-    const policyQueryHttpService = new PolicyQueryHttpService(configService, logger);
+    const policyQueryHttpService = await PolicyQueryHttpService.init(configService, logger);
     const kubernetesPolicyQueryResponse = await policyQueryHttpService.KubePolicyQuery([clusterSummary.id]);
     const kubePolicies = kubernetesPolicyQueryResponse[clusterSummary.id].allowedPolicies;
 
@@ -43,7 +43,7 @@ export async function describeClusterPolicyHandler(
         await cleanExit(0, logger);
     }
 
-    const policyHttpService = new PolicyHttpService(configService, logger);
+    const policyHttpService = await PolicyHttpService.init(configService, logger);
     const allKubePolicies = await policyHttpService.ListKubernetesPolicies();
     const filteredKubePolicies = allKubePolicies.filter(p => kubePolicies.includes(p.id));
 

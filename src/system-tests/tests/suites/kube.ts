@@ -63,9 +63,9 @@ export const kubeSuite = () => {
 
         beforeAll(async () => {
             // Construct all http services needed to run tests
-            policyService = new PolicyHttpService(configService, logger);
-            connectionHttpService = new ConnectionHttpService(configService, logger);
-            testUtils = new TestUtils(configService, logger);
+            policyService = await PolicyHttpService.init(configService, logger);
+            connectionHttpService = await ConnectionHttpService.init(configService, logger);
+            testUtils = await TestUtils.init(configService, logger);
 
             processManager = new ProcessManagerService();
             kubeDaemonManagementService = newKubeDaemonManagementService(configService);

@@ -10,7 +10,7 @@ export const userRestApiSuite = () => {
         let userService: UserHttpService;
 
         beforeAll(async () => {
-            userService = new UserHttpService(configService, logger);
+            userService = await UserHttpService.init(configService, logger);
         });
 
         testIf(!RUN_AS_SERVICE_ACCOUNT, `23988: Get current user's data as a user`, async () => {

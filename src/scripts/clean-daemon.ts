@@ -18,7 +18,7 @@ import { getDaemonExecutablePaths } from 'utils/daemon-utils';
 // zli does while also respecting any env variable overrides
 export const loggerConfigService = new LoggerConfigService(envMap.configName, false, envMap.configDir);
 export const logger = new Logger(loggerConfigService, false, false, true);
-const configService = new ConfigService(envMap.configName, logger, envMap.configDir, false);
+const configService = await ConfigService.init(envMap.configName, logger, envMap.configDir, false);
 const configDir = path.dirname(configService.getConfigPath());
 
 // Construct the final daemon path the same way the zli does so we can remove

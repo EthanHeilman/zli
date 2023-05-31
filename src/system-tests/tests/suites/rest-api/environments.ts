@@ -10,8 +10,8 @@ export const environmentsSuite = () => {
         const environmentName = `${resourceNamePrefix}-environment-test-suite`;
         let environmentService : EnvironmentHttpService;
 
-        beforeAll(() => {
-            environmentService = new EnvironmentHttpService(configService, logger);
+        beforeAll(async () => {
+            environmentService = await EnvironmentHttpService.init(configService, logger);
         });
 
         afterAll(async () => {

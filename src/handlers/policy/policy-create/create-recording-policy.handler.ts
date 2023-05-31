@@ -11,9 +11,9 @@ import { Group } from 'webshell-common-ts/http/v2/policy/types/group.types';
 import { SubjectHttpService } from 'http-services/subject/subject.http-services';
 
 export async function createRecordingPolicyHandler(argv: yargs.Arguments<createRecordingPolicyArgs>, configService: ConfigService, logger: Logger){
-    const policyService = new PolicyHttpService(configService, logger);
-    const organizationHttpService = new OrganizationHttpService(configService, logger);
-    const subjectHttpService = new SubjectHttpService(configService, logger);
+    const policyService = await PolicyHttpService.init(configService, logger);
+    const organizationHttpService = await OrganizationHttpService.init(configService, logger);
+    const subjectHttpService = await SubjectHttpService.init(configService, logger);
 
     let subjectsEmails: string[];
     if(argv.users) {

@@ -58,7 +58,7 @@ export async function closeConnectionHandler(
         }
     } else {
         // Handle closing specific connection
-        const connectionHttpService = new ConnectionHttpService(configService, logger);
+        const connectionHttpService = await ConnectionHttpService.init(configService, logger);
         await connectionHttpService.CloseConnection(argv.connectionId);
         logger.info(`Connection ${argv.connectionId} successfully closed`);
     }

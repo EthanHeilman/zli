@@ -11,7 +11,7 @@ export async function listUsersHandler(
     configService: ConfigService,
     logger: Logger,
 ){
-    const userHttpService = new UserHttpService(configService, logger);
+    const userHttpService = await UserHttpService.init(configService, logger);
     const users = await userHttpService.ListUsers();
     if(!! argv.json) {
         // json output

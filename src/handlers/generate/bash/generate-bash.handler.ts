@@ -18,7 +18,7 @@ export async function generateBashHandler(
     let scriptTargetNameOption: ScriptTargetNameOption;
 
     // Construct EnvironmentHttpService
-    const envHttpService = new EnvironmentHttpService(configService, logger);
+    const envHttpService = await EnvironmentHttpService.init(configService, logger);
 
     // Retrieve all environments
     const environments = await envHttpService.ListEnvironments();

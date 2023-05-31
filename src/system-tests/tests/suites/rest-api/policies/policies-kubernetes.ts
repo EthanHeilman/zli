@@ -14,9 +14,9 @@ export const kubernetesPolicySuite = () => {
         let kubernetesPolicy: KubernetesPolicySummary;
         let expectedPolicySummary: KubernetesPolicySummary;
 
-        beforeAll(() => {
-            policyService = new PolicyHttpService(configService, logger);
-            envHttpService = new EnvironmentHttpService(configService, logger);
+        beforeAll(async () => {
+            policyService = await PolicyHttpService.init(configService, logger);
+            envHttpService = await EnvironmentHttpService.init(configService, logger);
 
             const originalPolicyName = systemTestPolicyTemplate.replace('$POLICY_TYPE', 'kubernetes');
             const currentSubject: Subject = {

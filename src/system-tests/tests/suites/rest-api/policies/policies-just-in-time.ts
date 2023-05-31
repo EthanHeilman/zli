@@ -16,7 +16,7 @@ export const justInTimePolicySuite = () => {
         let expectedPolicySummary: JustInTimePolicySummary;
 
         beforeAll(async () => {
-            policyService = new PolicyHttpService(configService, logger);
+            policyService = await PolicyHttpService.init(configService, logger);
 
             // Create a child policy we can use in the JIT policy
             const originalPolicyName = systemTestPolicyTemplate.replace('$POLICY_TYPE', 'jit');

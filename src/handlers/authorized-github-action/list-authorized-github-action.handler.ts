@@ -13,7 +13,7 @@ export async function listAuthorizedGithubActionsHandler(
     configService: ConfigService,
     logger: Logger,
 ){
-    const authorizedGithubActionHttpService = new AuthorizedGithubActionHttpService(configService, logger);
+    const authorizedGithubActionHttpService = await AuthorizedGithubActionHttpService.init(configService, logger);
     const authorizedGithubActions = await authorizedGithubActionHttpService.ListAuthorizedGithubActions();
     if(!! argv.json) {
         // json output
@@ -23,7 +23,7 @@ export async function listAuthorizedGithubActionsHandler(
             logger.info('There are no authorized Github Actions');
             await cleanExit(0, logger);
         }
-        const userHttpService = new UserHttpService(configService, logger);
+        const userHttpService = await UserHttpService.init(configService, logger);
         const users = await userHttpService.ListUsers();
         const userMap : { [id: string]: UserSummary } = {};
         users.forEach(userSummary => {

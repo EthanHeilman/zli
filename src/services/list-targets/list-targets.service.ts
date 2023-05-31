@@ -41,11 +41,11 @@ export async function listTargetsPerType(
     userEmail?: string
 ) : Promise<Dictionary<TargetSummary[]>>
 {
-    const policyQueryHttpService = new PolicyQueryHttpService(configService, logger);
+    const policyQueryHttpService = await PolicyQueryHttpService.init(configService, logger);
     let targetSummaryWork: Promise<TargetSummary[]>[] = [];
 
     if (targetTypes.includes(TargetType.SsmTarget)) {
-        const ssmTargetHttpService = new SsmTargetHttpService(configService, logger);
+        const ssmTargetHttpService = await SsmTargetHttpService.init(configService, logger);
         const getSsmTargetSummaries = async () => {
             let ssmTargetSummaries = await ssmTargetHttpService.ListSsmTargets(true);
 
@@ -68,7 +68,7 @@ export async function listTargetsPerType(
     }
 
     if (targetTypes.includes(TargetType.DynamicAccessConfig)) {
-        const dynamicConfigHttpService = new DynamicAccessConfigHttpService(configService, logger);
+        const dynamicConfigHttpService = await DynamicAccessConfigHttpService.init(configService, logger);
         const getDynamicAccessConfigSummaries = async () => {
             let dynamicAccessConfigSummaries = await dynamicConfigHttpService.ListDynamicAccessConfigs();
             if (userEmail) {
@@ -90,7 +90,7 @@ export async function listTargetsPerType(
     }
 
     if (targetTypes.includes(TargetType.Bzero)) {
-        const bzeroTargetService = new BzeroTargetHttpService(configService, logger);
+        const bzeroTargetService = await BzeroTargetHttpService.init(configService, logger);
         const getBzeroAgentTargetSummaries = async () => {
             let bzeroAgents = await bzeroTargetService.ListBzeroTargets();
             if (userEmail) {
@@ -112,7 +112,7 @@ export async function listTargetsPerType(
     }
 
     if (targetTypes.includes(TargetType.Cluster)) {
-        const kubeHttpService = new KubeHttpService(configService, logger);
+        const kubeHttpService = await KubeHttpService.init(configService, logger);
         const getKubeClusterSummaries = async () => {
             let kubeClusterSummaries = await kubeHttpService.ListKubeClusters();
             if (userEmail) {
@@ -146,7 +146,7 @@ export async function listTargetsPerType(
     }
 
     if (targetTypes.includes(TargetType.Db)) {
-        const dbTargetService = new DbTargetHttpService(configService, logger);
+        const dbTargetService = await DbTargetHttpService.init(configService, logger);
         const getDbTargetSummaries = async () => {
             let dbTargetSummaries = await dbTargetService.ListDbTargets();
             if (userEmail) {
@@ -166,7 +166,7 @@ export async function listTargetsPerType(
     }
 
     if (targetTypes.includes(TargetType.Web)) {
-        const webTargetService = new WebTargetHttpService(configService, logger);
+        const webTargetService = await WebTargetHttpService.init(configService, logger);
         const getWebTargetSummaries = async () => {
             let webTargetSummaries = await webTargetService.ListWebTargets();
             if (userEmail) {

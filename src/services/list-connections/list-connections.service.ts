@@ -15,9 +15,9 @@ export async function listOpenShellConnections(
     logger: Logger
 ) : Promise<ShellConnectionInfo[]>
 {
-    const spaceHttpService = new SpaceHttpService(configService, logger);
-    const ssmTargetHttpService = new SsmTargetHttpService(configService, logger);
-    const bzeroTargetService = new BzeroTargetHttpService(configService, logger);
+    const spaceHttpService = await SpaceHttpService.init(configService, logger);
+    const ssmTargetHttpService = await SsmTargetHttpService.init(configService, logger);
+    const bzeroTargetService = await BzeroTargetHttpService.init(configService, logger);
 
     const cliSpace = await getCliSpace(spaceHttpService, logger);
     if (cliSpace == undefined) {
@@ -50,7 +50,7 @@ export async function listOpenDbConnections(
     configService: ConfigService,
     logger: Logger
 ): Promise<DbConnectionInfo[]> {
-    const connectionHttpService = new ConnectionHttpService(configService, logger);
+    const connectionHttpService = await ConnectionHttpService.init(configService, logger);
     const openDbConnections = await connectionHttpService.ListDbConnections(ConnectionState.Open);
     if (openDbConnections.length === 0) {
         return [];
@@ -70,7 +70,7 @@ export async function listOpenKubeConnections(
     configService: ConfigService,
     logger: Logger
 ): Promise<KubeConnectionInfo[]> {
-    const connectionHttpService = new ConnectionHttpService(configService, logger);
+    const connectionHttpService = await ConnectionHttpService.init(configService, logger);
     const openKubeConnections = await connectionHttpService.ListKubeConnections(ConnectionState.Open);
     if (openKubeConnections.length === 0) {
         return [];

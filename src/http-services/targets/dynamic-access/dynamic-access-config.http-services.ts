@@ -9,10 +9,16 @@ import { Logger } from 'services/logger/logger.service';
 
 export class DynamicAccessConfigHttpService extends HttpService
 {
-    constructor(configService: ConfigService, logger: Logger) {
-        super(configService, 'api/v2/targets/dynamic-access/', logger);
+    protected constructor() {
+        super()
     }
 
+    static async init(configService: ConfigService, logger: Logger) {
+        const service = new DynamicAccessConfigHttpService();
+        service.make(configService, 'api/v2/targets/dynamic-access/', logger);
+        return service
+    }
+    
     public GetDynamicAccessConfig(id: string): Promise<DynamicAccessConfigSummary> {
         return this.Get(id);
     }

@@ -125,11 +125,11 @@ export async function loginUserHandler(configService: ConfigService, logger: Log
     }
 
     // Register user log in and get User Session Id and Session Token
-    const userHttpService = new UserHttpService(configService, logger);
+    const userHttpService = await UserHttpService.init(configService, logger);
     const registerResponse = await userHttpService.Register();
 
     // Check if we must MFA and act upon it
-    const mfaHttpService = new MfaHttpService(configService, logger);
+    const mfaHttpService = await MfaHttpService.init(configService, logger);
     switch (registerResponse.mfaActionRequired) {
     case MfaActionRequired.NONE:
         break;
@@ -178,7 +178,7 @@ export async function loginUserHandler(configService: ConfigService, logger: Log
         logger.warn(`Unexpected MFA response ${registerResponse.mfaActionRequired}`);
         break;
     }
-    const subjectHttpService = new SubjectHttpService(configService, logger);
+    const subjectHttpService = await SubjectHttpService.init(configService, logger);
     const me = await subjectHttpService.Me();
     configService.setMe(me);
 
@@ -217,7 +217,7 @@ export async function loginServiceAccountHandler(configService: ConfigService, l
         return undefined;
     }
 
-    const serviceAccountHttpService = new ServiceAccountHttpService(configService, logger);
+    const serviceAccountHttpService = await ServiceAccountHttpService.init(configService, logger);
     if(bzeroCredsFile == null)
         bzeroCredsFile = JSON.parse(fs.readFileSync(argv.bzeroCreds, 'utf-8')) as ServiceAccountBzeroCredentials;
     if(!bzeroCredsFile.mfa_secret) {
@@ -234,7 +234,7 @@ export async function loginServiceAccountHandler(configService: ConfigService, l
         logger.error(`Service account ${serviceAccountSummary.email} is not currently enabled.`);
         await cleanExit(1, logger);
     }
-    const subjectHttpService = new SubjectHttpService(configService, logger);
+    const subjectHttpService = await SubjectHttpService.init(configService, logger);
     const me = await subjectHttpService.Me();
     configService.setMe(me);
 

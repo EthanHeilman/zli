@@ -7,8 +7,14 @@ import { HttpService } from 'services/http/http.service';
 import { Logger } from 'services/logger/logger.service';
 
 export class EnvironmentHttpService extends HttpService {
-    constructor(configService: ConfigService, logger: Logger) {
-        super(configService, 'api/v2/environments/', logger);
+    protected constructor() {
+        super()
+    }
+
+    static async init(configService: ConfigService, logger: Logger) {
+        const service = new EnvironmentHttpService();
+        service.make(configService, 'api/v2/environments/', logger);
+        return service
     }
 
     public ListEnvironments(): Promise<EnvironmentSummary[]> {

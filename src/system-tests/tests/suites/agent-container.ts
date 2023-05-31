@@ -55,10 +55,10 @@ export const agentContainerSuite = () => {
             testContainerAgents = await setupAgentContainer(agentContainersToRun);
 
             // Construct all http services needed to run tests
-            policyService = new PolicyHttpService(configService, logger);
-            connectionService = new ConnectionHttpService(configService, logger);
-            testUtils = new TestUtils(configService, logger);
-            sessionRecordingService = new SessionRecordingHttpService(configService, logger);
+            policyService = await PolicyHttpService.init(configService, logger);
+            connectionService = await ConnectionHttpService.init(configService, logger);
+            testUtils = await TestUtils.init(configService, logger);
+            sessionRecordingService = await SessionRecordingHttpService.init(configService, logger);
 
             const me = configService.me();
             const currentSubject: Subject = {

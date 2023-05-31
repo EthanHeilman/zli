@@ -11,7 +11,7 @@ export async function listOrganizationControlsPoliciesHandler(
     configService: ConfigService,
     logger: Logger
 ){
-    const policyHttpService = new PolicyHttpService(configService, logger);
+    const policyHttpService = await PolicyHttpService.init(configService, logger);
 
     const [organizationControlPolicies, policySubjectDisplayInfo] = await Promise.all([
         policyHttpService.ListOrganizationControlPolicies(),

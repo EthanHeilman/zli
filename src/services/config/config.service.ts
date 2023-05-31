@@ -77,7 +77,7 @@ export interface IConfig {
 
 export class ConfigService implements IKubeDaemonSecurityConfigService, IKubeConfigService, KubeDaemonStore, DbDaemonStore, ILogoutConfigService, MrtapConfigInterface {
     private config: IConfig;
-    private tokenHttpService: TokenHttpService;
+    protected tokenHttpService: TokenHttpService;
     private logoutDetectedSubject: Subject<boolean> = new Subject<boolean>();
 
     private configName: string;
@@ -85,7 +85,12 @@ export class ConfigService implements IKubeDaemonSecurityConfigService, IKubeCon
 
     public logoutDetected: Observable<boolean> = this.logoutDetectedSubject.asObservable();
 
-    constructor(configName: string, logger: Logger, configDir?: string, isSystemTest?: boolean) {
+    protected constructor(
+        configName: string, 
+        logger: Logger, 
+        configDir?: string, 
+        isSystemTest?: boolean) {
+            
         const projectName = 'bastionzero-zli';
 
         // If a custom configDir append the projectName to the path to keep
@@ -111,7 +116,14 @@ export class ConfigService implements IKubeDaemonSecurityConfigService, IKubeCon
             process.exit(1);
         }
 
-        this.tokenHttpService = new TokenHttpService(this, logger);
+        
+    }
+
+    static async init(configName: string, logger: Logger, configDir?: string, isSystemTest?: boolean) {
+        const service = new ConfigService(configName, logger, configDir, isSystemTest)
+
+        service.tokenHttpService = await TokenHttpService.init(service, logger);
+        return service
     }
 
     async loginSetup(idp: IdentityProvider, email?: string): Promise<void> {

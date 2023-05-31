@@ -10,7 +10,7 @@ export async function createApiKeyHandler(
     logger: Logger,
     configService: ConfigService,
 ) {
-    const apiKeyService = new ApiKeyHttpService(configService, logger);
+    const apiKeyService = await ApiKeyHttpService.init(configService, logger);
     const createResp = await apiKeyService.CreateNewApiKey({ name: argv.name, isRegistrationKey: argv.registrationKey });
 
     if (argv.json) {

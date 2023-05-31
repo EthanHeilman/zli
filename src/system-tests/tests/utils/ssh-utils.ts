@@ -7,7 +7,7 @@ import { EnvironmentHttpService } from 'http-services/environment/environment.ht
 // get information about a target
 export async function getTargetInfo(testTarget: TestTarget): Promise<SshTargetInfo> {
     const target = testTargets.get(testTarget) as DigitalOceanBZeroTarget;
-    const environmentService = new EnvironmentHttpService(configService, logger);
+    const environmentService = await EnvironmentHttpService.init(configService, logger);
     const environment = await environmentService.GetEnvironment(target.bzeroTarget.environmentId);
     return {
         userName: bzeroTargetCustomUser,

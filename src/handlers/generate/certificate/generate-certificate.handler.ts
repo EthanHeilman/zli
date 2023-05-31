@@ -93,7 +93,7 @@ export async function certificateHandler(argv: yargs.Arguments<generateCertifica
         envName = argv.environment;
     }
 
-    const dbTargetService = new DbTargetHttpService(configService, logger);
+    const dbTargetService = await DbTargetHttpService.init(configService, logger);
     let dbTargetsToConfigure: DbTargetSummary[] = [];
     let errorText = '';
 
@@ -173,7 +173,7 @@ Valid targets: ${dbTargetsToConfigure.map(t => t.name).join(', ')}`);
         await cleanExit(0, logger);
     }
 
-    const certificateService = new CertificateHttpService(configService, logger);
+    const certificateService = await CertificateHttpService.init(configService, logger);
     const certResponse = await certificateService.GenerateCertificate({
         targetIds: dbTargetsToConfigure.map(t => t.id),
         selfHosted: argv.selfHosted,

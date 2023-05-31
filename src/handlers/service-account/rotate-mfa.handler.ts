@@ -11,9 +11,9 @@ import { checkWritableFilePath, createBzeroCredsFile } from 'utils/utils';
 import { SubjectSummary } from 'webshell-common-ts/http/v2/subject/types/subject-summary.types';
 
 export async function rotateMfaHandler(configService: ConfigService, logger: Logger, argv : yargs.Arguments<rotateMfaArgs>) {
-    const serviceAccountHttpService = new ServiceAccountHttpService(configService, logger);
-    const subjectHttpService = new SubjectHttpService(configService, logger);
-    const mfaHttpService = new MfaHttpService(configService, logger);
+    const serviceAccountHttpService = await ServiceAccountHttpService.init(configService, logger);
+    const subjectHttpService = await SubjectHttpService.init(configService, logger);
+    const mfaHttpService = await MfaHttpService.init(configService, logger);
 
     await checkWritableFilePath(argv.bzeroCreds, `Failed to create bzeroCreds file at ${argv.bzeroCreds}`);
 

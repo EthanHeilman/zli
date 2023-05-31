@@ -5,7 +5,7 @@ import { PolicyHttpService } from 'http-services/policy/policy.http-services';
 
 export async function deleteTargetGroupFromPolicyHandler(targetGroupName: string, policyName: string, configService: ConfigService, logger: Logger) {
     // First get the existing policy
-    const policyHttpService = new PolicyHttpService(configService, logger);
+    const policyHttpService = await PolicyHttpService.init(configService, logger);
     const kubePolicies = await policyHttpService.ListKubernetesPolicies();
 
     // Loop till we find the one we are looking for

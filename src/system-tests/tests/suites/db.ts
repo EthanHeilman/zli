@@ -123,13 +123,13 @@ export const dbSuite = () => {
 
         beforeAll(async () => {
             // Construct all services needed to run tests
-            dbTargetService = new DbTargetHttpService(configService, logger);
-            connectionHttpService = new ConnectionHttpService(configService, logger);
+            dbTargetService = await DbTargetHttpService.init(configService, logger);
+            connectionHttpService = await ConnectionHttpService.init(configService, logger);
 
             dbDaemonManagementService = newDbDaemonManagementService(configService);
             processManager = new ProcessManagerService();
-            policyService = new PolicyHttpService(configService, logger);
-            testUtils = new TestUtils(configService, logger);
+            policyService = await PolicyHttpService.init(configService, logger);
+            testUtils = await TestUtils.init(configService, logger);
 
             // Set up the policy before all the tests
             const me = configService.me();

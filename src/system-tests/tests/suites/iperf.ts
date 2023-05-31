@@ -60,7 +60,7 @@ export const iperfSuite = () => {
         // Set up the policy before all the tests
         beforeAll(async () => {
             // Construct all http services needed to run tests
-            policyService = new PolicyHttpService(configService, logger);
+            policyService = await PolicyHttpService.init(configService, logger);
 
             const me = configService.me();
             const currentSubject: Subject = {
@@ -121,7 +121,7 @@ export const iperfSuite = () => {
                 const doTarget = testTargets.get(testTarget) as DigitalOceanBZeroTarget;
 
                 // Create a new db virtual target
-                const dbTargetService: DbTargetHttpService = new DbTargetHttpService(configService, logger);
+                const dbTargetService: DbTargetHttpService = await DbTargetHttpService.init(configService, logger);
                 const dbIperfVtName = `${doTarget.bzeroTarget.name}-db-iperf-upload-vt`;
 
                 const daemonLocalPort = await findPort();
@@ -160,7 +160,7 @@ export const iperfSuite = () => {
                 const doTarget = testTargets.get(testTarget) as DigitalOceanBZeroTarget;
 
                 // Create a new db virtual target
-                const dbTargetService: DbTargetHttpService = new DbTargetHttpService(configService, logger);
+                const dbTargetService: DbTargetHttpService = await DbTargetHttpService.init(configService, logger);
                 const dbIperfVtName = `${doTarget.bzeroTarget.name}-db-iperf-download-vt`;
 
                 const daemonLocalPort = await findPort();

@@ -17,11 +17,11 @@ export async function listTargetConnectPoliciesHandler(
     configService: ConfigService,
     logger: Logger
 ){
-    const policyHttpService = new PolicyHttpService(configService, logger);
-    const ssmTargetHttpService = new SsmTargetHttpService(configService, logger);
-    const dynamicConfigHttpService = new DynamicAccessConfigHttpService(configService, logger);
-    const bzeroTargetHttpService = new BzeroTargetHttpService(configService, logger);
-    const envHttpService = new EnvironmentHttpService(configService, logger);
+    const policyHttpService = await PolicyHttpService.init(configService, logger);
+    const ssmTargetHttpService = await SsmTargetHttpService.init(configService, logger);
+    const dynamicConfigHttpService = await DynamicAccessConfigHttpService.init(configService, logger);
+    const bzeroTargetHttpService = await BzeroTargetHttpService.init(configService, logger);
+    const envHttpService = await EnvironmentHttpService.init(configService, logger);
 
     // Await on all promises to make requests in parallel
     const [ ssmTargets, dynamicAccessConfigs, bzeroTargets, environments, targetConnectPolicies, policySubjectDisplayInfo] = await Promise.all([

@@ -15,7 +15,7 @@ export const GCPTokenUri = 'https://oauth2.googleapis.com/token';
 export async function createServiceAccountHandler(configService: ConfigService, logger: Logger, argv : yargs.Arguments<createServiceAccountArgs>) {
     const providerCredsFile = JSON.parse(fs.readFileSync(argv.providerCreds, 'utf-8')) as ServiceAccountProviderCredentials;
     await checkWritableFilePath(argv.bzeroCreds, `Failed to create bzeroCreds file at ${argv.bzeroCreds}`);
-    const serviceAccountHttpService = new ServiceAccountHttpService(configService, logger);
+    const serviceAccountHttpService = await ServiceAccountHttpService.init(configService, logger);
 
     let jwksURL: string;
     // If this is a GCP service account

@@ -14,7 +14,7 @@ export const apiKeySuite = () => {
         let apiOnlyKey: NewApiKeyResponse;
         let registrationKey: NewApiKeyResponse;
 
-        beforeAll(() => {
+        beforeAll(async () => {
             expectedApiOnlyKeySummary = {
                 id: expect.any('string'),
                 isRegistrationKey: false,
@@ -28,7 +28,7 @@ export const apiKeySuite = () => {
                 timeCreated: expect.anything()
             };
 
-            apiKeyService = new ApiKeyHttpService(configService, logger);
+            apiKeyService = await ApiKeyHttpService.init(configService, logger);
         });
 
         afterAll(async () => {

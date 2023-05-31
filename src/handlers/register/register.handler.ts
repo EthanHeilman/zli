@@ -10,8 +10,8 @@ import { extractMfaSecretFromUrl } from 'utils/utils';
 import totp from 'totp-generator';
 
 export async function registerHandler(mfaSecret: string, configService: ConfigService, logger: Logger) {
-    const userHttpService = new UserHttpService(configService, logger);
-    const subjectHttpService = new SubjectHttpService(configService, logger);
+    const userHttpService = await UserHttpService.init(configService, logger);
+    const subjectHttpService = await SubjectHttpService.init(configService, logger);
     const oauthService = new OAuthService(configService, logger);
 
     // Force refresh ID token and access token because it is likely expired in system tests
@@ -26,7 +26,7 @@ export async function registerHandler(mfaSecret: string, configService: ConfigSe
     }
 
     const resp = await userHttpService.Register();
-    const mfaService = new MfaHttpService(configService, logger);
+    const mfaService = await MfaHttpService.init(configService, logger);
 
     if(resp.mfaActionRequired == MfaActionRequired.TOTP) {
         if(!mfaSecret) {

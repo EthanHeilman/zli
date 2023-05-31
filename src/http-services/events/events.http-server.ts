@@ -10,9 +10,14 @@ import { AgentStatusChangeData } from 'webshell-common-ts/http/v2/event/types/ag
 
 export class EventsHttpService extends HttpService
 {
-    constructor(configService: ConfigService, logger: Logger)
-    {
-        super(configService, 'api/v2/events/', logger);
+    protected constructor() {
+        super()
+    }
+
+    static async init(configService: ConfigService, logger: Logger) {
+        const service = new EventsHttpService();
+        service.make(configService, 'api/v2/events/', logger);
+        return service
     }
 
     public GetConnectionEvents(startTime: Date, subjectIds?: string[], targetIds?: string[]) : Promise<ConnectionEventDataMessage[]>

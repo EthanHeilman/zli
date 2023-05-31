@@ -15,7 +15,7 @@ import { NewApiKeyResponse } from 'webshell-common-ts/http/v2/api-key/responses/
  * @param systemTestRegistrationApiKey Registration api key
  */
 export async function cleanupSystemTestApiKeys(systemTestRESTApiKey: NewApiKeyResponse, systemTestRegistrationApiKey: NewApiKeyResponse) {
-    const apiKeyService = new ApiKeyHttpService(configService, logger);
+    const apiKeyService = await ApiKeyHttpService.init(configService, logger);
     await apiKeyService.DeleteApiKey(systemTestRESTApiKey.apiKeyDetails.id);
     await apiKeyService.DeleteApiKey(systemTestRegistrationApiKey.apiKeyDetails.id);
 }
@@ -44,7 +44,7 @@ export async function cleanupDOTestCluster(cluster: RegisteredDigitalOceanKubern
     await cleanupHelmAgentInstallation(cluster.kubeConfigFilePath, cluster.helmChartName, cluster.helmChartNamespace);
 
     // Delete the target from BastionZero
-    const doKubeService = new DigitalOceanKubeService(doApiKey, configService, logger);
+    const doKubeService = await DigitalOceanKubeService.init(doApiKey, configService, logger);
     await doKubeService.deleteRegisteredKubernetesCluster(cluster);
 }
 
@@ -65,7 +65,7 @@ export async function cleanupDOTestTargets() {
  * @param policyName Policy name to delete
  */
 export async function cleanupTargetConnectPolicies(policyName: string) {
-    const policyService = new PolicyHttpService(configService, logger);
+    const policyService = await PolicyHttpService.init(configService, logger);
     const targetConnectPolicies = await policyService.ListTargetConnectPolicies();
     const targetConnectPolicy = targetConnectPolicies.find(policy =>
         policy.name == policyName

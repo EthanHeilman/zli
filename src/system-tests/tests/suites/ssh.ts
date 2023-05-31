@@ -42,9 +42,9 @@ export const sshSuite = () => {
             homedir, '.ssh', 'test-scp-batch-file'
         );
 
-        beforeAll(() => {
+        beforeAll(async () => {
             // Construct all http services needed to run tests
-            policyService = new PolicyHttpService(configService, logger);
+            policyService = await PolicyHttpService.init(configService, logger);
         });
 
         afterEach(async () => {

@@ -8,9 +8,14 @@ import { EditWebTargetRequest } from 'webshell-common-ts/http/v2/target/web/requ
 
 export class WebTargetHttpService extends HttpService
 {
-    constructor(configService: ConfigService, logger: Logger)
-    {
-        super(configService, 'api/v2/targets/web', logger);
+    protected constructor() {
+        super()
+    }
+
+    static async init(configService: ConfigService, logger: Logger) {
+        const service = new WebTargetHttpService();
+        service.make(configService, 'api/v2/targets/web', logger);
+        return service
     }
 
     public ListWebTargets(): Promise<WebTargetSummary[]> {

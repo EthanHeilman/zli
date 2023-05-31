@@ -35,10 +35,10 @@ export const sessionRecordingSuite = () => {
         const allTestConnectionResults: ConnectTestResult[] = [];
 
         beforeAll(async () => {
-            testUtils = new TestUtils(configService, logger);
-            sessionRecordingService = new SessionRecordingHttpService(configService, logger);
-            policyService = new PolicyHttpService(configService, logger);
-            connectionService = new ConnectionHttpService(configService, logger);
+            testUtils = await TestUtils.init(configService, logger);
+            sessionRecordingService = await SessionRecordingHttpService.init(configService, logger);
+            policyService = await PolicyHttpService.init(configService, logger);
+            connectionService = await ConnectionHttpService.init(configService, logger);
             connectTestUtils = new ConnectTestUtils(connectionService, testUtils);
 
             const me = configService.me();

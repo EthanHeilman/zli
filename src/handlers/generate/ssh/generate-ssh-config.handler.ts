@@ -27,7 +27,7 @@ const note = `# Note: no changes, other than this insertion, have been made to y
  * @param processName {string} the calling process (e.g., "zli"), used to populate the ProxyCommand
  */
 export async function generateSshConfigHandler(argv: yargs.Arguments<generateSshConfigArgs>, configService: ConfigService, logger: Logger, processName: string) {
-    const policyQueryHttpService = new PolicyQueryHttpService(configService, logger);
+    const policyQueryHttpService = await PolicyQueryHttpService.init(configService, logger);
     const sshTargets: SshTargetsResponse[] = await policyQueryHttpService.GetSshTargets();
 
     // If current user has tunnel or file transfer access then create file

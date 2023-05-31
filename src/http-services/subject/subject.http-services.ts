@@ -6,9 +6,14 @@ import { Logger } from 'services/logger/logger.service';
 
 export class SubjectHttpService extends HttpService
 {
-    constructor(configService: ConfigService, logger: Logger)
-    {
-        super(configService, 'api/v2/subjects/', logger);
+    protected constructor() {
+        super()
+    }
+
+    static async init(configService: ConfigService, logger: Logger) {
+        const service = new SubjectHttpService();
+        service.make(configService, 'api/v2/subjects/', logger);
+        return service
     }
 
     public Me(): Promise<SubjectSummary>

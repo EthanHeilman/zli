@@ -71,7 +71,7 @@ const configName = envMap.configName;
 // Setup services used for running system tests
 export const loggerConfigService = new LoggerConfigService(configName, false, envMap.configDir);
 export const logger = new Logger(loggerConfigService, false, false, true);
-export const configService = new ConfigService(configName, logger, envMap.configDir, true);
+export const configService = await ConfigService.init(configName, logger, envMap.configDir, true);
 
 // This is the UserSummary for the user that is used to run system tests. When
 // RUN_AS_SERVICE account is enabled this will still be the user system tests
@@ -232,8 +232,8 @@ beforeAll(async () => {
 
     // Update me section of the config in case this is a new login or any
     // user information has changed since last login
-    const subjectHttpService = new SubjectHttpService(configService, logger);
-    const userHttpService = new UserHttpService(configService, logger);
+    const subjectHttpService = await SubjectHttpService.init(configService, logger);
+    const userHttpService = await UserHttpService.init(configService, logger);
     const me = await subjectHttpService.Me();
     configService.setMe(me);
     systemTestUser = await userHttpService.Me();
@@ -242,7 +242,7 @@ beforeAll(async () => {
     [systemTestRESTApiKey, systemTestRegistrationApiKey] = await setupSystemTestApiKeys();
 
     // Create a new environment for this system test
-    const environmentService = new EnvironmentHttpService(configService, logger);
+    const environmentService = await EnvironmentHttpService.init(configService, logger);
     const createEnvResponse = await environmentService.CreateEnvironment({
         name: systemTestEnvName,
         description: `Autocreated environment for system test: ${systemTestUniqueId}`,
@@ -255,7 +255,7 @@ beforeAll(async () => {
     // Logging in before we create the DO cluster also means the SA will be the
     // subject in the kube policy that gets created when installing via helm
     if(RUN_AS_SERVICE_ACCOUNT){
-        const serviceAccountHttpService = new ServiceAccountHttpService(configService, logger);
+        const serviceAccountHttpService = await ServiceAccountHttpService.init(configService, logger);
         await ensureServiceAccountExistsForLogin(subjectHttpService, serviceAccountHttpService);
         await ensureServiceAccountRole(subjectHttpService, true);
         await callZli(['service-account', 'login', '--providerCreds', providerCredsPath, '--bzeroCreds', bzeroCredsPath]);
@@ -301,7 +301,7 @@ afterAll(async () => {
     // Note this must be called after our cleanup, so we do not have any targets in the environment
     logger.info('Cleaning up any BastionZero environments...');
     if (systemTestEnvId) {
-        const environmentService = new EnvironmentHttpService(configService, logger);
+        const environmentService = await EnvironmentHttpService.init(configService, logger);
         await environmentService.DeleteEnvironment(systemTestEnvId);
     }
 

@@ -51,7 +51,7 @@ export class SsmTunnelService
     ) : Promise<boolean> {
         try {
             // target is ssmtargetsummary
-            const ssmTargetHttpService = new SsmTargetHttpService(this.configService, this.logger);
+            const ssmTargetHttpService = await SsmTargetHttpService.init(this.configService, this.logger);
             const target = await ssmTargetHttpService.GetSsmTarget(targetId);
 
             this.ssmTunnelWebsocketService = new SsmTunnelWebsocketService(

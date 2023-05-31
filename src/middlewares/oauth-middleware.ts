@@ -13,7 +13,7 @@ export async function oauthMiddleware(configService: ConfigService, logger: Logg
 
     // Ensure that if this is a service account it is enabled
     if(configService.me().type === SubjectType.ServiceAccount) {
-        const serviceAccountHttpService = new ServiceAccountHttpService(configService, logger);
+        const serviceAccountHttpService = await ServiceAccountHttpService.init(configService, logger);
         const serviceAccount = await serviceAccountHttpService.Me();
         if(!serviceAccount.enabled) {
             logger.error(`Service account ${serviceAccount.email} is not currently enabled.`);

@@ -17,7 +17,7 @@ export async function targetRestartHandler(
 
     const parsedTarget = parseTargetString(argv.targetString);
 
-    const bzeroTargetService = new BzeroTargetHttpService(configService, logger);
+    const bzeroTargetService = await BzeroTargetHttpService.init(configService, logger);
 
     try {
         await bzeroTargetService.RestartBzeroTarget({

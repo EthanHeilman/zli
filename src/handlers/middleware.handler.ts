@@ -61,7 +61,7 @@ export function initLoggerMiddleware(argv: any) {
 
 export async function initMiddleware(argv: any, logger : Logger, isSystemTest : boolean) {
     // Config init
-    const configService = new ConfigService(<string>argv.configName, logger, argv.configDir, isSystemTest);
+    const configService = await ConfigService.init(<string>argv.configName, logger, argv.configDir, isSystemTest);
 
     // MrtapService init
     const mrtapService = new MrtapService(configService, logger);
@@ -77,7 +77,7 @@ export async function bzCertValidationInfoMiddleware(mrtapService: MrtapService,
     const ksConfig = await configService.getMrtap();
     if( ! ksConfig.orgProvider) {
         // Update the Org BZCert Validation parameters
-        const orgHttpService = new OrganizationHttpService(configService, logger);
+        const orgHttpService = await OrganizationHttpService.init(configService, logger);
         const orgBZCertValidationInfo = await orgHttpService.GetUserOrganizationBZCertValidationInfo();
 
         await mrtapService.setOrgBZCertValidationInfo(orgBZCertValidationInfo);

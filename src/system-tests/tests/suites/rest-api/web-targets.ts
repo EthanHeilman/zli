@@ -11,8 +11,8 @@ export const webTargetRestApiSuite = () => {
         let webTargetCommonProperties: any;
         let doTarget: DigitalOceanBZeroTarget;
 
-        beforeAll(() => {
-            webTargetService = new WebTargetHttpService(configService, logger);
+        beforeAll(async () => {
+            webTargetService = await WebTargetHttpService.init(configService, logger);
 
             doTarget = testTargets.get(bzeroTestTargetsToRun[0]) as DigitalOceanBZeroTarget;
 

@@ -15,10 +15,10 @@ export async function listProxyPoliciesHandler(
     configService: ConfigService,
     logger: Logger,
 ){
-    const policyHttpService = new PolicyHttpService(configService, logger);
-    const envHttpService = new EnvironmentHttpService(configService, logger);
-    const dbTargetService = new DbTargetHttpService(configService, logger);
-    const webTargetService = new WebTargetHttpService(configService, logger);
+    const policyHttpService = await PolicyHttpService.init(configService, logger);
+    const envHttpService = await EnvironmentHttpService.init(configService, logger);
+    const dbTargetService = await DbTargetHttpService.init(configService, logger);
+    const webTargetService = await WebTargetHttpService.init(configService, logger);
 
     const [ environments, proxyPolicies, dbTargets, webTargets, policySubjectDisplayInfo] = await Promise.all([
         envHttpService.ListEnvironments(),

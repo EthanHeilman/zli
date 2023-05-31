@@ -22,7 +22,7 @@ export async function dbConnectHandler(
     logger: Logger,
     loggerConfigService: LoggerConfigService
 ): Promise<number> {
-    const dbTargetService = new DbTargetHttpService(configService, logger);
+    const dbTargetService = await DbTargetHttpService.init(configService, logger);
     const dbTarget = await dbTargetService.GetDbTarget(targetId);
 
     // Set our local host

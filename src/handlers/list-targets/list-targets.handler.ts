@@ -38,7 +38,7 @@ export async function listTargetsHandler(
 
     let allTargets = await listTargets(configService, logger, targetTypes, userEmail);
 
-    const envHttpService = new EnvironmentHttpService(configService, logger);
+    const envHttpService = await EnvironmentHttpService.init(configService, logger);
     const envs = await envHttpService.ListEnvironments();
 
     // find all envIds with substring search

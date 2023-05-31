@@ -57,9 +57,9 @@ export const organizationSuite = () => {
             throw new Error(`Unhandled IDP passed: ${configService.getIdp()}`);
         }
 
-        beforeAll(() => {
-            apiKeyService = new ApiKeyHttpService(configService, logger);
-            organizationService = new OrganizationHttpService(configService, logger);
+        beforeAll(async () => {
+            apiKeyService = await ApiKeyHttpService.init(configService, logger);
+            organizationService = await OrganizationHttpService.init(configService, logger);
         });
 
         test('2263: Get user\'s organization', async () => {

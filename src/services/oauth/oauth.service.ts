@@ -393,12 +393,12 @@ export class OAuthService implements IDisposable {
             this.configService.setTokenSet(tokenSet);
             this.logger.debug('OAuth tokens refreshed');
 
-            const userHttpService = new UserHttpService(this.configService, this.logger);
+            const userHttpService = await UserHttpService.init(this.configService, this.logger);
             await userHttpService.Register();
 
             // Update me section of the config in case this is a new login or any
             // user information has changed since last login
-            const subjectHttpService = new SubjectHttpService(this.configService, this.logger);
+            const subjectHttpService = await SubjectHttpService.init(this.configService, this.logger);
             const me = await subjectHttpService.Me();
             this.configService.setMe(me);
         }

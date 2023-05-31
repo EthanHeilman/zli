@@ -10,9 +10,14 @@ import { Logger } from 'services/logger/logger.service';
 
 export class OrganizationHttpService extends HttpService
 {
-    constructor(configService: ConfigService, logger: Logger)
-    {
-        super(configService, 'api/v2/organization/', logger);
+    protected constructor() {
+        super()
+    }
+
+    static async init(configService: ConfigService, logger: Logger) {
+        const service = new OrganizationHttpService();
+        service.make(configService, 'api/v2/organization/', logger);
+        return service
     }
 
     public ListGroups(): Promise<GroupSummary[]>

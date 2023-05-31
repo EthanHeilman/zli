@@ -20,7 +20,7 @@ export class DigitalOceanTargetService {
         private logger: Logger
     ) {
         this.doClient = createApiClient({ token: apiToken });
-        this.bzeroTargetHttpService = new BzeroTargetHttpService(this.configService, this.logger);
+        this.bzeroTargetHttpService = await BzeroTargetHttpService.init(this.configService, this.logger);
     }
 
     /**

@@ -12,9 +12,9 @@ export const serviceAccountRestApiSuite = () => {
         let mfaService: MfaHttpService;
 
         beforeAll(async () => {
-            subjectHttpService = new SubjectHttpService(configService, logger);
-            serviceAccountService = new ServiceAccountHttpService(configService, logger);
-            mfaService = new MfaHttpService(configService, logger);
+            subjectHttpService = await SubjectHttpService.init(configService, logger);
+            serviceAccountService = await ServiceAccountHttpService.init(configService, logger);
+            mfaService = await MfaHttpService.init(configService, logger);
 
             if(RUN_AS_SERVICE_ACCOUNT) {
                 // When running as a service account these tests assume the service account always an admin to begin with

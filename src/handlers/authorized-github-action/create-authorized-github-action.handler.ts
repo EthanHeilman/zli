@@ -14,7 +14,7 @@ export async function createAuthorizedGithubActionHandler(configService: ConfigS
         await cleanExit(1, logger);
     }
 
-    const authorizedGithubActionHttpService = new AuthorizedGithubActionHttpService(configService, logger);
+    const authorizedGithubActionHttpService = await AuthorizedGithubActionHttpService.init(configService, logger);
 
     const req: CreateAuthorizedGithubActionRequest = {
         githubActionId: argv.githubActionId

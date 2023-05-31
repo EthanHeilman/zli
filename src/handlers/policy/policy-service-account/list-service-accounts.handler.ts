@@ -11,7 +11,7 @@ export async function listServiceAccountsHandler(
     configService: ConfigService,
     logger: Logger,
 ){
-    const serviceAccountHttpService = new ServiceAccountHttpService(configService, logger);
+    const serviceAccountHttpService = await ServiceAccountHttpService.init(configService, logger);
     const serviceAccounts = await serviceAccountHttpService.ListServiceAccounts();
     if(!! argv.json) {
         // json output

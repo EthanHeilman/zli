@@ -15,7 +15,7 @@ export async function closeShellConnections(
     configService: ConfigService,
     logger: Logger
 ): Promise<boolean> {
-    const spaceHttpService = new SpaceHttpService(configService, logger);
+    const spaceHttpService = await SpaceHttpService.init(configService, logger);
     const cliSpace = await getCliSpace(spaceHttpService, logger);
     if (!cliSpace) {
         return false;
@@ -38,7 +38,7 @@ export async function closeConnections(
     logger: Logger,
     type: 'db' | 'kube'
 ): Promise<void> {
-    const connectionHttpService = new ConnectionHttpService(configService, logger);
+    const connectionHttpService = await ConnectionHttpService.init(configService, logger);
 
     let connections: BaseConnectionSummary[];
     switch (type) {

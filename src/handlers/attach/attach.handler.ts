@@ -17,11 +17,11 @@ export async function attachHandler(
     connectionId: string
 ){
     // Get Connection Info
-    const connectionHttpService = new ConnectionHttpService(configService, logger);
+    const connectionHttpService = await ConnectionHttpService.init(configService, logger);
     const connectionSummaryRequest = connectionHttpService.GetShellConnection(connectionId);
 
     // Get Space Info
-    const spaceHttpService = new SpaceHttpService(configService, logger);
+    const spaceHttpService = await SpaceHttpService.init(configService, logger);
     const cliSpaceRequest = getCliSpace(spaceHttpService, logger);
 
     // Make requests in parallel
@@ -46,7 +46,7 @@ export async function attachHandler(
         // Get Attach Info for Bzero target. This currently just includes the datachannel id of the connection
         const attachInfoRequest = await connectionHttpService.GetShellConnectionAttachDetails(connectionId);
 
-        const bzeroTargetService = new BzeroTargetHttpService(configService, logger);
+        const bzeroTargetService = await BzeroTargetHttpService.init(configService, logger);
         const bzeroTargetRequest = bzeroTargetService.GetBzeroTarget(connectionSummary.targetId);
         const connectionAuthRequest = connectionHttpService.GetShellConnectionAuthDetails(connectionSummary.id);
 

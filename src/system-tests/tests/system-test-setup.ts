@@ -45,7 +45,7 @@ export const systemTestDigitalOceanClusterId = 'e3dd3573-6c83-40de-bd50-7ddef43d
  */
 export async function setupSystemTestApiKeys() {
     const restApiKeyName = `${resourceNamePrefix}-api-key`;
-    const apiKeyService = new ApiKeyHttpService(configService, logger);
+    const apiKeyService = await ApiKeyHttpService.init(configService, logger);
     const systemTestRESTApiKey = await apiKeyService.CreateNewApiKey({ name: restApiKeyName, isRegistrationKey: false });
     logger.info('Created REST api key ' + systemTestRESTApiKey.apiKeyDetails.id);
 
@@ -61,7 +61,7 @@ export async function setupSystemTestApiKeys() {
  */
 export async function setupDOTestCluster(): Promise<RegisteredDigitalOceanKubernetesCluster> {
     // Gets cluster information for our static DO cluster
-    const doKubeService = new DigitalOceanKubeService(doApiKey, configService, logger);
+    const doKubeService = await DigitalOceanKubeService.init(doApiKey, configService, logger);
     const cluster = await doKubeService.getDigitalOceanClusterById(systemTestDigitalOceanClusterId);
 
     const shouldUseCustomKubeAgent = !!bzeroKubeAgentImageName;

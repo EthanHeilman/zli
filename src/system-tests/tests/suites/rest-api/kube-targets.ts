@@ -5,8 +5,8 @@ export const kubeClusterRestApiSuite = () => {
     describe('Kubernetes Cluster REST API Suite', () => {
         let kubeClusterService: KubeHttpService;
 
-        beforeAll(() => {
-            kubeClusterService = new KubeHttpService(configService, logger);
+        beforeAll(async () => {
+            kubeClusterService = await KubeHttpService.init(configService, logger);
         });
 
         test('11471: Get a Kubernetes cluster by ID', async () => {

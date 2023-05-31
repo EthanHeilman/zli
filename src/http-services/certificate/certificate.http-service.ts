@@ -5,8 +5,14 @@ import { GenerateCertificateResponse } from 'webshell-common-ts/http/v2/certific
 import { Logger } from 'services/logger/logger.service';
 
 export class CertificateHttpService extends HttpService {
-    constructor(configService: ConfigService, logger: Logger) {
-        super(configService, 'api/v2/certificate', logger);
+    protected constructor() {
+        super()
+    }
+
+    static async init(configService: ConfigService, logger: Logger) {
+        const service = new CertificateHttpService();
+        service.make(configService, 'api/v2/certificate', logger);
+        return service
     }
 
     public GenerateCertificate(req: GenerateCertificateRequest): Promise<GenerateCertificateResponse> {

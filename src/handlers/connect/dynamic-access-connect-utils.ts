@@ -14,7 +14,7 @@ export class DynamicAccessConnectionUtils {
         private logger: Logger,
         configService: ConfigService
     ) {
-        this.connectionService = new ConnectionHttpService(configService, logger);
+        this.connectionService = await ConnectionHttpService.init(configService, logger);
     }
 
     /**

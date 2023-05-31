@@ -8,9 +8,14 @@ import { Logger } from 'services/logger/logger.service';
 
 export class KubeHttpService extends HttpService
 {
-    constructor(configService: ConfigService, logger: Logger)
-    {
-        super(configService, 'api/v2/targets/kube', logger);
+    protected constructor() {
+        super()
+    }
+
+    static async init(configService: ConfigService, logger: Logger) {
+        const service = new KubeHttpService();
+        service.make(configService, 'api/v2/targets/kube', logger);
+        return service
     }
 
     public CreateNewAgentToken(

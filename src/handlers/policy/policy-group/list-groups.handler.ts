@@ -11,7 +11,7 @@ export async function listGroupsHandler(
     configService: ConfigService,
     logger: Logger,
 ){
-    const organizationHttpService = new OrganizationHttpService(configService, logger);
+    const organizationHttpService = await OrganizationHttpService.init(configService, logger);
     const groups = await organizationHttpService.FetchGroups();
     if(!! argv.json) {
         // json output

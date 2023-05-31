@@ -11,7 +11,7 @@ export async function listSessionRecordingPoliciesHandler(
     configService: ConfigService,
     logger: Logger
 ){
-    const policyHttpService = new PolicyHttpService(configService, logger);
+    const policyHttpService = await PolicyHttpService.init(configService, logger);
 
     const [ sessionRecordingPolicies, policySubjectDisplayInfo] = await Promise.all([
         policyHttpService.ListSessionRecordingPolicies(),

@@ -14,9 +14,14 @@ import { Cookie } from 'tough-cookie';
 
 export class ServiceAccountHttpService extends HttpService
 {
-    constructor(configService: ConfigService, logger: Logger)
-    {
-        super(configService, 'api/v2/service-accounts', logger);
+    protected constructor() {
+        super()
+    }
+
+    static async init(configService: ConfigService, logger: Logger) {
+        const service = new ServiceAccountHttpService();
+        service.make(configService, 'api/v2/service-accounts', logger);
+        return service
     }
 
     public async LoginServiceAccount(req: LoginServiceAccountRequest): Promise<ServiceAccountSummary> {

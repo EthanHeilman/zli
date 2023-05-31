@@ -25,7 +25,7 @@ export async function shellConnectHandler(
     let agentVersionString = createUniversalConnectionResponse.agentVersion;
     let authDetails = createUniversalConnectionResponse.connectionAuthDetails;
 
-    const connectionHttpService = new ConnectionHttpService(configService, logger);
+    const connectionHttpService = await ConnectionHttpService.init(configService, logger);
     if(targetType == TargetType.SsmTarget) {
         const connectionSummary = await connectionHttpService.GetShellConnection(connectionId);
         return createAndRunShell(configService, logger, connectionSummary);
@@ -48,7 +48,7 @@ export async function shellConnectHandler(
 
             // Finally once the dat is created and the connection is open get
             // the updated bzero target details so we can connect
-            const bzeroTargetService = new BzeroTargetHttpService(configService, logger);
+            const bzeroTargetService = await BzeroTargetHttpService.init(configService, logger);
             const bzeroTarget = await bzeroTargetService.GetBzeroTarget(connectionSummary.targetId);
             agentPublicKey = bzeroTarget.agentPublicKey;
             agentVersionString = bzeroTarget.agentVersion;

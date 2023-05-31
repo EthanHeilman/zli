@@ -83,11 +83,11 @@ export const agentRecoverySuite = (testRunnerKubeConfigFile: string, testRunnerU
         let tempDir: DirectoryResult;
 
         beforeAll(async () => {
-            policyService = new PolicyHttpService(configService, logger);
-            testUtils = new TestUtils(configService, logger);
-            connectionService = new ConnectionHttpService(configService, logger);
-            kubeService = new KubeHttpService(configService, logger);
-            bzeroTargetService = new BzeroTargetHttpService(configService, logger);
+            policyService = await PolicyHttpService.init(configService, logger);
+            testUtils = await TestUtils.init(configService, logger);
+            connectionService = await ConnectionHttpService.init(configService, logger);
+            kubeService = await KubeHttpService.init(configService, logger);
+            bzeroTargetService = await BzeroTargetHttpService.init(configService, logger);
             statusService = new StatusHttpService(configService, logger);
 
             // Setup the kube client from the test runner configuration
@@ -310,7 +310,7 @@ export const agentRecoverySuite = (testRunnerKubeConfigFile: string, testRunnerU
                 await connectTestUtils.runShellConnectTest(testTarget, `zli target restart by name test - ${systemTestUniqueId}`, true, false);
 
                 // finally, check that the restart was reported correctly
-                const eventsService = new EventsHttpService(configService, logger);
+                const eventsService = await EventsHttpService.init(configService, logger);
                 const latestEvents = await eventsService.GetAgentStatusChangeEvents(targetId, restartTime);
                 const restart = latestEvents.filter(e => e.statusChange === 'OfflineToRestarting');
                 expect(restart.length).toEqual(1);

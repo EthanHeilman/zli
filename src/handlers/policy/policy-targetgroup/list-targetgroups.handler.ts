@@ -8,7 +8,7 @@ import { PolicyHttpService } from 'http-services/policy/policy.http-services';
 
 export async function listTargetGroupsHandler(configService: ConfigService, logger: Logger, argv : yargs.Arguments<listTargetGroupArgs>, policyName: string) {
 
-    const policyHttpService = new PolicyHttpService(configService, logger);
+    const policyHttpService = await PolicyHttpService.init(configService, logger);
     const kubePolicies = await policyHttpService.ListKubernetesPolicies();
     const targetGroups : string[] = [];
     const kubePolicy = kubePolicies.find(p => p.name == policyName);

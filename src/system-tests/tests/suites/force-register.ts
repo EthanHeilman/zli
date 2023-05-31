@@ -31,10 +31,10 @@ export const forceRegisterSuite = () => {
         // Set up the policy before all the tests
         beforeAll(async () => {
             // Construct all http services needed to run tests
-            policyService = new PolicyHttpService(configService, logger);
-            connectionService = new ConnectionHttpService(configService, logger);
-            bzeroTargetHttpService = new BzeroTargetHttpService(configService, logger);
-            testUtils = new TestUtils(configService, logger);
+            policyService = await PolicyHttpService.init(configService, logger);
+            connectionService = await ConnectionHttpService.init(configService, logger);
+            bzeroTargetHttpService = await BzeroTargetHttpService.init(configService, logger);
+            testUtils = await TestUtils.init(configService, logger);
 
             const me = configService.me();
             const currentSubject: Subject = {

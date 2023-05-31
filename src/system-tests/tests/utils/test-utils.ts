@@ -23,15 +23,23 @@ export const clearAllTimeouts = () => {
 export class TestUtils {
     logger: Logger;
     configService: ConfigService;
-    eventsService: EventsHttpService;
-    environmentService: EnvironmentHttpService;
 
-    constructor(configService: ConfigService, logger: Logger) {
+    protected constructor(
+        configService: ConfigService, 
+        logger: Logger, 
+        public environmentService: EnvironmentHttpService,
+        public eventsService: EventsHttpService) {
+            
         this.logger = logger;
         this.configService = configService;
-        this.eventsService = new EventsHttpService(configService, logger);
-        this.environmentService = new EnvironmentHttpService(configService, logger);
     };
+
+    static async init(configService: ConfigService, logger: Logger) {
+        const environmentService = await EnvironmentHttpService.init(configService, logger);
+        const eventsService = await EventsHttpService.init(configService, logger);
+
+        return new TestUtils(configService, logger, environmentService, eventsService);
+    }
 
     /**
      * Helper function to build a connection event so we can verify it exist in our backend

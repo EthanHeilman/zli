@@ -60,9 +60,9 @@ export async function getPolicySubjectDisplayInfo(
     configService: ConfigService,
     logger: Logger
 ) {
-    const userHttpService = new UserHttpService(configService, logger);
-    const organizationHttpService = new OrganizationHttpService(configService, logger);
-    const serviceAccountHttpService = new ServiceAccountHttpService(configService, logger);
+    const userHttpService = await UserHttpService.init(configService, logger);
+    const organizationHttpService = await OrganizationHttpService.init(configService, logger);
+    const serviceAccountHttpService = await ServiceAccountHttpService.init(configService, logger);
 
     const [users, groups, serviceAccounts] = await Promise.all([
         userHttpService.ListUsers(),

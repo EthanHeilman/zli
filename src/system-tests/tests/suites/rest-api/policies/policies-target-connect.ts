@@ -16,9 +16,9 @@ export const targetConnectPolicySuite = () => {
         let targetConnectPolicy: TargetConnectPolicySummary;
         let expectedPolicySummary: TargetConnectPolicySummary;
 
-        beforeAll(() => {
-            policyService = new PolicyHttpService(configService, logger);
-            envHttpService = new EnvironmentHttpService(configService, logger);
+        beforeAll(async () => {
+            policyService = await PolicyHttpService.init(configService, logger);
+            envHttpService = await EnvironmentHttpService.init(configService, logger);
 
             const originalPolicyName = systemTestPolicyTemplate.replace('$POLICY_TYPE', 'target-connect');
             const currentSubject: Subject = {

@@ -37,9 +37,9 @@ export const webSuite = () => {
         // Set up the policy before all the tests
         beforeAll(async () => {
             // Construct all http services needed to run tests
-            policyService = new PolicyHttpService(configService, logger);
-            testUtils = new TestUtils(configService, logger);
-            webTargetService = new WebTargetHttpService(configService, logger);
+            policyService = await PolicyHttpService.init(configService, logger);
+            testUtils = await TestUtils.init(configService, logger);
+            webTargetService = await WebTargetHttpService.init(configService, logger);
 
             const me = configService.me();
             const currentSubject: Subject = {
@@ -207,7 +207,7 @@ export const webSuite = () => {
                 const doTarget = testTargets.get(testTarget) as DigitalOceanBZeroTarget;
 
                 // Create a new web virtual target
-                const webTargetService: WebTargetHttpService = new WebTargetHttpService(configService, logger);
+                const webTargetService: WebTargetHttpService = await WebTargetHttpService.init(configService, logger);
                 const webVtName = `${doTarget.bzeroTarget.name}-web-vt-no-policy`;
 
                 await createWebTarget(webTargetService, {

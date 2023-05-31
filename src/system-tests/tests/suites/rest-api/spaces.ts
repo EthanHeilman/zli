@@ -18,7 +18,7 @@ export const spacesRestApiSuite = () => {
         let testSpaceId: string;
 
         beforeAll(() => {
-            spacesService = new SpaceHttpService(configService, logger);
+            spacesService = await SpaceHttpService.init(configService, logger);
         });
 
         test('24267: Create and verify a space', async () => {

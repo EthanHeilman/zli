@@ -6,7 +6,7 @@ import { AuthorizedGithubActionHttpService } from 'http-services/authorized-gith
 import { deleteAuthorizedGithubActionArgs } from 'handlers/authorized-github-action/delete-authorized-github-action.command-builder';
 
 export async function deleteAuthorizedGithubActionHandler(configService: ConfigService, logger: Logger, argv : yargs.Arguments<deleteAuthorizedGithubActionArgs>) {
-    const authorizedGithubActionHttpService = new AuthorizedGithubActionHttpService(configService, logger);
+    const authorizedGithubActionHttpService = await AuthorizedGithubActionHttpService.init(configService, logger);
 
     const authorizedGithubActions = await authorizedGithubActionHttpService.ListAuthorizedGithubActions();
 

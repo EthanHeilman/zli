@@ -4,8 +4,14 @@ import { Logger } from 'services/logger/logger.service';
 import { SessionRecordingSummary } from 'webshell-common-ts/http/v2/session-recording/types/session-recording-summary.types';
 
 export class SessionRecordingHttpService extends HttpService {
-    constructor(configService: ConfigService, logger: Logger) {
-        super(configService, 'api/v2/session-recordings', logger);
+    protected constructor() {
+        super()
+    }
+
+    static async init(configService: ConfigService, logger: Logger) {
+        const service = new SessionRecordingHttpService();
+        service.make(configService, 'api/v2/session-recordings', logger);
+        return service
     }
 
     public GetSessionRecording(connectionId: string): Promise<string> {

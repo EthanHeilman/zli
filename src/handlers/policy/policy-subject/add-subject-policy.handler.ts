@@ -10,7 +10,7 @@ import { SubjectSummary } from 'webshell-common-ts/http/v2/subject/types/subject
 
 export async function addSubjectToPolicyHandler(subjectEmail: string, policyName: string, configService: ConfigService, logger: Logger) {
     // First ensure we can lookup the subject
-    const subjectHttpService = new SubjectHttpService(configService, logger);
+    const subjectHttpService = await SubjectHttpService.init(configService, logger);
 
     let subjectSummary: SubjectSummary = null;
     try {
@@ -20,7 +20,7 @@ export async function addSubjectToPolicyHandler(subjectEmail: string, policyName
         await cleanExit(1, logger);
     }
 
-    const policyHttpService = new PolicyHttpService(configService, logger);
+    const policyHttpService = await PolicyHttpService.init(configService, logger);
     const policy = await getPolicyFromName(policyName, policyHttpService);
 
     if (policy === null) {

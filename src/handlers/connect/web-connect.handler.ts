@@ -18,7 +18,7 @@ export async function webConnectHandler(
     logger: Logger,
     loggerConfigService: LoggerConfigService
 ): Promise<number>{
-    const webTargetService = new WebTargetHttpService(configService, logger);
+    const webTargetService = await WebTargetHttpService.init(configService, logger);
     const webTarget = await webTargetService.GetWebTarget(targetId);
 
     // Open up our zli dbConfig

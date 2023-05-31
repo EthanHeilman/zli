@@ -16,11 +16,13 @@ export class HttpService {
     protected logger: Logger;
     protected cookieJar: CookieJar;
 
-    constructor(configService: ConfigService, serviceRoute: string, logger: Logger, authorized: boolean = true) {
+    protected constructor() {}
+
+    protected async make(configService: ConfigService, serviceRoute: string, logger: Logger, authorized: boolean = true) {
         this.configService = configService;
-        this.authorized = authorized;
         this.logger = logger;
-        this.baseUrl = `${this.configService.getServiceUrl()}${serviceRoute}`;
+        this.authorized = authorized;
+        this.baseUrl = `${await this.configService.getServiceUrl()}${serviceRoute}`;
         this.cookieJar = new CookieJar();
 
         this.httpClient = got.extend({

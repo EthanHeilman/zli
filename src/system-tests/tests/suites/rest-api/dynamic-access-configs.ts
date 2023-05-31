@@ -8,8 +8,8 @@ export const dynamicAccessConfigRestApiSuite = () => {
         let dynamicAccessConfigService: DynamicAccessConfigHttpService;
         let dynamicAccessConfigId: string;
 
-        beforeAll(() => {
-            dynamicAccessConfigService = new DynamicAccessConfigHttpService(configService, logger);
+        beforeAll(async () => {
+            dynamicAccessConfigService = await DynamicAccessConfigHttpService.init(configService, logger);
             testDynamicAccessConfigData = {
                 name: `dac-test-${systemTestUniqueId}`,
                 environmentId: systemTestEnvId,

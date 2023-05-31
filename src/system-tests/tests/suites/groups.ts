@@ -23,10 +23,10 @@ export const groupsSuite = () => {
         // Set up the policy before all the tests
         beforeAll(async () => {
             // Construct all http services needed to run tests
-            policyService = new PolicyHttpService(configService, logger);
-            connectionService = new ConnectionHttpService(configService, logger);
-            organizationService = new OrganizationHttpService(configService, logger);
-            testUtils = new TestUtils(configService, logger);
+            policyService = await PolicyHttpService.init(configService, logger);
+            connectionService = await ConnectionHttpService.init(configService, logger);
+            organizationService = await OrganizationHttpService.init(configService, logger);
+            testUtils = await TestUtils.init(configService, logger);
 
             const environment: Environment = {
                 id: systemTestEnvId

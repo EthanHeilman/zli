@@ -17,10 +17,10 @@ import { Dictionary } from 'lodash';
 import { TargetType } from 'webshell-common-ts/http/v2/target/types/target.types';
 
 export async function createProxyPolicyHandler(argv: yargs.Arguments<createProxyPolicyArgs>, configService: ConfigService,logger: Logger){
-    const policyService = new PolicyHttpService(configService, logger);
-    const organizationHttpService = new OrganizationHttpService(configService, logger);
-    const envHttpService = new EnvironmentHttpService(configService, logger);
-    const subjectHttpService = new SubjectHttpService(configService, logger);
+    const policyService = await PolicyHttpService.init(configService, logger);
+    const organizationHttpService = await OrganizationHttpService.init(configService, logger);
+    const envHttpService = await EnvironmentHttpService.init(configService, logger);
+    const subjectHttpService = await SubjectHttpService.init(configService, logger);
 
     // If a value is provided for neither then throw an error
     // Yargs will handle when a value is passed in for both

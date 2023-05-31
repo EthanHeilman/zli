@@ -67,7 +67,7 @@ export class QuickstartService {
             delay: 1000 * 10
         });
 
-        const bzeroTargetHttpService = new BzeroTargetHttpService(this.configService, this.logger);
+        const bzeroTargetHttpService = await BzeroTargetHttpService.init(this.configService, this.logger);
         let targetId: string;
 
         return retrier.resolve(() => new Promise<BzeroAgentSummary>(async (resolve, reject) => {
@@ -149,7 +149,7 @@ export class QuickstartService {
     public async addSSHHostToBastionZero(registrableHost: RegistrableSSHHost, spinner: ora.Ora): Promise<RegisteredSSHHost> {
         return new Promise<RegisteredSSHHost>(async (resolve, reject) => {
             try {
-                const bzeroTargetService = new BzeroTargetHttpService(this.configService, this.logger);
+                const bzeroTargetService = await BzeroTargetHttpService.init(this.configService, this.logger);
                 const preexistingBzeroTargets = await bzeroTargetService.ListBzeroTargets();
                 const targetName = await this.runAutodiscoveryOnSSHHost(registrableHost);
 

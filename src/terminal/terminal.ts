@@ -47,13 +47,13 @@ export class SsmShellTerminal implements IDisposable
         const targetId = this.connectionSummary.targetId;
 
         if (targetType === TargetType.SsmTarget || targetType === TargetType.DynamicAccessConfig) {
-            const ssmTargetHttpService = new SsmTargetHttpService(this.configService, this.logger);
+            const ssmTargetHttpService = await SsmTargetHttpService.init(this.configService, this.logger);
             const ssmTargetInfo = await ssmTargetHttpService.GetSsmTarget(targetId);
 
             // Check the agent version is MrTAP compatible
             this.checkAgentVersion(ssmTargetInfo);
 
-            const connectionHttpService = new ConnectionHttpService(this.configService, this.logger);
+            const connectionHttpService = await ConnectionHttpService.init(this.configService, this.logger);
             const shellConnectionAuthDetails = await connectionHttpService.GetShellConnectionAuthDetails(this.connectionSummary.id);
 
             return new SsmShellWebsocketService(

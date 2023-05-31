@@ -10,7 +10,7 @@ import { editPolicy, getPolicyFromName } from 'services/policy/policy.services';
 
 export async function addUserToPolicyHandler(userEmail: string, policyName: string, configService: ConfigService, logger: Logger) {
     // First ensure we can lookup the user
-    const userHttpService = new UserHttpService(configService, logger);
+    const userHttpService = await UserHttpService.init(configService, logger);
 
     let userSummary: UserSummary = null;
     try {
@@ -21,7 +21,7 @@ export async function addUserToPolicyHandler(userEmail: string, policyName: stri
 
     }
 
-    const policyHttpService = new PolicyHttpService(configService, logger);
+    const policyHttpService = await PolicyHttpService.init(configService, logger);
     const policy = await getPolicyFromName(policyName, policyHttpService);
 
     if (policy === null) {

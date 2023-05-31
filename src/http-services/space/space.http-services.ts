@@ -7,9 +7,14 @@ import { Logger } from 'services/logger/logger.service';
 
 export class SpaceHttpService extends HttpService
 {
-    constructor(configService: ConfigService, logger: Logger)
-    {
-        super(configService, 'api/v2/spaces/', logger);
+    protected constructor() {
+        super()
+    }
+
+    static async init(configService: ConfigService, logger: Logger) {
+        const service = new SpaceHttpService();
+        service.make(configService, 'api/v2/spaces/', logger);
+        return service
     }
 
     public GetSpace(spaceId: string) : Promise<SpaceSummary>

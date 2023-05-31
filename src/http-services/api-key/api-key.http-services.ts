@@ -9,8 +9,14 @@ import { Logger } from 'services/logger/logger.service';
 
 export class ApiKeyHttpService extends HttpService
 {
-    constructor(configService: ConfigService, logger: Logger) {
-        super(configService, 'api/v2/api-keys', logger);
+    protected constructor() {
+        super()
+    }
+
+    static async init(configService: ConfigService, logger: Logger) {
+        const service = new ApiKeyHttpService();
+        service.make(configService, 'api/v2/api-keys', logger);
+        return service
     }
 
     public GetApiKey(id: string): Promise<ApiKeySummary> {

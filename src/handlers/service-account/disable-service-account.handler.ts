@@ -10,8 +10,8 @@ import { UpdateServiceAccountRequest } from 'webshell-common-ts/http/v2/service-
 import { SubjectSummary } from 'webshell-common-ts/http/v2/subject/types/subject-summary.types';
 
 export async function disableServiceAccountHandler(configService: ConfigService, logger: Logger, argv : yargs.Arguments<disableServiceAccountArgs>) {
-    const serviceAccountHttpService = new ServiceAccountHttpService(configService, logger);
-    const subjectHttpService = new SubjectHttpService(configService, logger);
+    const serviceAccountHttpService = await ServiceAccountHttpService.init(configService, logger);
+    const subjectHttpService = await SubjectHttpService.init(configService, logger);
 
     let subjectSummary: SubjectSummary = null;
     try {

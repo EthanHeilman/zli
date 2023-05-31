@@ -21,7 +21,7 @@ export async function connectHandler(
     loggerConfigService: LoggerConfigService,
     mixpanelService: MixpanelService
 ): Promise<number> {
-    const connectionHttpService = new ConnectionHttpService(configService, logger);
+    const connectionHttpService = await ConnectionHttpService.init(configService, logger);
 
     const parsedTarget = parseTargetString(argv.targetString);
     let targetUser = parsedTarget.user;

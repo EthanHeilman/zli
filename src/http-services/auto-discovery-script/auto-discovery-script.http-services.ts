@@ -12,7 +12,7 @@ export async function getAutodiscoveryScript(
     scriptTargetNameOption: ScriptTargetNameOption,
     agentVersion: string
 ): Promise<string> {
-    const autodiscoveryScriptHttpService = new AutoDiscoveryScriptHttpService(configService, logger);
+    const autodiscoveryScriptHttpService = await AutoDiscoveryScriptHttpService.init(configService, logger);
     const scriptResponse = await autodiscoveryScriptHttpService.GetAutodiscoveryScript(scriptTargetNameOption, environmentId, agentVersion);
 
     return scriptResponse.autodiscoveryScript;
@@ -25,7 +25,7 @@ export async function getBzeroBashAutodiscoveryScript(
     scriptTargetNameOption: ScriptTargetNameOption,
     beta: boolean = false
 ): Promise<string> {
-    const autodiscoveryScriptHttpService = new AutoDiscoveryScriptHttpService(configService, logger);
+    const autodiscoveryScriptHttpService = await AutoDiscoveryScriptHttpService.init(configService, logger);
     const scriptResponse = await autodiscoveryScriptHttpService.GetBzeroBashAutodiscoveryScript(scriptTargetNameOption, environmentId, beta);
 
     return scriptResponse.autodiscoveryScript;
@@ -37,7 +37,7 @@ export async function getAnsibleAutodiscoveryScript(
     environmentId: string,
     agentVersion: string
 ) {
-    const autodiscoveryScriptHttpService = new AutoDiscoveryScriptHttpService(configService, logger);
+    const autodiscoveryScriptHttpService = await AutoDiscoveryScriptHttpService.init(configService, logger);
     const scriptResponse = await autodiscoveryScriptHttpService.GetAnsibleAutodiscoveryScript(environmentId, agentVersion);
 
     return scriptResponse.autodiscoveryScript;
@@ -49,15 +49,21 @@ export async function getBzeroAnsibleAutodiscoveryScript(
     environmentId: string,
     beta: boolean = false
 ) {
-    const autodiscoveryScriptHttpService = new AutoDiscoveryScriptHttpService(configService, logger);
+    const autodiscoveryScriptHttpService = await AutoDiscoveryScriptHttpService.init(configService, logger);
     const scriptResponse = await autodiscoveryScriptHttpService.GetBzeroAnsibleAutodiscoveryScript(environmentId, beta);
 
     return scriptResponse.autodiscoveryScript;
 }
 
 export class AutoDiscoveryScriptHttpService extends HttpService {
-    constructor(configService: ConfigService, logger: Logger) {
-        super(configService, 'api/v2/autodiscovery-scripts', logger);
+    protected constructor() {
+        super()
+    }
+
+    static async init(configService: ConfigService, logger: Logger) {
+        const service = new AutoDiscoveryScriptHttpService();
+        service.make(configService, 'api/v2/autodiscovery-scripts', logger);
+        return service
     }
 
     public GetAutodiscoveryScript(

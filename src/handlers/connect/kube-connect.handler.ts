@@ -26,7 +26,7 @@ export async function startKubeDaemonHandler(
     loggerConfigService: LoggerConfigService
 ): Promise<number> {
     const targetGroups = argv.targetGroup;
-    const kubeService = new KubeHttpService(configService, logger);
+    const kubeService = await KubeHttpService.init(configService, logger);
     const clusterTarget = await kubeService.GetKubeCluster(targetId);
 
     // Check if there is already a daemon running for this target+user

@@ -7,8 +7,8 @@ export const bzeroTargetRestApiSuite = () => {
     describe('Bzero Target REST API Suite', () => {
         let bzeroTargetService: BzeroTargetHttpService;
 
-        beforeAll(() => {
-            bzeroTargetService = new BzeroTargetHttpService(configService, logger);
+        beforeAll(async () => {
+            bzeroTargetService = await BzeroTargetHttpService.init(configService, logger);
         });
 
         test('6431: Get a Bzero target by ID', async () => {

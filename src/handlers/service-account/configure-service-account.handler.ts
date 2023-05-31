@@ -28,9 +28,9 @@ export async function configureServiceAccountHandler(configService: ConfigServic
         await cleanExit(1, logger);
     }
 
-    const subjectHttpService = new SubjectHttpService(configService, logger);
-    const serviceAccountHttpService = new ServiceAccountHttpService(configService, logger);
-    const agentHttpService = new AgentHttpService(configService, logger);
+    const subjectHttpService = await SubjectHttpService.init(configService, logger);
+    const serviceAccountHttpService = await ServiceAccountHttpService.init(configService, logger);
+    const agentHttpService = await AgentHttpService.init(configService, logger);
 
     let subjectSummary: SubjectSummary = null;
     try {

@@ -11,7 +11,7 @@ export async function listJustInTimePoliciesHandler(
     configService: ConfigService,
     logger: Logger
 ){
-    const policyHttpService = new PolicyHttpService(configService, logger);
+    const policyHttpService = await PolicyHttpService.init(configService, logger);
 
     const [justInTimePolicies, policySubjectDisplayInfo] = await Promise.all([
         policyHttpService.ListJustInTimePolicies(),

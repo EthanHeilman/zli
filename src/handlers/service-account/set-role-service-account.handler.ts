@@ -10,7 +10,7 @@ import { SubjectRole } from 'webshell-common-ts/http/v2/subject/types/subject-ro
 import { SubjectSummary } from 'webshell-common-ts/http/v2/subject/types/subject-summary.types';
 
 export async function serviceAccountSetRoleCmdHandler(configService: ConfigService, logger: Logger, argv : yargs.Arguments<serviceAccountSetRoleArgs>) {
-    const subjectHttpService = new SubjectHttpService(configService, logger);
+    const subjectHttpService = await SubjectHttpService.init(configService, logger);
     let subjectSummary: SubjectSummary = null;
     try {
         subjectSummary = await subjectHttpService.GetSubjectByEmail(argv.serviceAccountEmail);

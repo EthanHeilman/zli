@@ -12,8 +12,8 @@ export const sessionRecordingPolicySuite = () => {
         let sessionRecordingPolicy: SessionRecordingPolicySummary;
         let expectedPolicySummary: SessionRecordingPolicySummary;
 
-        beforeAll(() => {
-            policyService = new PolicyHttpService(configService, logger);
+        beforeAll(async () => {
+            policyService = await PolicyHttpService.init(configService, logger);
 
             const originalPolicyName = systemTestPolicyTemplate.replace('$POLICY_TYPE', 'session-recording');
             const currentSubject: Subject = {

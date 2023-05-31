@@ -17,19 +17,21 @@ const DO_CLUSTER_EXPIRY_SECONDS: number = 3600 * 2; // 2 hours
 
 export class DigitalOceanKubeService {
     private doClient;
-    private kubeHttpService: KubeHttpService;
-    private policyHttpService: PolicyHttpService;
-    private envHttpService: EnvironmentHttpService;
 
-    constructor(
+    protected constructor(
         apiToken: string,
         private configService: ConfigService,
-        private logger: Logger
+        private logger: Logger,
+        private policyHttpService: PolicyHttpService,
+        private kubeHttpService: KubeHttpService
     ) {
         this.doClient = createApiClient({ token: apiToken });
-        this.kubeHttpService = new KubeHttpService(this.configService, this.logger);
-        this.policyHttpService = new PolicyHttpService(this.configService, this.logger);
-        this.envHttpService = new EnvironmentHttpService(this.configService, this.logger);
+    }
+
+    static async init(apiToken: string, configService: ConfigService, logger: Logger) {
+        const policyHttpService = await PolicyHttpService.init(configService, logger);
+        const kubeHttpService = await KubeHttpService.init(configService, logger);
+        return new DigitalOceanKubeService(apiToken, configService, logger, policyHttpService, kubeHttpService);
     }
 
     /**
