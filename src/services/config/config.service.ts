@@ -161,7 +161,7 @@ export class ConfigService implements IKubeDaemonSecurityConfigService, IKubeCon
 
         // clear temporary SSH identity file
         fs.rmSync(await this.getSshKeyPath(), {force:true});
-        fs.rmSync(this.getSshKnownHostsPath(), {force:true});
+        fs.rmSync(await this.getSshKnownHostsPath(), {force:true});
     }
 
     async getAuthHeader(): Promise<string> {
@@ -251,8 +251,8 @@ export class ConfigService implements IKubeDaemonSecurityConfigService, IKubeCon
         return keyPath;
     }
 
-    getSshKnownHostsPath(): string {
-        let knownHostsPath = this.config.getSshKnownHostsPath();
+    async getSshKnownHostsPath(): Promise<string> {
+        let knownHostsPath = await this.config.getSshKnownHostsPath();
         if (!knownHostsPath) {
             knownHostsPath = path.join(path.dirname(this.config.path), 'bastionzero-known_hosts');
             this.config.setSshKnownHostsPath(knownHostsPath);

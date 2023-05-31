@@ -33,7 +33,7 @@ export interface ILogoutConfigService {
     logout(): Promise<void>;
     clearSessionId(): void;
     getSshKeyPath(): Promise<string>;
-    getSshKnownHostsPath(): string;
+    getSshKnownHostsPath(): Promise<string>;
 
     // TODO: CWC-2030 These functions can be removed from the interface once web
     //migrates to the DaemonManagementService to handle disconnects
@@ -59,7 +59,7 @@ export async function handleLogout(
     configService.clearSessionId();
     logger.info('Clearing temporary SSH files');
     fileRemover.removeFileIfExists(await configService.getSshKeyPath());
-    fileRemover.removeFileIfExists(configService.getSshKnownHostsPath());
+    fileRemover.removeFileIfExists(await configService.getSshKnownHostsPath());
 
     // Close any daemon connections, start with kube
     logger.info('Closing any existing Kube Connections');

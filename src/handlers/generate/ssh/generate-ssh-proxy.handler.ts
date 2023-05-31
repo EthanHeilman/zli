@@ -30,7 +30,7 @@ export async function buildSshConfigStrings(configService: ConfigService, proces
 
     const identityFile = `IdentityFile ${keyPathString}`;
 
-    const knownHostsPath = configService.getSshKnownHostsPath();
+    const knownHostsPath = await configService.getSshKnownHostsPath();
     const knownHostsFile = (process.platform === 'win32') ? `UserKnownHostsFile "${knownHostsPath}"` : `UserKnownHostsFile ${knownHostsPath}`;
 
     const configName = configService.getConfigName();

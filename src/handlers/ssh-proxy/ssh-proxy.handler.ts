@@ -147,7 +147,7 @@ async function ssmSshProxyHandler(configService: ConfigService, logger: Logger, 
 async function bzeroOpaqueSshProxyHandler(configService: ConfigService, logger: Logger, sshTunnelParameters: SshTunnelParameters, createUniversalConnectionResponse: CreateUniversalConnectionResponse, loggerConfigService: LoggerConfigService): Promise<number> {
     // Build our runtime config and cwd
     const baseEnv = await getBaseDaemonEnv(configService, loggerConfigService, createUniversalConnectionResponse.agentPublicKey, createUniversalConnectionResponse.connectionId, createUniversalConnectionResponse.connectionAuthDetails);
-    const pluginEnv = getBaseSshArgs(configService, sshTunnelParameters, createUniversalConnectionResponse);
+    const pluginEnv = await getBaseSshArgs(configService, sshTunnelParameters, createUniversalConnectionResponse);
     const actionEnv = {
         'SSH_ACTION': 'opaque'
     };
@@ -226,7 +226,7 @@ async function bzeroTransparentSshProxyHandler(configService: ConfigService, log
     const localPort = await getOrDefaultLocalport(null);
 
     const baseEnv = await getBaseDaemonEnv(configService, loggerConfigService, createUniversalConnectionResponse.agentPublicKey, createUniversalConnectionResponse.connectionId, createUniversalConnectionResponse.connectionAuthDetails);
-    const pluginEnv = getBaseSshArgs(configService, sshTunnelParameters, createUniversalConnectionResponse);
+    const pluginEnv = await getBaseSshArgs(configService, sshTunnelParameters, createUniversalConnectionResponse);
     const actionEnv = {
         'SSH_ACTION': 'transparent',
         'LOCAL_PORT': localPort
@@ -308,14 +308,14 @@ async function bzeroTransparentSshProxyHandler(configService: ConfigService, log
     }
 }
 
-function getBaseSshArgs(configService: ConfigService, sshTunnelParameters: SshTunnelParameters, createUniversalConnectionResponse: CreateUniversalConnectionResponse) {
+async function getBaseSshArgs(configService: ConfigService, sshTunnelParameters: SshTunnelParameters, createUniversalConnectionResponse: CreateUniversalConnectionResponse) {
     return {
         'TARGET_ID': createUniversalConnectionResponse.targetId,
         'TARGET_USER': sshTunnelParameters.targetUser,
         'REMOTE_HOST': 'localhost',
         'REMOTE_PORT': sshTunnelParameters.port,
         'IDENTITY_FILE': sshTunnelParameters.identityFile,
-        'KNOWN_HOSTS_FILE': configService.getSshKnownHostsPath(),
+        'KNOWN_HOSTS_FILE': await configService.getSshKnownHostsPath(),
         'HOSTNAMES': sshTunnelParameters.hostNames.join(','),
         'PLUGIN': 'ssh',
     };
