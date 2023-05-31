@@ -16,7 +16,7 @@ import { handleExitCode } from 'utils/daemon-utils';
 import { rdpConnectHandler } from './rdp-connect.handler';
 import { AgentType } from 'webshell-common-ts/http/v2/target/types/agent.types';
 
-const IGNORE_TARGET_USER_MSG: string = 'Specifying a target user or role for RDP, Web, or Database targets is not supported at this time. Ignoring target name / role and requesting connection per policy.';
+const IGNORE_TARGET_USER_MSG: string = 'Specifying a target user or role for RDP or Web targets is not supported at this time. Ignoring target name / role and requesting connection per policy.';
 
 export async function connectHandler(
     argv: yargs.Arguments<connectArgs>,
