@@ -12,7 +12,7 @@ export class MixpanelService
     private userId: string;
     private sessionId: string;
 
-    constructor(mixpanelToken: string, userId: string, sessionId: string)
+    protected constructor(mixpanelToken: string, userId: string, sessionId: string)
     {
         this.mixpanelClient = mixpanel.init(mixpanelToken, {
             protocol: 'https',

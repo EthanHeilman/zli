@@ -205,7 +205,7 @@ export async function loginServiceAccountHandler(configService: ConfigService, l
             const nonce = mrtapService.createNonce();
             const providerCredsFile = JSON.parse(fs.readFileSync(argv.providerCreds, 'utf-8')) as ServiceAccountProviderCredentials;
             bzeroCredsFile = JSON.parse(fs.readFileSync(argv.bzeroCreds, 'utf-8')) as ServiceAccountBzeroCredentials;
-            const t = createGCPServiceAccountTokenSet(providerCredsFile, bzeroCredsFile, nonce, configService.getServiceUrl());
+            const t = createGCPServiceAccountTokenSet(providerCredsFile, bzeroCredsFile, nonce, await configService.getServiceUrl());
             await configService.setTokenSet(t);
             await mrtapService.setInitialIdToken(await configService.getIdToken());
         }

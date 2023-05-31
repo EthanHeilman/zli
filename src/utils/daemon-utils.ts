@@ -535,7 +535,7 @@ export async function getBaseDaemonEnv(configService: ConfigService, loggerConfi
     return {
         'SESSION_ID': configService.getSessionId(),
         'SESSION_TOKEN': configService.getSessionToken(),
-        'SERVICE_URL': configService.getServiceUrl().slice(0, -1).replace('https://', ''),
+        'SERVICE_URL': (await configService.getServiceUrl()).slice(0, -1).replace('https://', ''),
         'AUTH_HEADER': await configService.getAuthHeader(),
         'CONFIG_PATH': configService.getConfigPath(),
         'REFRESH_TOKEN_COMMAND': `${execPath} ${entryPoint} refresh`,

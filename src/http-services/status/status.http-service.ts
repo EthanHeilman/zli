@@ -33,7 +33,7 @@ export class StatusHttpService {
     }
 
     public async BastionHealth() : Promise<string> {
-        const resp = await this.httpClient.get(`${this.configService.getServiceUrl()}status/health`);
+        const resp = await this.httpClient.get(`${await this.configService.getServiceUrl()}status/health`);
         return resp.body;
     }
 
@@ -52,7 +52,7 @@ export class StatusHttpService {
     // Lookup the connectionServiceUrl from bastion and then cache it
     private async getConnectionServiceBaseUrl(region: string): Promise<URL> {
         if(! this.connectionServiceUrl) {
-            const resp: connectionServiceUrlResponse = await this.httpClient.get(`${this.configService.getServiceUrl()}api/v2/connection-service/url`).json();
+            const resp: connectionServiceUrlResponse = await this.httpClient.get(`${await this.configService.getServiceUrl()}api/v2/connection-service/url`).json();
             this.connectionServiceUrl = new URL(resp.connectionServiceUrl);
         }
 

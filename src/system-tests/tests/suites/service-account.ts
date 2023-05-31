@@ -22,10 +22,10 @@ import { ensureServiceAccountExistsForLogin, ensureServiceAccountRole } from 'sy
 import { SubjectHttpService } from 'http-services/subject/subject.http-services';
 
 export const serviceAccountSuite = () => {
-    describe('Service Account Suite', () => {
+    describe('Service Account Suite', async () => {
         const targetConnectPolicyName = systemTestPolicyTemplate.replace('$POLICY_TYPE', 'sa-configure-target-connect');
         const appNameRegex = new RegExp('https://(.*).bastionzero.com/');
-        const appNameRegexTokenized = appNameRegex.exec(configService.getServiceUrl());
+        const appNameRegexTokenized = appNameRegex.exec(await configService.getServiceUrl());
         const appName = appNameRegexTokenized[1]; // prod/stage/dev/tr-1 etc
 
         let policyService: PolicyHttpService;

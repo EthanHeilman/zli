@@ -38,7 +38,7 @@ export class GAService
     static async init(configService: ConfigService, logger: Logger, baseCommand: string, args: string[], version: string) {
         const userId = (await configService.me()).id;
         const gaToken = configService.getGaToken();
-        const serviceUrl = configService.getServiceUrl();
+        const serviceUrl = await configService.getServiceUrl();
 
         return new GAService(logger, baseCommand, args, version, userId, gaToken, serviceUrl);
     }

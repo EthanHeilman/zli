@@ -310,7 +310,7 @@ export class OAuthService implements IDisposable {
         return new Promise<void>(async (resolve, reject) => {
             setTimeout(() => reject('Login timeout reached'), 60 * 1000);
 
-            const openBrowser = async () => await open(`${this.configService.getServiceUrl()}authentication/login?zliLogin=true&port=${portToUse}`);
+            const openBrowser = async () => await open(`${await this.configService.getServiceUrl()}authentication/login?zliLogin=true&port=${portToUse}`);
 
             await this.setupCallbackListener(portToUse, callback, openBrowser, resolve, reject);
         });

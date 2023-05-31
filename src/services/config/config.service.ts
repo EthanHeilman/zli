@@ -269,8 +269,8 @@ export class ConfigService implements IKubeDaemonSecurityConfigService, IKubeCon
         return this.configPath;
     }
 
-    getServiceUrl(): string {
-        return this.config.getServiceUrl();
+    async getServiceUrl(): Promise<string> {
+        return await this.config.getServiceUrl();
     }
 
     async getIdToken(): Promise<string> {

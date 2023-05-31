@@ -1,4 +1,4 @@
-import { OPA_SYNC_TIME, configService, doApiKey, logger, resourceNamePrefix, systemTestEnvId, systemTestEnvName, systemTestPolicyTemplate, systemTestRegistrationApiKey, systemTestUniqueId, testCluster } from 'system-tests/tests/system-test';
+import { OPA_SYNC_TIME, configService, DO_API_KEY, logger, resourceNamePrefix, systemTestEnvId, systemTestEnvName, systemTestPolicyTemplate, systemTestRegistrationApiKey, systemTestUniqueId, testCluster } from 'system-tests/tests/system-test';
 import { ConnectionHttpService } from 'http-services/connection/connection.http-services';
 import { TestUtils, sleepTimeout } from 'system-tests/tests/utils/test-utils';
 import { Environment } from 'webshell-common-ts/http/v2/policy/types/environment.types';
@@ -140,7 +140,7 @@ export const agentContainerSuite = () => {
  */
 export async function setupAgentContainer(targetsToRun: BzeroContainerTestTarget[]): Promise<Map<BzeroContainerTestTarget, ContainerBzeroTarget >> {
     // To poll to ensure the agent is online
-    const doService = new DigitalOceanTargetService(doApiKey, configService, logger);
+    const doService = new DigitalOceanTargetService(DO_API_KEY, configService, logger);
 
     const toReturn = new Map<BzeroContainerTestTarget, ContainerBzeroTarget>();
 
@@ -190,7 +190,7 @@ export async function setupAgentContainer(targetsToRun: BzeroContainerTestTarget
                             } as k8s.V1EnvVar,
                             {
                                 name: 'SERVICE_URL',
-                                value: configService.getServiceUrl()
+                                value: await configService.getServiceUrl()
                             } as k8s.V1EnvVar,
                             {
                                 name: 'ENVIRONMENT_NAME',
@@ -264,7 +264,7 @@ export async function setupAgentContainer(targetsToRun: BzeroContainerTestTarget
  */
 async function cleanupAgentContainer(testContainerAgents: Map<BzeroContainerTestTarget, ContainerBzeroTarget >) {
     // Loop over each test container agent
-    const doService = new DigitalOceanTargetService(doApiKey, configService, logger);
+    const doService = new DigitalOceanTargetService(DO_API_KEY, configService, logger);
     testContainerAgents.forEach(async (targetInfo, _) => {
         await doService.deleteBzeroTarget(targetInfo.bzeroTarget.id);
 

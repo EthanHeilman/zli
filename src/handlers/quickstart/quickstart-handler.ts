@@ -189,7 +189,7 @@ export async function quickstartHandler(
             }
         }, logger, consoleWithTranscript);
 
-        consoleWithTranscript.log(`Check out ${configService.getServiceUrl()} to see your environments, policies, and detailed logs.`);
+        consoleWithTranscript.log(`Check out ${await configService.getServiceUrl()} to see your environments, policies, and detailed logs.`);
         consoleWithTranscript.log('Press any key to continue...');
         await waitForKeypress();
     } catch (err) {
@@ -364,7 +364,7 @@ export async function quickstartHandler(
 
     const sshHostsSuccessfullyAddedPretty = targetsSuccessfullyAdded.map(target => target.sshHost.name).join(', ');
     const successMessage = `Congratulations! You've secured access to your SSH host(s): ${sshHostsSuccessfullyAddedPretty} with MrTAP using BastionZero.\n
-Log into ${configService.getServiceUrl()} to see your environments, policies, and detailed logs.`;
+Log into ${await configService.getServiceUrl()} to see your environments, policies, and detailed logs.`;
     consoleWithTranscript.log(successMessage);
 
     consoleWithTranscript.log('Use `zli connect` to connect to your newly registered targets.');

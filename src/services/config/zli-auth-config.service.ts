@@ -18,8 +18,8 @@ export class ZliAuthConfigService implements AuthConfigService {
     }
 
     // This is only being used for the signalR hubs that are not versioned yet
-    getServiceUrl() {
-        return this.configService.getServiceUrl() + 'api/v1/';
+    async getServiceUrl() {
+        return await this.configService.getServiceUrl() + 'api/v1/';
     }
 
     getSessionId() {
