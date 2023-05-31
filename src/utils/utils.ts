@@ -100,6 +100,8 @@ export function parseVerbType(verb: string) : VerbType
         return VerbType.FileTransfer;
     case verbTypeDisplay(VerbType.Tunnel).toLowerCase():
         return VerbType.Tunnel;
+    case verbTypeDisplay(VerbType.RDP).toLowerCase():
+        return VerbType.RDP;
     default:
         return undefined;
     }

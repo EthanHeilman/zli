@@ -55,7 +55,7 @@ export async function rdpConnectHandler(
 
     const runtimeConfig = { ...baseEnv, ...pluginEnv, ...actionEnv };
 
-    let cwd = process.cwd();
+    const cwd = process.cwd();
 
     // Copy over our executable to a temp file
     const args: string[] = [];

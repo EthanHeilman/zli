@@ -3,7 +3,7 @@ import { ConfigService } from 'services/config/config.service';
 import { Logger } from 'services/logger/logger.service';
 import { cleanExit } from 'handlers/clean-exit.handler';
 import { createTConnectPolicyArgs } from 'handlers/policy/policy-create/create-policy.command-builder';
-import { parseVerbType } from 'utils/utils';
+import { parseVerbType, verbTypeDisplay } from 'utils/utils';
 import { getGroupsByName, getEnvironmentByName, getSubjectsByEmail, getTargetsByNameOrId, checkAllIdentifiersExist, checkAllIdentifiersAreSingle } from 'utils/policy-utils';
 import { PolicyHttpService } from 'http-services/policy/policy.http-services';
 import { OrganizationHttpService } from 'http-services/organization/organization.http-services';
@@ -16,6 +16,7 @@ import { TargetUser } from 'webshell-common-ts/http/v2/policy/types/target-user.
 import { SubjectHttpService } from 'http-services/subject/subject.http-services';
 import { Dictionary } from 'lodash';
 import { TargetType } from 'webshell-common-ts/http/v2/target/types/target.types';
+import { VerbType } from 'webshell-common-ts/http/v2/policy/types/verb-type.types';
 
 export async function createTConnectPolicyHandler(argv: yargs.Arguments<createTConnectPolicyArgs>, configService: ConfigService,logger: Logger){
     const policyService = new PolicyHttpService(configService, logger);
@@ -27,6 +28,12 @@ export async function createTConnectPolicyHandler(argv: yargs.Arguments<createTC
     // Yargs will handle when a value is passed in for both
     if(argv.targets === undefined && argv.environments === undefined) {
         logger.error('Must exclusively provide a value for targets or environments');
+        await cleanExit(1, logger);
+    }
+
+    // Demand a targetUser to be provided only if some verbs that require it are included
+    if(!argv.targetUsers && argv.verbs.some(verb => verb != verbTypeDisplay(VerbType.RDP).toLowerCase())) {
+        logger.error('Must provide a target user');
         await cleanExit(1, logger);
     }
 
@@ -64,7 +71,7 @@ export async function createTConnectPolicyHandler(argv: yargs.Arguments<createTC
 
     // Process the target users into TargetUser array
     const targetUsers: TargetUser[] = [];
-    argv.targetUsers.forEach((tu) => {
+    argv.targetUsers?.forEach((tu) => {
         const targetUser: TargetUser = {
             userName: tu
         };

@@ -158,7 +158,7 @@ export function createTConnectPolicyCmdBuilder(yargs: yargs.Argv<{}>, verbTypeCh
             {
                 type: 'string',
                 array: true,
-                demandOption: true,
+                demandOption: false,
                 requiresArg: true,
                 description: 'Allowed target users for the policy'
             }
