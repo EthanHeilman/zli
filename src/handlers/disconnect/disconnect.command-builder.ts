@@ -11,6 +11,6 @@ export function disconnectCmdBuilder(yargs : yargs.Argv<{}>) : yargs.Argv<discon
             default: 'all',
             requiresArg: false,
         })
-        .example('$0 disconnect', 'Disconnect all local Zli Daemon')
-        .example('$0 disconnect kube', 'Disconnect Kube local Zli Daemon');
+        .example('$0 disconnect', 'Disconnect all local Zli Daemons')
+        .example('$0 disconnect kube', 'Disconnect Kube local Zli Daemons');
 }
