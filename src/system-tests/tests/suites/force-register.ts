@@ -99,7 +99,7 @@ export const forceRegisterSuite = () => {
                 const newTargetName = `${doTarget.bzeroTarget.name}-new`;
                 const packageName = 'bzero-beta';
                 const forceRegisterCommand = `sudo ${packageName} -y \
--serviceUrl=${configService.getServiceUrl()} \
+-serviceUrl=${await configService.getServiceUrl()} \
 -registrationKey=${systemTestRegistrationApiKey.secret} \
 -environmentId=${systemTestEnvId} \
 -targetName=${newTargetName}`;

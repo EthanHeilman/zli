@@ -134,7 +134,7 @@ export async function setupDOTestCluster(): Promise<RegisteredDigitalOceanKubern
     // Set common helm variables
     // helm chart expects the service to not cannot contain a
     // trailing slash and our config service includes the slash
-    helmVariables['serviceUrl'] = { value: stripTrailingSlash(configService.getServiceUrl()), type: 'single' };
+    helmVariables['serviceUrl'] = { value: stripTrailingSlash(await configService.getServiceUrl()), type: 'single' };
     helmVariables['apiKey'] = { value: systemTestRegistrationApiKey.secret, type: 'single' };
     helmVariables['clusterName'] = { value: clusterTargetName, type: 'single' };
     helmVariables['environmentId'] = { value: systemTestEnvId, type: 'single'};
@@ -222,7 +222,7 @@ export async function createDOTestTargets() {
         let dropletSizeToCreate;
         switch (testTarget.installType) {
         case 'pm-bzero':
-            userDataScript = getPackageManagerRegistrationScript('bzero-beta', testTarget, systemTestEnvName, systemTestRegistrationApiKey.secret);
+            userDataScript = await getPackageManagerRegistrationScript('bzero-beta', testTarget, systemTestEnvName, systemTestRegistrationApiKey.secret);
             dropletSizeToCreate = vtDropletSize;
             break;
         case 'ad-bzero':
@@ -423,7 +423,7 @@ ${ansibleInstall}
  * @param registrationApiKeySecret API key used to activate these agents
  * @returns User data script to run on droplet
  */
-function getPackageManagerRegistrationScript(packageName: string, testTarget: BzeroTestTarget, envName: string, registrationApiKeySecret: string): string {
+async function getPackageManagerRegistrationScript(packageName: string, testTarget: BzeroTestTarget, envName: string, registrationApiKeySecret: string): Promise<string> {
     let installBlock: string;
     const packageManager = getPackageManagerType(testTarget.dropletImage);
     const shouldBuildFromSource = packageName === 'bzero-beta' && bzeroAgentBranch;
@@ -456,7 +456,7 @@ sudo yum install ${packageName} -y
         installBlock += getCompileBzeroFromSourceCommands('bzero-beta');
     }
 
-    const registerCommand = `${packageName} --serviceUrl ${configService.getServiceUrl()} -registrationKey "${registrationApiKeySecret}" -environmentName "${envName}"`;
+    const registerCommand = `${packageName} --serviceUrl ${await configService.getServiceUrl()} -registrationKey "${registrationApiKeySecret}" -environmentName "${envName}"`;
     const initBlock = getBzeroTargetSetupCommands();
 
     return String.raw`#!/bin/bash
