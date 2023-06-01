@@ -104,7 +104,7 @@ export async function sshProxyHandler(
                 }
             }
 
-            cleanExit(exitCode, logger);            
+            cleanExit(exitCode, logger);
         } else {
             logger.error(`Unhandled ssh target type ${createUniversalConnectionResponse.targetType}`);
         }
