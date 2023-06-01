@@ -1,11 +1,11 @@
 import { cleanExit } from 'handlers/clean-exit.handler';
 import fs from 'fs';
-import { DbConfig, KubeConfig, WebConfig } from 'services/config/config.service.types';
+import { DbConfig, KubeConfig, RDPConfig, WebConfig } from 'services/config/config.service.types';
 import { Logger } from 'services/logger/logger.service';
 import { ConfigService } from 'services/config/config.service';
 import { ILogger } from 'webshell-common-ts/logging/logging.types';
 import { handleDisconnect, IDaemonDisconnector } from 'handlers/disconnect/disconnect.handler';
-import { newDbDaemonManagementService, newKubeDaemonManagementService } from 'services/daemon-management/daemon-management.service';
+import { newDbDaemonManagementService, newKubeDaemonManagementService, newRDPDaemonManagementService } from 'services/daemon-management/daemon-management.service';
 import { shutDownDaemonAndLog } from 'utils/daemon-utils';
 
 export async function logoutHandler(
@@ -14,6 +14,7 @@ export async function logoutHandler(
 ) {
     // Stitch together dependencies for handleLogout
     const dbDaemonManagementService = newDbDaemonManagementService(configService);
+    const rdpDaemonManagementService = newRDPDaemonManagementService(configService);
     const kubeDaemonManagementService = newKubeDaemonManagementService(configService);
     const fileRemover: IFileRemover = {
         removeFileIfExists: (filePath: string) => fs.rmSync(filePath, {force:true})
@@ -22,6 +23,7 @@ export async function logoutHandler(
     await handleLogout(
         configService,
         dbDaemonManagementService,
+        rdpDaemonManagementService,
         kubeDaemonManagementService,
         fileRemover,
         logger
@@ -48,6 +50,7 @@ export interface IFileRemover {
 export async function handleLogout(
     configService: ILogoutConfigService,
     dbDaemonDisconnector: IDaemonDisconnector<DbConfig>,
+    rdpDaemonDisconnector: IDaemonDisconnector<RDPConfig>,
     kubeDaemonDisconnector: IDaemonDisconnector<KubeConfig>,
     fileRemover: IFileRemover,
     logger: ILogger
@@ -68,6 +71,10 @@ export async function handleLogout(
     // Then db
     logger.info('Closing any existing Db Connections');
     await handleDisconnect(dbDaemonDisconnector, logger);
+
+    // Then rdp
+    logger.info('Closing any existing RDP Connections');
+    await handleDisconnect(rdpDaemonDisconnector, logger);
 
     // Then web
     logger.info('Closing any existing Web Connections');

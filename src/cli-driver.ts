@@ -462,7 +462,7 @@ export class CliDriver
             )
             .command(
                 'disconnect [targetType]',
-                'Disconnect a zli daemon (db, web or kube)',
+                'Disconnect a zli daemon (db, rdp, web or kube)',
                 (yargs) => {
                     return disconnectCmdBuilder(yargs);
                 },
@@ -529,7 +529,7 @@ export class CliDriver
             )
             .command(
                 ['list-connections', 'lc'],
-                'List all open shell and db connections',
+                'List all open shell, db and rdp connections',
                 (yargs) => {
                     return listConnectionsCmdBuilder(yargs);
                 },

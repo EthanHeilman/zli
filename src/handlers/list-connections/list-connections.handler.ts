@@ -4,7 +4,7 @@ import { createTableWithWordWrap, toUpperCase } from 'utils/utils';
 import { listConnectionsArgs } from 'handlers/list-connections/list-connections.command-builder';
 import yargs from 'yargs';
 import { ConnectionInfo } from 'services/list-connections/list-connections.service.types';
-import { listOpenDbConnections, listOpenKubeConnections, listOpenShellConnections } from 'services/list-connections/list-connections.service';
+import { listOpenDbConnections, listOpenKubeConnections, listOpenRDPConnections, listOpenShellConnections } from 'services/list-connections/list-connections.service';
 import { cleanExit } from 'handlers/clean-exit.handler';
 
 export async function listConnectionsHandler(
@@ -12,7 +12,7 @@ export async function listConnectionsHandler(
     configService: ConfigService,
     logger: Logger
 ) {
-    const printTableOrJson = async <T extends NormalizedConnectionInfo>(type: 'shell' | 'db' | 'kube' | 'all', connections: T[]) => {
+    const printTableOrJson = async <T extends NormalizedConnectionInfo>(type: 'shell' | 'db' | 'rdp' | 'kube' | 'all', connections: T[]) => {
         if (!!argv.json) {
             // json output
             console.log(JSON.stringify(connections));
@@ -41,6 +41,10 @@ export async function listConnectionsHandler(
             const openDbConnections = await listOpenDbConnections(configService, logger);
             await printTableOrJson('db', normalizeConnectionInfos(openDbConnections));
             break;
+        case 'rdp':
+            const openRDPConnections = await listOpenRDPConnections(configService, logger);
+            await printTableOrJson('rdp', normalizeConnectionInfos(openRDPConnections));
+            break;
         case 'kube':
             const openKubeConnections = await listOpenKubeConnections(configService, logger);
             await printTableOrJson('kube', normalizeConnectionInfos(openKubeConnections));
@@ -57,6 +61,7 @@ export async function listConnectionsHandler(
         const [shellConnections, dbConnections, kubeConnections] = await Promise.all([
             listOpenShellConnections(configService, logger),
             listOpenDbConnections(configService, logger),
+            listOpenRDPConnections(configService, logger),
             listOpenKubeConnections(configService, logger)
         ]);
         await printTableOrJson('all', normalizeConnectionInfos([...shellConnections, ...dbConnections, ...kubeConnections]));
@@ -90,6 +95,10 @@ function normalizeConnectionInfos(connections: ConnectionInfo[]): NormalizedConn
         case 'db':
             // Target users are only used by SplitCert connections; otherwise will be undefined
             targetUser = conn.targetUser ? conn.targetUser : 'N/A';
+            break;
+        case 'rdp':
+            // Target users are not utilized for RDP
+            targetUser = 'N/A';
             break;
         case 'shell':
             targetUser = conn.targetUser;

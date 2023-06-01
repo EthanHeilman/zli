@@ -2,6 +2,7 @@ import { CreateShellConnectionRequest} from 'webshell-common-ts/http/v2/connecti
 import { CreateConnectionResponse } from 'webshell-common-ts/http/v2/connection/responses/create-connection.responses';
 import { ShellConnectionSummary } from 'webshell-common-ts/http/v2/connection/types/shell-connection-summary.types';
 import { DbConnectionSummary } from 'webshell-common-ts/http/v2/connection/types/db-connection-summary.types';
+import { RDPConnectionSummary } from 'webshell-common-ts/http/v2/connection/types/rdp-connection-summary.types';
 import { KubeConnectionSummary } from 'webshell-common-ts/http/v2/connection/types/kube-connection-summary.types';
 import { DynamicAccessConnectionSummary } from 'webshell-common-ts/http/v2/connection/types/dynamic-access-connection-summary';
 import { ShellConnectionAuthDetails } from 'webshell-common-ts/http/v2/connection/types/shell-connection-auth-details.types';
@@ -68,6 +69,11 @@ export class ConnectionHttpService extends HttpService
 
     public CreateUniversalConnection(req: CreateUniversalConnectionRequest) : Promise<CreateUniversalConnectionResponse>
     {
+        // NOTE: this is a temporary measure, approved by product, until we have a correct delineation
+        // between targets and agents in the backend
+        if (req.targetType == TargetType.Linux || TargetType.Windows) {
+            req.targetType = TargetType.Bzero;
+        }
         return this.Post('universal', req);
     }
 
@@ -86,6 +92,18 @@ export class ConnectionHttpService extends HttpService
         }
 
         return this.Get('db', params);
+    }
+
+    public ListRDPConnections(connectionState?: ConnectionState, userEmail?: string): Promise<RDPConnectionSummary[]> {
+        const params: Record<string, string> = {};
+        if (connectionState) {
+            params['connectionState'] = connectionState;
+        }
+        if (userEmail) {
+            params['userEmail'] = userEmail;
+        }
+
+        return this.Get('rdp', params);
     }
 
     public ListKubeConnections(connectionState?: ConnectionState, userEmail?: string): Promise<KubeConnectionSummary[]> {

@@ -12,6 +12,7 @@ import { DbTargetHttpService } from 'http-services/db-target/db-target.http-serv
 import { PolicyQueryHttpService } from 'http-services/policy-query/policy-query.http-services';
 import { Dictionary } from 'lodash';
 import { gte, parse, SemVer } from 'semver';
+import { AgentType } from 'webshell-common-ts/http/v2/target/types/agent.types';
 
 export async function listTargets(
     configService: ConfigService,
@@ -89,19 +90,28 @@ export async function listTargetsPerType(
         targetSummaryWork = targetSummaryWork.concat(getDynamicAccessConfigSummaries());
     }
 
-    if (targetTypes.includes(TargetType.Bzero)) {
+    if (targetTypes.includes(TargetType.Linux) || targetTypes.includes(TargetType.Windows)) {
         const bzeroTargetService = new BzeroTargetHttpService(configService, logger);
         const getBzeroAgentTargetSummaries = async () => {
             let bzeroAgents = await bzeroTargetService.ListBzeroTargets();
+
+            if (!targetTypes.includes(TargetType.Windows)) {
+                bzeroAgents = bzeroAgents.filter(t => t.agentType === AgentType.Linux);
+            } else if (!targetTypes.includes(TargetType.Linux)) {
+                bzeroAgents = bzeroAgents.filter(t => t.agentType === AgentType.Windows);
+            }
+
             if (userEmail) {
                 // Filter bzero targets based on assumed user policy
-                const policyQueryResponse = await policyQueryHttpService.TargetConnectPolicyQuery(bzeroAgents.map(t => t.id), TargetType.Bzero, userEmail);
+                const policyQueryResponse = await policyQueryHttpService.TargetConnectPolicyQuery(bzeroAgents.map(t => t.id), TargetType.Linux, userEmail);
                 bzeroAgents = bzeroAgents.filter(t => policyQueryResponse[t.id].allowed);
 
                 // Update set of allowed target users/verbs
                 bzeroAgents.forEach(t => {
-                    t.allowedTargetUsers = policyQueryResponse[t.id].allowedTargetUsers;
                     t.allowedVerbs = policyQueryResponse[t.id].allowedVerbs;
+                    if (t.agentType === AgentType.Linux) {
+                        t.allowedTargetUsers = policyQueryResponse[t.id].allowedTargetUsers;
+                    }
                 });
             }
 
@@ -111,7 +121,7 @@ export async function listTargetsPerType(
         targetSummaryWork = targetSummaryWork.concat(getBzeroAgentTargetSummaries());
     }
 
-    if (targetTypes.includes(TargetType.Cluster)) {
+    if (targetTypes.includes(TargetType.Kubernetes) || targetTypes.includes(TargetType.Cluster)) {
         const kubeHttpService = new KubeHttpService(configService, logger);
         const getKubeClusterSummaries = async () => {
             let kubeClusterSummaries = await kubeHttpService.ListKubeClusters();
@@ -129,7 +139,7 @@ export async function listTargetsPerType(
 
             return kubeClusterSummaries.map<TargetSummary>((cluster) => {
                 return {
-                    type: TargetType.Cluster,
+                    type: TargetType.Kubernetes,
                     agentPublicKey: cluster.agentPublicKey,
                     id: cluster.id,
                     name: cluster.name,

@@ -54,7 +54,7 @@ export class DigitalOceanTargetService {
         }
 
         const targetType = doTarget.type;
-        if(targetType === 'bzero') {
+        if(targetType === 'linux') {
             // Only delete bzero target if it is set
             if (doTarget.bzeroTarget) {
                 cleanupPromises.push(this.bzeroTargetHttpService.DeleteBzeroTarget(doTarget.bzeroTarget.id));

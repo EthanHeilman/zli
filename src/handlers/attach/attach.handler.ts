@@ -40,6 +40,8 @@ export async function attachHandler(
         return 1;
     }
 
+    console.error(`targetType: ${connectionSummary.targetType}`);
+
     if(connectionSummary.targetType == TargetType.SsmTarget || connectionSummary.targetType == TargetType.DynamicAccessConfig) {
         return createAndRunShell(configService, logger, connectionSummary);
     } else if(connectionSummary.targetType == TargetType.Bzero) {

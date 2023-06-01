@@ -32,6 +32,10 @@ export async function closeConnectionHandler(
                 logger.info('Closing all db connections');
                 await closeConnections(configService, logger, 'db');
                 break;
+            case 'rdp':
+                logger.info('Closing all rdp connections');
+                await closeConnections(configService, logger, 'rdp');
+                break;
             case 'kube':
                 logger.info('Closing all kube connections');
                 await closeConnections(configService, logger, 'kube');
@@ -43,11 +47,12 @@ export async function closeConnectionHandler(
             }
         } else {
             // Otherwise close all types of connections
-            logger.info('Closing all shell, db, and kube connections');
+            logger.info('Closing all shell, db, rdp, and kube connections');
 
             const results = await Promise.allSettled([
                 handleShell(),
                 closeConnections(configService, logger, 'db'),
+                closeConnections(configService, logger, 'rdp'),
                 closeConnections(configService, logger, 'kube'),
             ]);
             const allErrors = results.reduce<any[]>((acc, result) => result.status === 'rejected' ? [...acc, result.reason] : acc, []);

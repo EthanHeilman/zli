@@ -29,7 +29,7 @@ export async function shellConnectHandler(
     if(targetType == TargetType.SsmTarget) {
         const connectionSummary = await connectionHttpService.GetShellConnection(connectionId);
         return createAndRunShell(configService, logger, connectionSummary);
-    } else if(targetType == TargetType.Bzero || targetType == TargetType.DynamicAccessConfig) {
+    } else if (targetType == TargetType.Bzero || targetType == TargetType.Linux || targetType == TargetType.DynamicAccessConfig) {
         if(targetType == TargetType.DynamicAccessConfig) {
             // Note: For DATs the actual target to connect to will be a
             // dynamically created target and not the id of the dynamic access

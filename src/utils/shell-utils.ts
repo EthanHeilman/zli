@@ -22,7 +22,7 @@ export async function createAndRunShell(
     connectionSummary: ShellConnectionSummary
 ) {
     return new Promise<number>(async (resolve, _) => {
-        if (connectionSummary.targetType === TargetType.Bzero)
+        if (connectionSummary.targetType === TargetType.Linux || connectionSummary.targetType === TargetType.Windows)
             throw new Error('createAndRunShell not supported for bzero agent targets. Should be using the startShellDaemon instead.');
 
         const terminal = new SsmShellTerminal(logger, configService, connectionSummary);

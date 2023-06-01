@@ -49,7 +49,8 @@ export async function dbConnectHandler(
     };
     const actionEnv = {
         'DB_ACTION': isPasswordless ? 'pwdb' : 'dial',
-        'TARGET_USER': targetUser
+        'TARGET_USER': targetUser,
+        'TCP_APP': 'db',
     };
 
     const runtimeConfig = { ...baseEnv, ...pluginEnv, ...actionEnv };

@@ -1,7 +1,7 @@
 import { CliDriver } from 'cli-driver';
 import mockArgv from 'mock-argv';
 import * as CleanExitHandler from 'handlers/clean-exit.handler';
-import { mockConnectionSummary, mockDbConnectionSummary, mockKubeConnectionSummary, mockSpaceSummary, unitTestMockSetup } from 'utils/unit-test-utils';
+import { mockConnectionSummary, mockDbConnectionSummary, mockKubeConnectionSummary, mockRDPConnectionSummary, mockSpaceSummary, unitTestMockSetup } from 'utils/unit-test-utils';
 import { SpaceHttpService } from 'http-services/space/space.http-services';
 import { ConnectionHttpService } from 'http-services/connection/connection.http-services';
 import { randomUUID } from 'crypto';
@@ -29,6 +29,7 @@ describe('Close Connection suite', () => {
         jest.spyOn(ConnectionHttpService.prototype, 'CloseConnection').mockImplementation(async () => Promise.resolve());
         jest.spyOn(ConnectionHttpService.prototype, 'ListDbConnections').mockImplementation(async () => Promise.resolve([mockDbConnectionSummary]));
         jest.spyOn(ConnectionHttpService.prototype, 'ListKubeConnections').mockImplementation(async () => Promise.resolve([mockKubeConnectionSummary]));
+        jest.spyOn(ConnectionHttpService.prototype, 'ListRDPConnections').mockImplementation(async () => Promise.resolve([mockRDPConnectionSummary]));
         const cleanExitSpy = jest.spyOn(CleanExitHandler, 'cleanExit').mockImplementationOnce(async () => Promise.resolve());
 
 

@@ -109,7 +109,7 @@ export const targetConnectPolicySuite = () => {
                     targets: [
                         {
                             id: '5fa85f64-5717-4567-b3fc-2c963f66afa5', // not a real ID
-                            type: TargetType.Bzero
+                            type: TargetType.Linux
                         }
                     ]
                 });

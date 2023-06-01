@@ -13,6 +13,10 @@ import { startKubeDaemonHandler } from 'handlers/connect/kube-connect.handler';
 import { MixpanelService } from 'services/Tracking/mixpanel.service';
 import { CreateUniversalConnectionResponse } from 'webshell-common-ts/http/v2/connection/responses/create-universal-connection.response';
 import { handleExitCode } from 'utils/daemon-utils';
+import { rdpConnectHandler } from './rdp-connect.handler';
+import { AgentType } from 'webshell-common-ts/http/v2/target/types/agent.types';
+
+const IGNORE_TARGET_USER_MSG: string = 'Specifying a target user or role for RDP or Web targets is not supported at this time. Ignoring target name / role and requesting connection per policy.';
 
 export async function connectHandler(
     argv: yargs.Arguments<connectArgs>,
@@ -53,22 +57,27 @@ export async function connectHandler(
 
         switch(createUniversalConnectionResponse.targetType)
         {
-        case TargetType.SsmTarget:
         case TargetType.Bzero:
-        case TargetType.DynamicAccessConfig:
-            const exitCode = await shellConnectHandler(createUniversalConnectionResponse.targetType, createUniversalConnectionResponse.targetUser, createUniversalConnectionResponse, configService, logger, loggerConfigService);
-
-            if (exitCode !== 0) {
-                const errMsg = handleExitCode(exitCode, createUniversalConnectionResponse);
-                if (errMsg.length > 0) {
-                    logger.error(errMsg);
+            // At the moment, the only available connection for a Windows agent and a Bzero target type is RDP
+            // In the future we will have to disambiguate
+            if(createUniversalConnectionResponse.agentType == AgentType.Windows) {
+                if (targetUser){
+                    logger.warn(IGNORE_TARGET_USER_MSG);
                 }
-            }
-            return exitCode;
+                return await rdpConnectHandler(argv, createUniversalConnectionResponse.targetId, createUniversalConnectionResponse, configService, logger, loggerConfigService);
+            } else
+                return await callShellConnectHandler(createUniversalConnectionResponse, configService, logger, loggerConfigService);
+        case TargetType.SsmTarget:
+        case TargetType.DynamicAccessConfig:
+            return await callShellConnectHandler(createUniversalConnectionResponse, configService, logger, loggerConfigService);
         case TargetType.Db:
             return await dbConnectHandler(argv, createUniversalConnectionResponse.splitCert, createUniversalConnectionResponse.targetId, createUniversalConnectionResponse.targetUser, createUniversalConnectionResponse, configService, logger, loggerConfigService);
         case TargetType.Web:
+            if (targetUser){
+                logger.warn(IGNORE_TARGET_USER_MSG);
+            }
             return await webConnectHandler(argv, createUniversalConnectionResponse.targetId, createUniversalConnectionResponse, configService, logger, loggerConfigService);
+        case TargetType.Kubernetes:
         case TargetType.Cluster:
             return await startKubeDaemonHandler(argv, createUniversalConnectionResponse.targetId, createUniversalConnectionResponse.targetUser, createUniversalConnectionResponse, configService, logger, loggerConfigService);
         default:
@@ -85,4 +94,16 @@ export async function connectHandler(
 
         throw err;
     }
+}
+
+async function callShellConnectHandler(createUniversalConnectionResponse: CreateUniversalConnectionResponse, configService: ConfigService, logger: Logger, loggerConfigService: LoggerConfigService) {
+    const exitCode = await shellConnectHandler(createUniversalConnectionResponse.targetType, createUniversalConnectionResponse.targetUser, createUniversalConnectionResponse, configService, logger, loggerConfigService);
+
+    if (exitCode !== 0) {
+        const errMsg = handleExitCode(exitCode, createUniversalConnectionResponse);
+        if (errMsg.length > 0) {
+            logger.error(errMsg);
+        }
+    }
+    return exitCode;
 }

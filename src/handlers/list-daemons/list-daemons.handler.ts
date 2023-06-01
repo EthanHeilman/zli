@@ -6,7 +6,7 @@ import { listDaemonsArgs } from 'handlers/list-daemons/list-daemons.command-buil
 import yargs from 'yargs';
 import { killPortProcess } from 'utils/daemon-utils';
 import chalk from 'chalk';
-import { newDbDaemonManagementService, newKubeDaemonManagementService } from 'services/daemon-management/daemon-management.service';
+import { newDbDaemonManagementService, newKubeDaemonManagementService, newRDPDaemonManagementService } from 'services/daemon-management/daemon-management.service';
 import { ProcessManagerService } from 'services/process-manager/process-manager.service';
 import { DaemonIsRunningStatus, DaemonQuitUnexpectedlyStatus, DaemonStatus } from 'services/daemon-management/types/daemon-status.types';
 import { ILogger } from 'webshell-common-ts/logging/logging.types';
@@ -27,6 +27,9 @@ export async function listDaemonsHandler(
     }
     if (targetType == 'all' || targetType == 'db') {
         await dbStatusHandler(configService, logger);
+    }
+    if (targetType == 'all' || targetType == 'rdp') {
+        await rdpStatusHandler(configService, logger);
     }
 
     await cleanExit(0, logger);
@@ -125,6 +128,32 @@ async function dbStatusHandler(
         async (connectionId, result) => {
             const connDetails = connectionId ? `${result.config.name} (connId: ${connectionId})` : result.config.name;
             return `The ${dbDaemonManagementService.configType} daemon connected to ${connDetails} has quit unexpectedly.`;
+        },
+        async (connectionId, result) => {
+            return [
+                connectionId ? connectionId : 'N/A',
+                result.status.targetName,
+                result.status.localUrl
+            ];
+        },
+        logger
+    );
+}
+
+async function rdpStatusHandler(
+    configService: ConfigService,
+    logger: Logger
+) {
+
+    const rdpDaemonManagementService = newRDPDaemonManagementService(configService);
+    const tableHeader: string[] = ['Connection ID', 'Target Name', 'Local URL'];
+
+    await handleStatus(
+        rdpDaemonManagementService,
+        tableHeader,
+        async (connectionId, result) => {
+            const connDetails = connectionId ? `${result.config.name} (connId: ${connectionId})` : result.config.name;
+            return `The ${rdpDaemonManagementService.configType} daemon connected to ${connDetails} has quit unexpectedly.`;
         },
         async (connectionId, result) => {
             return [

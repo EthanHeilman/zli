@@ -42,6 +42,8 @@ import { randomUUID } from 'crypto';
 import { KubeConnectionSummary } from 'webshell-common-ts/http/v2/connection/types/kube-connection-summary.types';
 import { SubjectSummary } from 'webshell-common-ts/http/v2/subject/types/subject-summary.types';
 import { ServiceAccountSummary } from 'webshell-common-ts/http/v2/service-account/types/service-account-summary.types';
+import { AgentType } from 'webshell-common-ts/http/v2/target/types/agent.types';
+import { RDPConnectionSummary } from 'webshell-common-ts/http/v2/connection/types/rdp-connection-summary.types';
 
 export function unitTestMockSetup(withCleanExit: boolean): void {
     // Always mock out the following services
@@ -178,6 +180,7 @@ export const mockBzeroSummaryList: BzeroAgentSummary[] = [{
     status: TargetStatus.Online,
     environmentId: 'test-env-id',
     agentVersion: 'test-agent-version',
+    agentType: AgentType.Linux,
     agentPublicKey: 'test-public-key',
     lastAgentUpdate: new Date(1998, 3, 5, 0, 0, 0, 0),
     region: 'test-region',
@@ -372,6 +375,18 @@ export const mockDbConnectionSummary: DbConnectionSummary = {
     remotePort: 5432
 };
 
+export const mockRDPConnectionSummary: RDPConnectionSummary = {
+    id: randomUUID(),
+    timeCreated: new Date(1998, 3, 5, 0, 0, 0, 0),
+    state: ConnectionState.Open,
+    targetId: 'some-target-id',
+    targetName: 'some-target-name',
+    targetType: TargetType.Windows,
+    subjectId: 'some-subject-id',
+    remoteHost: 'localhost',
+    remotePort: 3389
+};
+
 export const mockShellAuthDetails: ShellConnectionAuthDetails = {
     connectionNodeId: '998457d7-cce5-4fd2-98b9-7c550eb7ed5f',
     authToken: 'test-token',
@@ -386,13 +401,14 @@ export const mockUniversalConnectionRequest: CreateUniversalConnectionRequest = 
     envName: undefined,
     targetUser: 'ec2-user',
     targetGroups: [],
-    targetType: TargetType.Bzero
+    targetType: TargetType.Linux
 };
 
 export const mockUniversalConnectionResponse: CreateUniversalConnectionResponse = {
     connectionId: 'f11ae2c2-48a7-4a29-b306-8bc83da3c045',
     targetId: '9f728982-3691-4e71-9533-1892d5c65eb9',
     targetName: 'bzero-ec2-test',
+    agentType: AgentType.Linux,
     targetType: TargetType.Bzero,
     targetUser: 'ec2-user',
     agentPublicKey: 'test-public-key',

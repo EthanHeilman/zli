@@ -49,7 +49,7 @@ export async function configureServiceAccountHandler(configService: ConfigServic
     // Get all targets if specified otherwise get just the specified ones
     let targetIds: string[] = [];
     if(argv.all) {
-        const targets = await listTargets(configService, logger, [TargetType.Bzero, TargetType.Cluster]);
+        const targets = await listTargets(configService, logger, [TargetType.Linux, TargetType.Windows, TargetType.Kubernetes]);
         const onlineTargets = targets.filter(t => t.status == TargetStatus.Online);
         const versionFilteredTargets = filterTargetsOnVersion(onlineTargets, CONFIGURE_MIN_AGENT_VERSION);
         targetIds = versionFilteredTargets
@@ -60,7 +60,7 @@ export async function configureServiceAccountHandler(configService: ConfigServic
         targetIdentifierMap = await getTargetsByNameOrId(
             configService,
             logger,
-            [TargetType.Bzero, TargetType.Cluster],
+            [TargetType.Linux, TargetType.Windows, TargetType.Kubernetes],
             CONFIGURE_MIN_AGENT_VERSION);
 
         checkAllIdentifiersExist(logger, 'target', targetIdentifierMap, argv.target);

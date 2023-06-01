@@ -33,7 +33,7 @@ export async function listTargetsHandler(
 
     const targetTypes = (! argv.targetType || argv.targetType.length === 0)
         // Default to all target types if no target type filter has been provided
-        ? [TargetType.Bzero, TargetType.Cluster, TargetType.Db, TargetType.Web, TargetType.DynamicAccessConfig, TargetType.SsmTarget]
+        ? [TargetType.Linux, TargetType.Windows, TargetType.Kubernetes, TargetType.Db, TargetType.Web, TargetType.DynamicAccessConfig, TargetType.SsmTarget]
         : argv.targetType.map(type => parseTargetType(type));
 
     let allTargets = await listTargets(configService, logger, targetTypes, userEmail);

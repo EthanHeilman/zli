@@ -261,7 +261,7 @@ export async function createDOTestTargets() {
         }, userDataScript);
 
         // Add the digital ocean droplet to test targets mapping so that we can clean it up in afterAll
-        const digitalOceanBZeroTarget: DigitalOceanBZeroTarget = { type: 'bzero', droplet: droplet, bzeroTarget: undefined };
+        const digitalOceanBZeroTarget: DigitalOceanBZeroTarget = { type: 'linux', droplet: droplet, bzeroTarget: undefined };
         testTargets.set(testTarget, digitalOceanBZeroTarget);
 
         try {

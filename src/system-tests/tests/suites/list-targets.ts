@@ -17,9 +17,9 @@ export const listTargetsSuite = () => {
             const expectedTargetSummaries = [];
 
             const expectedBzeroTargetSummaries = Array.from(testTargets.values()).map<TargetSummary>(t => {
-                if (t.type === 'bzero') {
+                if (t.type === 'linux') {
                     return {
-                        type: TargetType.Bzero,
+                        type: TargetType.Linux,
                         agentPublicKey: t.bzeroTarget.agentPublicKey,
                         id: t.bzeroTarget.id,
                         name: t.bzeroTarget.name,
@@ -35,7 +35,7 @@ export const listTargetsSuite = () => {
 
             if (testCluster) {
                 expectedTargetSummaries.push({
-                    type: TargetType.Cluster,
+                    type: TargetType.Kubernetes,
                     agentPublicKey: testCluster.bzeroClusterTargetSummary.agentPublicKey,
                     id: testCluster.bzeroClusterTargetSummary.id,
                     name: testCluster.bzeroClusterTargetSummary.name,

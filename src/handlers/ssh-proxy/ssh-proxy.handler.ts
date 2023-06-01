@@ -17,6 +17,7 @@ import { parseTargetString } from 'utils/utils';
 import { cleanExit } from 'handlers/clean-exit.handler';
 import { sshProxyArg } from 'handlers/ssh-proxy/ssh-proxy.command-builder';
 import { DaemonProcess } from 'utils/types/daemon-process';
+import { AgentType } from 'webshell-common-ts/http/v2/target/types/agent.types';
 
 const minimumAgentVersion = '6.1.0';
 const readyMsg = 'BZERO-DAEMON READY-TO-CONNECT';
@@ -80,30 +81,33 @@ export async function sshProxyHandler(
     case TargetType.SsmTarget:
         return await ssmSshProxyHandler(configService, logger, sshTunnelParameters, createUniversalConnectionResponse, mrtapService);
     case TargetType.Bzero:
-        // agentVersion will be null if this isn't a valid version (i.e if its "$AGENT_VERSION" string during development)
-        const agentVersion = parse(createUniversalConnectionResponse.agentVersion);
-        if (agentVersion && lt(agentVersion, new SemVer(minimumAgentVersion))) {
-            logger.error(`Tunneling to Bzero Target is only supported on agent versions >= ${minimumAgentVersion}. Agent version is ${agentVersion}`);
-            cleanExit(1, logger);
-        }
-
-        let exitCode: number;
-        // if the user has file transfer access but not tunnel access, give them a transparent connection
-        if (createUniversalConnectionResponse.sshScpOnly) {
-            exitCode = await bzeroTransparentSshProxyHandler(configService, logger, sshTunnelParameters, createUniversalConnectionResponse, loggerConfigService);
-        } else {
-            exitCode = await bzeroOpaqueSshProxyHandler(configService, logger, sshTunnelParameters, createUniversalConnectionResponse, loggerConfigService);
-        }
-
-        if (exitCode !== 0) {
-            const errMsg = handleExitCode(exitCode, createUniversalConnectionResponse);
-            if (errMsg.length > 0) {
-                logger.error(errMsg);
+        if(createUniversalConnectionResponse.agentType == AgentType.Linux) {
+            // agentVersion will be null if this isn't a valid version (i.e if its "$AGENT_VERSION" string during development)
+            const agentVersion = parse(createUniversalConnectionResponse.agentVersion);
+            if (agentVersion && lt(agentVersion, new SemVer(minimumAgentVersion))) {
+                logger.error(`Tunneling to Linux Target is only supported on agent versions >= ${minimumAgentVersion}. Agent version is ${agentVersion}`);
+                cleanExit(1, logger);
             }
+
+            let exitCode: number;
+            // if the user has file transfer access but not tunnel access, give them a transparent connection
+            if (createUniversalConnectionResponse.sshScpOnly) {
+                exitCode = await bzeroTransparentSshProxyHandler(configService, logger, sshTunnelParameters, createUniversalConnectionResponse, loggerConfigService);
+            } else {
+                exitCode = await bzeroOpaqueSshProxyHandler(configService, logger, sshTunnelParameters, createUniversalConnectionResponse, loggerConfigService);
+            }
+
+            if (exitCode !== 0) {
+                const errMsg = handleExitCode(exitCode, createUniversalConnectionResponse);
+                if (errMsg.length > 0) {
+                    logger.error(errMsg);
+                }
+            }
+
+            cleanExit(exitCode, logger);
+        } else {
+            logger.error(`Unhandled ssh target type ${createUniversalConnectionResponse.targetType}`);
         }
-
-        cleanExit(exitCode, logger);
-
     default:
         logger.error(`Unhandled ssh target type ${createUniversalConnectionResponse.targetType}`);
         return -1;

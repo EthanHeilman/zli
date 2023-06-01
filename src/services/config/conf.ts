@@ -5,7 +5,7 @@ import { customJsonParser } from 'utils/utils';
 import { IdentityProvider } from 'webshell-common-ts/auth-service/auth.types';
 import { SubjectSummary } from 'webshell-common-ts/http/v2/subject/types/subject-summary.types';
 import { getDefaultMrtapConfig, MrtapConfigSchema } from 'webshell-common-ts/mrtap.service/mrtap.service.types';
-import { ConnectConfig, DaemonConfigs, DbConfig, getDefaultConnectConfig, getDefaultGlobalKubeConfig, getDefaultWebConfig, GlobalKubeConfig, KubeConfig, WebConfig } from 'services/config/config.service.types';
+import { ConnectConfig, DaemonConfigs, DbConfig, getDefaultConnectConfig, getDefaultGlobalKubeConfig, getDefaultWebConfig, GlobalKubeConfig, KubeConfig, RDPConfig, WebConfig } from 'services/config/config.service.types';
 
 // refL: https://github.com/sindresorhus/conf/blob/master/test/index.test-d.ts#L5-L14
 export type ConfigSchema = {
@@ -28,6 +28,7 @@ export type ConfigSchema = {
     connectConfig: ConnectConfig,
     globalKubeConfig: GlobalKubeConfig,
     dbDaemons: DaemonConfigs<DbConfig>,
+    rdpDaemons: DaemonConfigs<RDPConfig>,
     kubeDaemons: DaemonConfigs<KubeConfig>
 };
 
@@ -73,6 +74,7 @@ export class Config {
                 connectConfig: getDefaultConnectConfig(),
                 globalKubeConfig: getDefaultGlobalKubeConfig(),
                 dbDaemons: {},
+                rdpDaemons: {},
                 kubeDaemons: {}
             },
             accessPropertiesByDotNotation: true,
@@ -161,6 +163,10 @@ export class Config {
         return this.config.get('dbDaemons');
     }
 
+    getRDPDaemons(): DaemonConfigs<RDPConfig> {
+        return this.config.get('rdpDaemons');
+    }
+
     getKubeDaemons(): DaemonConfigs<KubeConfig> {
         return this.config.get('kubeDaemons');
     }
@@ -235,6 +241,10 @@ export class Config {
 
     setDbDaemons(dbDaemons: DaemonConfigs<DbConfig>): void {
         this.config.set('dbDaemons', dbDaemons);
+    }
+
+    setRDPDaemons(rdpDaemons: DaemonConfigs<RDPConfig>): void {
+        this.config.set('rdpDaemons', rdpDaemons);
     }
 
     setKubeDaemons(kubeDaemons: DaemonConfigs<KubeConfig>): void {

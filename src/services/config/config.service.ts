@@ -7,10 +7,10 @@ import { SubjectSummary } from 'webshell-common-ts/http/v2/subject/types/subject
 import { MrtapConfigInterface, MrtapConfigSchema } from 'webshell-common-ts/mrtap.service/mrtap.service.types';
 import { ILogoutConfigService } from 'handlers/logout/logout.handler';
 import { TokenHttpService } from 'http-services/token/token.http-services';
-import { DbDaemonStore, KubeDaemonStore } from 'services/daemon-management/daemon-management.service';
+import { DbDaemonStore, KubeDaemonStore, IRDPDaemonStore } from 'services/daemon-management/daemon-management.service';
 import { IKubeConfigService, IKubeDaemonSecurityConfigService } from 'services/kube-management/kube-management.service';
 import { Logger } from 'services/logger/logger.service';
-import { ConnectConfig, DaemonConfigs, DbConfig, GlobalKubeConfig, KubeConfig, WebConfig } from 'services/config/config.service.types';
+import { ConnectConfig, DaemonConfigs, DbConfig, GlobalKubeConfig, KubeConfig, RDPConfig, WebConfig } from 'services/config/config.service.types';
 import { UnixConfig } from 'services/config/unix-config.service';
 import { WindowsConfig } from 'services/config/windows-config.service';
 
@@ -41,6 +41,7 @@ export interface IConfig {
     getWebConfig(): WebConfig;
     getConnectConfig(): ConnectConfig;
     getDbDaemons(): DaemonConfigs<DbConfig>;
+    getRDPDaemons(): DaemonConfigs<RDPConfig>;
     getKubeDaemons(): DaemonConfigs<KubeConfig>;
     getMrtap(): Promise<MrtapConfigSchema>;
 
@@ -62,6 +63,7 @@ export interface IConfig {
     setConnectConfig(connectConfig: ConnectConfig): void;
     setGlobalKubeConfig(globalKubeConfig: GlobalKubeConfig): void;
     setDbDaemons(dbDaemons: DaemonConfigs<DbConfig>): void;
+    setRDPDaemons(rdpDaemons: DaemonConfigs<RDPConfig>): void;
     setKubeDaemons(kubeDaemons: DaemonConfigs<KubeConfig>): void;
     setMrtap(data: MrtapConfigSchema): Promise<void>;
 
@@ -75,7 +77,7 @@ export interface IConfig {
     clearMrtap(): void;
 }
 
-export class ConfigService implements IKubeDaemonSecurityConfigService, IKubeConfigService, KubeDaemonStore, DbDaemonStore, ILogoutConfigService, MrtapConfigInterface {
+export class ConfigService implements IKubeDaemonSecurityConfigService, IKubeConfigService, KubeDaemonStore, DbDaemonStore, IRDPDaemonStore, ILogoutConfigService, MrtapConfigInterface {
     private config: IConfig;
     private tokenHttpService: TokenHttpService;
     private logoutDetectedSubject: Subject<boolean> = new Subject<boolean>();
@@ -338,6 +340,10 @@ export class ConfigService implements IKubeDaemonSecurityConfigService, IKubeCon
         return this.config.getDbDaemons();
     }
 
+    getRDPDaemons(): DaemonConfigs<RDPConfig> {
+        return this.config.getRDPDaemons();
+    }
+
     getKubeDaemons(): DaemonConfigs<KubeConfig> {
         return this.config.getKubeDaemons();
     }
@@ -372,6 +378,10 @@ export class ConfigService implements IKubeDaemonSecurityConfigService, IKubeCon
 
     setDbDaemons(dbDaemons: DaemonConfigs<DbConfig>): void {
         this.config.setDbDaemons(dbDaemons);
+    }
+
+    setRDPDaemons(rdpDaemons: DaemonConfigs<RDPConfig>): void {
+        this.config.setRDPDaemons(rdpDaemons);
     }
 
     setKubeDaemons(kubeDaemons: DaemonConfigs<KubeConfig>): void {

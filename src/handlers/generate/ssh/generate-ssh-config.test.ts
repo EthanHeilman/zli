@@ -168,7 +168,7 @@ describe('Connect suite', () => {
 
     // This unit test will assert on the request being sent to the universal controller
     // This unit test covers default user and environment features
-    test('290387: Open connection to a Bzero target', async () => {
+    test('290387: Open connection to a Linux target', async () => {
         // Mock our services
         const getUniversalConnectionSpy = jest.spyOn(ConnectionHttpService.prototype, 'CreateUniversalConnection').mockImplementation(async () => mockUniversalConnectionResponse);
         const cleanExitSpy = jest.spyOn(CleanExitHandler, 'cleanExit').mockImplementation(async () => Promise.resolve());
@@ -186,7 +186,7 @@ describe('Connect suite', () => {
         // Call the function
         let err = undefined;
         try {
-            await mockArgv(['connect', 'bzero-ec2-test.1e8e28fa-6e6b-4fc0-8994-38d69d987978', '--targetType=bzero'], async () => {
+            await mockArgv(['connect', 'bzero-ec2-test.1e8e28fa-6e6b-4fc0-8994-38d69d987978', '--targetType=linux'], async () => {
                 const driver = new CliDriver();
                 await driver.run(process.argv.slice(2), true);
             });
@@ -203,7 +203,7 @@ describe('Connect suite', () => {
             envName: undefined,
             targetUser: 'ec2-user',
             targetGroups: undefined,
-            targetType: TargetType.Bzero*/
+            targetType: TargetType.Linux*/
         expect(getUniversalConnectionSpy).toHaveBeenCalledWith(mockUniversalConnectionRequest);
     });
 });
