@@ -35,7 +35,7 @@ export const listTargetsSuite = () => {
 
             if (testCluster) {
                 expectedTargetSummaries.push({
-                    type: TargetType.Cluster,
+                    type: TargetType.Kubernetes,
                     agentPublicKey: testCluster.bzeroClusterTargetSummary.agentPublicKey,
                     id: testCluster.bzeroClusterTargetSummary.id,
                     name: testCluster.bzeroClusterTargetSummary.name,
