@@ -431,9 +431,7 @@ export class CliDriver
                             async (argv) => {
                                 await configDefaultTargetUserHandler(argv, this.configService, this.logger);
                             }
-                        )
-                        .demandCommand(1, '')
-                        .strict();
+                        );
                 },
                 async () => {
                     await configHandler(this.logger, this.configService, this.loggerConfigService);
