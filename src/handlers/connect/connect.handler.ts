@@ -3,7 +3,7 @@ import { Logger } from 'services/logger/logger.service';
 import { LoggerConfigService } from 'services/logger/logger-config.service';
 import { connectArgs } from 'handlers/connect/connect.command-builder';
 import { ConnectionHttpService } from 'http-services/connection/connection.http-services';
-import { parseTargetString, parseTargetType } from 'utils/utils';
+import { parseTargetString, parseTargetType, parseVerbType } from 'utils/utils';
 import yargs from 'yargs';
 import { TargetType } from 'webshell-common-ts/http/v2/target/types/target.types';
 import { shellConnectHandler } from 'handlers/connect/shell-connect.handler';
@@ -13,10 +13,10 @@ import { startKubeDaemonHandler } from 'handlers/connect/kube-connect.handler';
 import { MixpanelService } from 'services/Tracking/mixpanel.service';
 import { CreateUniversalConnectionResponse } from 'webshell-common-ts/http/v2/connection/responses/create-universal-connection.response';
 import { handleExitCode } from 'utils/daemon-utils';
-import { rdpConnectHandler } from './rdp-connect.handler';
+import { tcpAppConnectHandler } from './tcp-app-connect.handler';
 import { AgentType } from 'webshell-common-ts/http/v2/target/types/agent.types';
 
-const IGNORE_TARGET_USER_MSG: string = 'Specifying a target user or role for RDP or Web targets is not supported at this time. Ignoring target name / role and requesting connection per policy.';
+const IGNORE_TARGET_USER_MSG: string = 'Specifying a target user or role for RDP, SQL Server or Web targets is not supported at this time. Ignoring target name / role and requesting connection per policy.';
 
 export async function connectHandler(
     argv: yargs.Arguments<connectArgs>,
@@ -50,7 +50,8 @@ export async function connectHandler(
             envName: parsedTarget.envName,
             targetUser: targetUser,
             targetGroups: argv.targetGroup,
-            targetType: parseTargetType(argv.targetType)
+            targetType: parseTargetType(argv.targetType),
+            verbType: parseVerbType(argv.protocol)
         });
 
         mixpanelService.TrackNewConnection(createUniversalConnectionResponse.targetType);
@@ -58,13 +59,12 @@ export async function connectHandler(
         switch(createUniversalConnectionResponse.targetType)
         {
         case TargetType.Bzero:
-            // At the moment, the only available connection for a Windows agent and a Bzero target type is RDP
-            // In the future we will have to disambiguate
+            // At the moment, the only available connections for a Windows agent and a Bzero target type is RDP and SQL Server
             if(createUniversalConnectionResponse.agentType == AgentType.Windows) {
                 if (targetUser){
                     logger.warn(IGNORE_TARGET_USER_MSG);
                 }
-                return await rdpConnectHandler(argv, createUniversalConnectionResponse.targetId, createUniversalConnectionResponse, configService, logger, loggerConfigService);
+                return await tcpAppConnectHandler(argv, createUniversalConnectionResponse, configService, logger, loggerConfigService);
             } else
                 return await callShellConnectHandler(createUniversalConnectionResponse, configService, logger, loggerConfigService);
         case TargetType.SsmTarget:

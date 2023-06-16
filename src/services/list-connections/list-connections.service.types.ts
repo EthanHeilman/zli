@@ -15,6 +15,11 @@ export interface RDPConnectionInfo extends BaseConnectionInfo {
     remoteHost: string;
 }
 
+export interface SQLServerConnectionInfo extends BaseConnectionInfo {
+    type: 'sqlserver'
+    remoteHost: string;
+}
+
 export interface ShellConnectionInfo extends BaseConnectionInfo {
     type: 'shell'
     targetUser: string;
@@ -29,5 +34,6 @@ export interface KubeConnectionInfo extends BaseConnectionInfo {
 export type ConnectionInfo =
 | DbConnectionInfo
 | RDPConnectionInfo
+| SQLServerConnectionInfo
 | ShellConnectionInfo
 | KubeConnectionInfo;

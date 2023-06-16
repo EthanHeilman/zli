@@ -5,7 +5,7 @@ export type listDaemonsArgs = {targetType: string};
 export function listDaemonsCmdBuilder (yargs : yargs.Argv<{}>) : yargs.Argv<listDaemonsArgs> {
     return yargs
         .option('targetType', {
-            choices: ['kube', 'db', 'web', 'rdp', 'all'],
+            choices: ['kube', 'db', 'web', 'rdp', 'sqlserver', 'all'],
             nargs: 1,
             type: 'string',
             default: 'all',

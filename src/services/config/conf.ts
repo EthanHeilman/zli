@@ -5,7 +5,7 @@ import { customJsonParser } from 'utils/utils';
 import { IdentityProvider } from 'webshell-common-ts/auth-service/auth.types';
 import { SubjectSummary } from 'webshell-common-ts/http/v2/subject/types/subject-summary.types';
 import { getDefaultMrtapConfig, MrtapConfigSchema } from 'webshell-common-ts/mrtap.service/mrtap.service.types';
-import { ConnectConfig, DaemonConfigs, DbConfig, getDefaultConnectConfig, getDefaultGlobalKubeConfig, getDefaultWebConfig, GlobalKubeConfig, KubeConfig, RDPConfig, WebConfig } from 'services/config/config.service.types';
+import { ConnectConfig, DaemonConfigs, DbConfig, getDefaultConnectConfig, getDefaultGlobalKubeConfig, getDefaultTCPAppPortsConfig, getDefaultWebConfig, GlobalKubeConfig, KubeConfig, RDPConfig, SQLServerConfig, TCPAppPortsConfig, WebConfig } from 'services/config/config.service.types';
 
 // refL: https://github.com/sindresorhus/conf/blob/master/test/index.test-d.ts#L5-L14
 export type ConfigSchema = {
@@ -26,9 +26,11 @@ export type ConfigSchema = {
     mrtap: MrtapConfigSchema,
     webConfig: WebConfig,
     connectConfig: ConnectConfig,
+    tcpAppPortsConfig: TCPAppPortsConfig,
     globalKubeConfig: GlobalKubeConfig,
     dbDaemons: DaemonConfigs<DbConfig>,
     rdpDaemons: DaemonConfigs<RDPConfig>,
+    sqlServerDaemons: DaemonConfigs<SQLServerConfig>,
     kubeDaemons: DaemonConfigs<KubeConfig>
 };
 
@@ -72,9 +74,11 @@ export class Config {
                 mrtap: getDefaultMrtapConfig(),
                 webConfig: getDefaultWebConfig(),
                 connectConfig: getDefaultConnectConfig(),
+                tcpAppPortsConfig: getDefaultTCPAppPortsConfig(),
                 globalKubeConfig: getDefaultGlobalKubeConfig(),
                 dbDaemons: {},
                 rdpDaemons: {},
+                sqlServerDaemons: {},
                 kubeDaemons: {}
             },
             accessPropertiesByDotNotation: true,
@@ -159,12 +163,20 @@ export class Config {
         return this.config.get('connectConfig');
     }
 
+    getTcpAppPortsConfig(): TCPAppPortsConfig {
+        return this.config.get('tcpAppPortsConfig');
+    }
+
     getDbDaemons(): DaemonConfigs<DbConfig> {
         return this.config.get('dbDaemons');
     }
 
     getRDPDaemons(): DaemonConfigs<RDPConfig> {
         return this.config.get('rdpDaemons');
+    }
+
+    getSQLServerDaemons(): DaemonConfigs<SQLServerConfig> {
+        return this.config.get('sqlServerDaemons');
     }
 
     getKubeDaemons(): DaemonConfigs<KubeConfig> {
@@ -235,6 +247,10 @@ export class Config {
         this.config.set('connectConfig', connectConfig);
     }
 
+    setTcpAppPortsConfig(tcpAppConfig: TCPAppPortsConfig): void {
+        this.config.set('tcpAppPortsConfig', tcpAppConfig);
+    }
+
     setGlobalKubeConfig(globalKubeConfig: GlobalKubeConfig): void {
         this.config.set('globalKubeConfig', globalKubeConfig);
     }
@@ -245,6 +261,10 @@ export class Config {
 
     setRDPDaemons(rdpDaemons: DaemonConfigs<RDPConfig>): void {
         this.config.set('rdpDaemons', rdpDaemons);
+    }
+
+    setSQLServerDaemons(sqlServerDaemons: DaemonConfigs<SQLServerConfig>): void {
+        this.config.set('sqlServerDaemons', sqlServerDaemons);
     }
 
     setKubeDaemons(kubeDaemons: DaemonConfigs<KubeConfig>): void {

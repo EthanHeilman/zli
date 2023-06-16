@@ -5,7 +5,7 @@ export type disconnectArgs = {targetType: string};
 export function disconnectCmdBuilder(yargs : yargs.Argv<{}>) : yargs.Argv<disconnectArgs> {
     return yargs
         .positional('targetType', {
-            choices: ['kube', 'db', 'web', 'rdp', 'all'],
+            choices: ['kube', 'db', 'web', 'rdp', 'sqlserver', 'all'],
             nargs: 1,
             type: 'string',
             default: 'all',

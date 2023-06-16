@@ -88,6 +88,7 @@ export function parseTargetType(targetType: string) : TargetType
     }
 }
 
+
 export function parseVerbType(verb: string) : VerbType
 {
     if(!verb) return undefined;
@@ -102,6 +103,8 @@ export function parseVerbType(verb: string) : VerbType
         return VerbType.Tunnel;
     case verbTypeDisplay(VerbType.RDP).toLowerCase():
         return VerbType.RDP;
+    case verbTypeDisplay(VerbType.SQLServer).toLowerCase():
+        return VerbType.SQLServer;
     default:
         return undefined;
     }
@@ -289,6 +292,8 @@ export function verbTypeDisplay(type: VerbType) : string {
         return 'Tunnel';
     case VerbType.RDP:
         return 'RDP';
+    case VerbType.SQLServer:
+        return 'SQLServer';
     default:
         const _exhaustiveCheck: never = type;
         return _exhaustiveCheck;

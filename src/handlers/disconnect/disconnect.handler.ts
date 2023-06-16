@@ -3,7 +3,7 @@ import { ConfigService } from 'services/config/config.service';
 import { Logger } from 'services/logger/logger.service';
 import { cleanExit } from 'handlers/clean-exit.handler';
 import { disconnectArgs } from 'handlers/disconnect/disconnect.command-builder';
-import { newDbDaemonManagementService, newKubeDaemonManagementService, newRDPDaemonManagementService } from 'services/daemon-management/daemon-management.service';
+import { newDbDaemonManagementService, newKubeDaemonManagementService, newRDPDaemonManagementService, newSQLServerDaemonManagementService } from 'services/daemon-management/daemon-management.service';
 import { DisconnectResult } from 'services/daemon-management/types/disconnect-result.types';
 import { ILogger } from 'webshell-common-ts/logging/logging.types';
 import { DaemonConfig, DaemonConfigType } from 'services/config/config.service.types';
@@ -50,6 +50,12 @@ export async function disconnectHandler(
         const rdpDaemonManagementService = newRDPDaemonManagementService(configService);
         await handleDisconnect(rdpDaemonManagementService, logger);
     }
+
+    if (targetType == 'all' || targetType == 'sqlserver') {
+        const sqlServerDaemonManagementService = newSQLServerDaemonManagementService(configService);
+        await handleDisconnect(sqlServerDaemonManagementService, logger);
+    }
+
     await cleanExit(0, logger);
 }
 

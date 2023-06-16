@@ -32,7 +32,7 @@ export async function createTConnectPolicyHandler(argv: yargs.Arguments<createTC
     }
 
     // Demand a targetUser to be provided only if some verbs that require it are included
-    if(!argv.targetUsers && argv.verbs.some(verb => verb != verbTypeDisplay(VerbType.RDP).toLowerCase())) {
+    if(!argv.targetUsers && argv.verbs.some(verb => verb != verbTypeDisplay(VerbType.RDP).toLowerCase() && verb != verbTypeDisplay(VerbType.SQLServer).toLowerCase())) {
         logger.error('Must provide a target user');
         await cleanExit(1, logger);
     }

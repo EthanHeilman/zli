@@ -1,4 +1,4 @@
-import { DaemonConfig, DaemonConfigs, DaemonConfigType, DbConfig, getDefaultDbConfig, getDefaultKubeConfig, getDefaultRDPConfig, KubeConfig, RDPConfig } from 'services/config/config.service.types';
+import { DaemonConfig, DaemonConfigs, DaemonConfigType, DbConfig, getDefaultDbConfig, getDefaultKubeConfig, getDefaultRDPConfig, getDefaultSQLServerConfig, KubeConfig, RDPConfig, SQLServerConfig } from 'services/config/config.service.types';
 import { ProcessManagerService } from 'services/process-manager/process-manager.service';
 import { DaemonIsRunningStatus, DaemonRunningStatus, DaemonStatus } from 'services/daemon-management/types/daemon-status.types';
 import { KillProcessResultType } from 'services/process-manager/process-manager.service.types';
@@ -137,6 +137,7 @@ export class DaemonManagementService<T extends DaemonConfig> {
             case 'web':
             case 'db':
             case 'rdp':
+            case 'sqlserver':
                 return {
                     type: 'daemon_is_running',
                     connectionId: connectionId,
@@ -229,13 +230,13 @@ export class DaemonManagementService<T extends DaemonConfig> {
     }
 }
 
-export interface DbDaemonStore {
+export interface IDbDaemonStore {
     setDbDaemons(dbDaemons: DaemonConfigs<DbConfig>): void;
     getDbDaemons(): DaemonConfigs<DbConfig>;
 }
 
 export function newDbDaemonManagementService(
-    dbDaemonStore: DbDaemonStore,
+    dbDaemonStore: IDbDaemonStore,
     processManager?: ProcessManager
 ): DaemonManagementService<DbConfig> {
     // Default implementation
@@ -275,6 +276,31 @@ export function newRDPDaemonManagementService(
         {
             setDaemons: (daemons: DaemonConfigs<RDPConfig>) => rdpDaemonStore.setRDPDaemons(daemons),
             getDaemons: () => rdpDaemonStore.getRDPDaemons(),
+        }
+    );
+}
+
+export interface ISQLServerDaemonStore {
+    setSQLServerDaemons(sqlServerDaemons: DaemonConfigs<SQLServerConfig>): void;
+    getSQLServerDaemons(): DaemonConfigs<SQLServerConfig>;
+}
+
+export function newSQLServerDaemonManagementService(
+    sqlServerDaemonStore: ISQLServerDaemonStore,
+    processManager?: ProcessManager
+): DaemonManagementService<SQLServerConfig> {
+    // Default implementation
+    if (!processManager) {
+        processManager = new ProcessManagerService();
+    }
+
+    return new DaemonManagementService(
+        getDefaultSQLServerConfig,
+        processManager,
+        // Construct a mapping from SQLServerDaemonStore to DaemonStore
+        {
+            setDaemons: (daemons: DaemonConfigs<SQLServerConfig>) => sqlServerDaemonStore.setSQLServerDaemons(daemons),
+            getDaemons: () => sqlServerDaemonStore.getSQLServerDaemons(),
         }
     );
 }

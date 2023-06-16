@@ -4,7 +4,7 @@ import { createTableWithWordWrap, toUpperCase } from 'utils/utils';
 import { listConnectionsArgs } from 'handlers/list-connections/list-connections.command-builder';
 import yargs from 'yargs';
 import { ConnectionInfo } from 'services/list-connections/list-connections.service.types';
-import { listOpenDbConnections, listOpenKubeConnections, listOpenRDPConnections, listOpenShellConnections } from 'services/list-connections/list-connections.service';
+import { listOpenDbConnections, listOpenKubeConnections, listOpenRDPConnections, listOpenSQLServerConnections, listOpenShellConnections } from 'services/list-connections/list-connections.service';
 import { cleanExit } from 'handlers/clean-exit.handler';
 
 export async function listConnectionsHandler(
@@ -12,7 +12,7 @@ export async function listConnectionsHandler(
     configService: ConfigService,
     logger: Logger
 ) {
-    const printTableOrJson = async <T extends NormalizedConnectionInfo>(type: 'shell' | 'db' | 'rdp' | 'kube' | 'all', connections: T[]) => {
+    const printTableOrJson = async <T extends NormalizedConnectionInfo>(type: 'shell' | 'db' | 'rdp' | 'sqlserver' | 'kube' | 'all', connections: T[]) => {
         if (!!argv.json) {
             // json output
             console.log(JSON.stringify(connections));
@@ -45,6 +45,10 @@ export async function listConnectionsHandler(
             const openRDPConnections = await listOpenRDPConnections(configService, logger);
             await printTableOrJson('rdp', normalizeConnectionInfos(openRDPConnections));
             break;
+        case 'sqlserver':
+            const openSQLServerConnections = await listOpenSQLServerConnections(configService, logger);
+            await printTableOrJson('sqlserver', normalizeConnectionInfos(openSQLServerConnections));
+            break;
         case 'kube':
             const openKubeConnections = await listOpenKubeConnections(configService, logger);
             await printTableOrJson('kube', normalizeConnectionInfos(openKubeConnections));
@@ -58,13 +62,14 @@ export async function listConnectionsHandler(
         // If type option not provided, get all open connections
 
         // Get open shell and db connections concurrently
-        const [shellConnections, dbConnections, kubeConnections] = await Promise.all([
+        const [shellConnections, dbConnections, rdpConnections, sqlServerConnections, kubeConnections] = await Promise.all([
             listOpenShellConnections(configService, logger),
             listOpenDbConnections(configService, logger),
             listOpenRDPConnections(configService, logger),
+            listOpenSQLServerConnections(configService, logger),
             listOpenKubeConnections(configService, logger)
         ]);
-        await printTableOrJson('all', normalizeConnectionInfos([...shellConnections, ...dbConnections, ...kubeConnections]));
+        await printTableOrJson('all', normalizeConnectionInfos([...shellConnections, ...dbConnections, ...rdpConnections, ...sqlServerConnections, ...kubeConnections]));
     }
 
     await cleanExit(0, logger);
@@ -98,6 +103,10 @@ function normalizeConnectionInfos(connections: ConnectionInfo[]): NormalizedConn
             break;
         case 'rdp':
             // Target users are not utilized for RDP
+            targetUser = 'N/A';
+            break;
+        case 'sqlserver':
+            // Target users are not utilized for SQL Server
             targetUser = 'N/A';
             break;
         case 'shell':

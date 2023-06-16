@@ -7,10 +7,10 @@ import { SubjectSummary } from 'webshell-common-ts/http/v2/subject/types/subject
 import { MrtapConfigInterface, MrtapConfigSchema } from 'webshell-common-ts/mrtap.service/mrtap.service.types';
 import { ILogoutConfigService } from 'handlers/logout/logout.handler';
 import { TokenHttpService } from 'http-services/token/token.http-services';
-import { DbDaemonStore, KubeDaemonStore, IRDPDaemonStore } from 'services/daemon-management/daemon-management.service';
+import { IDbDaemonStore, KubeDaemonStore as IKubeDaemonStore, IRDPDaemonStore, ISQLServerDaemonStore } from 'services/daemon-management/daemon-management.service';
 import { IKubeConfigService, IKubeDaemonSecurityConfigService } from 'services/kube-management/kube-management.service';
 import { Logger } from 'services/logger/logger.service';
-import { ConnectConfig, DaemonConfigs, DbConfig, GlobalKubeConfig, KubeConfig, RDPConfig, WebConfig } from 'services/config/config.service.types';
+import { ConnectConfig, DaemonConfigs, DbConfig, GlobalKubeConfig, KubeConfig, RDPConfig, SQLServerConfig, TCPAppPortsConfig, WebConfig } from 'services/config/config.service.types';
 import { UnixConfig } from 'services/config/unix-config.service';
 import { WindowsConfig } from 'services/config/windows-config.service';
 
@@ -40,8 +40,10 @@ export interface IConfig {
     getGlobalKubeConfig(): GlobalKubeConfig;
     getWebConfig(): WebConfig;
     getConnectConfig(): ConnectConfig;
+    getTcpAppPortsConfig(): TCPAppPortsConfig;
     getDbDaemons(): DaemonConfigs<DbConfig>;
     getRDPDaemons(): DaemonConfigs<RDPConfig>;
+    getSQLServerDaemons(): DaemonConfigs<SQLServerConfig>;
     getKubeDaemons(): DaemonConfigs<KubeConfig>;
     getMrtap(): Promise<MrtapConfigSchema>;
 
@@ -61,9 +63,11 @@ export interface IConfig {
     setWhoami(me: SubjectSummary): void;
     setWebConfig(webConfig: WebConfig): void;
     setConnectConfig(connectConfig: ConnectConfig): void;
+    setTcpAppPortsConfig(tcpAppConfig: TCPAppPortsConfig): void;
     setGlobalKubeConfig(globalKubeConfig: GlobalKubeConfig): void;
     setDbDaemons(dbDaemons: DaemonConfigs<DbConfig>): void;
     setRDPDaemons(rdpDaemons: DaemonConfigs<RDPConfig>): void;
+    setSQLServerDaemons(sqlServerDaemons: DaemonConfigs<SQLServerConfig>): void;
     setKubeDaemons(kubeDaemons: DaemonConfigs<KubeConfig>): void;
     setMrtap(data: MrtapConfigSchema): Promise<void>;
 
@@ -77,7 +81,7 @@ export interface IConfig {
     clearMrtap(): void;
 }
 
-export class ConfigService implements IKubeDaemonSecurityConfigService, IKubeConfigService, KubeDaemonStore, DbDaemonStore, IRDPDaemonStore, ILogoutConfigService, MrtapConfigInterface {
+export class ConfigService implements IKubeDaemonSecurityConfigService, IKubeConfigService, IKubeDaemonStore, IDbDaemonStore, IRDPDaemonStore, ISQLServerDaemonStore, ILogoutConfigService, MrtapConfigInterface {
     private config: IConfig;
     private tokenHttpService: TokenHttpService;
     private logoutDetectedSubject: Subject<boolean> = new Subject<boolean>();
@@ -336,12 +340,20 @@ export class ConfigService implements IKubeDaemonSecurityConfigService, IKubeCon
         return this.config.getConnectConfig();
     }
 
+    getTcpAppPortsConfig(): TCPAppPortsConfig {
+        return this.config.getTcpAppPortsConfig();
+    }
+
     getDbDaemons(): DaemonConfigs<DbConfig> {
         return this.config.getDbDaemons();
     }
 
     getRDPDaemons(): DaemonConfigs<RDPConfig> {
         return this.config.getRDPDaemons();
+    }
+
+    getSQLServerDaemons(): DaemonConfigs<SQLServerConfig> {
+        return this.config.getSQLServerDaemons();
     }
 
     getKubeDaemons(): DaemonConfigs<KubeConfig> {
@@ -372,6 +384,10 @@ export class ConfigService implements IKubeDaemonSecurityConfigService, IKubeCon
         this.config.setConnectConfig(connectConfig);
     }
 
+    setTcpAppPortsConfig(tcpAppConfig: TCPAppPortsConfig): void {
+        this.config.setTcpAppPortsConfig(tcpAppConfig);
+    }
+
     setGlobalKubeConfig(globalKubeConfig: GlobalKubeConfig): void {
         this.config.setGlobalKubeConfig(globalKubeConfig);
     }
@@ -382,6 +398,10 @@ export class ConfigService implements IKubeDaemonSecurityConfigService, IKubeCon
 
     setRDPDaemons(rdpDaemons: DaemonConfigs<RDPConfig>): void {
         this.config.setRDPDaemons(rdpDaemons);
+    }
+
+    setSQLServerDaemons(sqlServerDaemons: DaemonConfigs<SQLServerConfig>): void {
+        this.config.setSQLServerDaemons(sqlServerDaemons);
     }
 
     setKubeDaemons(kubeDaemons: DaemonConfigs<KubeConfig>): void {

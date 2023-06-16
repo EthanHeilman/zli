@@ -441,7 +441,7 @@ export class CliDriver
                 'connect <targetString>',
                 'Connect to a target',
                 (yargs) => {
-                    return connectCmdBuilder(yargs, this.targetTypeChoices);
+                    return connectCmdBuilder(yargs, this.targetTypeChoices, this.verbTypeChoices);
                 },
                 async (argv) => {
                     const exitCode = await connectHandler(argv, this.configService, this.logger, this.loggerConfigService, this.mixpanelService);
@@ -460,7 +460,7 @@ export class CliDriver
             )
             .command(
                 'disconnect [targetType]',
-                'Disconnect a zli daemon (db, rdp, web or kube)',
+                'Disconnect a zli daemon (db, rdp, sqlserver, web or kube)',
                 (yargs) => {
                     return disconnectCmdBuilder(yargs);
                 },
@@ -527,7 +527,7 @@ export class CliDriver
             )
             .command(
                 ['list-connections', 'lc'],
-                'List all open shell, db and rdp connections',
+                'List all open shell, db, rdp and sqlserver connections',
                 (yargs) => {
                     return listConnectionsCmdBuilder(yargs);
                 },

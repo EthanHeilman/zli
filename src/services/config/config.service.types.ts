@@ -3,6 +3,7 @@ export type DaemonConfigs<T extends DaemonConfig> = { [connectionId: string]: T 
 export const DaemonConfigType = {
     Db: 'db',
     RDP: 'rdp',
+    SQLServer: 'sqlserver',
     Kube: 'kube',
     Web: 'web'
 } as const;
@@ -12,7 +13,8 @@ export type DaemonConfig =
     | WebConfig
     | DbConfig
     | KubeConfig
-    | RDPConfig;
+    | RDPConfig
+    | SQLServerConfig;
 
 interface BaseDaemonConfig {
     type: DaemonConfigType,
@@ -37,6 +39,11 @@ export interface RDPConfig extends BaseDaemonConfig {
     name: string,
 }
 
+export interface SQLServerConfig extends BaseDaemonConfig {
+    type: 'sqlserver',
+    name: string,
+}
+
 export interface KubeConfig extends BaseDaemonConfig {
     type: 'kube',
     targetUser: string,
@@ -47,6 +54,13 @@ export interface KubeConfig extends BaseDaemonConfig {
 
 export interface ConnectConfig {
     targetUser: string
+}
+
+export interface TCPAppPortsConfig { [targetId: string]: TCPAppPortConfig };
+
+export interface TCPAppPortConfig {
+    rdpPort: number
+    sqlServerPort: number
 }
 
 export interface GlobalKubeConfig {
@@ -96,6 +110,17 @@ export function getDefaultRDPConfig(): RDPConfig {
     };
 }
 
+export function getDefaultSQLServerConfig(): SQLServerConfig {
+    return {
+        type: 'sqlserver',
+        name: null,
+        localHost: null,
+        localPort: null,
+        localPid: null,
+        controlPort: null,
+    };
+}
+
 export function getDefaultWebConfig(): WebConfig {
     return {
         type: 'web',
@@ -111,6 +136,10 @@ export function getDefaultConnectConfig(): ConnectConfig {
     return {
         targetUser: null
     };
+}
+
+export function getDefaultTCPAppPortsConfig(): TCPAppPortsConfig {
+    return {};
 }
 
 export function getDefaultGlobalKubeConfig(): GlobalKubeConfig {

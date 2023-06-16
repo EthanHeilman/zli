@@ -44,6 +44,7 @@ import { SubjectSummary } from 'webshell-common-ts/http/v2/subject/types/subject
 import { ServiceAccountSummary } from 'webshell-common-ts/http/v2/service-account/types/service-account-summary.types';
 import { AgentType } from 'webshell-common-ts/http/v2/target/types/agent.types';
 import { RDPConnectionSummary } from 'webshell-common-ts/http/v2/connection/types/rdp-connection-summary.types';
+import { SQLServerConnectionSummary } from 'webshell-common-ts/http/v2/connection/types/sql-server-connection-summary.types';
 
 export function unitTestMockSetup(withCleanExit: boolean): void {
     // Always mock out the following services
@@ -387,6 +388,18 @@ export const mockRDPConnectionSummary: RDPConnectionSummary = {
     remotePort: 3389
 };
 
+export const mockSQLServerConnectionSummary: SQLServerConnectionSummary = {
+    id: randomUUID(),
+    timeCreated: new Date(1998, 3, 5, 0, 0, 0, 0),
+    state: ConnectionState.Open,
+    targetId: 'some-target-id',
+    targetName: 'some-target-name',
+    targetType: TargetType.Windows,
+    subjectId: 'some-subject-id',
+    remoteHost: 'localhost',
+    remotePort: 1433
+};
+
 export const mockShellAuthDetails: ShellConnectionAuthDetails = {
     connectionNodeId: '998457d7-cce5-4fd2-98b9-7c550eb7ed5f',
     authToken: 'test-token',
@@ -410,6 +423,7 @@ export const mockUniversalConnectionResponse: CreateUniversalConnectionResponse 
     targetName: 'bzero-ec2-test',
     agentType: AgentType.Linux,
     targetType: TargetType.Bzero,
+    verbType: VerbType.Shell,
     targetUser: 'ec2-user',
     agentPublicKey: 'test-public-key',
     agentVersion: 'test-bzero-version',

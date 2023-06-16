@@ -478,7 +478,7 @@ export async function shutDownLocalPortAndPid(daemon: DaemonConfig, localPort: n
 export async function checkIfPortAvailable(port: number) {
     const isPortInUse = await checkTcpPort(port, 'localhost');
     if (isPortInUse) {
-        throw new Error(`It looks like an application is using port: ${port}`);
+        throw new Error(`It looks like an application is using port: ${port}. A custom port can be specified using the --customPort flag.`);
     }
 }
 
