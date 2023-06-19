@@ -44,6 +44,7 @@ import { SubjectSummary } from 'webshell-common-ts/http/v2/subject/types/subject
 import { ServiceAccountSummary } from 'webshell-common-ts/http/v2/service-account/types/service-account-summary.types';
 import { AgentType } from 'webshell-common-ts/http/v2/target/types/agent.types';
 import { RDPConnectionSummary } from 'webshell-common-ts/http/v2/connection/types/rdp-connection-summary.types';
+import { ScriptResponse } from 'webshell-common-ts/http/v2/autodiscovery-script/responses/script.responses';
 import { SQLServerConnectionSummary } from 'webshell-common-ts/http/v2/connection/types/sql-server-connection-summary.types';
 
 export function unitTestMockSetup(withCleanExit: boolean): void {
@@ -441,6 +442,8 @@ export const mockSpaceSummary: SpaceSummary = {
 };
 
 export const mockScript: string = 'test-script';
+
+export const mockScriptResponse: ScriptResponse = {autodiscoveryScript: mockScript};
 
 export const mockTunnelsResponse: SshTargetsResponse = {
     guid: 'test-guid',

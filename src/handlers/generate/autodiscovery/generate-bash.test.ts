@@ -2,10 +2,10 @@ import fs from 'fs';
 import path from 'path';
 import mockArgv from 'mock-argv';
 import { CliDriver } from 'cli-driver';
-import { cleanConsoleLog, createTempDirectory, deleteDirectory, mockEnv, mockScript, unitTestMockSetup } from 'utils/unit-test-utils';
+import { cleanConsoleLog, createTempDirectory, deleteDirectory, mockEnv, mockScript, mockScriptResponse, unitTestMockSetup } from 'utils/unit-test-utils';
 import { ScriptTargetNameOption } from 'webshell-common-ts/http/v2/autodiscovery-script/types/script-target-name-option.types';
-import * as BashMockSetup from 'handlers/generate/bash/generate-bash.mock';
-import * as AutoDiscoveryScriptHttpService from 'http-services/auto-discovery-script/auto-discovery-script.http-services';
+import * as BashMockSetup from 'handlers/generate/autodiscovery/generate-bash.mock';
+import { AutoDiscoveryScriptHttpService } from 'http-services/auto-discovery-script/auto-discovery-script.http-services';
 
 describe('Generate Bash suite', () => {
     let autoDiscoveryScriptHttpServiceSpy: jest.SpyInstance;
@@ -21,7 +21,7 @@ describe('Generate Bash suite', () => {
         unitTestMockSetup(true);
         BashMockSetup.bashMockSetup();
 
-        autoDiscoveryScriptHttpServiceSpy = jest.spyOn(AutoDiscoveryScriptHttpService, 'getAutodiscoveryScript').mockImplementation(async () => mockScript);
+        autoDiscoveryScriptHttpServiceSpy = jest.spyOn(AutoDiscoveryScriptHttpService.prototype, 'GetBashAutodiscoveryScript').mockImplementation(async () => mockScriptResponse);
         logSpy = jest.spyOn(console, 'log');
     });
 
@@ -44,7 +44,7 @@ describe('Generate Bash suite', () => {
         const cleanOutput = cleanConsoleLog(outputArgs);
         expect(cleanOutput).toEqual(mockScript);
         // Expect default parameters when not specified
-        expect(autoDiscoveryScriptHttpServiceSpy).toHaveBeenCalledWith(expect.anything(), expect.anything(), mockEnv.id, ScriptTargetNameOption.BashHostName, 'latest');
+        expect(autoDiscoveryScriptHttpServiceSpy).toHaveBeenCalledWith(ScriptTargetNameOption.BashHostName, mockEnv.id, false);
     });
 
     test('31616: Generate bash script when targetNameScheme is do', async () => {
@@ -57,7 +57,7 @@ describe('Generate Bash suite', () => {
         const outputArgs = logSpy.mock.calls[0][0];
         const cleanOutput = cleanConsoleLog(outputArgs);
         expect(cleanOutput).toEqual(mockScript);
-        expect(autoDiscoveryScriptHttpServiceSpy).toHaveBeenCalledWith(expect.anything(), expect.anything(), expect.anything(), ScriptTargetNameOption.DigitalOceanMetadata, expect.anything());
+        expect(autoDiscoveryScriptHttpServiceSpy).toHaveBeenCalledWith(ScriptTargetNameOption.DigitalOceanMetadata, expect.anything(), expect.anything());
     });
 
     test('31617: Generate bash script when targetNameScheme is aws', async () => {
@@ -70,7 +70,7 @@ describe('Generate Bash suite', () => {
         const outputArgs = logSpy.mock.calls[0][0];
         const cleanOutput = cleanConsoleLog(outputArgs);
         expect(cleanOutput).toEqual(mockScript);
-        expect(autoDiscoveryScriptHttpServiceSpy).toHaveBeenCalledWith(expect.anything(), expect.anything(), expect.anything(), ScriptTargetNameOption.AwsEc2Metadata, expect.anything());
+        expect(autoDiscoveryScriptHttpServiceSpy).toHaveBeenCalledWith(ScriptTargetNameOption.AwsEc2Metadata, expect.anything(), expect.anything());
     });
 
     test('31618: Generate bash script when targetNameScheme is time', async () => {
@@ -83,7 +83,7 @@ describe('Generate Bash suite', () => {
         const outputArgs = logSpy.mock.calls[0][0];
         const cleanOutput = cleanConsoleLog(outputArgs);
         expect(cleanOutput).toEqual(mockScript);
-        expect(autoDiscoveryScriptHttpServiceSpy).toHaveBeenCalledWith(expect.anything(), expect.anything(), expect.anything(), ScriptTargetNameOption.Timestamp, expect.anything());
+        expect(autoDiscoveryScriptHttpServiceSpy).toHaveBeenCalledWith(ScriptTargetNameOption.Timestamp, expect.anything(), expect.anything());
     });
 
     test('31619: Generate bash script when targetNameScheme is hostname', async () => {
@@ -96,7 +96,7 @@ describe('Generate Bash suite', () => {
         const outputArgs = logSpy.mock.calls[0][0];
         const cleanOutput = cleanConsoleLog(outputArgs);
         expect(cleanOutput).toEqual(mockScript);
-        expect(autoDiscoveryScriptHttpServiceSpy).toHaveBeenCalledWith(expect.anything(), expect.anything(), expect.anything(), ScriptTargetNameOption.BashHostName, expect.anything());
+        expect(autoDiscoveryScriptHttpServiceSpy).toHaveBeenCalledWith(ScriptTargetNameOption.BashHostName, expect.anything(), expect.anything());
     });
 
     test('31620: Generate bash script with -o option', async () => {
@@ -124,19 +124,6 @@ describe('Generate Bash suite', () => {
         const outputArgs = logSpy.mock.calls[0][0];
         const cleanOutput = cleanConsoleLog(outputArgs);
         expect(cleanOutput).toEqual(mockScript);
-        expect(autoDiscoveryScriptHttpServiceSpy).toHaveBeenCalledWith(expect.anything(), expect.anything(), mockEnv.id, ScriptTargetNameOption.BashHostName, expect.anything());
-    });
-
-    test('31622: Generate bash script with --agentVersion option', async () => {
-        // Call the function
-        await mockArgv(['generate', 'bash', '--agentVersion=test-agent-version'], async () => {
-            const driver = new CliDriver();
-            await driver.run(process.argv.slice(2), true);
-        });
-
-        const outputArgs = logSpy.mock.calls[0][0];
-        const cleanOutput = cleanConsoleLog(outputArgs);
-        expect(cleanOutput).toEqual(mockScript);
-        expect(autoDiscoveryScriptHttpServiceSpy).toHaveBeenCalledWith(expect.anything(), expect.anything(), expect.anything(), expect.anything(), 'test-agent-version');
+        expect(autoDiscoveryScriptHttpServiceSpy).toHaveBeenCalledWith(ScriptTargetNameOption.BashHostName, mockEnv.id, expect.anything());
     });
 });

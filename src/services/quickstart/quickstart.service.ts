@@ -31,7 +31,7 @@ import { Verb } from 'webshell-common-ts/http/v2/policy/types/verb.types';
 import { VerbType } from 'webshell-common-ts/http/v2/policy/types/verb-type.types';
 import { TargetConnectPolicySummary } from 'webshell-common-ts/http/v2/policy/target-connect/types/target-connect-policy-summary.types';
 import { ScriptTargetNameOption } from 'webshell-common-ts/http/v2/autodiscovery-script/types/script-target-name-option.types';
-import { getBzeroBashAutodiscoveryScript } from 'http-services/auto-discovery-script/auto-discovery-script.http-services';
+import { getBashAutodiscoveryScript } from 'http-services/auto-discovery-script/auto-discovery-script.http-services';
 import { TargetStatus } from 'webshell-common-ts/http/v2/target/types/targetStatus.types';
 import { Subject } from 'webshell-common-ts/http/v2/policy/types/subject.types';
 import { SubjectType } from 'webshell-common-ts/http/v2/common.types/subject.types';
@@ -238,7 +238,7 @@ export class QuickstartService {
             // Get autodiscovery script
             //
             // The registered target's name will match the Bash hostname of the target machine
-            const script = await getBzeroBashAutodiscoveryScript(this.logger, this.configService, registrableSSHHost.envId, ScriptTargetNameOption.BashHostName);
+            const script = await getBashAutodiscoveryScript(this.logger, this.configService, registrableSSHHost.envId, ScriptTargetNameOption.BashHostName);
 
             // Run script on target
             const execAutodiscoveryScriptCmd = `bash << 'endmsg'\n${script}\nendmsg`;

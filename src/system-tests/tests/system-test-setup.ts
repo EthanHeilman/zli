@@ -9,7 +9,7 @@ import { exec } from 'child_process';
 import { KubeBctlNamespace, KubeHelmQuickstartChartName, KubeTestTargetGroups, KubeTestUserName } from 'system-tests/tests/suites/kube';
 import { TestTarget, BzeroTestTarget } from 'system-tests/tests/system-test.types';
 import { BzeroTargetStatusPollError, DigitalOceanBZeroTarget, getDOImageName, getPackageManagerType } from 'system-tests/digital-ocean/digital-ocean-target.service.types';
-import { getBzeroBashAutodiscoveryScript, getBzeroAnsibleAutodiscoveryScript } from 'http-services/auto-discovery-script/auto-discovery-script.http-services';
+import { getBashAutodiscoveryScript, getLinuxAnsibleAutodiscoveryScript } from 'http-services/auto-discovery-script/auto-discovery-script.http-services';
 import { ScriptTargetNameOption } from 'webshell-common-ts/http/v2/autodiscovery-script/types/script-target-name-option.types';
 import { addRepo, install, MultiStringValue, SingleStringValue } from 'system-tests/tests/utils/helm/helm-utils';
 import { ApiKeyHttpService } from 'http-services/api-key/api-key.http-services';
@@ -226,7 +226,7 @@ export async function createDOTestTargets() {
             dropletSizeToCreate = vtDropletSize;
             break;
         case 'ad-bzero':
-            userDataScript = await getBzeroBashAutodiscoveryScript(logger, configService, systemTestEnvId, ScriptTargetNameOption.DigitalOceanMetadata, true);
+            userDataScript = await getBashAutodiscoveryScript(logger, configService, systemTestEnvId, ScriptTargetNameOption.DigitalOceanMetadata, true);
             // Add compile from source commands if a bzero branch is specified.
             const stringToFind = 'install_bzero_agent';
             let extraSetupCommands = '';
@@ -369,7 +369,7 @@ export async function ensureServiceAccountEnabled(subjectHttpService: SubjectHtt
  */
 async function getAnsibleUserDataScript(testTarget: TestTarget, environmentId: string): Promise<string> {
     // First get our ansible user data script and set up other needed commands
-    const ansibleScript = await getBzeroAnsibleAutodiscoveryScript(logger, configService, environmentId, true);
+    const ansibleScript = await getLinuxAnsibleAutodiscoveryScript(logger, configService, environmentId, true);
     const initBlock = getBzeroTargetSetupCommands();
     const packageManager = getPackageManagerType(testTarget.dropletImage);
 

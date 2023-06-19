@@ -1,14 +1,14 @@
 import yargs from 'yargs';
 
-const targetNameSchemes = ['do', 'aws', 'time', 'hostname'] as const;
-export type TargetNameScheme = typeof targetNameSchemes[number];
+const targetNameSchemes = ['time', 'aws', 'hostname'] as const;
+type TargetNameScheme = typeof targetNameSchemes[number];
 
-export type generateBashArgs = { environment: string } &
+export type generatePwshArgs = { environment: string } &
 { targetNameScheme: TargetNameScheme } &
-{ agentVersion: string } &
-{ outputFile: string };
+{ outputFile: string } &
+{ beta: boolean };
 
-export function generateBashCmdBuilder(yargs: yargs.Argv<{}>): yargs.Argv<generateBashArgs> {
+export function generatePwshCmdBuilder(yargs: yargs.Argv<{}>): yargs.Argv<generatePwshArgs> {
     return yargs
         .option(
             'environment',
@@ -31,15 +31,6 @@ export function generateBashCmdBuilder(yargs: yargs.Argv<{}>): yargs.Argv<genera
             }
         )
         .option(
-            'agentVersion',
-            {
-                type: 'string',
-                demandOption: false,
-                default: 'latest',
-                describe: 'Use a specific version of the agent',
-            }
-        )
-        .option(
             'outputFile',
             {
                 type: 'string',
@@ -48,6 +39,15 @@ export function generateBashCmdBuilder(yargs: yargs.Argv<{}>): yargs.Argv<genera
                 describe: 'Write the script to a file'
             }
         )
-        .example('generate bash --targetNameScheme time', '')
-        .example('generate bash -o script.sh', 'Writes the script to a file "script.sh" in the current directory');
+        .option(
+            'beta',
+            {
+                type: 'boolean',
+                demandOption: false,
+                default: false,
+                describe: 'If set, use the latest beta release of the BastionZero agent. Otherwise, use the latest production release'
+            }
+        )
+        .example('generate powershell --targetNameScheme time', '')
+        .example('generate powershell -o script.ps1', 'Writes the script to a file "script.ps1" in the current directory');
 }

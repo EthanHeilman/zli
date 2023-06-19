@@ -37,7 +37,7 @@ import { generateKubeYamlHandler } from 'handlers/generate/kube/generate-kube-ya
 import { disconnectHandler } from 'handlers/disconnect/disconnect.handler';
 import { listDaemonsHandler } from 'handlers/list-daemons/list-daemons.handler';
 import { bctlHandler } from 'handlers/bctl.handler';
-import { generateBashHandler } from 'handlers/generate/bash/generate-bash.handler';
+import { generateBashHandler, generatePwshHandler } from 'handlers/generate/autodiscovery/generate-autodiscovery.handler';
 import { quickstartHandler } from 'handlers/quickstart/quickstart-handler';
 import { describeClusterPolicyHandler } from 'handlers/policy/policy-describe-cluster/describe-cluster-policy.handler';
 import { quickstartCmdBuilder } from 'handlers/quickstart/quickstart.command-builder';
@@ -96,7 +96,8 @@ import { addTargetGroupToPolicyCmdBuilder } from 'handlers/policy/policy-targetg
 import { deleteTargetGroupFromPolicyCmdBuilder } from 'handlers/policy/policy-targetgroup/delete-targetgroup-policy.command-builder';
 import { sshProxyCmdBuilder } from 'handlers/ssh-proxy/ssh-proxy.command-builder';
 import { generateKubeConfigCmdBuilder, generateKubeYamlCmdBuilder } from 'handlers/generate/kube/generate-kube.command-builder';
-import { generateBashCmdBuilder } from 'handlers/generate/bash/generate-bash.command-builder';
+import { generateBashCmdBuilder } from 'handlers/generate/autodiscovery/generate-bash.command-builder';
+import { generatePwshCmdBuilder } from 'handlers/generate/autodiscovery/generate-pwsh.command-builder';
 import { generateCertificateCommandBuilder } from 'handlers/generate/certificate/generate-certificate.command-builder';
 import { defaultTargetGroupCmdBuilder } from 'handlers/default-target-group/default-target-group.command-builder';
 import { generateSshConfigCmdBuilder } from 'handlers/generate/ssh/generate-ssh-config.command-builder';
@@ -313,10 +314,9 @@ export class CliDriver
             })
             .middleware(async (argv) => {
                 const isServiceAccountLogin = argv._[0] == 'service-account' && argv._[1] == 'login';
-                const isGenerateBash = argv._[0] == 'generate' && argv._[1] == 'bash';
-                const isGenerateKubeYaml = argv._[0] == 'generate' && argv._[1] == 'kubeYaml';
+                const isRestrictedGenerateCmd = argv._[0] == 'generate' && ['bash', 'kubeYaml', 'powershell'].includes(String(argv._[1]));
                 if(!isServiceAccountLogin &&
-                    ((this.adminOnlyCommands.has(baseCmd) || isGenerateBash || isGenerateKubeYaml) && !this.configService.me().isAdmin)){
+                    ((this.adminOnlyCommands.has(baseCmd) || isRestrictedGenerateCmd) && !this.configService.me().isAdmin)){
                     this.logger.error(`This is an admin restricted command. Please login as an admin to perform it.`);
                     await cleanExit(1, this.logger);
                 }
@@ -470,14 +470,20 @@ export class CliDriver
             )
             .command(
                 'generate',
-                'Generate different types of configuration files (bash, sshConfig, ssh-proxy, kubeConfig or kubeYaml)',
+                'Generate different types of configuration files (bash, powershell, sshConfig, ssh-proxy, kubeConfig or kubeYaml)',
                 (yargs) => {
                     return yargs
                         .command(
                             'bash',
-                            'Print a bash script to autodiscover a target',
+                            'Print a bash script to autodiscover a Linux target',
                             (yargs) => generateBashCmdBuilder(yargs),
                             async (argv) => await generateBashHandler(argv, this.configService, this.logger),
+                        )
+                        .command(
+                            'powershell',
+                            'Print a powershell script to autodiscover a Windows target',
+                            (yargs) => generatePwshCmdBuilder(yargs),
+                            async (argv) => await generatePwshHandler(argv, this.configService, this.logger),
                         )
                         .command(
                             'sshConfig',
